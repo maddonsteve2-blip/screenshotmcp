@@ -4,6 +4,7 @@ import { screenshotRouter } from "./routes/screenshot.js";
 import { webhookRouter } from "./routes/webhook.js";
 import { mcpRouter } from "./mcp/server.js";
 import { errorHandler } from "./middleware/error.js";
+import { startWorker } from "./lib/queue.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -23,4 +24,5 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`API server running on port ${PORT}`);
+  startWorker();
 });
