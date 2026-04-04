@@ -88,12 +88,19 @@ function createMcpServer(apiKey: string | undefined) {
         await new Promise((r) => setTimeout(r, 2000));
         const [row] = await db.select().from(screenshots).where(eq(screenshots.id, id));
         if (row?.status === "done" && row.publicUrl) {
-          return {
-            content: [
-              { type: "text", text: `Screenshot ready: ${row.publicUrl}` },
-              { type: "image", data: row.publicUrl, mimeType: `image/${row.format}` },
-            ],
-          };
+          try {
+            const imgRes = await fetch(row.publicUrl);
+            const imgBuf = await imgRes.arrayBuffer();
+            const base64 = Buffer.from(imgBuf).toString("base64");
+            return {
+              content: [
+                { type: "text", text: `Screenshot ready: ${row.publicUrl}` },
+                { type: "image", data: base64, mimeType: `image/${row.format ?? "png"}` },
+              ],
+            };
+          } catch {
+            return { content: [{ type: "text", text: `Screenshot ready: ${row.publicUrl}` }] };
+          }
         }
         if (row?.status === "failed") {
           return { content: [{ type: "text", text: `Screenshot failed: ${row.errorMessage}` }] };
