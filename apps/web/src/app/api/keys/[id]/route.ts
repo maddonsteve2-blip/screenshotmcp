@@ -2,7 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { apiKeys, users } from "@screenshotsmcp/db";
+import { getOrCreateDbUser } from "@/lib/get-or-create-user";
+import { apiKeys } from "@screenshotsmcp/db";
 
 export async function DELETE(
   _req: NextRequest,
@@ -14,7 +15,7 @@ export async function DELETE(
   const { id } = await params;
   const db = getDb();
 
-  const [user] = await db.select().from(users).where(eq(users.clerkId, clerkId));
+  const user = await getOrCreateDbUser(clerkId);
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await db

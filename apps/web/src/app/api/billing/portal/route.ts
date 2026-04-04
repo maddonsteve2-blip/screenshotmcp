@@ -1,16 +1,13 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
 import Stripe from "stripe";
-import { getDb } from "@/lib/db";
-import { users } from "@screenshotsmcp/db";
+import { getOrCreateDbUser } from "@/lib/get-or-create-user";
 
 export async function POST() {
   const { userId: clerkId } = await auth();
   if (!clerkId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const db = getDb();
-  const [user] = await db.select().from(users).where(eq(users.clerkId, clerkId));
+  const user = await getOrCreateDbUser(clerkId);
   if (!user?.stripeCustomerId) {
     return NextResponse.json({ error: "No billing account found" }, { status: 404 });
   }

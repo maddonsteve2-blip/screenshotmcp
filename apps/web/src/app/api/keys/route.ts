@@ -4,6 +4,7 @@ import { eq, and } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
 import { nanoid } from "nanoid";
 import { getDb } from "@/lib/db";
+import { getOrCreateDbUser } from "@/lib/get-or-create-user";
 import { apiKeys, users } from "@screenshotsmcp/db";
 
 export async function GET() {
@@ -11,7 +12,7 @@ export async function GET() {
   if (!clerkId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const db = getDb();
-  const [user] = await db.select().from(users).where(eq(users.clerkId, clerkId));
+  const user = await getOrCreateDbUser(clerkId);
   if (!user) return NextResponse.json({ keys: [] });
 
   const rows = await db
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
   if (!name?.trim()) return NextResponse.json({ error: "Name required" }, { status: 400 });
 
   const db = getDb();
-  const [user] = await db.select().from(users).where(eq(users.clerkId, clerkId));
+  const user = await getOrCreateDbUser(clerkId);
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const rawKey = `sk_live_${randomBytes(24).toString("hex")}`;
