@@ -31,11 +31,16 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
   let browser;
   try {
     browser = await chromium.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-blink-features=AutomationControlled"],
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
     });
-    const page = await browser.newPage();
-    await page.setViewportSize({ width, height });
+    const context = await browser.newContext({
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      viewport: { width, height },
+      locale: "en-US",
+    });
+    const page = await context.newPage();
+    await page.addInitScript(`Object.defineProperty(navigator,'webdriver',{get:()=>false});window.chrome={runtime:{}}`);
     await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
 
     if (delay > 0) {
