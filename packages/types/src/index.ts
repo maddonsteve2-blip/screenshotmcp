@@ -47,7 +47,7 @@ export interface PlanLimits {
 }
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
-  free: { screenshotsPerMonth: 100, price: 0 },
+  free: { screenshotsPerMonth: 999999, price: 0 },
   starter: { screenshotsPerMonth: 2000, price: 9 },
   pro: { screenshotsPerMonth: 10000, price: 29 },
 };

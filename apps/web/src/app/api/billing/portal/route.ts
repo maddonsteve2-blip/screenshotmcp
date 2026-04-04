@@ -15,7 +15,11 @@ export async function POST() {
     return NextResponse.json({ error: "No billing account found" }, { status: 404 });
   }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: "Billing not configured" }, { status: 503 });
+  }
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   const session = await stripe.billingPortal.sessions.create({
     customer: user.stripeCustomerId,
     return_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/dashboard`,

@@ -20,6 +20,7 @@ export default function BillingPage() {
     const res = await fetch("/api/billing/portal", { method: "POST" });
     const data = await res.json();
     if (data.url) window.location.href = data.url;
+    else alert(data.error ?? "Billing portal unavailable");
     setLoading(false);
   }
 
@@ -34,6 +35,7 @@ export default function BillingPage() {
           <ExternalLink className="h-4 w-4 mr-2" />
           {loading ? "Opening..." : "Manage billing"}
         </Button>
+        <span className="text-xs text-muted-foreground">Billing coming soon</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -64,8 +66,8 @@ export default function BillingPage() {
                 ))}
               </ul>
               {plan.key !== "free" && (
-                <Button className="w-full mt-4" onClick={openPortal} disabled={loading}>
-                  Upgrade to {plan.label}
+                <Button className="w-full mt-4" disabled variant="outline">
+                  Coming soon
                 </Button>
               )}
             </CardContent>
