@@ -100,8 +100,14 @@ export default function InstallPage() {
   const claudeConfig = `{
   "mcpServers": {
     "screenshotsmcp": {
-      "url": "${MCP_URL}",
-      "headers": { "x-api-key": "${key}" }
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "${MCP_URL}",
+        "--header",
+        "x-api-key: ${key}"
+      ]
     }
   }
 }`;
@@ -204,13 +210,17 @@ export default function InstallPage() {
 
           <TabsContent value="claude" className="mt-3">
             <Card>
-              <CardContent className="pt-5 space-y-3">
+              <CardContent className="pt-5 space-y-4">
+                <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 p-3 text-xs text-amber-800 dark:text-amber-200">
+                  <strong>Note:</strong> Claude Desktop requires <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">mcp-remote</code> as a bridge — it does not support the <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">url</code> format directly. Make sure Node.js is installed.
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Add to <code className="bg-muted px-1.5 py-0.5 rounded text-xs">claude_desktop_config.json</code>:<br />
                   <span className="text-xs">macOS: <code className="bg-muted px-1 rounded">~/Library/Application Support/Claude/</code></span><br />
                   <span className="text-xs">Windows: <code className="bg-muted px-1 rounded">%APPDATA%\Claude\</code></span>
                 </p>
                 <CopyBlock code={claudeConfig} id="claude" copiedId={copiedId} onCopy={copy} />
+                <p className="text-xs text-muted-foreground">After saving, fully quit and relaunch Claude Desktop.</p>
               </CardContent>
             </Card>
           </TabsContent>

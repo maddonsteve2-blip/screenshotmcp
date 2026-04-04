@@ -380,7 +380,7 @@ mcpRouter.post("/", async (req, res) => {
     sessionIdGenerator: undefined,
   });
 
-  const apiKey = req.headers["x-api-key"] as string | undefined;
+  const apiKey = (req.headers["x-api-key"] as string | undefined) || (req.query.key as string | undefined);
   const server = createMcpServer(apiKey);
 
   res.on("close", () => {
@@ -396,7 +396,7 @@ mcpRouter.get("/", async (req, res) => {
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   });
-  const apiKey = req.headers["x-api-key"] as string | undefined;
+  const apiKey = (req.headers["x-api-key"] as string | undefined) || (req.query.key as string | undefined);
   const server = createMcpServer(apiKey);
 
   res.on("close", () => {
