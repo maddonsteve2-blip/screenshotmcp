@@ -30,7 +30,10 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
 
   let browser;
   try {
-    browser = await chromium.launch({ args: ["--no-sandbox"] });
+    browser = await chromium.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
+    });
     const page = await browser.newPage();
     await page.setViewportSize({ width, height });
     await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
