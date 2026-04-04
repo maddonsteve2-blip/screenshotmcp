@@ -31,6 +31,7 @@ screenshotRouter.post(
         return;
       }
 
+      const sync = req.query.sync === "true" || req.query.sync === "1";
       const id = nanoid();
       const { url, width, height, fullPage, format, delay } = parsed.data;
 
@@ -58,7 +59,24 @@ screenshotRouter.post(
         { jobId: id, attempts: 2, backoff: { type: "exponential", delay: 2000 } }
       );
 
-      res.status(202).json({ id, status: "pending" });
+      if (!sync) {
+        res.status(202).json({ id, status: "pending" });
+        return;
+      }
+
+      for (let i = 0; i < 30; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const [row] = await db.select().from(screenshots).where(eq(screenshots.id, id));
+        if (row?.status === "done") {
+          res.json({ id, status: "done", url: row.publicUrl });
+          return;
+        }
+        if (row?.status === "failed") {
+          res.status(500).json({ id, status: "failed", error: row.errorMessage });
+          return;
+        }
+      }
+      res.status(408).json({ id, status: "timeout", error: "Screenshot timed out after 60s" });
     } catch (err) {
       next(err);
     }
