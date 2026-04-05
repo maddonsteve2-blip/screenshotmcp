@@ -1,5 +1,0 @@
-[phases.build]
-cmds = ["npm ci", "npm run build"]
-
-[start]
-cmd = "node apps/api/dist/index.js"

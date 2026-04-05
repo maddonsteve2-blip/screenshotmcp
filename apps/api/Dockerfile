@@ -52,12 +52,14 @@ COPY packages/db/package*.json ./packages/db/
 COPY packages/types/package*.json ./packages/types/
 COPY apps/api/package*.json ./apps/api/
 
-RUN npm ci
+RUN npm ci --include=dev
 
 COPY packages/db ./packages/db
 COPY packages/types ./packages/types
 COPY apps/api ./apps/api
 
+RUN npx turbo build --filter=@screenshotsmcp/api...
+
 EXPOSE 3001
 
-CMD ["node_modules/.bin/tsx", "apps/api/src/index.ts"]
+CMD ["node", "apps/api/dist/index.js"]
