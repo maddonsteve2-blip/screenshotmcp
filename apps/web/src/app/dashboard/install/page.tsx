@@ -1,35 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Check, Copy, Download, Terminal, AlertCircle, ExternalLink } from "lucide-react";
+import { Check, Copy, ArrowLeft, ArrowRight, Key, Terminal, AlertCircle, Download, ExternalLink, Monitor, Smartphone, Globe, Code2, MessageSquare, Sparkles } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
 const MCP_URL = `${API_BASE}/mcp`;
 
-const TEST_PROMPTS = [
-  "Take a screenshot of https://example.com and describe what you see",
-  "Screenshot https://github.com at mobile viewport (390px wide)",
-  "Take a full-page screenshot of https://vercel.com",
-  "Screenshot https://news.ycombinator.com and list the top 5 stories",
-];
-
+/* ───── helpers ───── */
 function CopyBlock({ code, id, label, copiedId, onCopy }: {
   code: string; id: string; label?: string;
   copiedId: string | null; onCopy: (text: string, id: string) => void;
 }) {
   return (
     <div>
-      {label && <p className="text-sm font-medium mb-2">{label}</p>}
+      {label && <p className="text-sm font-medium mb-2 text-foreground/80">{label}</p>}
       <div className="relative">
-        <pre className="rounded-md bg-muted p-4 text-xs overflow-x-auto pr-12 leading-relaxed">
-          <code>{code}</code>
-        </pre>
-        <Button size="icon" variant="ghost" className="absolute top-2 right-2 h-7 w-7" onClick={() => onCopy(code, id)}>
+        <pre className="rounded-lg bg-muted/60 border p-4 text-xs overflow-x-auto pr-12 leading-relaxed"><code>{code}</code></pre>
+        <Button size="icon" variant="ghost" className="absolute top-2 right-2 h-8 w-8 hover:bg-background" onClick={() => onCopy(code, id)}>
           {copiedId === id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
         </Button>
       </div>
@@ -37,25 +28,65 @@ function CopyBlock({ code, id, label, copiedId, onCopy }: {
   );
 }
 
-function DeepLinkButton({ href, disabled, label }: { href: string; disabled: boolean; label: string }) {
+function StepNumber({ n }: { n: number }) {
   return (
-    <div>
-      <a href={disabled ? undefined : href}>
-        <Button disabled={disabled} className="gap-2">
-          <Download className="h-4 w-4" />
-          {label}
-        </Button>
-      </a>
-      {disabled && <p className="text-xs text-muted-foreground mt-2">Enter or create an API key above first.</p>}
-    </div>
+    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-sm font-semibold shrink-0">{n}</span>
   );
 }
 
+/* ───── tool definitions ───── */
+interface Tool {
+  id: string;
+  name: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  badge?: string;
+}
+
+interface Category {
+  label: string;
+  tools: Tool[];
+}
+
+const CATEGORIES: Category[] = [
+  {
+    label: "IDEs",
+    tools: [
+      { id: "cursor", name: "Cursor", subtitle: "One-click install", icon: <Code2 className="h-5 w-5" /> },
+      { id: "vscode", name: "VS Code", subtitle: "Deep link install", icon: <Monitor className="h-5 w-5" /> },
+      { id: "windsurf", name: "Windsurf", subtitle: "MCP config", icon: <Sparkles className="h-5 w-5" /> },
+    ],
+  },
+  {
+    label: "Claude",
+    tools: [
+      { id: "claude", name: "Claude Desktop", subtitle: "Custom Connector", icon: <MessageSquare className="h-5 w-5" /> },
+      { id: "claude-code", name: "Claude Code", subtitle: "CLI", icon: <Terminal className="h-5 w-5" /> },
+    ],
+  },
+  {
+    label: "MCP",
+    tools: [
+      { id: "mcp-url", name: "MCP URL", subtitle: "For Custom Clients", icon: <Globe className="h-5 w-5" /> },
+      { id: "n8n", name: "n8n & Others", subtitle: "Auth Header", icon: <Smartphone className="h-5 w-5" /> },
+    ],
+  },
+];
+
+const TEST_PROMPTS = [
+  "Take a screenshot of https://example.com and describe what you see",
+  "Use screenshot_responsive to capture https://github.com at all device sizes",
+  "Take a dark mode screenshot of https://vercel.com",
+  "Export https://news.ycombinator.com as a PDF",
+];
+
+/* ───── main page ───── */
 export default function InstallPage() {
   const [apiKey, setApiKey] = useState("");
   const [creating, setCreating] = useState(false);
   const [newKeyCreated, setNewKeyCreated] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedTool, setSelectedTool] = useState<string | null>(null);
 
   async function createAndUseKey() {
     setCreating(true);
@@ -65,31 +96,208 @@ export default function InstallPage() {
     setCreating(false);
   }
 
-  async function copy(text: string, id: string) {
+  const copy = useCallback(async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
-  }
+  }, []);
 
   const key = apiKey || "YOUR_API_KEY";
   const isKeySet = !!apiKey;
   const mcpKeyUrl = `${MCP_URL}/${key}`;
 
-  // Cursor: path-based key in URL (works without headers)
+  return (
+    <div className="p-6 md:p-8 max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Use Anywhere</h1>
+          <p className="text-muted-foreground text-sm mt-1">Add screenshotsmcp to your AI tool in 30 seconds.</p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-2 font-medium" onClick={() => document.getElementById("api-key-section")?.scrollIntoView({ behavior: "smooth" })}>
+          <Key className="h-3.5 w-3.5" />
+          Get API Key
+        </Button>
+      </div>
+
+      {/* Sliding container */}
+      <div className="relative overflow-hidden">
+        {/* ── Grid view ── */}
+        <div className={`transition-all duration-300 ease-in-out ${selectedTool ? "-translate-x-full opacity-0 absolute inset-0" : "translate-x-0 opacity-100"}`}>
+          <Card className="border shadow-sm">
+            <CardContent className="p-6 space-y-6">
+              {CATEGORIES.map((cat) => (
+                <div key={cat.label}>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{cat.label}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {cat.tools.map((tool) => (
+                      <button
+                        key={tool.id}
+                        onClick={() => setSelectedTool(tool.id)}
+                        className="group flex items-center gap-3 rounded-lg border bg-background p-4 text-left hover:border-primary/40 hover:bg-accent/50 transition-all duration-150"
+                      >
+                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
+                          {tool.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{tool.name}</span>
+                            {tool.badge && <span className="text-[10px] bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 px-1.5 py-0.5 rounded-full font-medium">{tool.badge}</span>}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{tool.subtitle}</p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* API Key section */}
+          <div id="api-key-section" className="mt-8 space-y-4">
+            <div className="flex items-center gap-3">
+              <StepNumber n={1} />
+              <h2 className="font-semibold text-base">Get your API key</h2>
+            </div>
+            <Card>
+              <CardContent className="pt-4 space-y-3">
+                <div className="flex gap-2">
+                  <Input placeholder="sk_live_... (paste your key or create one)" value={apiKey}
+                    onChange={(e) => { setApiKey(e.target.value); setNewKeyCreated(false); }} className="font-mono text-sm" />
+                  <Button variant="outline" onClick={createAndUseKey} disabled={creating} className="shrink-0">
+                    {creating ? "Creating..." : "Create new"}
+                  </Button>
+                </div>
+                {newKeyCreated && (
+                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm text-amber-800 dark:text-amber-200">
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>Key created! Save it now — it won&apos;t be shown again after you leave.</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Test prompts */}
+          <div className="mt-8 space-y-4">
+            <div className="flex items-center gap-3">
+              <StepNumber n={2} />
+              <h2 className="font-semibold text-base">Try these prompts</h2>
+            </div>
+            <div className="space-y-2">
+              {TEST_PROMPTS.map((prompt, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3 hover:bg-muted/50 transition-colors">
+                  <Terminal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-sm flex-1 font-mono text-foreground/80">{prompt}</span>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => copy(prompt, `p${i}`)}>
+                    {copiedId === `p${i}` ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Instructions panel (slides in from right) ── */}
+        <div className={`transition-all duration-300 ease-in-out ${selectedTool ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 absolute inset-0"}`}>
+          {selectedTool && (
+            <ToolInstructions
+              toolId={selectedTool}
+              mcpKeyUrl={mcpKeyUrl}
+              mcpBaseUrl={MCP_URL}
+              apiKey={key}
+              isKeySet={isKeySet}
+              copiedId={copiedId}
+              onCopy={copy}
+              onBack={() => setSelectedTool(null)}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───── instructions per tool ───── */
+function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, copiedId, onCopy, onBack }: {
+  toolId: string; mcpKeyUrl: string; mcpBaseUrl: string; apiKey: string; isKeySet: boolean;
+  copiedId: string | null; onCopy: (text: string, id: string) => void; onBack: () => void;
+}) {
+  const titles: Record<string, { name: string; icon: React.ReactNode }> = {
+    cursor: { name: "Cursor", icon: <Code2 className="h-5 w-5" /> },
+    vscode: { name: "VS Code", icon: <Monitor className="h-5 w-5" /> },
+    windsurf: { name: "Windsurf", icon: <Sparkles className="h-5 w-5" /> },
+    claude: { name: "Claude Desktop", icon: <MessageSquare className="h-5 w-5" /> },
+    "claude-code": { name: "Claude Code", icon: <Terminal className="h-5 w-5" /> },
+    "mcp-url": { name: "MCP URL", icon: <Globe className="h-5 w-5" /> },
+    n8n: { name: "n8n & Others", icon: <Smartphone className="h-5 w-5" /> },
+  };
+
+  const t = titles[toolId] || { name: toolId, icon: <Globe className="h-5 w-5" /> };
+
   const cursorDeepLinkConfig = JSON.stringify({ url: mcpKeyUrl });
   const cursorDeepLink = `cursor://anysphere.cursor-deeplink/mcp/install?name=screenshotsmcp&config=${encodeURIComponent(btoa(cursorDeepLinkConfig))}`;
-  const cursorManual = `{
+
+  const vscodeDeepLinkConfig = JSON.stringify({ name: "screenshotsmcp", type: "http", url: mcpKeyUrl });
+  const vscodeDeepLink = `vscode:mcp/install?${encodeURIComponent(vscodeDeepLinkConfig)}`;
+
+  return (
+    <Card className="border shadow-sm">
+      <CardContent className="p-0">
+        {/* Header */}
+        <div className="flex items-center gap-3 p-4 border-b">
+          <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">{t.icon}</span>
+            <h2 className="font-semibold">Install in {t.name}</h2>
+          </div>
+        </div>
+
+        {/* Steps */}
+        <div className="p-6 space-y-6">
+          {toolId === "cursor" && (
+            <>
+              <Step n={1} title="Copy the MCP URL">
+                <CopyBlock code={mcpKeyUrl} id="cursor-url" copiedId={copiedId} onCopy={onCopy} />
+              </Step>
+              <Step n={2} title="One-click install (recommended)">
+                <a href={isKeySet ? cursorDeepLink : undefined}>
+                  <Button disabled={!isKeySet} className="gap-2 w-full">
+                    <Download className="h-4 w-4" /> Install in Cursor
+                  </Button>
+                </a>
+                {!isKeySet && <p className="text-xs text-muted-foreground mt-2">Enter an API key first (go back and scroll down).</p>}
+              </Step>
+              <Step n={3} title="Or add manually to ~/.cursor/mcp.json">
+                <CopyBlock code={`{
   "mcpServers": {
     "screenshotsmcp": {
       "url": "${mcpKeyUrl}"
     }
   }
-}`;
+}`} id="cursor-manual" copiedId={copiedId} onCopy={onCopy} />
+              </Step>
+            </>
+          )}
 
-  // VS Code: deep link + settings.json
-  const vscodeDeepLinkConfig = JSON.stringify({ name: "screenshotsmcp", type: "http", url: mcpKeyUrl });
-  const vscodeDeepLink = `vscode:mcp/install?${encodeURIComponent(vscodeDeepLinkConfig)}`;
-  const vscodeConfig = `{
+          {toolId === "vscode" && (
+            <>
+              <Step n={1} title="Copy the MCP URL">
+                <CopyBlock code={mcpKeyUrl} id="vscode-url" copiedId={copiedId} onCopy={onCopy} />
+              </Step>
+              <Step n={2} title="One-click install (VS Code 1.99+)">
+                <a href={isKeySet ? vscodeDeepLink : undefined}>
+                  <Button disabled={!isKeySet} className="gap-2 w-full">
+                    <Download className="h-4 w-4" /> Install in VS Code
+                  </Button>
+                </a>
+              </Step>
+              <Step n={3} title="Or add manually to .vscode/mcp.json">
+                <CopyBlock code={`{
   "mcp": {
     "servers": {
       "screenshotsmcp": {
@@ -98,201 +306,131 @@ export default function InstallPage() {
       }
     }
   }
-}`;
+}`} id="vscode-manual" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Enable <code className="bg-muted px-1 rounded">chat.mcp.enabled</code> in VS Code settings.</p>
+              </Step>
+            </>
+          )}
 
-  // Claude Desktop: Windows (cmd wrapper) + macOS
-  const claudeConfigWindows = `{
+          {toolId === "windsurf" && (
+            <>
+              <Step n={1} title="Copy the MCP URL">
+                <CopyBlock code={mcpKeyUrl} id="windsurf-url" copiedId={copiedId} onCopy={onCopy} />
+              </Step>
+              <Step n={2} title="Add to ~/.codeium/windsurf/mcp_config.json">
+                <CopyBlock code={`{
+  "mcpServers": {
+    "screenshotsmcp": {
+      "serverUrl": "${mcpKeyUrl}"
+    }
+  }
+}`} id="windsurf-config" copiedId={copiedId} onCopy={onCopy} />
+              </Step>
+              <Step n={3} title="Reload MCP Servers in Windsurf">
+                <p className="text-sm text-muted-foreground">Click <strong>Reload MCP Servers</strong> in the Windsurf command palette or restart the IDE.</p>
+              </Step>
+            </>
+          )}
+
+          {toolId === "claude" && (
+            <>
+              <Step n={1} title="Copy the MCP URL">
+                <CopyBlock code={mcpKeyUrl} id="claude-url" copiedId={copiedId} onCopy={onCopy} />
+              </Step>
+              <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 p-4 text-sm text-green-800 dark:text-green-200">
+                <strong>Pro/Max Plan?</strong> Just go to Settings → Integrations → Add Custom Integration → paste the URL above. No extra setup needed.
+              </div>
+              <Separator />
+              <Step n={2} title="Free Plan — Edit claude_desktop_config.json">
+                <p className="text-xs text-muted-foreground mb-3">
+                  macOS: <code className="bg-muted px-1 rounded">~/Library/Application Support/Claude/</code><br />
+                  Windows: <code className="bg-muted px-1 rounded">%APPDATA%\Claude\</code>
+                </p>
+                <CopyBlock code={`{
   "mcpServers": {
     "screenshotsmcp": {
       "command": "cmd",
       "args": ["/c", "npx", "-y", "mcp-remote@latest", "${mcpKeyUrl}"]
     }
   }
-}`;
-  const claudeConfigMac = `{
+}`} id="claude-win" label="Windows" copiedId={copiedId} onCopy={onCopy} />
+                <div className="mt-3">
+                  <CopyBlock code={`{
   "mcpServers": {
     "screenshotsmcp": {
       "command": "npx",
       "args": ["-y", "mcp-remote@latest", "${mcpKeyUrl}"]
     }
   }
-}`;
-
-  // Claude Code CLI (global scope with -s user)
-  const claudeCodeCmd = `claude mcp add --transport http screenshotsmcp -s user ${mcpKeyUrl}`;
-
-  // Windsurf
-  const windsurfConfig = `{
-  "mcpServers": {
-    "screenshotsmcp": {
-      "serverUrl": "${mcpKeyUrl}"
-    }
-  }
-}`;
-
-  // n8n / generic
-  const genericUrl = mcpKeyUrl;
-  const genericHeader = `Authorization: Bearer ${key}`;
-
-  return (
-    <div className="p-8 max-w-2xl space-y-10">
-      <div>
-        <h1 className="text-2xl font-bold">Install</h1>
-        <p className="text-muted-foreground mt-1">Add screenshotsmcp to your AI coding tool in 30 seconds.</p>
-      </div>
-
-      {/* Step 1 */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold shrink-0">1</div>
-          <h2 className="font-semibold text-base">Get your API key</h2>
-        </div>
-        <Card>
-          <CardContent className="pt-4 space-y-3">
-            <div className="flex gap-2">
-              <Input placeholder="sk_live_... (paste your key or create one)" value={apiKey}
-                onChange={(e) => { setApiKey(e.target.value); setNewKeyCreated(false); }} className="font-mono text-sm" />
-              <Button variant="outline" onClick={createAndUseKey} disabled={creating} className="shrink-0">
-                {creating ? "Creating..." : "Create new"}
-              </Button>
-            </div>
-            {newKeyCreated && (
-              <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm text-amber-800 dark:text-amber-200">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                <span>Key created! Save it now — it won&apos;t be shown again after you leave.</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Step 2 */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold shrink-0">2</div>
-          <h2 className="font-semibold text-base">Add to your AI tool</h2>
-        </div>
-
-        <Tabs defaultValue="cursor">
-          <TabsList className="w-full flex flex-wrap gap-1 h-auto p-1">
-            <TabsTrigger value="cursor" className="flex-1">Cursor</TabsTrigger>
-            <TabsTrigger value="vscode" className="flex-1">VS Code</TabsTrigger>
-            <TabsTrigger value="claude" className="flex-1">Claude Desktop</TabsTrigger>
-            <TabsTrigger value="claude-code" className="flex-1">Claude Code</TabsTrigger>
-            <TabsTrigger value="windsurf" className="flex-1">Windsurf</TabsTrigger>
-            <TabsTrigger value="other" className="flex-1">n8n / Other</TabsTrigger>
-          </TabsList>
-
-          {/* CURSOR */}
-          <TabsContent value="cursor" className="mt-3">
-            <Card>
-              <CardContent className="pt-5 space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-3">One-click install — Cursor will add the config automatically.</p>
-                  <DeepLinkButton href={cursorDeepLink} disabled={!isKeySet} label="Install in Cursor" />
+}`} id="claude-mac" label="macOS / Linux" copiedId={copiedId} onCopy={onCopy} />
                 </div>
-                <Separator />
-                <CopyBlock code={cursorManual} id="cursor-manual" label="Or add manually to ~/.cursor/mcp.json" copiedId={copiedId} onCopy={copy} />
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </Step>
+              <Step n={3} title="Restart Claude Desktop">
+                <p className="text-sm text-muted-foreground">Fully quit and relaunch Claude Desktop to load the new MCP server.</p>
+              </Step>
+            </>
+          )}
 
-          {/* VS CODE */}
-          <TabsContent value="vscode" className="mt-3">
-            <Card>
-              <CardContent className="pt-5 space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-3">One-click install for VS Code 1.99+ with MCP support enabled.</p>
-                  <DeepLinkButton href={vscodeDeepLink} disabled={!isKeySet} label="Install in VS Code" />
+          {toolId === "claude-code" && (
+            <>
+              <Step n={1} title="Run this command in your terminal">
+                <CopyBlock code={`claude mcp add --transport http screenshotsmcp -s user ${mcpKeyUrl}`} id="claude-code-cmd" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">The <code className="bg-muted px-1 rounded">-s user</code> flag makes it available globally, not just this project.</p>
+              </Step>
+              <Step n={2} title="Verify the connection">
+                <p className="text-sm text-muted-foreground">Type <code className="bg-muted px-1.5 py-0.5 rounded font-mono">/mcp</code> in Claude Code to see connected servers.</p>
+              </Step>
+              <Step n={3} title="Start using it">
+                <p className="text-sm text-muted-foreground">Ask Claude Code: &quot;Take a screenshot of my localhost:3000&quot;</p>
+              </Step>
+            </>
+          )}
+
+          {toolId === "mcp-url" && (
+            <>
+              <Step n={1} title="Copy the MCP URL">
+                <CopyBlock code={mcpKeyUrl} id="mcp-url-copy" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">The API key is embedded in the URL path. No extra headers needed.</p>
+              </Step>
+              <Step n={2} title="Use it with your favourite agentic SDK or MCP client">
+                <p className="text-sm text-muted-foreground">Paste this URL into any tool that supports MCP servers via HTTP. The server uses Streamable HTTP transport.</p>
+              </Step>
+            </>
+          )}
+
+          {toolId === "n8n" && (
+            <>
+              <Step n={1} title="Copy the MCP URL">
+                <CopyBlock code={mcpKeyUrl} id="n8n-url" label="MCP URL (key embedded in path)" copiedId={copiedId} onCopy={onCopy} />
+              </Step>
+              <Step n={2} title="Or use base URL with Authorization header">
+                <CopyBlock code={mcpBaseUrl} id="n8n-base" label="Base MCP URL" copiedId={copiedId} onCopy={onCopy} />
+                <div className="mt-3">
+                  <CopyBlock code={`Authorization: Bearer ${apiKey}`} id="n8n-header" label="Authorization header" copiedId={copiedId} onCopy={onCopy} />
                 </div>
-                <Separator />
-                <CopyBlock code={vscodeConfig} id="vscode" label="Or add manually to .vscode/mcp.json (workspace) or settings.json" copiedId={copiedId} onCopy={copy} />
-                <p className="text-xs text-muted-foreground">Enable <code className="bg-muted px-1 rounded">chat.mcp.enabled</code> in VS Code settings if not already on.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* CLAUDE DESKTOP */}
-          <TabsContent value="claude" className="mt-3">
-            <Card>
-              <CardContent className="pt-5 space-y-4">
-                <div className="rounded-md border border-green-200 bg-green-50 dark:bg-green-950/20 p-3 text-xs text-green-800 dark:text-green-200">
-                  <strong>Pro/Max Plan?</strong> Use the native connector: Settings → Integrations → Add Custom Integration → paste <code className="bg-green-100 dark:bg-green-900/40 px-1 rounded">{mcpKeyUrl}</code> — no Node.js required.
-                </div>
-                <Separator />
-                <div className="rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/20 p-3 text-xs text-blue-800 dark:text-blue-200">
-                  <strong>Free Plan:</strong> Requires Node.js. Uses <code className="bg-blue-100 dark:bg-blue-900/40 px-1 rounded">mcp-remote</code> as a local bridge to reach the remote server.
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Edit <code className="bg-muted px-1.5 py-0.5 rounded text-xs">claude_desktop_config.json</code> — then fully quit and relaunch Claude Desktop.<br />
-                  <span className="text-xs text-muted-foreground">macOS: <code className="bg-muted px-1 rounded">~/Library/Application Support/Claude/</code> &nbsp;|&nbsp; Windows: <code className="bg-muted px-1 rounded">%APPDATA%\Claude\</code></span>
-                </p>
-                <CopyBlock code={claudeConfigWindows} id="claude-win" label="Windows" copiedId={copiedId} onCopy={copy} />
-                <CopyBlock code={claudeConfigMac} id="claude-mac" label="macOS / Linux" copiedId={copiedId} onCopy={copy} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* CLAUDE CODE */}
-          <TabsContent value="claude-code" className="mt-3">
-            <Card>
-              <CardContent className="pt-5 space-y-4">
-                <p className="text-sm text-muted-foreground">Run this command in your terminal. Claude Code natively supports HTTP MCP servers.</p>
-                <CopyBlock code={claudeCodeCmd} id="claude-code" copiedId={copiedId} onCopy={copy} />
-                <p className="text-xs text-muted-foreground">The <code className="bg-muted px-1 rounded">-s user</code> flag makes it available globally (not just the current project). Type <code className="bg-muted px-1 rounded">/mcp</code> in Claude Code to verify.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* WINDSURF */}
-          <TabsContent value="windsurf" className="mt-3">
-            <Card>
-              <CardContent className="pt-5 space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Add to <code className="bg-muted px-1.5 py-0.5 rounded text-xs">~/.codeium/windsurf/mcp_config.json</code> under <code className="bg-muted px-1.5 py-0.5 rounded text-xs">mcpServers</code>, then click <strong>Reload MCP Servers</strong> in Windsurf.
-                </p>
-                <CopyBlock code={windsurfConfig} id="windsurf" copiedId={copiedId} onCopy={copy} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* N8N / OTHER */}
-          <TabsContent value="other" className="mt-3">
-            <Card>
-              <CardContent className="pt-5 space-y-4">
-                <p className="text-sm text-muted-foreground">Use the MCP URL directly in any MCP-compatible client (n8n MCP Client Tool node, custom agents, etc.).</p>
-                <CopyBlock code={genericUrl} id="generic-url" label="MCP URL (key embedded in path)" copiedId={copiedId} onCopy={copy} />
-                <p className="text-xs text-muted-foreground mt-1">Or use the base URL with an Authorization header:</p>
-                <CopyBlock code={MCP_URL} id="generic-base" label="Base MCP URL" copiedId={copiedId} onCopy={copy} />
-                <CopyBlock code={genericHeader} id="generic-header" label="Authorization header" copiedId={copiedId} onCopy={copy} />
-                <div className="flex items-center gap-2 pt-1">
+              </Step>
+              <Step n={3} title="Configure your client">
+                <div className="flex items-center gap-2">
                   <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-                  <a href="https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.toolmcp/" target="_blank" rel="noopener" className="text-xs text-primary hover:underline">n8n MCP Client Tool docs →</a>
+                  <a href="https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.toolmcp/" target="_blank" rel="noopener" className="text-sm text-primary hover:underline">n8n MCP Client Tool docs →</a>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+              </Step>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-      {/* Step 3 */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-bold shrink-0">3</div>
-          <h2 className="font-semibold text-base">Test it</h2>
-        </div>
-        <div className="space-y-2">
-          {TEST_PROMPTS.map((prompt, i) => (
-            <div key={i} className="flex items-center gap-3 rounded-md border bg-muted/30 px-4 py-3">
-              <Terminal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="text-sm flex-1 font-mono">{prompt}</span>
-              <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => copy(prompt, `p${i}`)}>
-                {copiedId === `p${i}` ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-              </Button>
-            </div>
-          ))}
-        </div>
+function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <StepNumber n={n} />
+        <h3 className="font-medium text-sm">{title}</h3>
       </div>
+      <div className="ml-10">{children}</div>
     </div>
   );
 }
