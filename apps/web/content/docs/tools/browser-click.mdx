@@ -1,0 +1,27 @@
+---
+title: browser_click
+description: Click an element on the current browser page by CSS selector or visible text.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+| `selector` | string | Yes | CSS selector (e.g. `#submit-btn`, `.nav-link`) or visible text (e.g. `Sign in`, `Submit`) |
+
+## Example
+
+```
+Click the "Sign in" button on the page
+```
+
+## Response
+
+Returns a screenshot after clicking, so you can see the result.
+
+## Notes
+
+- Supports both CSS selectors and visible text matching
+- Waits for the element to be visible before clicking
+- Returns a screenshot after the click completes

@@ -1,0 +1,55 @@
+---
+title: browser_seo_audit
+description: Run a comprehensive SEO audit — meta tags, Open Graph, Twitter Cards, headings, structured data, and more.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+
+## Example
+
+```
+Run an SEO audit on this page
+```
+
+## Response
+
+Returns a complete SEO report covering:
+
+### Meta Tags
+- **Title** — with character count and length check
+- **Description** — with character count
+- **Canonical URL**
+- **Robots directives**
+- **Language** (`lang` attribute)
+- **Viewport** meta tag
+
+### Open Graph
+- `og:title`, `og:description`, `og:image`, `og:type`, `og:url`
+
+### Twitter Cards
+- `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`
+
+### Headings
+- Count of h1–h6 tags with preview text
+- Flags if there are zero or multiple h1 tags
+
+### Images
+- Total count and alt text coverage percentage
+- Lists images missing alt text (accessibility and SEO issue)
+
+### Links
+- Total count with internal vs external breakdown
+
+### Structured Data
+- JSON-LD structured data (Schema.org)
+- Raw JSON output for review
+
+## Notes
+
+- Navigate to a page first, then run the audit
+- Checks follow Google's SEO best practices
+- Missing or duplicate tags are flagged automatically

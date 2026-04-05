@@ -1,0 +1,46 @@
+---
+title: browser_perf_metrics
+description: Get Core Web Vitals and performance metrics for the current page.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+
+## Example
+
+```
+Check the performance metrics and Web Vitals for this page
+```
+
+## Response
+
+Returns a comprehensive performance report:
+
+### Core Web Vitals
+| Metric | Description | Good Threshold |
+| --- | --- | --- |
+| **TTFB** | Time to First Byte | < 800ms |
+| **FCP** | First Contentful Paint | < 1.8s |
+| **LCP** | Largest Contentful Paint | < 2.5s |
+| **CLS** | Cumulative Layout Shift | < 0.1 |
+
+### Page Load
+- **DOM Content Loaded** — when HTML is fully parsed
+- **Full Load** — when all resources are loaded
+
+### Page Size
+- **DOM Nodes** — total elements in the DOM
+- **Resources** — total network requests
+- **Transfer Size** — total bytes transferred
+
+### Resources by Type
+Breakdown of requests by type: scripts, stylesheets, images, fonts, fetch/XHR, etc.
+
+## Notes
+
+- Navigate to a page first with `browser_navigate`, then call this tool
+- Metrics are captured from the browser's Performance API
+- CLS may increase over time as the page loads — check after full load

@@ -1,0 +1,28 @@
+---
+title: browser_navigate
+description: Open a browser and navigate to a URL. Returns a screenshot and a session ID for subsequent interactions.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `url` | string | Yes | — | URL to navigate to |
+| `sessionId` | string | No | — | Reuse an existing session. Omit to start a new session. |
+
+## Example
+
+```
+Navigate to https://myapp.com and show me what it looks like
+```
+
+## Response
+
+Returns a screenshot of the loaded page and a **session ID**. Use this session ID with all other `browser_*` tools to continue interacting with the same page.
+
+## Sessions
+
+- Sessions persist for **5 minutes** of inactivity
+- Maximum **6 concurrent sessions**
+- Always call `browser_close` when done to free resources
+- Sessions use stealth mode to bypass bot detection

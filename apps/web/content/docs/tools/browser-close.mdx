@@ -1,0 +1,22 @@
+---
+title: browser_close
+description: Close the browser session and free all resources.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID to close |
+
+## Example
+
+```
+Close the browser session
+```
+
+## Notes
+
+- **Always call this when done** with a browser session to free resources
+- Sessions auto-expire after 5 minutes of inactivity, but explicit close is best practice
+- After closing, the session ID is no longer valid

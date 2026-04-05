@@ -1,0 +1,34 @@
+---
+title: browser_press_key
+description: Simulate keyboard key presses for navigation, form submission, and shortcuts.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+| `key` | string | Yes | Key to press (e.g. `Enter`, `Tab`, `Escape`, `ArrowDown`) |
+
+## Supported Keys
+
+| Key | Description |
+| --- | --- |
+| `Enter` | Submit forms, confirm actions |
+| `Tab` | Move focus to next element |
+| `Escape` | Close modals, cancel actions |
+| `ArrowDown` / `ArrowUp` | Navigate lists, dropdowns |
+| `Backspace` | Delete text |
+| `Control+a` | Select all (use `Meta+a` on macOS) |
+| `Control+c` / `Control+v` | Copy / Paste |
+
+## Example
+
+```
+Press Enter to submit the form
+```
+
+## Notes
+
+- Supports modifier keys: `Control+key`, `Shift+key`, `Alt+key`, `Meta+key`
+- Returns a screenshot after the key press

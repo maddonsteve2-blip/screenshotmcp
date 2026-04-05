@@ -1,0 +1,39 @@
+---
+title: browser_cookies
+description: Get, set, or clear cookies for the current browser session.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `sessionId` | string | Yes | — | Session ID from `browser_navigate` |
+| `action` | string | Yes | — | `get`, `set`, or `clear` |
+| `name` | string | No | — | Cookie name (required for `set`) |
+| `value` | string | No | — | Cookie value (required for `set`) |
+| `domain` | string | No | — | Cookie domain (for `set`) |
+| `path` | string | No | `/` | Cookie path (for `set`) |
+
+## Examples
+
+### Get all cookies
+```
+Show me all cookies on this page
+```
+
+### Set a cookie
+```
+Set an auth cookie named "session_token" with value "abc123"
+```
+
+### Clear all cookies
+```
+Clear all cookies for this session
+```
+
+## Notes
+
+- `get` returns all cookies for the current page domain
+- `set` creates or updates a cookie
+- `clear` removes all cookies from the browser context
+- Useful for testing authenticated flows — set session cookies to bypass login

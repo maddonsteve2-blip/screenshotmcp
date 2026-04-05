@@ -1,0 +1,45 @@
+---
+title: browser_storage
+description: Read and write localStorage and sessionStorage.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `sessionId` | string | Yes | — | Session ID from `browser_navigate` |
+| `storageType` | string | Yes | — | `local` or `session` |
+| `action` | string | Yes | — | `get`, `set`, `remove`, or `clear` |
+| `key` | string | No | — | Storage key (required for `get`, `set`, `remove`) |
+| `value` | string | No | — | Value to store (required for `set`) |
+
+## Examples
+
+### Read a value
+```
+Get the "user_preferences" key from localStorage
+```
+
+### Set a value
+```
+Set localStorage key "theme" to "dark"
+```
+
+### Get all storage
+```
+Show me everything in localStorage
+```
+
+### Clear storage
+```
+Clear all sessionStorage data
+```
+
+## Notes
+
+- `get` without a key returns all key-value pairs
+- `get` with a key returns that specific value
+- `set` creates or updates a key-value pair
+- `remove` deletes a specific key
+- `clear` removes all entries from the specified storage type
+- Useful for testing feature flags, user preferences, and cached state

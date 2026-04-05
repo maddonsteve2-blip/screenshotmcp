@@ -31,5 +31,8 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 
+# Fumadocs generated
+.source
+
 # Test scripts with secrets
 load-test.ps1

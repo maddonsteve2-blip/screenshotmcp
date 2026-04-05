@@ -1,0 +1,23 @@
+---
+title: browser_get_html
+description: Get the HTML source of the current page or a specific element.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+| `selector` | string | No | CSS selector. Omit for full page HTML. |
+
+## Example
+
+```
+Get the HTML of the navigation bar
+```
+
+## Notes
+
+- Returns raw HTML including tags, attributes, and nested elements
+- Useful for debugging DOM structure, checking attributes, or inspecting components
+- Use `browser_get_text` if you only need the visible text

@@ -1,0 +1,23 @@
+---
+title: screenshot_tablet
+description: Capture a screenshot at iPad viewport (820×1180).
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `url` | string | Yes | — | The URL to screenshot |
+| `fullPage` | boolean | No | false | Capture full scrollable page |
+| `format` | string | No | `"png"` | `png`, `jpeg`, or `webp` |
+
+## Example
+
+```
+Take a tablet screenshot of https://myapp.com
+```
+
+## Notes
+
+- Uses iPad dimensions: **820×1180**
+- Useful for testing tablet-specific breakpoints

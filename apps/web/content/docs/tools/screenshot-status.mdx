@@ -1,0 +1,20 @@
+---
+title: get_screenshot_status
+description: Check the status of a screenshot job by ID.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `id` | string | Yes | — | The screenshot job ID |
+
+## Example
+
+```
+Check status of screenshot job abc123
+```
+
+## Response
+
+Returns the job status (`pending`, `processing`, `done`, or `failed`) and the public URL when ready.

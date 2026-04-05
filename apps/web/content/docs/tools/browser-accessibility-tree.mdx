@@ -1,0 +1,30 @@
+---
+title: browser_get_accessibility_tree
+description: Get the accessibility tree of the page for a11y analysis.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+
+## Example
+
+```
+Get the accessibility tree to check if our form is properly labeled
+```
+
+## Response
+
+Returns a structured accessibility tree with:
+- **Role** — button, link, heading, textbox, etc.
+- **Name** — accessible name of each element
+- **Level** — heading level (h1–h6)
+- **State** — checked, disabled, expanded, etc.
+
+## Notes
+
+- Essential for accessibility audits and WCAG compliance checking
+- Helps identify missing labels, incorrect roles, and navigation issues
+- Works with ARIA attributes and semantic HTML

@@ -1,0 +1,30 @@
+---
+title: screenshot_responsive
+description: Capture screenshots at desktop, tablet, and mobile viewports in one call.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `url` | string | Yes | — | The URL to screenshot |
+| `fullPage` | boolean | No | false | Capture full scrollable page |
+| `format` | string | No | `"png"` | `png`, `jpeg`, or `webp` |
+
+## Example
+
+```
+Take responsive screenshots of https://myapp.com to check all breakpoints
+```
+
+## Response
+
+Returns **three screenshot URLs** in a single call:
+- **Desktop** — 1280×800
+- **Tablet** — 820×1180
+- **Mobile** — 393×852
+
+## Notes
+
+- Most efficient way to check responsive design — one tool call instead of three
+- All three screenshots are taken in parallel

@@ -1,0 +1,26 @@
+---
+title: screenshot_dark
+description: Capture a screenshot with dark mode (prefers-color-scheme dark) emulated.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `url` | string | Yes | — | The URL to screenshot |
+| `width` | number | No | 1280 | Viewport width (320–3840) |
+| `height` | number | No | 800 | Viewport height (240–2160) |
+| `fullPage` | boolean | No | false | Capture full scrollable page |
+| `format` | string | No | `"png"` | `png`, `jpeg`, or `webp` |
+
+## Example
+
+```
+Take a dark mode screenshot of https://github.com
+```
+
+## Notes
+
+- Emulates `prefers-color-scheme: dark` CSS media query
+- Works on any site that supports dark mode via CSS media queries
+- Compare with a regular screenshot to verify dark mode implementation

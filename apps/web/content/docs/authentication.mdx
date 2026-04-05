@@ -1,0 +1,56 @@
+---
+title: Authentication
+description: Create and manage API keys for ScreenshotsMCP.
+---
+
+## API Keys
+
+Every request to ScreenshotsMCP requires an API key. Keys are scoped to your account and track usage automatically.
+
+## Creating a Key
+
+1. Sign in at [screenshotsmcp.com/dashboard](/dashboard)
+2. Go to **API Keys**
+3. Click **Create new key**
+4. Copy the key — it starts with `sk_live_`
+
+<Callout type="warn">
+  Store your API key securely. It won't be shown again after creation.
+</Callout>
+
+## Using Your Key
+
+### MCP Server
+
+Your API key is embedded in the server URL:
+
+```
+https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY
+```
+
+### REST API
+
+Pass your key in the `Authorization` header:
+
+```bash
+curl -X POST https://screenshotsmcp-api-production.up.railway.app/v1/screenshot \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'
+```
+
+## Key Management
+
+- **Revoke** a key instantly from the dashboard
+- **Usage tracking** shows screenshots consumed per key
+- Create multiple keys for different environments (dev, staging, prod)
+
+## Rate Limits
+
+| Plan | Screenshots / month |
+| --- | --- |
+| **Free** | 100 |
+| **Starter** | 2,000 |
+| **Pro** | 10,000 |
+
+Rate limits reset on the 1st of each month.

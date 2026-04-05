@@ -1,0 +1,24 @@
+---
+title: browser_wait_for
+description: Wait for an element to appear on the page, then return a screenshot.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `sessionId` | string | Yes | — | Session ID from `browser_navigate` |
+| `selector` | string | Yes | — | CSS selector to wait for |
+| `timeout` | number | No | 5000 | Max wait time in ms (500–15000) |
+
+## Example
+
+```
+Wait for the loading spinner to disappear and the results to appear
+```
+
+## Notes
+
+- Useful after form submissions, page transitions, or AJAX requests
+- Returns a screenshot once the element appears (or after timeout)
+- Combine with `browser_click` for multi-step interactions

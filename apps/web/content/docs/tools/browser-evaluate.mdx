@@ -1,0 +1,32 @@
+---
+title: browser_evaluate
+description: Run JavaScript in the browser page and return the result as text.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+| `script` | string | Yes | JavaScript expression to evaluate |
+
+## Examples
+
+```
+Run document.title to get the page title
+```
+
+```
+Run document.querySelectorAll('a').length to count all links
+```
+
+```
+Run JSON.stringify(performance.timing) to get performance timing data
+```
+
+## Notes
+
+- Executes in the browser context with full DOM access
+- Returns the result as a string
+- Useful for extracting data, checking state, or triggering actions not covered by other tools
+- Has access to `window`, `document`, `localStorage`, etc.

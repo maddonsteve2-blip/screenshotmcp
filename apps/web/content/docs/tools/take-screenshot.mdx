@@ -1,0 +1,31 @@
+---
+title: take_screenshot
+description: Capture a screenshot of any URL and return a public image URL.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `url` | string | Yes | — | The URL to screenshot |
+| `width` | number | No | 1280 | Viewport width in pixels (320–3840) |
+| `height` | number | No | 800 | Viewport height in pixels (240–2160) |
+| `fullPage` | boolean | No | false | Capture full scrollable page |
+| `format` | string | No | `"png"` | `png`, `jpeg`, or `webp` |
+| `delay` | number | No | 0 | Wait ms after page load (0–10000) |
+
+## Example
+
+```
+Take a screenshot of https://stripe.com at 1440x900
+```
+
+## Response
+
+Returns a public URL to the captured screenshot image.
+
+## Notes
+
+- Screenshots are stored on Cloudflare R2 with global CDN delivery
+- The page is loaded with a real Chromium browser with stealth mode enabled
+- Supports JavaScript-rendered pages (SPAs, React, etc.)

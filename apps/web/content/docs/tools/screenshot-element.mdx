@@ -1,0 +1,24 @@
+---
+title: screenshot_element
+description: Capture a screenshot of a specific element on the page by CSS selector.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `url` | string | Yes | — | The URL to screenshot |
+| `selector` | string | Yes | — | CSS selector of the element to capture |
+| `format` | string | No | `"png"` | `png`, `jpeg`, or `webp` |
+
+## Example
+
+```
+Screenshot just the pricing table on https://myapp.com using selector ".pricing-section"
+```
+
+## Notes
+
+- Only captures the matched element, not the full page
+- Useful for isolating specific components: hero sections, navbars, cards, forms
+- The selector must match exactly one element on the page

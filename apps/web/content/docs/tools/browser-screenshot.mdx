@@ -1,0 +1,21 @@
+---
+title: browser_screenshot
+description: Take a screenshot of the current browser page without performing any action.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+
+## Example
+
+```
+Take a screenshot of the current page
+```
+
+## Notes
+
+- Captures the current viewport state — useful after clicks, form fills, or navigation
+- Does not navigate or interact with the page

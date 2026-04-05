@@ -1,0 +1,40 @@
+---
+title: browser_network_requests
+description: Get the full network request waterfall with timing, size, and status codes.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `sessionId` | string | Yes | — | Session ID from `browser_navigate` |
+| `resourceType` | string | No | — | Filter by type: `script`, `stylesheet`, `image`, `font`, `fetch`, `xhr` |
+| `minDuration` | number | No | 0 | Only show requests slower than this (ms) |
+| `limit` | number | No | 50 | Max number of requests to return |
+
+## Example
+
+```
+Show me all network requests that took longer than 200ms
+```
+
+```
+Show me all the image requests on this page
+```
+
+## Response
+
+For each request:
+- **Status code** and HTTP method
+- **Duration** in milliseconds
+- **Transfer size** in KB
+- **Resource type** (script, image, fetch, etc.)
+- **URL**
+
+Also includes summary stats: total requests, total transfer size, average duration, slowest request.
+
+## Notes
+
+- Network requests are captured from the moment the session starts
+- Includes requests from navigation, AJAX calls, lazy-loaded resources, etc.
+- Use `minDuration` to find slow requests that impact performance

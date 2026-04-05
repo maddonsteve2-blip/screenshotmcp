@@ -1,0 +1,29 @@
+---
+title: browser_console_logs
+description: Get all console messages (errors, warnings, logs) captured during the session.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+
+## Example
+
+```
+Show me any console errors on this page
+```
+
+## Response
+
+Returns all console messages captured since the session started:
+- **Errors** — JavaScript exceptions, failed assertions
+- **Warnings** — deprecation notices, potential issues
+- **Logs** — `console.log()` output
+
+## Notes
+
+- Console messages are captured from the moment the session is created
+- Includes messages from page scripts, third-party scripts, and browser warnings
+- Essential for debugging JavaScript errors without opening DevTools

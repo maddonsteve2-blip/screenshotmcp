@@ -1,0 +1,24 @@
+---
+title: browser_select_option
+description: Select an option from a dropdown select element.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+| `selector` | string | Yes | CSS selector for the `<select>` element |
+| `value` | string | Yes | The value or visible text of the option to select |
+
+## Example
+
+```
+Select "United States" from the country dropdown
+```
+
+## Notes
+
+- Works with native `<select>` elements
+- Matches by option `value` attribute or visible label text
+- Returns a screenshot after selection

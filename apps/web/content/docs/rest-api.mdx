@@ -1,0 +1,85 @@
+---
+title: REST API
+description: Use the ScreenshotsMCP HTTP API directly from any programming language.
+---
+
+## Base URL
+
+```
+https://screenshotsmcp-api-production.up.railway.app
+```
+
+## Authentication
+
+Pass your API key in the `Authorization` header:
+
+```
+Authorization: Bearer sk_live_...
+```
+
+## Endpoints
+
+### POST /v1/screenshot
+
+Enqueue a screenshot job.
+
+```bash
+curl -X POST https://screenshotsmcp-api-production.up.railway.app/v1/screenshot \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "width": 1280,
+    "height": 800,
+    "fullPage": false,
+    "format": "png",
+    "delay": 0
+  }'
+```
+
+**Request Body**
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `url` | string | Yes | — | URL to screenshot |
+| `width` | number | No | 1280 | Viewport width in pixels |
+| `height` | number | No | 800 | Viewport height in pixels |
+| `fullPage` | boolean | No | false | Capture full scrollable page |
+| `format` | string | No | `"png"` | `png`, `jpeg`, or `webp` |
+| `delay` | number | No | 0 | Milliseconds to wait after page load |
+
+**Response**
+
+```json
+{
+  "id": "abc123",
+  "status": "pending"
+}
+```
+
+### GET /v1/screenshot/:id
+
+Poll for screenshot status and get the result URL.
+
+```bash
+curl https://screenshotsmcp-api-production.up.railway.app/v1/screenshot/abc123 \
+  -H "Authorization: Bearer sk_live_..."
+```
+
+**Response**
+
+```json
+{
+  "id": "abc123",
+  "status": "done",
+  "url": "https://...",
+  "error": null,
+  "createdAt": "2025-01-01T00:00:00.000Z"
+}
+```
+
+**Status values:** `pending`, `processing`, `done`, `failed`
+
+## Rate Limits
+
+Requests are rate-limited per API key based on your plan. See [Authentication](/docs/authentication) for details.

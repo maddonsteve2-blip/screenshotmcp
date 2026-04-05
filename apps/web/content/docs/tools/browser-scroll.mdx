@@ -1,0 +1,24 @@
+---
+title: browser_scroll
+description: Scroll the browser page by a given amount in pixels.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `sessionId` | string | Yes | — | Session ID from `browser_navigate` |
+| `x` | number | No | 0 | Horizontal scroll amount in pixels |
+| `y` | number | No | 500 | Vertical scroll amount in pixels (positive = down) |
+
+## Example
+
+```
+Scroll down 800 pixels to see the pricing section
+```
+
+## Notes
+
+- Positive `y` scrolls down, negative scrolls up
+- Positive `x` scrolls right, negative scrolls left
+- Returns a screenshot after scrolling

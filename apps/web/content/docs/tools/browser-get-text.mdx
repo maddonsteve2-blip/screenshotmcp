@@ -1,0 +1,23 @@
+---
+title: browser_get_text
+description: Extract all visible text content from the current page or a specific element.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+| `selector` | string | No | CSS selector to extract text from. Omit for entire page. |
+
+## Example
+
+```
+Get the text content of the main article on the page
+```
+
+## Notes
+
+- Returns cleaned visible text (no HTML tags)
+- Useful for verifying content, checking copy, or extracting data
+- When no selector is provided, returns all visible text on the page

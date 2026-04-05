@@ -1,0 +1,29 @@
+---
+title: browser_network_errors
+description: Get all failed network requests (4xx, 5xx, timeouts) from the session.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+
+## Example
+
+```
+Show me any failed network requests on this page
+```
+
+## Response
+
+Returns all failed requests with:
+- **Status code** (404, 500, etc.)
+- **URL** of the failed request
+- **Error type** (timeout, DNS failure, etc.)
+
+## Notes
+
+- Captures 4xx and 5xx responses, connection failures, and timeouts
+- Useful for finding broken images, missing API endpoints, and CORS issues
+- Requests are tracked from the moment the session starts

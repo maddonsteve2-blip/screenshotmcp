@@ -1,0 +1,97 @@
+---
+title: Installation
+description: Configure ScreenshotsMCP for Cursor, Windsurf, Claude Desktop, VS Code, and any MCP-compatible client.
+---
+
+## Supported Clients
+
+ScreenshotsMCP works with any client that supports the **Model Context Protocol (MCP)**. Here's how to configure each one.
+
+## Cursor
+
+Open Cursor Settings → MCP Servers, or edit `~/.cursor/mcp.json` directly:
+
+```json
+{
+  "mcpServers": {
+    "screenshotsmcp": {
+      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    }
+  }
+}
+```
+
+## Windsurf
+
+Open Windsurf Settings → MCP, or edit the config file:
+
+```json
+{
+  "mcpServers": {
+    "screenshotsmcp": {
+      "serverUrl": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    }
+  }
+}
+```
+
+## Claude Desktop
+
+Edit `claude_desktop_config.json` (found in `~/Library/Application Support/Claude/` on macOS or `%APPDATA%\Claude\` on Windows):
+
+```json
+{
+  "mcpServers": {
+    "screenshotsmcp": {
+      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    }
+  }
+}
+```
+
+## VS Code (Copilot)
+
+Add to your VS Code settings (`.vscode/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "screenshotsmcp": {
+      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    }
+  }
+}
+```
+
+## Any MCP Client
+
+The server endpoint is:
+
+```
+https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY
+```
+
+It supports **Streamable HTTP transport** — compatible with all MCP clients that support HTTP-based servers.
+
+## Verify Installation
+
+After configuring, ask your AI assistant:
+
+```
+Take a screenshot of https://example.com
+```
+
+If you see a screenshot returned inline, you're all set.
+
+## Available Tools
+
+Once connected, your AI assistant has access to **28 tools**:
+
+| Category | Tools |
+| --- | --- |
+| **Screenshots** | `take_screenshot`, `screenshot_mobile`, `screenshot_tablet`, `screenshot_responsive`, `screenshot_fullpage`, `screenshot_dark`, `screenshot_element`, `screenshot_pdf`, `list_recent_screenshots`, `get_screenshot_status` |
+| **Browser** | `browser_navigate`, `browser_click`, `browser_fill`, `browser_hover`, `browser_select_option`, `browser_press_key`, `browser_scroll`, `browser_wait_for`, `browser_go_back`, `browser_go_forward`, `browser_close` |
+| **Inspection** | `browser_screenshot`, `browser_get_text`, `browser_get_html`, `browser_get_accessibility_tree`, `browser_evaluate` |
+| **Performance** | `browser_perf_metrics`, `browser_network_requests` |
+| **SEO** | `browser_seo_audit` |
+| **Debugging** | `browser_console_logs`, `browser_network_errors`, `browser_cookies`, `browser_storage` |

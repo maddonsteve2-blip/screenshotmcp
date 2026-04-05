@@ -1,0 +1,23 @@
+---
+title: browser_hover
+description: Hover over an element on the page to trigger hover states, tooltips, or dropdown menus.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `sessionId` | string | Yes | Session ID from `browser_navigate` |
+| `selector` | string | Yes | CSS selector of the element to hover over |
+
+## Example
+
+```
+Hover over the navigation dropdown menu
+```
+
+## Notes
+
+- Triggers CSS `:hover` states and JavaScript `mouseenter` events
+- Useful for testing tooltips, dropdown menus, and hover animations
+- Returns a screenshot showing the hover state

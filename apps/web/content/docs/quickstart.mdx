@@ -1,0 +1,69 @@
+---
+title: Quickstart
+description: Get ScreenshotsMCP running in your AI coding assistant in 60 seconds.
+---
+
+## 1. Get Your API Key
+
+Sign up at [screenshotsmcp.com](https://screenshotsmcp.com) and create an API key from your [dashboard](/dashboard/keys).
+
+## 2. Add to Your IDE
+
+### Cursor
+
+Add to your Cursor MCP settings (`~/.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "screenshotsmcp": {
+      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    }
+  }
+}
+```
+
+### Windsurf
+
+Add to your Windsurf MCP config:
+
+```json
+{
+  "mcpServers": {
+    "screenshotsmcp": {
+      "serverUrl": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+Add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "screenshotsmcp": {
+      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    }
+  }
+}
+```
+
+## 3. Start Using It
+
+Ask your AI assistant:
+
+```
+Take a screenshot of https://stripe.com
+```
+
+That's it. Your AI can now see any website.
+
+## What's Next?
+
+- **[Browser Sessions](/docs/tools/browser-navigate)** — Navigate, click, fill forms interactively
+- **[Performance Metrics](/docs/tools/browser-perf-metrics)** — Measure Core Web Vitals
+- **[SEO Audit](/docs/tools/browser-seo-audit)** — Full SEO analysis in one call
+- **[All 28 Tools](/docs/installation)** — See every tool available
