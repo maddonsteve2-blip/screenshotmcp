@@ -1,0 +1,398 @@
+# ScreenshotsMCP
+
+> Give your AI coding assistant eyes. Screenshot any URL, automate browsers, audit performance and SEO — all via MCP tools.
+
+ScreenshotsMCP is a Model Context Protocol (MCP) server that gives AI coding assistants the ability to see and interact with websites. It works with Claude, Cursor, Windsurf, VS Code, and any MCP-compatible client.
+
+## Quick Start
+
+1. Get an API key at https://screenshotsmcp.com/dashboard/keys
+2. Add to your MCP config:
+
+```json
+{
+  "mcpServers": {
+    "screenshotsmcp": {
+      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    }
+  }
+}
+```
+
+3. Ask your AI: "Take a screenshot of https://example.com"
+
+## Server URL
+
+MCP endpoint: `https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY`
+REST API base: `https://screenshotsmcp-api-production.up.railway.app`
+Transport: Streamable HTTP
+
+## Authentication
+
+Every request requires an API key. Keys start with `sk_live_`.
+
+- MCP: API key is embedded in the server URL path
+- REST API: Pass as `Authorization: Bearer sk_live_...` header
+
+Rate limits by plan:
+- Free: 100 screenshots/month
+- Starter: 2,000 screenshots/month
+- Pro: 10,000 screenshots/month
+
+---
+
+## Tools Reference (28 tools)
+
+### take_screenshot
+Capture a screenshot of any URL and return a public image URL.
+
+Parameters:
+- url (string, required): The URL to screenshot
+- width (number, default: 1280): Viewport width in pixels (320–3840)
+- height (number, default: 800): Viewport height in pixels (240–2160)
+- fullPage (boolean, default: false): Capture full scrollable page
+- format (string, default: "png"): png, jpeg, or webp
+- delay (number, default: 0): Wait ms after page load (0–10000)
+
+Notes: Screenshots stored on Cloudflare R2 CDN. Pages rendered with real Chromium + stealth mode. Supports SPAs.
+
+### screenshot_fullpage
+Capture a full-page screenshot (entire scrollable content) of any URL.
+
+Parameters:
+- url (string, required): The URL to screenshot
+- width (number, default: 1280): Viewport width in pixels (320–3840)
+- format (string, default: "png"): png, jpeg, or webp
+
+Notes: Scrolls entire page. Max resolution 8192px.
+
+### screenshot_mobile
+Capture a screenshot at iPhone 14 Pro viewport (393x852).
+
+Parameters:
+- url (string, required): The URL to screenshot
+- fullPage (boolean, default: false): Capture full scrollable page
+- format (string, default: "png"): png, jpeg, or webp
+
+### screenshot_tablet
+Capture a screenshot at iPad viewport (820x1180).
+
+Parameters:
+- url (string, required): The URL to screenshot
+- fullPage (boolean, default: false): Capture full scrollable page
+- format (string, default: "png"): png, jpeg, or webp
+
+### screenshot_responsive
+Capture screenshots at desktop (1280x800), tablet (820x1180), and mobile (393x852) in one call.
+
+Parameters:
+- url (string, required): The URL to screenshot
+- fullPage (boolean, default: false): Capture full scrollable page
+- format (string, default: "png"): png, jpeg, or webp
+
+Returns three screenshot URLs in a single call. Most efficient for responsive testing.
+
+### screenshot_dark
+Capture a screenshot with dark mode (prefers-color-scheme: dark) emulated.
+
+Parameters:
+- url (string, required): The URL to screenshot
+- width (number, default: 1280): Viewport width (320–3840)
+- height (number, default: 800): Viewport height (240–2160)
+- fullPage (boolean, default: false): Capture full scrollable page
+- format (string, default: "png"): png, jpeg, or webp
+
+### screenshot_element
+Capture a screenshot of a specific element on the page by CSS selector.
+
+Parameters:
+- url (string, required): The URL to screenshot
+- selector (string, required): CSS selector of the element to capture
+- format (string, default: "png"): png, jpeg, or webp
+
+### screenshot_pdf
+Export a webpage as a PDF document (A4 format with background graphics).
+
+Parameters:
+- url (string, required): The URL to export as PDF
+
+### get_screenshot_status
+Check the status of a screenshot job by ID.
+
+Parameters:
+- id (string, required): The screenshot job ID
+
+Returns: status (pending, processing, done, failed) and public URL when ready.
+
+### list_recent_screenshots
+List the most recent screenshots taken with your API key.
+
+Parameters:
+- limit (number, default: 5): Number of screenshots to return (1–20)
+
+---
+
+### browser_navigate
+Open a browser and navigate to a URL. Returns a screenshot and session ID.
+
+Parameters:
+- url (string, required): URL to navigate to
+- sessionId (string, optional): Reuse an existing session
+
+Sessions persist for 5 minutes of inactivity. Max 6 concurrent sessions. Always call browser_close when done.
+
+### browser_click
+Click an element by CSS selector or visible text.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- selector (string, required): CSS selector or visible text (e.g. "Sign in")
+
+### browser_fill
+Type text into an input field. Clears field first.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- selector (string, required): CSS selector for the input field
+- value (string, required): Text to type
+
+### browser_hover
+Hover over an element to trigger hover states, tooltips, or dropdowns.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- selector (string, required): CSS selector of element to hover
+
+### browser_select_option
+Select an option from a dropdown select element.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- selector (string, required): CSS selector for the select element
+- value (string, required): Value or visible text of the option
+
+### browser_press_key
+Simulate keyboard key presses.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- key (string, required): Key to press (Enter, Tab, Escape, ArrowDown, Control+a, etc.)
+
+Supports modifiers: Control+key, Shift+key, Alt+key, Meta+key.
+
+### browser_scroll
+Scroll the page by pixel amount.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- x (number, default: 0): Horizontal scroll pixels
+- y (number, default: 500): Vertical scroll pixels (positive = down)
+
+### browser_wait_for
+Wait for an element to appear, then return a screenshot.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- selector (string, required): CSS selector to wait for
+- timeout (number, default: 5000): Max wait time in ms (500–15000)
+
+### browser_go_back
+Navigate back in browser history.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+
+### browser_go_forward
+Navigate forward in browser history.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+
+### browser_close
+Close the browser session and free resources. Always call when done.
+
+Parameters:
+- sessionId (string, required): Session ID to close
+
+---
+
+### browser_screenshot
+Take a screenshot of the current page without performing any action.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+
+### browser_get_text
+Extract all visible text from the page or a specific element.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- selector (string, optional): CSS selector. Omit for entire page.
+
+### browser_get_html
+Get the HTML source of the page or a specific element.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- selector (string, optional): CSS selector. Omit for full page.
+
+### browser_get_accessibility_tree
+Get the accessibility tree for a11y analysis.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+
+Returns: structured tree with role, name, level, and state for each element.
+
+### browser_evaluate
+Run JavaScript in the browser and return the result.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- script (string, required): JavaScript expression to evaluate
+
+Has full DOM access: window, document, localStorage, etc.
+
+---
+
+### browser_perf_metrics
+Get Core Web Vitals and performance metrics.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+
+Returns: TTFB, FCP, LCP, CLS, DOM load time, full load time, DOM node count, resource count, transfer size, and resource breakdown by type.
+
+Good thresholds: TTFB < 800ms, FCP < 1.8s, LCP < 2.5s, CLS < 0.1.
+
+### browser_network_requests
+Get the full network request waterfall.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- resourceType (string, optional): Filter: script, stylesheet, image, font, fetch, xhr
+- minDuration (number, default: 0): Only requests slower than this (ms)
+- limit (number, default: 50): Max requests to return
+
+Returns per request: status code, method, duration, transfer size, resource type, URL.
+
+---
+
+### browser_seo_audit
+Run a comprehensive SEO audit.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+
+Returns: title, meta description, canonical URL, robots, viewport, Open Graph tags, Twitter Card tags, heading hierarchy (h1–h6), image alt text coverage, internal/external link counts, JSON-LD structured data.
+
+### browser_console_logs
+Get console messages (errors, warnings, logs) from the session.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+
+Returns: all console.log, console.warn, console.error, and unhandled exceptions since session start.
+
+### browser_network_errors
+Get all failed network requests (4xx, 5xx, timeouts).
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+
+Returns: status code, URL, and error type for each failed request.
+
+### browser_cookies
+Get, set, or clear cookies.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- action (string, required): get, set, or clear
+- name (string, optional): Cookie name (for set)
+- value (string, optional): Cookie value (for set)
+- domain (string, optional): Cookie domain (for set)
+- path (string, default: "/"): Cookie path (for set)
+
+### browser_storage
+Read and write localStorage and sessionStorage.
+
+Parameters:
+- sessionId (string, required): Session ID from browser_navigate
+- storageType (string, required): local or session
+- action (string, required): get, set, remove, or clear
+- key (string, optional): Storage key (for get, set, remove)
+- value (string, optional): Value (for set)
+
+---
+
+## REST API
+
+Base URL: https://screenshotsmcp-api-production.up.railway.app
+
+### POST /v1/screenshot
+
+Enqueue a screenshot job.
+
+Headers:
+- Authorization: Bearer sk_live_...
+- Content-Type: application/json
+
+Request body:
+- url (string, required): URL to screenshot
+- width (number, default: 1280): Viewport width
+- height (number, default: 800): Viewport height
+- fullPage (boolean, default: false): Capture full page
+- format (string, default: "png"): png, jpeg, or webp
+- delay (number, default: 0): Wait ms after load
+
+Response:
+```json
+{ "id": "abc123", "status": "pending" }
+```
+
+### GET /v1/screenshot/:id
+
+Poll for screenshot status.
+
+Headers:
+- Authorization: Bearer sk_live_...
+
+Response:
+```json
+{ "id": "abc123", "status": "done", "url": "https://...", "error": null, "createdAt": "2025-01-01T00:00:00.000Z" }
+```
+
+Status values: pending, processing, done, failed.
+
+---
+
+## Installation by Client
+
+### Cursor
+~/.cursor/mcp.json:
+```json
+{ "mcpServers": { "screenshotsmcp": { "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
+```
+
+### Windsurf
+```json
+{ "mcpServers": { "screenshotsmcp": { "serverUrl": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
+```
+
+### Claude Desktop
+claude_desktop_config.json:
+```json
+{ "mcpServers": { "screenshotsmcp": { "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
+```
+
+### VS Code (Copilot)
+.vscode/mcp.json:
+```json
+{ "mcpServers": { "screenshotsmcp": { "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
+```
+
+---
+
+## Documentation
+
+Full docs: https://screenshotsmcp.com/docs

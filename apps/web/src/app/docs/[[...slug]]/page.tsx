@@ -7,6 +7,7 @@ import {
 } from 'fumadocs-ui/page';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '../../../../mdx-components';
+import { DocsCopyDownload } from '@/components/docs-copy-download';
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -16,11 +17,13 @@ export default async function Page(props: {
   if (!page) notFound();
 
   const MDX = page.data.body;
+  const slug = params.slug?.join('/') || '';
 
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
+      <DocsCopyDownload title={page.data.title} slug={slug} />
       <DocsBody>
         <MDX components={getMDXComponents()} />
       </DocsBody>

@@ -9,6 +9,7 @@ export function baseOptions(): BaseLayoutProps {
       { text: 'Home', url: '/' },
       { text: 'Dashboard', url: '/dashboard' },
       { text: 'Pricing', url: '/pricing' },
+      { text: 'llms.txt', url: '/llms.txt' },
     ],
   };
 }
