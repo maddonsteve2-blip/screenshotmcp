@@ -30,3 +30,6 @@ yarn-error.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Test scripts with secrets
+load-test.ps1

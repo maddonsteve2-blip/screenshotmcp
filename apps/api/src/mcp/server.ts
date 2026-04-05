@@ -93,14 +93,22 @@ function createMcpServer(apiKey: string | undefined) {
 ## Browser Automation Tools (interactive sessions)
 Use these for multi-step workflows like logging in, filling forms, or navigating through a site:
 1. Start with **browser_navigate** to open a URL — this returns a sessionId.
-2. Pass that sessionId to all subsequent tools: **browser_click**, **browser_fill**, **browser_scroll**, **browser_screenshot**, **browser_wait_for**, **browser_evaluate**.
+2. Pass that sessionId to all subsequent tools.
 3. Call **browser_close** when done to free resources.
+
+**Interaction:** browser_click, browser_fill, browser_hover, browser_select_option, browser_scroll
+**Navigation:** browser_navigate, browser_go_back, browser_go_forward, browser_wait_for
+**Inspection:** browser_screenshot, browser_get_text, browser_get_html, browser_get_accessibility_tree, browser_evaluate
+**Debugging:** browser_console_logs, browser_network_errors
 
 ## Tips
 - Screenshot tools return a public CDN URL (not inline images). Share the URL with the user.
 - For responsive testing, prefer screenshot_responsive — it's faster than 3 separate calls.
 - Browser tools return a JPEG screenshot after each action so you can see the result.
-- When the user says "take a screenshot", use take_screenshot. When they say "check responsive", use screenshot_responsive.`,
+- **browser_get_accessibility_tree** is the best way to understand page structure for UX analysis.
+- **browser_console_logs** and **browser_network_errors** capture errors automatically from the moment the session starts.
+- When the user says "take a screenshot", use take_screenshot. When they say "check responsive", use screenshot_responsive.
+- When the user says "audit this site" or "check UX", use browser_navigate + browser_get_accessibility_tree + browser_console_logs.`,
   });
 
   server.tool(
@@ -513,6 +521,230 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       await closeSession(args.sessionId);
       return { content: [{ type: "text", text: `Session ${args.sessionId} closed.` }] };
+    }
+  );
+
+  server.tool(
+    "browser_get_accessibility_tree",
+    "Get the accessibility tree of the current page. Returns a structured snapshot of all interactive elements, headings, links, buttons, form fields, images with alt text, and ARIA roles. This is the BEST tool for understanding page structure and UX without looking at screenshots.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      maxDepth: z.number().int().min(1).max(20).optional().default(8).describe("Maximum depth of the tree to return"),
+      interestingOnly: z.boolean().optional().default(true).describe("If true, only return nodes that are typically interesting for UX analysis (buttons, links, inputs, headings, images). Set false for the full tree."),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        const snapshot = await (session.page as any).accessibility.snapshot({ interestingOnly: args.interestingOnly });
+        const truncate = (node: any, depth: number): any => {
+          if (!node || depth <= 0) return null;
+          const result: any = { role: node.role, name: node.name };
+          if (node.value) result.value = node.value;
+          if (node.description) result.description = node.description;
+          if (node.checked !== undefined) result.checked = node.checked;
+          if (node.disabled) result.disabled = true;
+          if (node.expanded !== undefined) result.expanded = node.expanded;
+          if (node.level) result.level = node.level;
+          if (node.children?.length) {
+            result.children = node.children.map((c: any) => truncate(c, depth - 1)).filter(Boolean);
+          }
+          return result;
+        };
+        const tree = truncate(snapshot, args.maxDepth);
+        const text = JSON.stringify(tree, null, 2);
+        if (text.length > 50000) {
+          return { content: [{ type: "text", text: `Accessibility tree (truncated to 50k chars):\n${text.slice(0, 50000)}...` }] };
+        }
+        return { content: [{ type: "text", text: `Accessibility tree:\n${text}` }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  server.tool(
+    "browser_get_text",
+    "Extract all visible text from the current page. Useful for understanding page content without screenshots. Returns text in reading order.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      selector: z.string().optional().describe("Optional CSS selector to limit text extraction to a specific element (e.g. 'main', '#content', 'article')"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        const sel = args.selector || "body";
+        const text = await session.page.locator(sel).first().innerText({ timeout: 5000 });
+        const trimmed = text.length > 30000 ? text.slice(0, 30000) + "\n...(truncated)" : text;
+        return { content: [{ type: "text", text: `Page text from "${sel}":\n\n${trimmed}` }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  server.tool(
+    "browser_get_html",
+    "Get the HTML of the current page or a specific element. Useful for inspecting DOM structure, class names, and attributes.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      selector: z.string().optional().describe("Optional CSS selector (e.g. 'nav', '#header', 'form'). Omit for full page HTML."),
+      outer: z.boolean().optional().default(true).describe("If true, return outerHTML (includes the element itself). If false, return innerHTML (children only)."),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        let html: string;
+        if (args.selector) {
+          const prop = args.outer ? "outerHTML" : "innerHTML";
+          html = await session.page.locator(args.selector).first().evaluate((el, p) => (el as any)[p], prop);
+        } else {
+          html = await session.page.content();
+        }
+        const trimmed = html.length > 50000 ? html.slice(0, 50000) + "\n...(truncated)" : html;
+        return { content: [{ type: "text", text: trimmed }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  server.tool(
+    "browser_hover",
+    "Hover over an element on the page. Useful for triggering tooltips, dropdown menus, or hover states. Returns a screenshot after hovering.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      selector: z.string().describe("CSS selector of the element to hover over"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        await session.page.locator(args.selector).first().hover({ timeout: 5000 });
+        await session.page.waitForTimeout(300);
+        const img = await pageScreenshot(session.page);
+        return { content: [{ type: "text", text: `Hovered: ${args.selector}` }, img] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error hovering: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  server.tool(
+    "browser_select_option",
+    "Select an option from a <select> dropdown element. Returns a screenshot after selection.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      selector: z.string().describe("CSS selector of the <select> element"),
+      value: z.string().describe("The value or visible text of the option to select"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        await session.page.locator(args.selector).first().selectOption(args.value, { timeout: 5000 });
+        const img = await pageScreenshot(session.page);
+        return { content: [{ type: "text", text: `Selected "${args.value}" in ${args.selector}` }, img] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error selecting option: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  server.tool(
+    "browser_go_back",
+    "Navigate back in browser history (like clicking the Back button). Returns a screenshot of the previous page.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        await session.page.goBack({ waitUntil: "domcontentloaded", timeout: 15000 });
+        const img = await pageScreenshot(session.page);
+        return { content: [{ type: "text", text: `Navigated back to: ${session.page.url()}` }, img] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error going back: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  server.tool(
+    "browser_go_forward",
+    "Navigate forward in browser history. Returns a screenshot.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        await session.page.goForward({ waitUntil: "domcontentloaded", timeout: 15000 });
+        const img = await pageScreenshot(session.page);
+        return { content: [{ type: "text", text: `Navigated forward to: ${session.page.url()}` }, img] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error going forward: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  server.tool(
+    "browser_console_logs",
+    "Get captured console logs (errors, warnings, logs) and JavaScript exceptions from the current browser session. Essential for debugging frontend issues.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      level: z.enum(["all", "error", "warning", "log", "exception"]).optional().default("all").describe("Filter by log level"),
+      limit: z.number().int().min(1).max(200).optional().default(50).describe("Max number of log entries to return"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      let logs = session.consoleLogs;
+      if (args.level !== "all") {
+        logs = logs.filter((l) => l.level === args.level);
+      }
+      logs = logs.slice(-args.limit);
+      if (logs.length === 0) return { content: [{ type: "text", text: "No console logs captured." }] };
+      const text = logs.map((l) => `[${l.level.toUpperCase()}] ${l.text}`).join("\n");
+      return { content: [{ type: "text", text: `Console logs (${logs.length} entries):\n\n${text}` }] };
+    }
+  );
+
+  server.tool(
+    "browser_network_errors",
+    "Get failed network requests (4xx/5xx responses) captured during the browser session. Useful for identifying broken API calls, missing resources, and backend errors.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      limit: z.number().int().min(1).max(100).optional().default(50).describe("Max number of errors to return"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      const errors = session.networkErrors.slice(-args.limit);
+      if (errors.length === 0) return { content: [{ type: "text", text: "No failed network requests captured." }] };
+      const text = errors.map((e) => `${e.status} ${e.statusText} — ${e.url}`).join("\n");
+      return { content: [{ type: "text", text: `Failed network requests (${errors.length}):\n\n${text}` }] };
     }
   );
 
