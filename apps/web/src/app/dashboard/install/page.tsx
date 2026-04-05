@@ -106,7 +106,7 @@ export default function InstallPage() {
         "npx",
         "-y",
         "mcp-remote",
-        "${MCP_URL}?key=${key}"
+        "${MCP_URL}/${key}"
       ]
     }
   }
