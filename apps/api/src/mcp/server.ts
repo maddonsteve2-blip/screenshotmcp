@@ -114,6 +114,74 @@ function createMcpServer(apiKey: string | undefined) {
   );
 
   server.tool(
+    "screenshot_tablet",
+    "Capture a screenshot at iPad viewport (820×1180). Shortcut for tablet responsive testing.",
+    {
+      url: z.string().url().describe("The URL to screenshot"),
+      fullPage: z.boolean().optional().default(false).describe("Capture full scrollable page"),
+      format: z.enum(["png", "jpeg", "webp"]).optional().default("png").describe("Image format"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const limitErr = await checkLimit(auth.userId, auth.plan);
+      if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
+      const id = await enqueueScreenshot(auth.userId, { ...args, width: 820, height: 1180, delay: 0 });
+      return pollScreenshot(id);
+    }
+  );
+
+  server.tool(
+    "screenshot_responsive",
+    "Capture screenshots at desktop (1280×800), tablet (820×1180), and mobile (393×852) viewports in one call. Returns all three URLs for responsive comparison.",
+    {
+      url: z.string().url().describe("The URL to screenshot"),
+      fullPage: z.boolean().optional().default(false).describe("Capture full scrollable page"),
+      format: z.enum(["png", "jpeg", "webp"]).optional().default("png").describe("Image format"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const limitErr = await checkLimit(auth.userId, auth.plan);
+      if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
+
+      const devices = [
+        { label: "Desktop", width: 1280, height: 800 },
+        { label: "Tablet",  width: 820,  height: 1180 },
+        { label: "Mobile",  width: 393,  height: 852 },
+      ];
+
+      const ids = await Promise.all(
+        devices.map((d) => enqueueScreenshot(auth.userId, { url: args.url, width: d.width, height: d.height, fullPage: args.fullPage, format: args.format, delay: 0 }))
+      );
+
+      const results: string[] = [];
+      for (let i = 0; i < 30; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        let allDone = true;
+        for (let j = 0; j < ids.length; j++) {
+          if (results[j]) continue;
+          const [row] = await db.select().from(screenshots).where(eq(screenshots.id, ids[j]));
+          if (row?.status === "done" && row.publicUrl) {
+            results[j] = `${devices[j].label} (${devices[j].width}×${devices[j].height}): ${row.publicUrl}`;
+          } else if (row?.status === "failed") {
+            results[j] = `${devices[j].label}: Failed — ${row.errorMessage}`;
+          } else {
+            allDone = false;
+          }
+        }
+        if (allDone) break;
+      }
+
+      for (let j = 0; j < ids.length; j++) {
+        if (!results[j]) results[j] = `${devices[j].label}: Timed out (job ${ids[j]})`;
+      }
+
+      return { content: [{ type: "text" as const, text: `Responsive screenshots for ${args.url}:\n\n${results.join("\n")}` }] };
+    }
+  );
+
+  server.tool(
     "screenshot_fullpage",
     "Capture a full-page screenshot (entire scrollable content) of any URL.",
     {
