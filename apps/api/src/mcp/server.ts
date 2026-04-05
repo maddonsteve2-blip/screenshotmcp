@@ -58,18 +58,11 @@ async function pollScreenshot(id: string) {
     await new Promise((r) => setTimeout(r, 2000));
     const [row] = await db.select().from(screenshots).where(eq(screenshots.id, id));
     if (row?.status === "done" && row.publicUrl) {
-      try {
-        const imgRes = await fetch(row.publicUrl);
-        const base64 = Buffer.from(await imgRes.arrayBuffer()).toString("base64");
-        return {
-          content: [
-            { type: "text" as const, text: `Screenshot ready: ${row.publicUrl}` },
-            { type: "image" as const, data: base64, mimeType: `image/${row.format ?? "png"}` },
-          ],
-        };
-      } catch {
-        return { content: [{ type: "text" as const, text: `Screenshot ready: ${row.publicUrl}` }] };
-      }
+      return {
+        content: [
+          { type: "text" as const, text: `Screenshot ready!\nURL: ${row.publicUrl}\nSize: ${row.width ?? "?"}×${row.height ?? "?"} ${(row.format ?? "png").toUpperCase()}` },
+        ],
+      };
     }
     if (row?.status === "failed") {
       return { content: [{ type: "text" as const, text: `Screenshot failed: ${row.errorMessage}` }] };

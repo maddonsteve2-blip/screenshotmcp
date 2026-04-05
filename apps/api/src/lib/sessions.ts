@@ -67,8 +67,8 @@ export async function closeSession(sessionId: string): Promise<void> {
 }
 
 export async function pageScreenshot(page: Page): Promise<{ type: "image"; data: string; mimeType: string }> {
-  const buf = await page.screenshot({ type: "png" });
-  return { type: "image", data: Buffer.from(buf).toString("base64"), mimeType: "image/png" };
+  const buf = await page.screenshot({ type: "jpeg", quality: 50 });
+  return { type: "image", data: Buffer.from(buf).toString("base64"), mimeType: "image/jpeg" };
 }
 
 export function sessionCount(): number {
