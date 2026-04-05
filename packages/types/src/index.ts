@@ -11,6 +11,9 @@ export interface ScreenshotOptions {
   fullPage?: boolean;
   format?: ScreenshotFormat;
   delay?: number;
+  darkMode?: boolean;
+  selector?: string;
+  pdf?: boolean;
 }
 
 export interface ScreenshotJob {

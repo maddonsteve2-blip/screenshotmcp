@@ -12,6 +12,18 @@ const CONTENT_TYPES: Record<string, string> = {
   webp: "image/webp",
 };
 
+const STEALTH_SCRIPT = `
+  Object.defineProperty(navigator, 'webdriver', { get: () => false });
+  Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+  Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+  window.chrome = { runtime: {} };
+  const origQuery = window.navigator.permissions.query;
+  window.navigator.permissions.query = (params) =>
+    params.name === 'notifications'
+      ? Promise.resolve({ state: Notification.permission })
+      : origQuery(params);
+`;
+
 export async function processScreenshotJob(job: Job<ScreenshotJob>) {
   const { id, options } = job.data;
   const {
@@ -21,6 +33,9 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
     fullPage = false,
     format = "png",
     delay = 0,
+    darkMode = false,
+    selector,
+    pdf = false,
   } = options;
 
   await db
@@ -31,35 +46,43 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
   let browser;
   try {
     browser = await chromium.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-blink-features=AutomationControlled"],
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-blink-features=AutomationControlled", "--disable-infobars"],
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
     });
     const context = await browser.newContext({
       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       viewport: { width, height },
       locale: "en-US",
+      colorScheme: darkMode ? "dark" : "light",
     });
     const page = await context.newPage();
-    await page.addInitScript(`Object.defineProperty(navigator,'webdriver',{get:()=>false});window.chrome={runtime:{}}`);
+    await page.addInitScript(STEALTH_SCRIPT);
     await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
 
     if (delay > 0) {
       await page.waitForTimeout(delay);
     }
 
-    const buffer = await page.screenshot({
-      type: format as "png" | "jpeg",
-      fullPage,
-    });
+    let buffer: Buffer;
+    let outputFormat: string = format;
+    let contentType: string = CONTENT_TYPES[format];
+
+    if (pdf) {
+      buffer = Buffer.from(await page.pdf({ format: "A4", printBackground: true }));
+      outputFormat = "pdf";
+      contentType = "application/pdf";
+    } else if (selector) {
+      const el = page.locator(selector).first();
+      buffer = Buffer.from(await el.screenshot({ type: format as "png" | "jpeg" }));
+    } else {
+      buffer = Buffer.from(await page.screenshot({ type: format as "png" | "jpeg", fullPage }));
+    }
 
     await browser.close();
 
-    const r2Key = `screenshots/${id}.${format}`;
-    const publicUrl = await uploadScreenshot(
-      r2Key,
-      Buffer.from(buffer),
-      CONTENT_TYPES[format]
-    );
+    const ext = pdf ? "pdf" : format;
+    const r2Key = `screenshots/${id}.${ext}`;
+    const publicUrl = await uploadScreenshot(r2Key, buffer, contentType);
 
     await db
       .update(screenshots)

@@ -45,6 +45,7 @@ async function checkLimit(userId: string, plan: "free" | "starter" | "pro"): Pro
 async function enqueueScreenshot(userId: string, options: {
   url: string; width: number; height: number;
   fullPage: boolean; format: "png" | "jpeg" | "webp"; delay: number;
+  darkMode?: boolean; selector?: string; pdf?: boolean;
 }) {
   const id = nanoid();
   await db.insert(screenshots).values({ id, userId, status: "pending", ...options });
@@ -83,6 +84,9 @@ function createMcpServer(apiKey: string | undefined) {
 - **screenshot_tablet** — iPad viewport (820×1180).
 - **screenshot_fullpage** — capture the entire scrollable page.
 - **screenshot_responsive** — capture desktop + tablet + mobile in ONE call. Best for responsive design checks.
+- **screenshot_dark** — capture with dark mode emulated (prefers-color-scheme: dark).
+- **screenshot_element** — capture a specific element by CSS selector (e.g. '#hero', '.pricing-table').
+- **screenshot_pdf** — export a webpage as a PDF document (A4, with backgrounds).
 - **list_recent_screenshots** — view recent screenshot URLs and metadata.
 - **get_screenshot_status** — check if a screenshot job is done.
 
@@ -220,6 +224,60 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
       const id = await enqueueScreenshot(auth.userId, { ...args, height: 800, fullPage: true, delay: 0 });
+      return pollScreenshot(id);
+    }
+  );
+
+  server.tool(
+    "screenshot_dark",
+    "Capture a screenshot with dark mode (prefers-color-scheme: dark) emulated. Works on sites that support dark mode via CSS media queries.",
+    {
+      url: z.string().url().describe("The URL to screenshot"),
+      width: z.number().int().min(320).max(3840).optional().default(1280).describe("Viewport width in pixels"),
+      height: z.number().int().min(240).max(2160).optional().default(800).describe("Viewport height in pixels"),
+      fullPage: z.boolean().optional().default(false).describe("Capture full scrollable page"),
+      format: z.enum(["png", "jpeg", "webp"]).optional().default("png").describe("Image format"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const limitErr = await checkLimit(auth.userId, auth.plan);
+      if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
+      const id = await enqueueScreenshot(auth.userId, { ...args, delay: 0, darkMode: true });
+      return pollScreenshot(id);
+    }
+  );
+
+  server.tool(
+    "screenshot_element",
+    "Capture a screenshot of a specific element on the page by CSS selector. Only the matched element is captured, not the full page.",
+    {
+      url: z.string().url().describe("The URL to screenshot"),
+      selector: z.string().describe("CSS selector of the element to capture (e.g. '#hero', '.pricing-table', 'main > section:first-child')"),
+      format: z.enum(["png", "jpeg", "webp"]).optional().default("png").describe("Image format"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const limitErr = await checkLimit(auth.userId, auth.plan);
+      if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
+      const id = await enqueueScreenshot(auth.userId, { url: args.url, width: 1280, height: 800, fullPage: false, format: args.format, delay: 0, selector: args.selector });
+      return pollScreenshot(id);
+    }
+  );
+
+  server.tool(
+    "screenshot_pdf",
+    "Export a webpage as a PDF document (A4 format with background graphics). Returns a public URL to the PDF file.",
+    {
+      url: z.string().url().describe("The URL to export as PDF"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const limitErr = await checkLimit(auth.userId, auth.plan);
+      if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
+      const id = await enqueueScreenshot(auth.userId, { url: args.url, width: 1280, height: 800, fullPage: false, format: "png", delay: 0, pdf: true });
       return pollScreenshot(id);
     }
   );
