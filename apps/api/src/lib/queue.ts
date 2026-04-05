@@ -29,7 +29,7 @@ export function startWorker(): Worker {
   if (!_worker) {
     _worker = new Worker("screenshots", processScreenshotJob, {
       connection: getConnection(),
-      concurrency: 1,
+      concurrency: 3,
       lockDuration: 60000,
     });
     _worker.on("failed", (job, err) => console.error(`Job ${job?.id} failed:`, err.message));

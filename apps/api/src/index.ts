@@ -5,6 +5,7 @@ import { webhookRouter } from "./routes/webhook.js";
 import { mcpRouter } from "./mcp/server.js";
 import { errorHandler } from "./middleware/error.js";
 import { startWorker } from "./lib/queue.js";
+import { browserPool } from "./lib/browser-pool.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -14,7 +15,7 @@ app.use("/webhooks", express.raw({ type: "application/json" }));
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", ts: new Date().toISOString() });
+  res.json({ status: "ok", ts: new Date().toISOString(), pool: browserPool.stats() });
 });
 
 app.get("/.well-known/oauth-protected-resource", (_req, res) => {
@@ -50,7 +51,8 @@ app.use("/mcp", mcpRouter);
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`API server running on port ${PORT}`);
+  await browserPool.init();
   startWorker();
 });
