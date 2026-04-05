@@ -118,8 +118,8 @@ export default function InstallPage() {
   }
 }`;
 
-  // Claude Code CLI
-  const claudeCodeCmd = `claude mcp add --transport http screenshotsmcp ${mcpKeyUrl}`;
+  // Claude Code CLI (global scope with -s user)
+  const claudeCodeCmd = `claude mcp add --transport http screenshotsmcp -s user ${mcpKeyUrl}`;
 
   // Windsurf
   const windsurfConfig = `{
@@ -216,8 +216,12 @@ export default function InstallPage() {
           <TabsContent value="claude" className="mt-3">
             <Card>
               <CardContent className="pt-5 space-y-4">
+                <div className="rounded-md border border-green-200 bg-green-50 dark:bg-green-950/20 p-3 text-xs text-green-800 dark:text-green-200">
+                  <strong>Pro/Max Plan?</strong> Use the native connector: Settings → Integrations → Add Custom Integration → paste <code className="bg-green-100 dark:bg-green-900/40 px-1 rounded">{mcpKeyUrl}</code> — no Node.js required.
+                </div>
+                <Separator />
                 <div className="rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/20 p-3 text-xs text-blue-800 dark:text-blue-200">
-                  <strong>Claude Desktop requires Node.js.</strong> It uses <code className="bg-blue-100 dark:bg-blue-900/40 px-1 rounded">mcp-remote</code> as a local bridge to reach the remote server.
+                  <strong>Free Plan:</strong> Requires Node.js. Uses <code className="bg-blue-100 dark:bg-blue-900/40 px-1 rounded">mcp-remote</code> as a local bridge to reach the remote server.
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Edit <code className="bg-muted px-1.5 py-0.5 rounded text-xs">claude_desktop_config.json</code> — then fully quit and relaunch Claude Desktop.<br />
@@ -235,7 +239,7 @@ export default function InstallPage() {
               <CardContent className="pt-5 space-y-4">
                 <p className="text-sm text-muted-foreground">Run this command in your terminal. Claude Code natively supports HTTP MCP servers.</p>
                 <CopyBlock code={claudeCodeCmd} id="claude-code" copiedId={copiedId} onCopy={copy} />
-                <p className="text-xs text-muted-foreground">Then type <code className="bg-muted px-1 rounded">/mcp</code> in Claude Code to verify the connection.</p>
+                <p className="text-xs text-muted-foreground">The <code className="bg-muted px-1 rounded">-s user</code> flag makes it available globally (not just the current project). Type <code className="bg-muted px-1 rounded">/mcp</code> in Claude Code to verify.</p>
               </CardContent>
             </Card>
           </TabsContent>
