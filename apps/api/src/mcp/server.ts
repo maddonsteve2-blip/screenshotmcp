@@ -118,11 +118,11 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     "Capture a screenshot of any URL and return a public image URL. Use this for any URL that needs to be captured.",
     {
       url: z.string().url().describe("The URL to screenshot"),
-      width: z.number().int().min(320).max(3840).optional().default(1280).describe("Viewport width in pixels"),
-      height: z.number().int().min(240).max(2160).optional().default(800).describe("Viewport height in pixels"),
-      fullPage: z.boolean().optional().default(false).describe("Capture full scrollable page"),
-      format: z.enum(["png", "jpeg", "webp"]).optional().default("png").describe("Image format"),
-      delay: z.number().int().min(0).max(10000).optional().default(0).describe("Wait ms after page load"),
+      width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width in pixels"),
+      height: z.number().int().min(240).max(2160).default(800).describe("Viewport height in pixels"),
+      fullPage: z.boolean().default(false).describe("Capture full scrollable page"),
+      format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
+      delay: z.number().int().min(0).max(10000).default(0).describe("Wait ms after page load"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -139,8 +139,8 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     "Capture a screenshot at iPhone 14 Pro viewport (393×852). Shortcut for mobile responsive testing.",
     {
       url: z.string().url().describe("The URL to screenshot"),
-      fullPage: z.boolean().optional().default(false).describe("Capture full scrollable page"),
-      format: z.enum(["png", "jpeg", "webp"]).optional().default("png").describe("Image format"),
+      fullPage: z.boolean().default(false).describe("Capture full scrollable page"),
+      format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -157,8 +157,8 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     "Capture a screenshot at iPad viewport (820×1180). Shortcut for tablet responsive testing.",
     {
       url: z.string().url().describe("The URL to screenshot"),
-      fullPage: z.boolean().optional().default(false).describe("Capture full scrollable page"),
-      format: z.enum(["png", "jpeg", "webp"]).optional().default("png").describe("Image format"),
+      fullPage: z.boolean().default(false).describe("Capture full scrollable page"),
+      format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -175,8 +175,8 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     "Capture screenshots at desktop (1280×800), tablet (820×1180), and mobile (393×852) viewports in one call. Returns all three URLs for responsive comparison.",
     {
       url: z.string().url().describe("The URL to screenshot"),
-      fullPage: z.boolean().optional().default(false).describe("Capture full scrollable page"),
-      format: z.enum(["png", "jpeg", "webp"]).optional().default("png").describe("Image format"),
+      fullPage: z.boolean().default(false).describe("Capture full scrollable page"),
+      format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -225,8 +225,8 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     "Capture a full-page screenshot (entire scrollable content) of any URL.",
     {
       url: z.string().url().describe("The URL to screenshot"),
-      width: z.number().int().min(320).max(3840).optional().default(1280).describe("Viewport width in pixels"),
-      format: z.enum(["png", "jpeg", "webp"]).optional().default("png").describe("Image format"),
+      width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width in pixels"),
+      format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -243,10 +243,10 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     "Capture a screenshot with dark mode (prefers-color-scheme: dark) emulated. Works on sites that support dark mode via CSS media queries.",
     {
       url: z.string().url().describe("The URL to screenshot"),
-      width: z.number().int().min(320).max(3840).optional().default(1280).describe("Viewport width in pixels"),
-      height: z.number().int().min(240).max(2160).optional().default(800).describe("Viewport height in pixels"),
-      fullPage: z.boolean().optional().default(false).describe("Capture full scrollable page"),
-      format: z.enum(["png", "jpeg", "webp"]).optional().default("png").describe("Image format"),
+      width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width in pixels"),
+      height: z.number().int().min(240).max(2160).default(800).describe("Viewport height in pixels"),
+      fullPage: z.boolean().default(false).describe("Capture full scrollable page"),
+      format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -264,7 +264,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     {
       url: z.string().url().describe("The URL to screenshot"),
       selector: z.string().describe("CSS selector of the element to capture (e.g. '#hero', '.pricing-table', 'main > section:first-child')"),
-      format: z.enum(["png", "jpeg", "webp"]).optional().default("png").describe("Image format"),
+      format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -296,7 +296,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     "list_recent_screenshots",
     "List the most recent screenshots taken with this API key. Returns URLs and metadata.",
     {
-      limit: z.number().int().min(1).max(20).optional().default(5).describe("Number of screenshots to return"),
+      limit: z.number().int().min(1).max(20).default(5).describe("Number of screenshots to return"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -444,8 +444,8 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     "Scroll the browser page by a given amount in pixels.",
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
-      x: z.number().optional().default(0).describe("Horizontal scroll amount in pixels"),
-      y: z.number().optional().default(500).describe("Vertical scroll amount in pixels (positive = down)"),
+      x: z.number().default(0).describe("Horizontal scroll amount in pixels"),
+      y: z.number().default(500).describe("Vertical scroll amount in pixels (positive = down)"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -469,7 +469,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
       selector: z.string().describe("CSS selector to wait for"),
-      timeout: z.number().int().min(500).max(15000).optional().default(5000).describe("Max wait time in milliseconds"),
+      timeout: z.number().int().min(500).max(15000).default(5000).describe("Max wait time in milliseconds"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -531,8 +531,8 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     "Get the accessibility tree of the current page. Returns a structured snapshot of all interactive elements, headings, links, buttons, form fields, images with alt text, and ARIA roles. This is the BEST tool for understanding page structure and UX without looking at screenshots.",
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
-      maxDepth: z.number().int().min(1).max(20).optional().default(8).describe("Maximum depth of the tree to return"),
-      interestingOnly: z.boolean().optional().default(true).describe("If true, only return nodes that are typically interesting for UX analysis (buttons, links, inputs, headings, images). Set false for the full tree."),
+      maxDepth: z.number().int().min(1).max(20).default(8).describe("Maximum depth of the tree to return"),
+      interestingOnly: z.boolean().default(true).describe("If true, only return nodes that are typically interesting for UX analysis (buttons, links, inputs, headings, images). Set false for the full tree."),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -625,7 +625,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
       selector: z.string().optional().describe("Optional CSS selector (e.g. 'nav', '#header', 'form'). Omit for full page HTML."),
-      outer: z.boolean().optional().default(true).describe("If true, return outerHTML (includes the element itself). If false, return innerHTML (children only)."),
+      outer: z.boolean().default(true).describe("If true, return outerHTML (includes the element itself). If false, return innerHTML (children only)."),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -741,8 +741,8 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     "Get captured console logs (errors, warnings, logs) and JavaScript exceptions from the current browser session. Essential for debugging frontend issues.",
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
-      level: z.enum(["all", "error", "warning", "log", "exception"]).optional().default("all").describe("Filter by log level"),
-      limit: z.number().int().min(1).max(200).optional().default(50).describe("Max number of log entries to return"),
+      level: z.enum(["all", "error", "warning", "log", "exception"]).default("all").describe("Filter by log level"),
+      limit: z.number().int().min(1).max(200).default(50).describe("Max number of log entries to return"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -765,7 +765,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     "Get failed network requests (4xx/5xx responses) captured during the browser session. Useful for identifying broken API calls, missing resources, and backend errors.",
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
-      limit: z.number().int().min(1).max(100).optional().default(50).describe("Max number of errors to return"),
+      limit: z.number().int().min(1).max(100).default(50).describe("Max number of errors to return"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -859,8 +859,8 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
       resourceType: z.string().optional().describe("Filter by resource type: 'document', 'stylesheet', 'script', 'image', 'font', 'xhr', 'fetch'. Omit for all."),
-      minDuration: z.number().optional().default(0).describe("Only show requests slower than this (ms)"),
-      limit: z.number().int().min(1).max(200).optional().default(100).describe("Max number of requests to return"),
+      minDuration: z.number().default(0).describe("Only show requests slower than this (ms)"),
+      limit: z.number().int().min(1).max(200).default(100).describe("Max number of requests to return"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -1018,9 +1018,9 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
         name: z.string().describe("Cookie name"),
         value: z.string().describe("Cookie value"),
         domain: z.string().optional().describe("Cookie domain"),
-        path: z.string().optional().default("/").describe("Cookie path"),
-        httpOnly: z.boolean().optional().default(false),
-        secure: z.boolean().optional().default(false),
+        path: z.string().default("/").describe("Cookie path"),
+        httpOnly: z.boolean().default(false),
+        secure: z.boolean().default(false),
       })).optional().describe("Cookies to set (only for 'set' action)"),
     },
     async (args) => {
@@ -1056,7 +1056,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     "Read or write localStorage and sessionStorage. Use for debugging client-side state, auth tokens, feature flags, and cached data.",
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
-      storageType: z.enum(["localStorage", "sessionStorage"]).optional().default("localStorage").describe("Which storage to access"),
+      storageType: z.enum(["localStorage", "sessionStorage"]).default("localStorage").describe("Which storage to access"),
       action: z.enum(["get", "getAll", "set", "remove", "clear"]).describe("Action: get one key, getAll keys, set a key, remove a key, or clear all"),
       key: z.string().optional().describe("Storage key (required for get, set, remove)"),
       value: z.string().optional().describe("Value to set (required for 'set' action)"),
