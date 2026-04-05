@@ -10,7 +10,8 @@ interface Session {
 }
 
 const sessions = new Map<string, Session>();
-const SESSION_TTL_MS = 30 * 60 * 1000;
+const SESSION_TTL_MS = 5 * 60 * 1000;
+const MAX_SESSIONS = 3;
 
 const STEALTH_SCRIPT = `
   Object.defineProperty(navigator, 'webdriver', { get: () => false });
@@ -23,14 +24,24 @@ setInterval(() => {
   const now = Date.now();
   for (const [id, session] of sessions) {
     if (now - session.lastUsed.getTime() > SESSION_TTL_MS) {
-      session.browser.close().catch(() => {});
+      session.browser.close().catch(() => {
+        try { const pid = session.browser.process()?.pid; if (pid) process.kill(pid, "SIGKILL"); } catch {}
+      });
       sessions.delete(id);
     }
   }
-}, 60_000);
+}, 30_000);
 
 export async function createSession(userId: string): Promise<string> {
   const sessionId = nanoid();
+  // Enforce max session limit
+  if (sessions.size >= MAX_SESSIONS) {
+    const oldest = [...sessions.entries()].sort((a, b) => a[1].lastUsed.getTime() - b[1].lastUsed.getTime())[0];
+    if (oldest) {
+      oldest[1].browser.close().catch(() => {});
+      sessions.delete(oldest[0]);
+    }
+  }
   const browser = await chromium.launch({
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
     args: [
@@ -38,7 +49,11 @@ export async function createSession(userId: string): Promise<string> {
       "--disable-setuid-sandbox",
       "--disable-blink-features=AutomationControlled",
       "--disable-infobars",
+      "--disable-gpu",
+      "--disable-dev-shm-usage",
+      "--single-process",
     ],
+    timeout: 15000,
   });
   const context = await browser.newContext({
     userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",

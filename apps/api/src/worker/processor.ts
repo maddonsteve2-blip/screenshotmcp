@@ -24,6 +24,18 @@ const STEALTH_SCRIPT = `
       : origQuery(params);
 `;
 
+async function closeBrowser(browser: any) {
+  try {
+    await browser.close();
+  } catch {
+    // Force-kill all child processes if graceful close fails
+    try {
+      const pid = browser.process()?.pid;
+      if (pid) process.kill(pid, "SIGKILL");
+    } catch {}
+  }
+}
+
 export async function processScreenshotJob(job: Job<ScreenshotJob>) {
   const { id, options } = job.data;
   const {
@@ -46,8 +58,17 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
   let browser;
   try {
     browser = await chromium.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-blink-features=AutomationControlled", "--disable-infobars"],
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-blink-features=AutomationControlled",
+        "--disable-infobars",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+        "--single-process",
+      ],
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
+      timeout: 15000,
     });
     const context = await browser.newContext({
       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -57,11 +78,9 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
     });
     const page = await context.newPage();
     await page.addInitScript(STEALTH_SCRIPT);
-    await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
-
-    if (delay > 0) {
-      await page.waitForTimeout(delay);
-    }
+    await page.goto(url, { waitUntil: "load", timeout: 30000 });
+    // Wait a bit for dynamic content after load
+    await page.waitForTimeout(Math.max(delay, 1500));
 
     let buffer: Buffer;
     let outputFormat: string = format;
@@ -78,8 +97,6 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
       buffer = Buffer.from(await page.screenshot({ type: format as "png" | "jpeg", fullPage }));
     }
 
-    await browser.close();
-
     const ext = pdf ? "pdf" : format;
     const r2Key = `screenshots/${id}.${ext}`;
     const publicUrl = await uploadScreenshot(r2Key, buffer, contentType);
@@ -89,12 +106,13 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
       .set({ status: "done", r2Key, publicUrl, completedAt: new Date() })
       .where(eq(screenshots.id, id));
   } catch (err) {
-    if (browser) await browser.close();
     const message = err instanceof Error ? err.message : "Unknown error";
     await db
       .update(screenshots)
       .set({ status: "failed", errorMessage: message })
       .where(eq(screenshots.id, id));
     throw err;
+  } finally {
+    if (browser) await closeBrowser(browser);
   }
 }
