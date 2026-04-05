@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Header } from "@/components/header";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ClerkProvider>{children}</ClerkProvider>
+        <ClerkProvider>
+          <Header />
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );

@@ -1,0 +1,38 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { InstallDialog } from "./install-dialog";
+
+export function Header() {
+  const [showInstallDialog, setShowInstallDialog] = useState(false);
+
+  return (
+    <>
+      <header className="border-b bg-white">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">📸</span>
+              <h1 className="text-xl font-bold text-gray-900">ScreenshotsMCP</h1>
+            </div>
+            
+            <Button
+              onClick={() => setShowInstallDialog(true)}
+              className="bg-black text-white hover:bg-gray-800"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Install
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <InstallDialog 
+        isOpen={showInstallDialog} 
+        onClose={() => setShowInstallDialog(false)} 
+      />
+    </>
+  );
+}
