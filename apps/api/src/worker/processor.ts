@@ -4,6 +4,7 @@ import { db } from "../lib/db.js";
 import { screenshots } from "@screenshotsmcp/db";
 import { uploadScreenshot } from "../lib/r2.js";
 import { browserPool } from "../lib/browser-pool.js";
+import { STEALTH_SCRIPT, DEFAULT_USER_AGENT } from "../lib/stealth.js";
 import type { ScreenshotJob } from "@screenshotsmcp/types";
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -11,18 +12,6 @@ const CONTENT_TYPES: Record<string, string> = {
   jpeg: "image/jpeg",
   webp: "image/webp",
 };
-
-const STEALTH_SCRIPT = `
-  Object.defineProperty(navigator, 'webdriver', { get: () => false });
-  Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-  Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-  window.chrome = { runtime: {} };
-  const origQuery = window.navigator.permissions.query;
-  window.navigator.permissions.query = (params) =>
-    params.name === 'notifications'
-      ? Promise.resolve({ state: Notification.permission })
-      : origQuery(params);
-`;
 
 export async function processScreenshotJob(job: Job<ScreenshotJob>) {
   const { id, options } = job.data;
@@ -47,7 +36,7 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
   let context;
   try {
     context = await browser.newContext({
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      userAgent: DEFAULT_USER_AGENT,
       viewport: { width, height },
       locale: "en-US",
       colorScheme: darkMode ? "dark" : "light",

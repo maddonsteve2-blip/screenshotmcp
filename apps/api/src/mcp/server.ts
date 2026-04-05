@@ -538,22 +538,51 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
       const session = await getSession(args.sessionId, auth.userId);
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       try {
-        const snapshot = await (session.page as any).accessibility.snapshot({ interestingOnly: args.interestingOnly });
-        const truncate = (node: any, depth: number): any => {
-          if (!node || depth <= 0) return null;
-          const result: any = { role: node.role, name: node.name };
-          if (node.value) result.value = node.value;
-          if (node.description) result.description = node.description;
-          if (node.checked !== undefined) result.checked = node.checked;
-          if (node.disabled) result.disabled = true;
-          if (node.expanded !== undefined) result.expanded = node.expanded;
-          if (node.level) result.level = node.level;
-          if (node.children?.length) {
-            result.children = node.children.map((c: any) => truncate(c, depth - 1)).filter(Boolean);
+        const tree = await session.page.evaluate(({ maxDepth, interestingOnly }: any) => {
+          const IR = new Set(["button","link","textbox","checkbox","radio","combobox","listbox","menuitem","tab","heading","img","navigation","main","banner","contentinfo","search","form","dialog","alert","progressbar","slider"]);
+          const IT: any = {A:"link",BUTTON:"button",INPUT:"textbox",TEXTAREA:"textbox",SELECT:"combobox",IMG:"img",NAV:"navigation",MAIN:"main",HEADER:"banner",FOOTER:"contentinfo",FORM:"form",DIALOG:"dialog",H1:"heading",H2:"heading",H3:"heading",H4:"heading",H5:"heading",H6:"heading"};
+          const ITAGS = ["A","BUTTON","INPUT","TEXTAREA","SELECT","IMG","NAV","MAIN","HEADER","FOOTER","FORM","H1","H2","H3","H4","H5","H6"];
+
+          function walk(el: any, depth: number): any {
+            if (!el || depth <= 0) return null;
+            const tag = el.tagName || "";
+            const role = (el.getAttribute && el.getAttribute("role")) || IT[tag] || "";
+            const name = (el.getAttribute && (el.getAttribute("aria-label") || el.getAttribute("alt") || el.getAttribute("title") || el.getAttribute("placeholder"))) || (el.innerText ? el.innerText.slice(0, 80) : "") || "";
+            const isInteresting = IR.has(role) || (el.getAttribute && el.getAttribute("role")) || ITAGS.includes(tag);
+
+            const kids: any[] = [];
+            if (el.children) {
+              for (let i = 0; i < el.children.length; i++) {
+                const c = walk(el.children[i], depth - 1);
+                if (c) { if (Array.isArray(c)) kids.push(...c); else kids.push(c); }
+              }
+            }
+
+            if (interestingOnly && !isInteresting) {
+              return kids.length > 0 ? kids : null;
+            }
+
+            const node: any = {};
+            if (role) node.role = role;
+            node.tag = tag.toLowerCase();
+            if (name && name.trim()) node.name = name.trim().slice(0, 80);
+            if (tag === "A" && el.href) node.href = el.href;
+            if (tag === "INPUT") { node.type = el.type; node.value = el.value; }
+            if (el.id) node.id = el.id;
+            if (el.className && typeof el.className === "string") {
+              const cls = el.className.trim().slice(0, 60);
+              if (cls) node.class = cls;
+            }
+            if (el.getAttribute && el.getAttribute("disabled") !== null && el.hasAttribute("disabled")) node.disabled = true;
+            if (el.getAttribute && el.getAttribute("aria-expanded")) node.expanded = el.getAttribute("aria-expanded") === "true";
+            const lvl = tag.match(/^H(\d)$/);
+            if (lvl) node.level = parseInt(lvl[1]);
+            if (kids.length > 0) node.children = kids;
+            return node;
           }
-          return result;
-        };
-        const tree = truncate(snapshot, args.maxDepth);
+          return walk((globalThis as any).document.body, maxDepth);
+        }, { maxDepth: args.maxDepth, interestingOnly: args.interestingOnly });
+
         const text = JSON.stringify(tree, null, 2);
         if (text.length > 50000) {
           return { content: [{ type: "text", text: `Accessibility tree (truncated to 50k chars):\n${text.slice(0, 50000)}...` }] };

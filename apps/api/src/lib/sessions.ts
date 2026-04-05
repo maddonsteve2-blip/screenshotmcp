@@ -1,6 +1,7 @@
 import { Browser, BrowserContext, Page } from "playwright";
 import { nanoid } from "nanoid";
 import { browserPool } from "./browser-pool.js";
+import { STEALTH_SCRIPT, DEFAULT_USER_AGENT } from "./stealth.js";
 
 export interface Session {
   browser: Browser;
@@ -16,13 +17,6 @@ export interface Session {
 const sessions = new Map<string, Session>();
 const SESSION_TTL_MS = 5 * 60 * 1000;
 const MAX_SESSIONS = 6;
-
-const STEALTH_SCRIPT = `
-  Object.defineProperty(navigator, 'webdriver', { get: () => false });
-  Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-  Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-  window.chrome = { runtime: {} };
-`;
 
 setInterval(() => {
   const now = Date.now();
@@ -50,7 +44,7 @@ export async function createSession(userId: string): Promise<string> {
 
   const { browser, release } = await browserPool.acquire();
   const context = await browser.newContext({
-    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    userAgent: DEFAULT_USER_AGENT,
     viewport: { width: 1280, height: 800 },
     locale: "en-US",
   });
