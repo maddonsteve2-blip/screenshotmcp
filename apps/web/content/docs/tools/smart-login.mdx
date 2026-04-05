@@ -1,0 +1,50 @@
+---
+title: smart_login
+description: Attempt to log in to a website with auto-detected form fields.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `loginUrl` | string | Yes | — | The login page URL to navigate to |
+| `username` | string | Yes | — | The username or email to enter |
+| `password` | string | Yes | — | The password to enter |
+| `usernameSelector` | string | No | Auto-detected | CSS selector for username field |
+| `passwordSelector` | string | No | Auto-detected | CSS selector for password field |
+| `submitSelector` | string | No | Auto-detected | CSS selector for submit button |
+
+## Example
+
+```
+Log in to https://myapp.com/login with user@example.com and password123
+```
+
+## How It Works
+
+1. **Navigates** to the login URL in a new browser session
+2. **Auto-detects** the username/email input by checking:
+   - `input[type="email"]`, `input[name="email"]`, `input[name="username"]`
+   - `input[id="email"]`, `input[id="username"]`
+   - `input[type="text"][autocomplete="username"]`, `input[type="text"]`
+3. **Auto-detects** the password input: `input[type="password"]`
+4. **Fills** both fields and clicks the submit button (or presses Enter)
+5. **Waits** for navigation and checks the result
+6. **Reports** one of three outcomes:
+   - **LOGIN SUCCESS** — Redirected away from login page
+   - **LOGIN FAILED** — Error message detected on page
+   - **LOGIN UNCERTAIN** — Still on login page, no clear error
+
+## Response
+
+Returns a screenshot of the page after login attempt, the status (SUCCESS/FAILED/UNCERTAIN), and a session ID.
+
+The session ID can be used with all other `browser_*` tools to continue testing the authenticated flow.
+
+## Notes
+
+- **Never guess credentials** — always ask the user first
+- If auto-detection fails, provide `usernameSelector`, `passwordSelector`, and/or `submitSelector` manually
+- The session stays open after login for continued testing — call `browser_close` when done
+- Does not handle 2FA, captchas, or OAuth redirects — use `browser_fill` and `browser_click` manually for those
+- Use `find_login_page` first if you don't know the login URL

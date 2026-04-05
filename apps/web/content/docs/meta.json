@@ -45,6 +45,9 @@
     "tools/browser-network-errors",
     "tools/browser-cookies",
     "tools/browser-storage",
+    "---Smart Login---",
+    "tools/find-login-page",
+    "tools/smart-login",
     "---Reference---",
     "rest-api"
   ]

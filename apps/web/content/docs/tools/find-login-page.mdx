@@ -1,0 +1,39 @@
+---
+title: find_login_page
+description: Discover login/sign-in pages for a website by checking sitemap and common paths.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `url` | string | Yes | Base URL of the site (e.g. `https://myapp.com`) |
+
+## Example
+
+```
+Find the login page for https://myapp.com
+```
+
+## How It Works
+
+1. **Sitemap check** — Fetches `/sitemap.xml` and `/sitemap_index.xml`, scans all `<loc>` entries for URLs containing `login`, `signin`, `sign-in`, `auth`, `account`, or `sso`
+2. **Common path probing** — Sends HEAD requests to 20 common login paths:
+   - `/login`, `/signin`, `/sign-in`, `/auth/login`, `/auth/signin`
+   - `/account/login`, `/user/login`, `/users/sign_in`
+   - `/admin/login`, `/admin`, `/wp-login.php`, `/wp-admin`
+   - `/dashboard/login`, `/portal/login`, `/sso/login`
+   - `/auth`, `/session/new`, `/log-in`, `/member/login`
+3. **Deduplication** — Results are deduplicated by URL
+
+## Response
+
+Returns a list of candidate login URLs with how they were found (sitemap or common-path) and HTTP status code.
+
+If no login pages are found, suggests asking the user for the exact URL.
+
+## Notes
+
+- This tool does **not** attempt to log in — it only discovers login page URLs
+- Use the result with `browser_navigate` and `browser_fill` to complete the login flow
+- See also: `smart_login` for automated login attempts
