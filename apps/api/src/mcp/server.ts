@@ -113,6 +113,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
 - When the user says "audit this site" or "check UX", use browser_navigate + browser_get_accessibility_tree + browser_console_logs.`,
   });
 
+  // @ts-expect-error - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
     "take_screenshot",
     "Capture a screenshot of any URL and return a public image URL. Use this for any URL that needs to be captured.",
@@ -736,6 +737,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     }
   );
 
+  // @ts-expect-error - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
     "browser_console_logs",
     "Get captured console logs (errors, warnings, logs) and JavaScript exceptions from the current browser session. Essential for debugging frontend issues.",
@@ -1008,6 +1010,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     }
   );
 
+  // @ts-expect-error - TS2589: MCP SDK generic inference too deep with nested z.object/z.array
   server.tool(
     "browser_cookies",
     "Get or set cookies for the current browser session. Use 'get' to read all cookies (useful for debugging auth). Use 'set' to add cookies (useful for setting auth tokens). Use 'clear' to delete all cookies.",
@@ -1051,6 +1054,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     }
   );
 
+  // @ts-expect-error - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
     "browser_storage",
     "Read or write localStorage and sessionStorage. Use for debugging client-side state, auth tokens, feature flags, and cached data.",
