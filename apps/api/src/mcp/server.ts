@@ -72,7 +72,32 @@ async function pollScreenshot(id: string) {
 }
 
 function createMcpServer(apiKey: string | undefined) {
-  const server = new McpServer({ name: "screenshotsmcp", version: "1.0.0" });
+  const server = new McpServer({
+    name: "screenshotsmcp",
+    version: "1.0.0",
+    description: `You have access to screenshotsmcp — a tool suite for capturing screenshots and automating browsers.
+
+## Screenshot Tools (quick captures, no session needed)
+- **take_screenshot** — capture any URL at a custom viewport size. Returns a public image URL.
+- **screenshot_mobile** — iPhone 14 Pro viewport (393×852).
+- **screenshot_tablet** — iPad viewport (820×1180).
+- **screenshot_fullpage** — capture the entire scrollable page.
+- **screenshot_responsive** — capture desktop + tablet + mobile in ONE call. Best for responsive design checks.
+- **list_recent_screenshots** — view recent screenshot URLs and metadata.
+- **get_screenshot_status** — check if a screenshot job is done.
+
+## Browser Automation Tools (interactive sessions)
+Use these for multi-step workflows like logging in, filling forms, or navigating through a site:
+1. Start with **browser_navigate** to open a URL — this returns a sessionId.
+2. Pass that sessionId to all subsequent tools: **browser_click**, **browser_fill**, **browser_scroll**, **browser_screenshot**, **browser_wait_for**, **browser_evaluate**.
+3. Call **browser_close** when done to free resources.
+
+## Tips
+- Screenshot tools return a public CDN URL (not inline images). Share the URL with the user.
+- For responsive testing, prefer screenshot_responsive — it's faster than 3 separate calls.
+- Browser tools return a JPEG screenshot after each action so you can see the result.
+- When the user says "take a screenshot", use take_screenshot. When they say "check responsive", use screenshot_responsive.`,
+  });
 
   server.tool(
     "take_screenshot",
