@@ -25,7 +25,7 @@ setInterval(() => {
   for (const [id, session] of sessions) {
     if (now - session.lastUsed.getTime() > SESSION_TTL_MS) {
       session.browser.close().catch(() => {
-        try { const pid = session.browser.process()?.pid; if (pid) process.kill(pid, "SIGKILL"); } catch {}
+        try { const pid = (session.browser as any).process?.()?.pid; if (pid) process.kill(pid, "SIGKILL"); } catch {}
       });
       sessions.delete(id);
     }
