@@ -2,20 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import { join } from "path";
 
+const CONTENT_DIR = join(/*turbopackIgnore: true*/ process.cwd(), "content", "docs");
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const docPath = searchParams.get("path") || "/docs";
 
-  // Convert URL path to file path: /docs/tools/take-screenshot -> content/docs/tools/take-screenshot.mdx
-  let filePath: string;
+  // Convert URL path to relative file name: /docs/tools/take-screenshot -> tools/take-screenshot.mdx
+  let fileName: string;
   if (docPath === "/docs" || docPath === "/docs/") {
-    filePath = "content/docs/index.mdx";
+    fileName = "index.mdx";
   } else {
     const relative = docPath.replace(/^\/docs\/?/, "");
-    filePath = `content/docs/${relative}.mdx`;
+    // Prevent directory traversal
+    if (relative.includes("..")) {
+      return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+    }
+    fileName = `${relative}.mdx`;
   }
 
-  const fullPath = join(process.cwd(), filePath);
+  const fullPath = join(CONTENT_DIR, fileName);
 
   try {
     const raw = await readFile(fullPath, "utf-8");
@@ -32,7 +38,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(markdown, {
       headers: {
         "Content-Type": "text/markdown; charset=utf-8",
-        "Content-Disposition": `inline; filename="${filePath.split("/").pop()?.replace(".mdx", ".md") || "doc.md"}"`,
+        "Content-Disposition": `inline; filename="${fileName.replace(/\.mdx$/, ".md").replace(/\//g, "-")}"`,
       },
     });
   } catch {
