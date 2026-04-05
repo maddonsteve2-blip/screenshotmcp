@@ -100,13 +100,13 @@ export default function InstallPage() {
   const claudeConfig = `{
   "mcpServers": {
     "screenshotsmcp": {
-      "command": "npx",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
         "mcp-remote",
-        "${MCP_URL}",
-        "--header",
-        "x-api-key: ${key}"
+        "${MCP_URL}?key=${key}"
       ]
     }
   }
@@ -211,8 +211,9 @@ export default function InstallPage() {
           <TabsContent value="claude" className="mt-3">
             <Card>
               <CardContent className="pt-5 space-y-4">
-                <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 p-3 text-xs text-amber-800 dark:text-amber-200">
-                  <strong>Note:</strong> Claude Desktop requires <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">mcp-remote</code> as a bridge — it does not support the <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">url</code> format directly. Make sure Node.js is installed.
+                <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 p-3 text-xs text-amber-800 dark:text-amber-200 space-y-1">
+                  <p><strong>Requirements:</strong> Node.js must be installed. Claude Desktop uses <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">mcp-remote</code> as a bridge — it does not support the <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">url</code> format directly.</p>
+                  <p><strong>Windows users:</strong> This config uses <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">cmd</code> to work around a Claude Desktop bug where paths with spaces (e.g. <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">C:\Program Files\nodejs</code>) break the server launch.</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Add to <code className="bg-muted px-1.5 py-0.5 rounded text-xs">claude_desktop_config.json</code>:<br />
