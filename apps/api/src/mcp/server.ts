@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
@@ -375,35 +375,24 @@ function createMcpServer(apiKey: string | undefined) {
   return server;
 }
 
-mcpRouter.post("/", async (req, res) => {
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: undefined,
-  });
+function resolveKey(req: Request): string | undefined {
+  return (
+    (req.headers["x-api-key"] as string | undefined) ||
+    (req.params.key as string | undefined) ||
+    (req.query.key as string | undefined)
+  );
+}
 
-  const apiKey = (req.headers["x-api-key"] as string | undefined) || (req.query.key as string | undefined);
+async function handleMcp(req: Request, res: Response, body: unknown) {
+  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+  const apiKey = resolveKey(req);
   const server = createMcpServer(apiKey);
-
-  res.on("close", () => {
-    transport.close();
-    server.close();
-  });
-
+  res.on("close", () => { transport.close(); server.close(); });
   await server.connect(transport);
-  await transport.handleRequest(req, res, req.body);
-});
+  await transport.handleRequest(req as never, res as never, body);
+}
 
-mcpRouter.get("/", async (req, res) => {
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: undefined,
-  });
-  const apiKey = (req.headers["x-api-key"] as string | undefined) || (req.query.key as string | undefined);
-  const server = createMcpServer(apiKey);
-
-  res.on("close", () => {
-    transport.close();
-    server.close();
-  });
-
-  await server.connect(transport);
-  await transport.handleRequest(req, res, {});
-});
+mcpRouter.post("/", (req, res) => handleMcp(req, res, req.body));
+mcpRouter.get("/", (req, res) => handleMcp(req, res, {}));
+mcpRouter.post("/:key", (req, res) => handleMcp(req, res, req.body));
+mcpRouter.get("/:key", (req, res) => handleMcp(req, res, {}));
