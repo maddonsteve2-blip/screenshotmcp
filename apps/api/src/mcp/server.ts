@@ -96,10 +96,12 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
 2. Pass that sessionId to all subsequent tools.
 3. Call **browser_close** when done to free resources.
 
-**Interaction:** browser_click, browser_fill, browser_hover, browser_select_option, browser_scroll
+**Interaction:** browser_click, browser_fill, browser_hover, browser_select_option, browser_scroll, browser_press_key
 **Navigation:** browser_navigate, browser_go_back, browser_go_forward, browser_wait_for
 **Inspection:** browser_screenshot, browser_get_text, browser_get_html, browser_get_accessibility_tree, browser_evaluate
-**Debugging:** browser_console_logs, browser_network_errors
+**Performance:** browser_perf_metrics (Core Web Vitals: LCP, FCP, CLS, TTFB), browser_network_requests (full waterfall)
+**SEO:** browser_seo_audit (meta, OG, Twitter cards, headings, structured data, alt text)
+**Debugging:** browser_console_logs, browser_network_errors, browser_cookies, browser_storage
 
 ## Tips
 - Screenshot tools return a public CDN URL (not inline images). Share the URL with the user.
@@ -774,6 +776,341 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
       if (errors.length === 0) return { content: [{ type: "text", text: "No failed network requests captured." }] };
       const text = errors.map((e) => `${e.status} ${e.statusText} — ${e.url}`).join("\n");
       return { content: [{ type: "text", text: `Failed network requests (${errors.length}):\n\n${text}` }] };
+    }
+  );
+
+  server.tool(
+    "browser_perf_metrics",
+    "Get Core Web Vitals and performance metrics for the current page. Returns LCP, FCP, CLS, TTFB, DOM size, resource counts, and total transfer size. Essential for performance audits.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        const metrics = await session.page.evaluate(() => {
+          const perf = (globalThis as any).performance;
+          const nav = perf.getEntriesByType("navigation")[0] as any;
+          const paint = perf.getEntriesByType("paint");
+          const lcp = perf.getEntriesByType("largest-contentful-paint");
+          const cls = perf.getEntriesByType("layout-shift");
+          const resources = perf.getEntriesByType("resource") as any[];
+
+          const fcp = paint.find((e: any) => e.name === "first-contentful-paint");
+          const clsScore = cls.reduce((sum: number, e: any) => sum + (e.hadRecentInput ? 0 : e.value), 0);
+
+          const totalTransferSize = resources.reduce((sum: number, r: any) => sum + (r.transferSize || 0), 0);
+          const resourcesByType: Record<string, number> = {};
+          resources.forEach((r: any) => {
+            const type = r.initiatorType || "other";
+            resourcesByType[type] = (resourcesByType[type] || 0) + 1;
+          });
+
+          return {
+            url: (globalThis as any).location.href,
+            ttfb: nav ? Math.round(nav.responseStart - nav.requestStart) : null,
+            fcp: fcp ? Math.round(fcp.startTime) : null,
+            lcp: lcp.length > 0 ? Math.round(lcp[lcp.length - 1].startTime) : null,
+            cls: Math.round(clsScore * 1000) / 1000,
+            domContentLoaded: nav ? Math.round(nav.domContentLoadedEventEnd - nav.startTime) : null,
+            loadComplete: nav ? Math.round(nav.loadEventEnd - nav.startTime) : null,
+            domNodes: (globalThis as any).document.querySelectorAll("*").length,
+            resourceCount: resources.length,
+            totalTransferKB: Math.round(totalTransferSize / 1024),
+            resourcesByType,
+          };
+        });
+
+        const lines = [
+          `Performance Metrics for ${metrics.url}`,
+          ``,
+          `Core Web Vitals:`,
+          `  TTFB:  ${metrics.ttfb !== null ? metrics.ttfb + "ms" : "N/A"}`,
+          `  FCP:   ${metrics.fcp !== null ? metrics.fcp + "ms" : "N/A"}`,
+          `  LCP:   ${metrics.lcp !== null ? metrics.lcp + "ms" : "N/A"}`,
+          `  CLS:   ${metrics.cls}`,
+          ``,
+          `Page Load:`,
+          `  DOM Content Loaded: ${metrics.domContentLoaded}ms`,
+          `  Full Load: ${metrics.loadComplete}ms`,
+          ``,
+          `Page Size:`,
+          `  DOM Nodes: ${metrics.domNodes}`,
+          `  Resources: ${metrics.resourceCount}`,
+          `  Transfer Size: ${metrics.totalTransferKB}KB`,
+          ``,
+          `Resources by Type:`,
+          ...Object.entries(metrics.resourcesByType).map(([type, count]) => `  ${type}: ${count}`),
+        ];
+
+        return { content: [{ type: "text", text: lines.join("\n") }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  server.tool(
+    "browser_network_requests",
+    "Get the full network request waterfall with timing data. Shows every request made by the page — URLs, methods, status codes, resource types, durations, and sizes. Use for performance analysis and debugging.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      resourceType: z.string().optional().describe("Filter by resource type: 'document', 'stylesheet', 'script', 'image', 'font', 'xhr', 'fetch'. Omit for all."),
+      minDuration: z.number().optional().default(0).describe("Only show requests slower than this (ms)"),
+      limit: z.number().int().min(1).max(200).optional().default(100).describe("Max number of requests to return"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      let reqs = session.networkRequests;
+      if (args.resourceType) reqs = reqs.filter((r) => r.resourceType === args.resourceType);
+      if (args.minDuration) reqs = reqs.filter((r) => r.duration >= args.minDuration);
+      reqs = reqs.slice(-args.limit);
+      if (reqs.length === 0) return { content: [{ type: "text", text: "No matching network requests captured." }] };
+
+      const totalSize = reqs.reduce((sum, r) => sum + r.size, 0);
+      const avgDuration = Math.round(reqs.reduce((sum, r) => sum + r.duration, 0) / reqs.length);
+      const slowest = reqs.reduce((max, r) => r.duration > max.duration ? r : max, reqs[0]);
+
+      const header = `Network Requests (${reqs.length} captured, ${Math.round(totalSize / 1024)}KB total, avg ${avgDuration}ms)\nSlowest: ${slowest.duration}ms — ${slowest.url.slice(0, 80)}\n`;
+      const lines = reqs.map((r) => {
+        const sizeStr = r.size > 0 ? `${Math.round(r.size / 1024)}KB` : "?";
+        return `${r.status} ${r.method.padEnd(4)} ${r.duration.toString().padStart(5)}ms ${sizeStr.padStart(6)} [${r.resourceType}] ${r.url.slice(0, 100)}`;
+      });
+      return { content: [{ type: "text", text: header + lines.join("\n") }] };
+    }
+  );
+
+  server.tool(
+    "browser_seo_audit",
+    "Extract SEO metadata from the current page: title, meta description, Open Graph tags, Twitter cards, canonical URL, heading hierarchy, structured data (JSON-LD), robots directives, and image alt text coverage.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        const seo = await session.page.evaluate(() => {
+          const doc = (globalThis as any).document;
+          const getMeta = (name: string) => doc.querySelector(`meta[name="${name}"], meta[property="${name}"]`)?.getAttribute("content") || null;
+          const getAll = (sel: string) => Array.from(doc.querySelectorAll(sel));
+
+          const headings: Record<string, string[]> = {};
+          for (let i = 1; i <= 6; i++) {
+            const els = getAll(`h${i}`);
+            if (els.length > 0) headings[`h${i}`] = els.map((e: any) => e.textContent?.trim().slice(0, 80)).filter(Boolean);
+          }
+
+          const images = getAll("img");
+          const imagesWithAlt = images.filter((img: any) => img.alt && img.alt.trim());
+          const imagesWithoutAlt = images.filter((img: any) => !img.alt || !img.alt.trim()).map((img: any) => img.src?.slice(0, 100));
+
+          const jsonLd = getAll('script[type="application/ld+json"]').map((s: any) => {
+            try { return JSON.parse(s.textContent); } catch { return null; }
+          }).filter(Boolean);
+
+          const links = getAll("a[href]");
+          const internalLinks = links.filter((a: any) => a.hostname === (globalThis as any).location.hostname).length;
+          const externalLinks = links.length - internalLinks;
+
+          return {
+            url: (globalThis as any).location.href,
+            title: doc.title || null,
+            titleLength: (doc.title || "").length,
+            metaDescription: getMeta("description"),
+            metaDescriptionLength: (getMeta("description") || "").length,
+            canonical: doc.querySelector('link[rel="canonical"]')?.href || null,
+            robots: getMeta("robots"),
+            og: {
+              title: getMeta("og:title"),
+              description: getMeta("og:description"),
+              image: getMeta("og:image"),
+              type: getMeta("og:type"),
+              url: getMeta("og:url"),
+              siteName: getMeta("og:site_name"),
+            },
+            twitter: {
+              card: getMeta("twitter:card"),
+              title: getMeta("twitter:title"),
+              description: getMeta("twitter:description"),
+              image: getMeta("twitter:image"),
+            },
+            headings,
+            images: { total: images.length, withAlt: imagesWithAlt.length, missingAlt: imagesWithoutAlt.slice(0, 10) },
+            links: { total: links.length, internal: internalLinks, external: externalLinks },
+            jsonLd: jsonLd.length > 0 ? jsonLd : null,
+            lang: doc.documentElement?.lang || null,
+            viewport: getMeta("viewport"),
+          };
+        });
+
+        const lines = [
+          `SEO Audit: ${seo.url}`,
+          ``,
+          `Title: ${seo.title || "MISSING"} (${seo.titleLength} chars${seo.titleLength > 60 ? " ⚠️ too long" : seo.titleLength < 30 ? " ⚠️ too short" : " ✓"})`,
+          `Description: ${seo.metaDescription?.slice(0, 100) || "MISSING"} (${seo.metaDescriptionLength} chars${seo.metaDescriptionLength > 160 ? " ⚠️ too long" : seo.metaDescriptionLength < 50 ? " ⚠️ too short" : " ✓"})`,
+          `Canonical: ${seo.canonical || "MISSING"}`,
+          `Robots: ${seo.robots || "not set"}`,
+          `Language: ${seo.lang || "MISSING"}`,
+          `Viewport: ${seo.viewport || "MISSING"}`,
+          ``,
+          `Open Graph:`,
+          ...Object.entries(seo.og).map(([k, v]) => `  og:${k}: ${v || "missing"}`),
+          ``,
+          `Twitter Card:`,
+          ...Object.entries(seo.twitter).map(([k, v]) => `  twitter:${k}: ${v || "missing"}`),
+          ``,
+          `Headings:`,
+          ...Object.entries(seo.headings).map(([level, texts]) => `  ${level}: ${(texts as string[]).length} — ${(texts as string[]).slice(0, 3).join(", ")}`),
+          ``,
+          `Images: ${seo.images.total} total, ${seo.images.withAlt} with alt text${seo.images.total > 0 ? ` (${Math.round(seo.images.withAlt / seo.images.total * 100)}% coverage)` : ""}`,
+          ...(seo.images.missingAlt.length > 0 ? [`  Missing alt: ${seo.images.missingAlt.join(", ")}`] : []),
+          ``,
+          `Links: ${seo.links.total} total (${seo.links.internal} internal, ${seo.links.external} external)`,
+          ...(seo.jsonLd ? [`\nStructured Data (JSON-LD): ${JSON.stringify(seo.jsonLd).slice(0, 500)}`] : []),
+        ];
+
+        return { content: [{ type: "text", text: lines.join("\n") }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  server.tool(
+    "browser_press_key",
+    "Press a keyboard key or key combination. Supports special keys like Enter, Tab, Escape, ArrowDown, and modifiers like Control+A, Shift+Tab. Returns a screenshot after pressing.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      key: z.string().describe("Key to press (e.g. 'Enter', 'Tab', 'Escape', 'ArrowDown', 'Control+a', 'Meta+c')"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        await session.page.keyboard.press(args.key);
+        await session.page.waitForTimeout(300);
+        const img = await pageScreenshot(session.page);
+        return { content: [{ type: "text", text: `Pressed key: ${args.key}` }, img] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  server.tool(
+    "browser_cookies",
+    "Get or set cookies for the current browser session. Use 'get' to read all cookies (useful for debugging auth). Use 'set' to add cookies (useful for setting auth tokens). Use 'clear' to delete all cookies.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      action: z.enum(["get", "set", "clear"]).describe("Action to perform"),
+      cookies: z.array(z.object({
+        name: z.string().describe("Cookie name"),
+        value: z.string().describe("Cookie value"),
+        domain: z.string().optional().describe("Cookie domain"),
+        path: z.string().optional().default("/").describe("Cookie path"),
+        httpOnly: z.boolean().optional().default(false),
+        secure: z.boolean().optional().default(false),
+      })).optional().describe("Cookies to set (only for 'set' action)"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        if (args.action === "get") {
+          const cookies = await session.context.cookies();
+          if (cookies.length === 0) return { content: [{ type: "text", text: "No cookies set." }] };
+          const text = cookies.map((c) => `${c.name}=${c.value.slice(0, 50)}${c.value.length > 50 ? "..." : ""} (domain: ${c.domain}, path: ${c.path}${c.httpOnly ? ", httpOnly" : ""}${c.secure ? ", secure" : ""})`).join("\n");
+          return { content: [{ type: "text", text: `Cookies (${cookies.length}):\n\n${text}` }] };
+        } else if (args.action === "set" && args.cookies) {
+          const url = session.page.url();
+          const domain = new URL(url).hostname;
+          const toSet = args.cookies.map((c) => ({ ...c, domain: c.domain || domain }));
+          await session.context.addCookies(toSet);
+          return { content: [{ type: "text", text: `Set ${toSet.length} cookie(s). Reload the page for them to take effect.` }] };
+        } else if (args.action === "clear") {
+          await session.context.clearCookies();
+          return { content: [{ type: "text", text: "All cookies cleared." }] };
+        }
+        return { content: [{ type: "text", text: "Invalid action. Use 'get', 'set', or 'clear'." }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  server.tool(
+    "browser_storage",
+    "Read or write localStorage and sessionStorage. Use for debugging client-side state, auth tokens, feature flags, and cached data.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      storageType: z.enum(["localStorage", "sessionStorage"]).optional().default("localStorage").describe("Which storage to access"),
+      action: z.enum(["get", "getAll", "set", "remove", "clear"]).describe("Action: get one key, getAll keys, set a key, remove a key, or clear all"),
+      key: z.string().optional().describe("Storage key (required for get, set, remove)"),
+      value: z.string().optional().describe("Value to set (required for 'set' action)"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        const st = args.storageType;
+        if (args.action === "getAll") {
+          const data = await session.page.evaluate((type: string) => {
+            const s = type === "localStorage" ? (globalThis as any).localStorage : (globalThis as any).sessionStorage;
+            const result: Record<string, string> = {};
+            for (let i = 0; i < s.length; i++) {
+              const key = s.key(i);
+              result[key] = s.getItem(key)?.slice(0, 200) || "";
+            }
+            return result;
+          }, st);
+          const entries = Object.entries(data);
+          if (entries.length === 0) return { content: [{ type: "text", text: `${st} is empty.` }] };
+          const text = entries.map(([k, v]) => `${k}: ${v}`).join("\n");
+          return { content: [{ type: "text", text: `${st} (${entries.length} keys):\n\n${text}` }] };
+        } else if (args.action === "get" && args.key) {
+          const val = await session.page.evaluate(({ type, key }: any) => {
+            const s = type === "localStorage" ? (globalThis as any).localStorage : (globalThis as any).sessionStorage;
+            return s.getItem(key);
+          }, { type: st, key: args.key });
+          return { content: [{ type: "text", text: val !== null ? `${args.key}: ${val}` : `Key "${args.key}" not found in ${st}.` }] };
+        } else if (args.action === "set" && args.key && args.value !== undefined) {
+          await session.page.evaluate(({ type, key, value }: any) => {
+            const s = type === "localStorage" ? (globalThis as any).localStorage : (globalThis as any).sessionStorage;
+            s.setItem(key, value);
+          }, { type: st, key: args.key, value: args.value });
+          return { content: [{ type: "text", text: `Set ${st}.${args.key}` }] };
+        } else if (args.action === "remove" && args.key) {
+          await session.page.evaluate(({ type, key }: any) => {
+            const s = type === "localStorage" ? (globalThis as any).localStorage : (globalThis as any).sessionStorage;
+            s.removeItem(key);
+          }, { type: st, key: args.key });
+          return { content: [{ type: "text", text: `Removed ${st}.${args.key}` }] };
+        } else if (args.action === "clear") {
+          await session.page.evaluate((type: string) => {
+            const s = type === "localStorage" ? (globalThis as any).localStorage : (globalThis as any).sessionStorage;
+            s.clear();
+          }, st);
+          return { content: [{ type: "text", text: `Cleared all ${st}.` }] };
+        }
+        return { content: [{ type: "text", text: "Invalid action or missing parameters." }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
     }
   );
 

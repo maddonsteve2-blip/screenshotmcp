@@ -3,6 +3,17 @@ import { nanoid } from "nanoid";
 import { browserPool } from "./browser-pool.js";
 import { STEALTH_SCRIPT, DEFAULT_USER_AGENT } from "./stealth.js";
 
+export interface NetworkEntry {
+  url: string;
+  method: string;
+  status: number;
+  statusText: string;
+  resourceType: string;
+  duration: number;
+  size: number;
+  ts: number;
+}
+
 export interface Session {
   browser: Browser;
   context: BrowserContext;
@@ -12,6 +23,7 @@ export interface Session {
   release: () => Promise<void>;
   consoleLogs: Array<{ level: string; text: string; ts: number }>;
   networkErrors: Array<{ url: string; status: number; statusText: string; ts: number }>;
+  networkRequests: NetworkEntry[];
 }
 
 const sessions = new Map<string, Session>();
@@ -53,6 +65,8 @@ export async function createSession(userId: string): Promise<string> {
 
   const consoleLogs: Session["consoleLogs"] = [];
   const networkErrors: Session["networkErrors"] = [];
+  const networkRequests: NetworkEntry[] = [];
+  const requestTimings = new Map<string, number>();
 
   // Capture console messages
   page.on("console", (msg) => {
@@ -69,20 +83,39 @@ export async function createSession(userId: string): Promise<string> {
     if (consoleLogs.length > 200) consoleLogs.shift();
   });
 
-  // Capture failed network requests
+  // Track request start times
+  page.on("request", (request) => {
+    requestTimings.set(request.url(), Date.now());
+  });
+
+  // Capture ALL network responses with timing
   page.on("response", (response) => {
+    const url = response.url();
+    const startTime = requestTimings.get(url) || Date.now();
+    const duration = Date.now() - startTime;
+    requestTimings.delete(url);
+
+    const entry: NetworkEntry = {
+      url,
+      method: response.request().method(),
+      status: response.status(),
+      statusText: response.statusText(),
+      resourceType: response.request().resourceType(),
+      duration,
+      size: Number(response.headers()["content-length"] || 0),
+      ts: Date.now(),
+    };
+
+    networkRequests.push(entry);
+    if (networkRequests.length > 500) networkRequests.shift();
+
     if (response.status() >= 400) {
-      networkErrors.push({
-        url: response.url(),
-        status: response.status(),
-        statusText: response.statusText(),
-        ts: Date.now(),
-      });
+      networkErrors.push({ url, status: response.status(), statusText: response.statusText(), ts: Date.now() });
       if (networkErrors.length > 100) networkErrors.shift();
     }
   });
 
-  sessions.set(sessionId, { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors });
+  sessions.set(sessionId, { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors, networkRequests });
   return sessionId;
 }
 
