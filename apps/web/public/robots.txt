@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://web-phi-eight-56.vercel.app/sitemap.xml

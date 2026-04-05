@@ -325,6 +325,45 @@ Parameters:
 
 ---
 
+## Smart Login Flow (30 tools total)
+
+When the user asks you to test a flow that requires authentication:
+
+1. Call find_login_page with the site's base URL — it checks sitemap.xml and common login paths automatically.
+2. It returns candidate login URLs. Pick the best one (or ask the user if ambiguous).
+3. Ask the user for their username/email and password. NEVER guess credentials.
+4. Call smart_login with the login URL + credentials — it auto-detects form fields and submits.
+5. It reports: LOGIN SUCCESS, LOGIN FAILED, or LOGIN UNCERTAIN with a screenshot.
+6. If login fails, ask the user to double-check credentials or provide the exact login URL.
+7. Once logged in, use the returned session ID to continue testing the authenticated flow.
+
+### find_login_page
+Discover login/sign-in pages for a website. Checks sitemap.xml and probes common login URL paths.
+
+Parameters:
+- url (string, required): Base URL of the site (e.g. https://myapp.com)
+
+Returns: list of candidate login URLs found via sitemap and common path probing.
+
+Common paths checked: /login, /signin, /sign-in, /auth/login, /auth/signin, /account/login, /user/login, /users/sign_in, /admin/login, /admin, /wp-login.php, /wp-admin, /dashboard/login, /portal/login, /sso/login, /auth, /session/new, /log-in, /member/login
+
+### smart_login
+Attempt to log in to a website. Navigates to the login URL, auto-detects email/username and password fields, fills them in, submits the form, and reports success or failure with a screenshot.
+
+Parameters:
+- loginUrl (string, required): The login page URL
+- username (string, required): The username or email to enter
+- password (string, required): The password to enter
+- usernameSelector (string, optional): CSS selector for username field. Auto-detected if omitted.
+- passwordSelector (string, optional): CSS selector for password field. Auto-detected if omitted.
+- submitSelector (string, optional): CSS selector for submit button. Auto-detected if omitted.
+
+Returns: screenshot + status (SUCCESS/FAILED/UNCERTAIN) + session ID for continuing authenticated testing.
+
+Auto-detects: input[type=email], input[name=email/username], input[type=password], button[type=submit], and common button text patterns.
+
+---
+
 ## REST API
 
 Base URL: https://screenshotsmcp-api-production.up.railway.app

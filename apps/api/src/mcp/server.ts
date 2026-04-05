@@ -103,6 +103,18 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
 **SEO:** browser_seo_audit (meta, OG, Twitter cards, headings, structured data, alt text)
 **Debugging:** browser_console_logs, browser_network_errors, browser_cookies, browser_storage
 
+## Smart Login Flow
+When the user asks you to test a flow that requires authentication (login, sign-in, etc.):
+1. Call **find_login_page** with the site's base URL. It checks the sitemap.xml and common login paths automatically.
+2. It returns a list of candidate login URLs found. Pick the best one (or ask the user if ambiguous).
+3. Call **browser_navigate** to go to the login page.
+4. **Ask the user** for their username/email and password. NEVER guess credentials.
+5. Use **browser_fill** and **browser_click** to fill in the form and submit.
+6. Take a **browser_screenshot** and check if login succeeded (look for dashboard, profile, or redirect away from login).
+7. Report back: "Login successful" or "Login failed — [reason]".
+8. If login fails, ask the user for the exact login URL and try again.
+9. Once logged in, proceed with the requested testing flow.
+
 ## Tips
 - Screenshot tools return a public CDN URL (not inline images). Share the URL with the user.
 - For responsive testing, prefer screenshot_responsive — it's faster than 3 separate calls.
@@ -113,7 +125,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
 - When the user says "audit this site" or "check UX", use browser_navigate + browser_get_accessibility_tree + browser_console_logs.`,
   });
 
-  // @ts-expect-error - TS2589: MCP SDK generic inference too deep with multiple .default() fields
+  // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
     "take_screenshot",
     "Capture a screenshot of any URL and return a public image URL. Use this for any URL that needs to be captured.",
@@ -737,7 +749,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     }
   );
 
-  // @ts-expect-error - TS2589: MCP SDK generic inference too deep with multiple .default() fields
+  // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
     "browser_console_logs",
     "Get captured console logs (errors, warnings, logs) and JavaScript exceptions from the current browser session. Essential for debugging frontend issues.",
@@ -1010,7 +1022,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     }
   );
 
-  // @ts-expect-error - TS2589: MCP SDK generic inference too deep with nested z.object/z.array
+  // @ts-ignore - TS2589: MCP SDK generic inference too deep with nested z.object/z.array
   server.tool(
     "browser_cookies",
     "Get or set cookies for the current browser session. Use 'get' to read all cookies (useful for debugging auth). Use 'set' to add cookies (useful for setting auth tokens). Use 'clear' to delete all cookies.",
@@ -1054,7 +1066,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
     }
   );
 
-  // @ts-expect-error - TS2589: MCP SDK generic inference too deep with multiple .default() fields
+  // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
     "browser_storage",
     "Read or write localStorage and sessionStorage. Use for debugging client-side state, auth tokens, feature flags, and cached data.",
@@ -1114,6 +1126,241 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
         return { content: [{ type: "text", text: "Invalid action or missing parameters." }] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  // ── Smart Login Tools ──────────────────────────────────────────────
+
+  server.tool(
+    "find_login_page",
+    "Discover login/sign-in pages for a website. Checks the site's sitemap.xml and probes common login URL paths. Returns a list of candidate login URLs found. Use this before attempting to log in to a site.",
+    {
+      url: z.string().url().describe("Base URL of the site to find login pages for (e.g. https://myapp.com)"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: auth.error }] };
+
+      const base = args.url.replace(/\/+$/, "");
+      const found: { url: string; source: string; status: number }[] = [];
+
+      // 1. Check sitemap.xml for login/auth/signin pages
+      const sitemapUrls = [`${base}/sitemap.xml`, `${base}/sitemap_index.xml`];
+      for (const sitemapUrl of sitemapUrls) {
+        try {
+          const res = await fetch(sitemapUrl, { signal: AbortSignal.timeout(5000) });
+          if (res.ok) {
+            const xml = await res.text();
+            const locMatches = xml.match(/<loc>(.*?)<\/loc>/gi) || [];
+            for (const loc of locMatches) {
+              const href = loc.replace(/<\/?loc>/gi, "").trim();
+              if (/\b(login|signin|sign-in|sign_in|auth|account|sso|log-in)\b/i.test(href)) {
+                found.push({ url: href, source: "sitemap", status: 200 });
+              }
+            }
+          }
+        } catch { /* timeout or fetch error — skip */ }
+      }
+
+      // 2. Probe common login paths
+      const commonPaths = [
+        "/login", "/signin", "/sign-in", "/auth/login", "/auth/signin",
+        "/account/login", "/account/signin", "/user/login", "/users/sign_in",
+        "/admin/login", "/admin", "/wp-login.php", "/wp-admin",
+        "/dashboard/login", "/portal/login", "/sso/login",
+        "/auth", "/session/new", "/log-in", "/member/login",
+      ];
+
+      const probes = commonPaths.map(async (path) => {
+        const probeUrl = `${base}${path}`;
+        try {
+          const res = await fetch(probeUrl, {
+            method: "HEAD",
+            redirect: "follow",
+            signal: AbortSignal.timeout(4000),
+          });
+          if (res.ok || res.status === 401 || res.status === 403) {
+            found.push({ url: probeUrl, source: "common-path", status: res.status });
+          }
+        } catch { /* skip timeouts and errors */ }
+      });
+      await Promise.all(probes);
+
+      // 3. Deduplicate by URL
+      const unique = [...new Map(found.map((f) => [f.url, f])).values()];
+
+      if (unique.length === 0) {
+        return {
+          content: [{
+            type: "text",
+            text: `No login pages found for ${base}.\n\nTried:\n- Sitemap: ${sitemapUrls.join(", ")}\n- Common paths: ${commonPaths.length} probed\n\nAsk the user for the exact login URL.`,
+          }],
+        };
+      }
+
+      const list = unique.map((f) => `- ${f.url} (found via ${f.source}, HTTP ${f.status})`).join("\n");
+      return {
+        content: [{
+          type: "text",
+          text: `Found ${unique.length} login page candidate(s) for ${base}:\n\n${list}\n\nNext steps:\n1. Navigate to the best candidate with browser_navigate\n2. Ask the user for their username/email and password\n3. Use browser_fill and browser_click to log in\n4. Take a browser_screenshot to verify login success`,
+        }],
+      };
+    }
+  );
+
+  server.tool(
+    "smart_login",
+    "Attempt to log in to a website. Navigates to the login URL, finds email/username and password fields, fills them in, and submits the form. Returns a screenshot and reports whether login succeeded or failed. Always ask the user for credentials first — never guess.",
+    {
+      loginUrl: z.string().url().describe("The login page URL to navigate to"),
+      username: z.string().describe("The username or email to enter"),
+      password: z.string().describe("The password to enter"),
+      usernameSelector: z.string().optional().describe("CSS selector for username field. Auto-detected if omitted."),
+      passwordSelector: z.string().optional().describe("CSS selector for password field. Auto-detected if omitted."),
+      submitSelector: z.string().optional().describe("CSS selector for submit button. Auto-detected if omitted."),
+    },
+    async (args) => {
+      const authResult = await validateKey(apiKey);
+      if (!authResult.ok) return { content: [{ type: "text", text: authResult.error }] };
+
+      try {
+        // Create a new session and navigate
+        const sessionId = await createSession(authResult.userId);
+        const session = await getSession(sessionId, authResult.userId);
+        if (!session) return { content: [{ type: "text", text: "Failed to create browser session." }] };
+        const page = session.page;
+
+        await page.goto(args.loginUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
+        await page.waitForTimeout(1000);
+
+        // Auto-detect username/email field
+        const usernameSelector = args.usernameSelector || await page.evaluate(`
+          (() => {
+            const sels = [
+              'input[type="email"]', 'input[name="email"]', 'input[name="username"]',
+              'input[name="user"]', 'input[name="login"]', 'input[id="email"]',
+              'input[id="username"]', 'input[id="login-email"]',
+              'input[type="text"][autocomplete="username"]',
+              'input[type="text"][autocomplete="email"]', 'input[type="text"]',
+            ];
+            for (const s of sels) {
+              const el = document.querySelector(s);
+              if (el && el.offsetParent !== null) return s;
+            }
+            return null;
+          })()
+        `);
+
+        // Auto-detect password field
+        const passwordSelector = args.passwordSelector || await page.evaluate(`
+          (() => {
+            const sels = ['input[type="password"]', 'input[name="password"]', 'input[id="password"]'];
+            for (const s of sels) {
+              const el = document.querySelector(s);
+              if (el && el.offsetParent !== null) return s;
+            }
+            return null;
+          })()
+        `);
+
+        if (!usernameSelector || !passwordSelector) {
+          const img = await pageScreenshot(page);
+          const missing = [];
+          if (!usernameSelector) missing.push("username/email field");
+          if (!passwordSelector) missing.push("password field");
+          return {
+            content: [
+              { type: "text", text: `Login failed: Could not auto-detect ${missing.join(" and ")}.\n\nThe page may use a multi-step login or non-standard form. Please provide CSS selectors via usernameSelector and passwordSelector parameters, or use browser_fill manually.\n\nSession ID: ${sessionId}` },
+              img,
+            ],
+          };
+        }
+
+        // Fill in credentials
+        await page.click(usernameSelector as string);
+        await page.fill(usernameSelector as string, args.username);
+        await page.waitForTimeout(300);
+
+        await page.click(passwordSelector as string);
+        await page.fill(passwordSelector as string, args.password);
+        await page.waitForTimeout(300);
+
+        // Find and click submit
+        const submitSelector = args.submitSelector || await page.evaluate(`
+          (() => {
+            const sels = [
+              'button[type="submit"]', 'input[type="submit"]', 'form button',
+            ];
+            for (const s of sels) {
+              try {
+                const el = document.querySelector(s);
+                if (el && el.offsetParent !== null) return s;
+              } catch {}
+            }
+            return null;
+          })()
+        `);
+
+        if (submitSelector) {
+          try {
+            await page.click(submitSelector as string);
+          } catch {
+            await page.keyboard.press("Enter");
+          }
+        } else {
+          await page.keyboard.press("Enter");
+        }
+
+        // Wait for navigation / response
+        await page.waitForTimeout(3000);
+
+        // Check for login success indicators
+        const currentUrl = page.url();
+        const loginFailed = await page.evaluate(`
+          (() => {
+            const body = (document.body && document.body.innerText || "").toLowerCase();
+            const patterns = [
+              "invalid password", "incorrect password", "wrong password",
+              "invalid credentials", "invalid email", "login failed",
+              "authentication failed", "account not found", "user not found",
+              "please try again", "error signing in", "unable to sign in",
+              "invalid username", "incorrect email",
+            ];
+            return patterns.some(p => body.includes(p));
+          })()
+        `);
+
+        const stillOnLogin = /\b(login|signin|sign-in|sign_in|auth|log-in)\b/i.test(currentUrl);
+
+        const img = await pageScreenshot(page);
+
+        if (loginFailed) {
+          return {
+            content: [
+              { type: "text", text: `Login FAILED at ${currentUrl}\n\nThe page shows an error message indicating invalid credentials.\n\nSession ID: ${sessionId} (session kept open for retry)\n\nOptions:\n1. Ask the user to double-check their credentials\n2. Ask for the exact login URL if this was the wrong page\n3. Use browser_fill manually if the form is non-standard` },
+              img,
+            ],
+          };
+        }
+
+        if (stillOnLogin && currentUrl === args.loginUrl) {
+          return {
+            content: [
+              { type: "text", text: `Login UNCERTAIN — still on ${currentUrl}\n\nThe page didn't navigate away after submission. This could mean:\n- Credentials were wrong but no visible error\n- The form requires additional steps (2FA, captcha)\n- The submit button wasn't clicked correctly\n\nSession ID: ${sessionId} (session kept open)\n\nCheck the screenshot and use browser tools to continue.` },
+              img,
+            ],
+          };
+        }
+
+        return {
+          content: [
+            { type: "text", text: `Login SUCCESS! Redirected to: ${currentUrl}\n\nSession ID: ${sessionId}\n\nYou can now use this session to continue testing the authenticated flow. Use browser_click, browser_fill, browser_navigate, etc. with this session ID.\n\nRemember to call browser_close when done.` },
+            img,
+          ],
+        };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Login error: ${err instanceof Error ? err.message : String(err)}\n\nThe page may have timed out or the URL may be incorrect. Ask the user for the exact login URL.` }] };
       }
     }
   );
