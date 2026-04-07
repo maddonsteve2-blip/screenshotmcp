@@ -534,6 +534,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
     }
   );
 
+  // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
     "browser_get_accessibility_tree",
     "Get the accessibility tree of the current page. Returns a structured snapshot of all interactive elements, headings, links, buttons, form fields, images with alt text, and ARIA roles. This is the BEST tool for understanding page structure and UX without looking at screenshots.",
