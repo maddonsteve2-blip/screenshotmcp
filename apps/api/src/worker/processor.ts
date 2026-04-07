@@ -6,12 +6,52 @@ import { uploadScreenshot } from "../lib/r2.js";
 import { browserPool } from "../lib/browser-pool.js";
 import { STEALTH_SCRIPT, DEFAULT_USER_AGENT } from "../lib/stealth.js";
 import type { ScreenshotJob } from "@screenshotsmcp/types";
+import type { Page } from "playwright";
 
 const CONTENT_TYPES: Record<string, string> = {
   png: "image/png",
   jpeg: "image/jpeg",
   webp: "image/webp",
 };
+
+/**
+ * Scroll through the page in increments to trigger lazy-loaded content
+ * and scroll-triggered animations (IntersectionObserver, Framer Motion whileInView, etc.)
+ * This ensures all content is rendered before taking a full-page screenshot.
+ */
+async function scrollToTriggerContent(page: Page): Promise<void> {
+  // Get the full scrollable height of the page using string evaluate to avoid TS DOM errors
+  const scrollHeight = await page.evaluate(() => Math.max(
+    (globalThis as any).document.body.scrollHeight,
+    (globalThis as any).document.documentElement.scrollHeight,
+    (globalThis as any).document.body.offsetHeight,
+    (globalThis as any).document.documentElement.offsetHeight
+  ));
+
+  const viewportHeight = await page.evaluate(() => (globalThis as any).window.innerHeight);
+
+  // If page is shorter than viewport, no need to scroll
+  if (scrollHeight <= viewportHeight) {
+    return;
+  }
+
+  // Scroll down in viewport-sized chunks to trigger all lazy content
+  const scrollSteps = Math.ceil(scrollHeight / viewportHeight);
+
+  for (let i = 0; i < scrollSteps; i++) {
+    const scrollY = Math.min((i + 1) * viewportHeight, scrollHeight);
+    await page.evaluate((y: number) => { (globalThis as any).window.scrollTo(0, y); }, scrollY);
+    // Wait for animations and lazy content to load
+    await page.waitForTimeout(300);
+  }
+
+  // Additional wait for any final animations
+  await page.waitForTimeout(500);
+
+  // Scroll back to top for consistent full-page capture
+  await page.evaluate(() => { (globalThis as any).window.scrollTo(0, 0); });
+  await page.waitForTimeout(200);
+}
 
 export async function processScreenshotJob(job: Job<ScreenshotJob>) {
   const { id, options } = job.data;
@@ -51,6 +91,10 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
       await page.goto(url, { waitUntil: "load", timeout: 30000 });
     }
     await page.waitForTimeout(Math.max(delay, 1500));
+
+    // Scroll through page to trigger lazy-loaded content and scroll animations
+    // This is critical for sites with IntersectionObserver, lazy images, and whileInView animations
+    await scrollToTriggerContent(page);
 
     let buffer: Buffer;
     let outputFormat: string = format;
