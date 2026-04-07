@@ -27,8 +27,8 @@ export interface Session {
 }
 
 const sessions = new Map<string, Session>();
-const SESSION_TTL_MS = 5 * 60 * 1000;
-const MAX_SESSIONS = 6;
+const SESSION_TTL_MS = 10 * 60 * 1000;
+const MAX_SESSIONS = 10;
 
 setInterval(() => {
   const now = Date.now();
@@ -41,6 +41,53 @@ setInterval(() => {
     }
   }
 }, 30_000);
+
+function attachPageListeners(page: Page, session: Pick<Session, "consoleLogs" | "networkErrors" | "networkRequests">) {
+  const requestTimings = new Map<string, number>();
+
+  page.on("console", (msg) => {
+    const level = msg.type();
+    if (["error", "warning", "log"].includes(level)) {
+      session.consoleLogs.push({ level, text: msg.text(), ts: Date.now() });
+      if (session.consoleLogs.length > 200) session.consoleLogs.shift();
+    }
+  });
+
+  page.on("pageerror", (err) => {
+    session.consoleLogs.push({ level: "exception", text: err.message, ts: Date.now() });
+    if (session.consoleLogs.length > 200) session.consoleLogs.shift();
+  });
+
+  page.on("request", (request) => {
+    requestTimings.set(request.url(), Date.now());
+  });
+
+  page.on("response", (response) => {
+    const url = response.url();
+    const startTime = requestTimings.get(url) || Date.now();
+    const duration = Date.now() - startTime;
+    requestTimings.delete(url);
+
+    const entry: NetworkEntry = {
+      url,
+      method: response.request().method(),
+      status: response.status(),
+      statusText: response.statusText(),
+      resourceType: response.request().resourceType(),
+      duration,
+      size: Number(response.headers()["content-length"] || 0),
+      ts: Date.now(),
+    };
+
+    session.networkRequests.push(entry);
+    if (session.networkRequests.length > 500) session.networkRequests.shift();
+
+    if (response.status() >= 400) {
+      session.networkErrors.push({ url, status: response.status(), statusText: response.statusText(), ts: Date.now() });
+      if (session.networkErrors.length > 100) session.networkErrors.shift();
+    }
+  });
+}
 
 export async function createSession(userId: string): Promise<string> {
   const sessionId = nanoid();
@@ -66,56 +113,11 @@ export async function createSession(userId: string): Promise<string> {
   const consoleLogs: Session["consoleLogs"] = [];
   const networkErrors: Session["networkErrors"] = [];
   const networkRequests: NetworkEntry[] = [];
-  const requestTimings = new Map<string, number>();
 
-  // Capture console messages
-  page.on("console", (msg) => {
-    const level = msg.type();
-    if (["error", "warning", "log"].includes(level)) {
-      consoleLogs.push({ level, text: msg.text(), ts: Date.now() });
-      if (consoleLogs.length > 200) consoleLogs.shift();
-    }
-  });
+  const session: Session = { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors, networkRequests };
+  attachPageListeners(page, session);
 
-  // Capture JS errors
-  page.on("pageerror", (err) => {
-    consoleLogs.push({ level: "exception", text: err.message, ts: Date.now() });
-    if (consoleLogs.length > 200) consoleLogs.shift();
-  });
-
-  // Track request start times
-  page.on("request", (request) => {
-    requestTimings.set(request.url(), Date.now());
-  });
-
-  // Capture ALL network responses with timing
-  page.on("response", (response) => {
-    const url = response.url();
-    const startTime = requestTimings.get(url) || Date.now();
-    const duration = Date.now() - startTime;
-    requestTimings.delete(url);
-
-    const entry: NetworkEntry = {
-      url,
-      method: response.request().method(),
-      status: response.status(),
-      statusText: response.statusText(),
-      resourceType: response.request().resourceType(),
-      duration,
-      size: Number(response.headers()["content-length"] || 0),
-      ts: Date.now(),
-    };
-
-    networkRequests.push(entry);
-    if (networkRequests.length > 500) networkRequests.shift();
-
-    if (response.status() >= 400) {
-      networkErrors.push({ url, status: response.status(), statusText: response.statusText(), ts: Date.now() });
-      if (networkErrors.length > 100) networkErrors.shift();
-    }
-  });
-
-  sessions.set(sessionId, { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors, networkRequests });
+  sessions.set(sessionId, session);
   return sessionId;
 }
 
@@ -123,6 +125,38 @@ export async function getSession(sessionId: string, userId: string): Promise<Ses
   const session = sessions.get(sessionId);
   if (!session || session.userId !== userId) return null;
   session.lastUsed = new Date();
+
+  // Health check: if the page or context is dead, try to recover
+  try {
+    // Quick liveness test — if this throws, page/context is dead
+    await session.page.evaluate('1');
+  } catch {
+    console.log(`[Sessions] Page dead in session ${sessionId}, recovering...`);
+    try {
+      // Try closing old context gracefully
+      await session.context.close().catch(() => {});
+      // Create fresh context + page on the same browser
+      const context = await session.browser.newContext({
+        userAgent: DEFAULT_USER_AGENT,
+        viewport: { width: 1280, height: 800 },
+        locale: "en-US",
+      });
+      const page = await context.newPage();
+      await page.addInitScript(STEALTH_SCRIPT);
+      session.context = context;
+      session.page = page;
+      // Re-attach listeners
+      attachPageListeners(page, session);
+      console.log(`[Sessions] Recovered session ${sessionId}`);
+    } catch (recoverErr) {
+      console.error(`[Sessions] Failed to recover session ${sessionId}:`, recoverErr);
+      // Kill the session entirely
+      await session.release().catch(() => {});
+      sessions.delete(sessionId);
+      return null;
+    }
+  }
+
   return session;
 }
 
@@ -136,8 +170,44 @@ export async function closeSession(sessionId: string): Promise<void> {
 }
 
 export async function pageScreenshot(page: Page): Promise<{ type: "image"; data: string; mimeType: string }> {
-  const buf = await page.screenshot({ type: "jpeg", quality: 50 });
+  const buf = await page.screenshot({ type: "jpeg", quality: 80, fullPage: true, timeout: 15000 });
   return { type: "image", data: Buffer.from(buf).toString("base64"), mimeType: "image/jpeg" };
+}
+
+/**
+ * Navigate to a URL with networkidle wait + hydration delay.
+ * Falls back to load if networkidle times out.
+ * Retries once on transient failure.
+ */
+export async function navigateWithRetry(
+  page: Page,
+  url: string,
+  opts: { timeout?: number; waitAfter?: number } = {},
+): Promise<void> {
+  const timeout = opts.timeout ?? 30000;
+  const waitAfter = opts.waitAfter ?? 1500;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await page.goto(url, { waitUntil: "networkidle", timeout });
+      // Extra hydration wait for SPAs
+      await page.waitForTimeout(waitAfter);
+      return;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (attempt === 0 && !msg.includes("closed")) {
+        console.log(`[Sessions] Navigate attempt 1 failed (${msg.slice(0, 80)}), retrying with 'load'...`);
+        try {
+          await page.goto(url, { waitUntil: "load", timeout });
+          await page.waitForTimeout(waitAfter);
+          return;
+        } catch {
+          // fall through to throw
+        }
+      }
+      throw err;
+    }
+  }
 }
 
 export function sessionCount(): number {

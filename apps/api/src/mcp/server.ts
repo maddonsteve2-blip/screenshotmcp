@@ -9,7 +9,7 @@ import { screenshotQueue } from "../lib/queue.js";
 import { createHash } from "crypto";
 import { eq, and, count, gte, desc } from "drizzle-orm";
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
-import { createSession, getSession, closeSession, pageScreenshot } from "../lib/sessions.js";
+import { createSession, getSession, closeSession, pageScreenshot, navigateWithRetry } from "../lib/sessions.js";
 
 export const mcpRouter = Router();
 
@@ -128,12 +128,11 @@ When the user asks you to test a flow that requires authentication (login, sign-
   // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
     "take_screenshot",
-    "Capture a screenshot of any URL and return a public image URL. Use this for any URL that needs to be captured.",
+    "Capture a full-page screenshot of any URL and return a public image URL. Use this for any URL that needs to be captured.",
     {
       url: z.string().url().describe("The URL to screenshot"),
       width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width in pixels"),
       height: z.number().int().min(240).max(2160).default(800).describe("Viewport height in pixels"),
-      fullPage: z.boolean().default(false).describe("Capture full scrollable page"),
       format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
       delay: z.number().int().min(0).max(10000).default(0).describe("Wait ms after page load"),
     },
@@ -142,17 +141,16 @@ When the user asks you to test a flow that requires authentication (login, sign-
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-      const id = await enqueueScreenshot(auth.userId, args);
+      const id = await enqueueScreenshot(auth.userId, { ...args, fullPage: true });
       return pollScreenshot(id);
     }
   );
 
   server.tool(
     "screenshot_mobile",
-    "Capture a screenshot at iPhone 14 Pro viewport (393×852). Shortcut for mobile responsive testing.",
+    "Capture a full-page screenshot at iPhone 14 Pro viewport (393×852). Shortcut for mobile responsive testing.",
     {
       url: z.string().url().describe("The URL to screenshot"),
-      fullPage: z.boolean().default(false).describe("Capture full scrollable page"),
       format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
@@ -160,17 +158,16 @@ When the user asks you to test a flow that requires authentication (login, sign-
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-      const id = await enqueueScreenshot(auth.userId, { ...args, width: 393, height: 852, delay: 0 });
+      const id = await enqueueScreenshot(auth.userId, { ...args, width: 393, height: 852, fullPage: true, delay: 0 });
       return pollScreenshot(id);
     }
   );
 
   server.tool(
     "screenshot_tablet",
-    "Capture a screenshot at iPad viewport (820×1180). Shortcut for tablet responsive testing.",
+    "Capture a full-page screenshot at iPad viewport (820×1180). Shortcut for tablet responsive testing.",
     {
       url: z.string().url().describe("The URL to screenshot"),
-      fullPage: z.boolean().default(false).describe("Capture full scrollable page"),
       format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
@@ -178,17 +175,16 @@ When the user asks you to test a flow that requires authentication (login, sign-
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-      const id = await enqueueScreenshot(auth.userId, { ...args, width: 820, height: 1180, delay: 0 });
+      const id = await enqueueScreenshot(auth.userId, { ...args, width: 820, height: 1180, fullPage: true, delay: 0 });
       return pollScreenshot(id);
     }
   );
 
   server.tool(
     "screenshot_responsive",
-    "Capture screenshots at desktop (1280×800), tablet (820×1180), and mobile (393×852) viewports in one call. Returns all three URLs for responsive comparison.",
+    "Capture full-page screenshots at desktop (1280×800), tablet (820×1180), and mobile (393×852) viewports in one call. Returns all three URLs for responsive comparison.",
     {
       url: z.string().url().describe("The URL to screenshot"),
-      fullPage: z.boolean().default(false).describe("Capture full scrollable page"),
       format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
@@ -204,7 +200,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
       ];
 
       const ids = await Promise.all(
-        devices.map((d) => enqueueScreenshot(auth.userId, { url: args.url, width: d.width, height: d.height, fullPage: args.fullPage, format: args.format, delay: 0 }))
+        devices.map((d) => enqueueScreenshot(auth.userId, { url: args.url, width: d.width, height: d.height, fullPage: true, format: args.format, delay: 0 }))
       );
 
       const results: string[] = [];
@@ -253,12 +249,11 @@ When the user asks you to test a flow that requires authentication (login, sign-
 
   server.tool(
     "screenshot_dark",
-    "Capture a screenshot with dark mode (prefers-color-scheme: dark) emulated. Works on sites that support dark mode via CSS media queries.",
+    "Capture a full-page screenshot with dark mode (prefers-color-scheme: dark) emulated. Works on sites that support dark mode via CSS media queries.",
     {
       url: z.string().url().describe("The URL to screenshot"),
       width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width in pixels"),
       height: z.number().int().min(240).max(2160).default(800).describe("Viewport height in pixels"),
-      fullPage: z.boolean().default(false).describe("Capture full scrollable page"),
       format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
@@ -266,7 +261,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-      const id = await enqueueScreenshot(auth.userId, { ...args, delay: 0, darkMode: true });
+      const id = await enqueueScreenshot(auth.userId, { ...args, fullPage: true, delay: 0, darkMode: true });
       return pollScreenshot(id);
     }
   );
@@ -368,7 +363,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
           const session = await getSession(sessionId, auth.userId);
           page = session!.page;
         }
-        await page.goto(args.url, { waitUntil: "domcontentloaded", timeout: 30000 });
+        await navigateWithRetry(page, args.url);
         const img = await pageScreenshot(page);
         return { content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\n(Pass this sessionId to all browser_ tools)` }, img] };
       } catch (err) {
@@ -719,7 +714,8 @@ When the user asks you to test a flow that requires authentication (login, sign-
       const session = await getSession(args.sessionId, auth.userId);
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       try {
-        await session.page.goBack({ waitUntil: "domcontentloaded", timeout: 15000 });
+        await session.page.goBack({ waitUntil: "networkidle", timeout: 30000 });
+        await session.page.waitForTimeout(1000);
         const img = await pageScreenshot(session.page);
         return { content: [{ type: "text", text: `Navigated back to: ${session.page.url()}` }, img] };
       } catch (err) {
@@ -740,7 +736,8 @@ When the user asks you to test a flow that requires authentication (login, sign-
       const session = await getSession(args.sessionId, auth.userId);
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       try {
-        await session.page.goForward({ waitUntil: "domcontentloaded", timeout: 15000 });
+        await session.page.goForward({ waitUntil: "networkidle", timeout: 30000 });
+        await session.page.waitForTimeout(1000);
         const img = await pageScreenshot(session.page);
         return { content: [{ type: "text", text: `Navigated forward to: ${session.page.url()}` }, img] };
       } catch (err) {
@@ -1231,8 +1228,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
         if (!session) return { content: [{ type: "text", text: "Failed to create browser session." }] };
         const page = session.page;
 
-        await page.goto(args.loginUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
-        await page.waitForTimeout(1000);
+        await navigateWithRetry(page, args.loginUrl);
 
         // Auto-detect username/email field
         const usernameSelector = args.usernameSelector || await page.evaluate(`

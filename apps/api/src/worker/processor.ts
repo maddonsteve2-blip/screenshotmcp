@@ -43,7 +43,13 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
     });
     const page = await context.newPage();
     await page.addInitScript(STEALTH_SCRIPT);
-    await page.goto(url, { waitUntil: "load", timeout: 30000 });
+    // Use networkidle for full page load (SPAs, dynamic content)
+    // Fall back to load if networkidle times out
+    try {
+      await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
+    } catch {
+      await page.goto(url, { waitUntil: "load", timeout: 30000 });
+    }
     await page.waitForTimeout(Math.max(delay, 1500));
 
     let buffer: Buffer;
@@ -58,7 +64,7 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
       const el = page.locator(selector).first();
       buffer = Buffer.from(await el.screenshot({ type: format as "png" | "jpeg" }));
     } else {
-      buffer = Buffer.from(await page.screenshot({ type: format as "png" | "jpeg", fullPage }));
+      buffer = Buffer.from(await page.screenshot({ type: format as "png" | "jpeg", fullPage: true }));
     }
 
     const ext = pdf ? "pdf" : format;

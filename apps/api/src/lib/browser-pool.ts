@@ -1,8 +1,8 @@
 import { chromium, Browser } from "playwright";
 
-const POOL_SIZE = parseInt(process.env.BROWSER_POOL_SIZE || "2", 10);
-const MAX_USES_PER_BROWSER = 50;
-const LAUNCH_TIMEOUT = 15000;
+const POOL_SIZE = parseInt(process.env.BROWSER_POOL_SIZE || "3", 10);
+const MAX_USES_PER_BROWSER = 100;
+const LAUNCH_TIMEOUT = 30000;
 
 const BROWSER_ARGS = [
   "--no-sandbox",
@@ -11,7 +11,9 @@ const BROWSER_ARGS = [
   "--disable-infobars",
   "--disable-gpu",
   "--disable-dev-shm-usage",
-  "--single-process",
+  "--disable-background-timer-throttling",
+  "--disable-renderer-backgrounding",
+  "--disable-backgrounding-occluded-windows",
 ];
 
 interface PoolEntry {
