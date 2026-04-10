@@ -121,15 +121,15 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
     } else {
       buffer = Buffer.from(await page.screenshot({ type: format as "png" | "jpeg", fullPage }));
 
-      // If maxHeight is set, check if we need to re-capture with clipping
+      // If maxHeight is set, check if we need to re-capture with capped height
       if (maxHeight && fullPage) {
         const dims = getImageDimensions(buffer, format);
         if (dims && dims.height > maxHeight) {
-          // Re-take screenshot with clip region to cap height (Playwright native, no sharp needed)
-          buffer = Buffer.from(await page.screenshot({
-            type: format as "png" | "jpeg",
-            clip: { x: 0, y: 0, width: dims.width, height: maxHeight },
-          }));
+          // Scroll to top, resize viewport to maxHeight, and take viewport-only screenshot
+          await page.evaluate(() => (globalThis as any).scrollTo(0, 0));
+          await page.setViewportSize({ width: dims.width, height: maxHeight });
+          await page.waitForTimeout(300);
+          buffer = Buffer.from(await page.screenshot({ type: format as "png" | "jpeg", fullPage: false }));
         }
       }
     }
