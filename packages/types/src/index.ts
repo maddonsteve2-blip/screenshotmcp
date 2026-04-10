@@ -14,6 +14,7 @@ export interface ScreenshotOptions {
   darkMode?: boolean;
   selector?: string;
   pdf?: boolean;
+  maxHeight?: number;
 }
 
 export interface ScreenshotJob {

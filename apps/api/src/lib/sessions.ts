@@ -89,7 +89,7 @@ function attachPageListeners(page: Page, session: Pick<Session, "consoleLogs" | 
   });
 }
 
-export async function createSession(userId: string): Promise<string> {
+export async function createSession(userId: string, viewport?: { width: number; height: number }): Promise<string> {
   const sessionId = nanoid();
   // Enforce max session limit — close oldest
   if (sessions.size >= MAX_SESSIONS) {
@@ -101,10 +101,11 @@ export async function createSession(userId: string): Promise<string> {
     }
   }
 
+  const vp = viewport || { width: 1280, height: 800 };
   const { browser, release } = await browserPool.acquire();
   const context = await browser.newContext({
     userAgent: DEFAULT_USER_AGENT,
-    viewport: { width: 1280, height: 800 },
+    viewport: vp,
     locale: "en-US",
   });
   const page = await context.newPage();
@@ -119,6 +120,13 @@ export async function createSession(userId: string): Promise<string> {
 
   sessions.set(sessionId, session);
   return sessionId;
+}
+
+export async function setSessionViewport(sessionId: string, userId: string, width: number, height: number): Promise<boolean> {
+  const session = await getSession(sessionId, userId);
+  if (!session) return false;
+  await session.page.setViewportSize({ width, height });
+  return true;
 }
 
 export async function getSession(sessionId: string, userId: string): Promise<Session | null> {

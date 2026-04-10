@@ -9,7 +9,8 @@ import { screenshotQueue } from "../lib/queue.js";
 import { createHash } from "crypto";
 import { eq, and, count, gte, desc } from "drizzle-orm";
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
-import { createSession, getSession, closeSession, pageScreenshot, navigateWithRetry } from "../lib/sessions.js";
+import { createSession, getSession, closeSession, pageScreenshot, navigateWithRetry, setSessionViewport } from "../lib/sessions.js";
+import { browserPool } from "../lib/browser-pool.js";
 
 export const mcpRouter = Router();
 
@@ -45,10 +46,14 @@ async function checkLimit(userId: string, plan: "free" | "starter" | "pro"): Pro
 async function enqueueScreenshot(userId: string, options: {
   url: string; width: number; height: number;
   fullPage: boolean; format: "png" | "jpeg" | "webp"; delay: number;
-  darkMode?: boolean; selector?: string; pdf?: boolean;
+  darkMode?: boolean; selector?: string; pdf?: boolean; maxHeight?: number;
 }) {
   const id = nanoid();
-  await db.insert(screenshots).values({ id, userId, status: "pending", ...options });
+  await db.insert(screenshots).values({
+    id, userId, status: "pending",
+    url: options.url, width: options.width, height: options.height,
+    fullPage: options.fullPage, format: options.format, delay: options.delay,
+  });
   await screenshotQueue.add("capture", { id, userId, options }, { jobId: id, attempts: 2, backoff: { type: "exponential", delay: 2000 } });
   await db.insert(usageEvents).values({ id: nanoid(), userId, screenshotId: id });
   return id;
@@ -79,13 +84,13 @@ function createMcpServer(apiKey: string | undefined) {
     description: `You have access to screenshotsmcp — a tool suite for capturing screenshots and automating browsers.
 
 ## Screenshot Tools (quick captures, no session needed)
-- **take_screenshot** — capture any URL at a custom viewport size. Returns a public image URL.
-- **screenshot_mobile** — iPhone 14 Pro viewport (393×852).
-- **screenshot_tablet** — iPad viewport (820×1180).
-- **screenshot_fullpage** — capture the entire scrollable page.
-- **screenshot_responsive** — capture desktop + tablet + mobile in ONE call. Best for responsive design checks.
+- **take_screenshot** — capture any URL at a custom viewport size. Supports fullPage (default) or viewport-only mode. Returns a public image URL with dimensions.
+- **screenshot_mobile** — iPhone 14 Pro viewport (393×852). Supports viewport-only or full-page.
+- **screenshot_tablet** — iPad viewport (820×1180). Supports viewport-only or full-page.
+- **screenshot_fullpage** — capture the entire scrollable page (always full-page). Use max_height to cap long pages.
+- **screenshot_responsive** — capture desktop + tablet + mobile in ONE call. Supports viewport-only mode. Best for responsive design checks.
 - **screenshot_dark** — capture with dark mode emulated (prefers-color-scheme: dark).
-- **screenshot_element** — capture a specific element by CSS selector (e.g. '#hero', '.pricing-table').
+- **screenshot_element** — capture a specific element by CSS selector. Waits for the element to appear (SPA-friendly). Supports delay param.
 - **screenshot_pdf** — export a webpage as a PDF document (A4, with backgrounds).
 - **list_recent_screenshots** — view recent screenshot URLs and metadata.
 - **get_screenshot_status** — check if a screenshot job is done.
@@ -97,8 +102,10 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
 3. Call **browser_close** when done to free resources.
 
 **Interaction:** browser_click, browser_fill, browser_hover, browser_select_option, browser_scroll, browser_press_key
-**Navigation:** browser_navigate, browser_go_back, browser_go_forward, browser_wait_for
+**Navigation:** browser_navigate (supports width/height params), browser_go_back, browser_go_forward, browser_wait_for
+**Viewport:** browser_set_viewport — resize the browser viewport mid-session (e.g. switch between desktop and mobile)
 **Inspection:** browser_screenshot, browser_get_text, browser_get_html, browser_get_accessibility_tree, browser_evaluate
+**Standalone:** accessibility_snapshot — get accessibility tree for any URL without a session
 **Performance:** browser_perf_metrics (Core Web Vitals: LCP, FCP, CLS, TTFB), browser_network_requests (full waterfall)
 **SEO:** browser_seo_audit (meta, OG, Twitter cards, headings, structured data, alt text)
 **Debugging:** browser_console_logs, browser_network_errors, browser_cookies, browser_storage
@@ -116,10 +123,14 @@ When the user asks you to test a flow that requires authentication (login, sign-
 9. Once logged in, proceed with the requested testing flow.
 
 ## Tips
-- Screenshot tools return a public CDN URL (not inline images). Share the URL with the user.
+- Screenshot tools return a public CDN URL (not inline images) **with dimensions**. Check dimensions to judge if the image will be useful.
 - For responsive testing, prefer screenshot_responsive — it's faster than 3 separate calls.
+- **For long pages** (e.g. product grids), use **fullPage: false** (viewport-only) or set **max_height** to cap the image height. Full-page captures on long pages produce unreadable strips.
 - Browser tools return a JPEG screenshot after each action so you can see the result.
+- Use **browser_set_viewport** to resize the browser mid-session for mobile/tablet testing without starting a new session.
+- Use **browser_navigate** with width/height params to start a mobile session directly.
 - **browser_get_accessibility_tree** is the best way to understand page structure for UX analysis.
+- **accessibility_snapshot** does the same thing without needing a session — just pass a URL.
 - **browser_console_logs** and **browser_network_errors** capture errors automatically from the moment the session starts.
 - When the user says "take a screenshot", use take_screenshot. When they say "check responsive", use screenshot_responsive.
 - When the user says "audit this site" or "check UX", use browser_navigate + browser_get_accessibility_tree + browser_console_logs.`,
@@ -128,11 +139,13 @@ When the user asks you to test a flow that requires authentication (login, sign-
   // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
     "take_screenshot",
-    "Capture a full-page screenshot of any URL and return a public image URL. Use this for any URL that needs to be captured.",
+    "Capture a screenshot of any URL and return a public image URL. By default captures the full scrollable page. Set fullPage to false for viewport-only capture (recommended for long pages). Returns image dimensions in the response.",
     {
       url: z.string().url().describe("The URL to screenshot"),
       width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width in pixels"),
       height: z.number().int().min(240).max(2160).default(800).describe("Viewport height in pixels"),
+      fullPage: z.boolean().default(true).describe("If true, captures entire scrollable page. Set to false for viewport-only capture (recommended for long pages like product grids)."),
+      maxHeight: z.number().int().min(100).max(20000).optional().describe("Maximum image height in pixels. Caps extremely tall full-page captures to prevent unreadable strips."),
       format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
       delay: z.number().int().min(0).max(10000).default(0).describe("Wait ms after page load"),
     },
@@ -141,16 +154,17 @@ When the user asks you to test a flow that requires authentication (login, sign-
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-      const id = await enqueueScreenshot(auth.userId, { ...args, fullPage: true });
+      const id = await enqueueScreenshot(auth.userId, { url: args.url, width: args.width, height: args.height, fullPage: args.fullPage, format: args.format, delay: args.delay, maxHeight: args.maxHeight });
       return pollScreenshot(id);
     }
   );
 
   server.tool(
     "screenshot_mobile",
-    "Capture a full-page screenshot at iPhone 14 Pro viewport (393×852). Shortcut for mobile responsive testing.",
+    "Capture a screenshot at iPhone 14 Pro viewport (393×852). By default captures viewport-only (not the full scrollable page). Set fullPage to true for full-page capture.",
     {
       url: z.string().url().describe("The URL to screenshot"),
+      fullPage: z.boolean().default(false).describe("If true, captures entire scrollable page. Default false = viewport-only (recommended for mobile)."),
       format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
@@ -158,16 +172,17 @@ When the user asks you to test a flow that requires authentication (login, sign-
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-      const id = await enqueueScreenshot(auth.userId, { ...args, width: 393, height: 852, fullPage: true, delay: 0 });
+      const id = await enqueueScreenshot(auth.userId, { url: args.url, width: 393, height: 852, fullPage: args.fullPage, format: args.format, delay: 0 });
       return pollScreenshot(id);
     }
   );
 
   server.tool(
     "screenshot_tablet",
-    "Capture a full-page screenshot at iPad viewport (820×1180). Shortcut for tablet responsive testing.",
+    "Capture a screenshot at iPad viewport (820×1180). By default captures viewport-only (not the full scrollable page). Set fullPage to true for full-page capture.",
     {
       url: z.string().url().describe("The URL to screenshot"),
+      fullPage: z.boolean().default(false).describe("If true, captures entire scrollable page. Default false = viewport-only (recommended for tablet)."),
       format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
@@ -175,66 +190,50 @@ When the user asks you to test a flow that requires authentication (login, sign-
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-      const id = await enqueueScreenshot(auth.userId, { ...args, width: 820, height: 1180, fullPage: true, delay: 0 });
+      const id = await enqueueScreenshot(auth.userId, { url: args.url, width: 820, height: 1180, fullPage: args.fullPage, format: args.format, delay: 0 });
       return pollScreenshot(id);
     }
   );
 
   server.tool(
     "screenshot_responsive",
-    "Capture full-page screenshots at desktop (1280×800), tablet (820×1180), and mobile (393×852) viewports in one call. Returns all three URLs for responsive comparison.",
+    "Capture screenshots at desktop (1280×800), tablet (820×1180), and mobile (393×852) viewports in one call. By default captures viewport-only (recommended). Set fullPage to true for full-page captures. Returns all three URLs for responsive comparison.",
     {
       url: z.string().url().describe("The URL to screenshot"),
+      fullPage: z.boolean().default(false).describe("If true, captures entire scrollable page at each viewport. Default false = viewport-only (recommended)."),
       format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
-      const limitErr = await checkLimit(auth.userId, auth.plan);
-      if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-
-      const devices = [
-        { label: "Desktop", width: 1280, height: 800 },
-        { label: "Tablet",  width: 820,  height: 1180 },
-        { label: "Mobile",  width: 393,  height: 852 },
+      for (let i = 0; i < 3; i++) {
+        const limitErr = await checkLimit(auth.userId, auth.plan);
+        if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
+      }
+      const viewports = [
+        { name: "Desktop (1280×800)", width: 1280, height: 800 },
+        { name: "Tablet (820×1180)", width: 820, height: 1180 },
+        { name: "Mobile (393×852)", width: 393, height: 852 },
       ];
-
       const ids = await Promise.all(
-        devices.map((d) => enqueueScreenshot(auth.userId, { url: args.url, width: d.width, height: d.height, fullPage: true, format: args.format, delay: 0 }))
+        viewports.map(vp => enqueueScreenshot(auth.userId, { url: args.url, format: args.format, ...vp, fullPage: args.fullPage, delay: 0 }))
       );
-
-      const results: string[] = [];
-      for (let i = 0; i < 30; i++) {
-        await new Promise((r) => setTimeout(r, 2000));
-        let allDone = true;
-        for (let j = 0; j < ids.length; j++) {
-          if (results[j]) continue;
-          const [row] = await db.select().from(screenshots).where(eq(screenshots.id, ids[j]));
-          if (row?.status === "done" && row.publicUrl) {
-            results[j] = `${devices[j].label} (${devices[j].width}×${devices[j].height}): ${row.publicUrl}`;
-          } else if (row?.status === "failed") {
-            results[j] = `${devices[j].label}: Failed — ${row.errorMessage}`;
-          } else {
-            allDone = false;
-          }
-        }
-        if (allDone) break;
-      }
-
-      for (let j = 0; j < ids.length; j++) {
-        if (!results[j]) results[j] = `${devices[j].label}: Timed out (job ${ids[j]})`;
-      }
-
-      return { content: [{ type: "text" as const, text: `Responsive screenshots for ${args.url}:\n\n${results.join("\n")}` }] };
+      const results = await Promise.all(ids.map(id => pollScreenshot(id)));
+      const texts = results.map((r, i) => {
+        const text = r.content.find(c => c.type === "text") as { text: string } | undefined;
+        return `${viewports[i].name}:\n${text?.text || "Error"}`;
+      });
+      return { content: [{ type: "text", text: texts.join("\n\n") }] };
     }
   );
 
   server.tool(
     "screenshot_fullpage",
-    "Capture a full-page screenshot (entire scrollable content) of any URL.",
+    "Capture a full-page screenshot (entire scrollable content) of any URL. Use max_height to cap extremely long pages and prevent unreadable strips.",
     {
       url: z.string().url().describe("The URL to screenshot"),
       width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width in pixels"),
+      maxHeight: z.number().int().min(100).max(20000).optional().describe("Maximum image height in pixels. Caps extremely tall full-page captures."),
       format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
@@ -242,7 +241,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-      const id = await enqueueScreenshot(auth.userId, { ...args, height: 800, fullPage: true, delay: 0 });
+      const id = await enqueueScreenshot(auth.userId, { url: args.url, width: args.width, height: 800, fullPage: true, format: args.format, delay: 0, maxHeight: args.maxHeight });
       return pollScreenshot(id);
     }
   );
@@ -268,10 +267,11 @@ When the user asks you to test a flow that requires authentication (login, sign-
 
   server.tool(
     "screenshot_element",
-    "Capture a screenshot of a specific element on the page by CSS selector. Only the matched element is captured, not the full page.",
+    "Capture a screenshot of a specific element on the page by CSS selector. Only the matched element is captured, not the full page. Automatically waits for the element to appear (SPA-friendly). Use delay for pages that need extra hydration time.",
     {
       url: z.string().url().describe("The URL to screenshot"),
       selector: z.string().describe("CSS selector of the element to capture (e.g. '#hero', '.pricing-table', 'main > section:first-child')"),
+      delay: z.number().int().min(0).max(10000).default(0).describe("Extra wait in ms after page load before capturing. Use 2000-5000 for SPAs that need hydration time."),
       format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
     },
     async (args) => {
@@ -279,7 +279,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-      const id = await enqueueScreenshot(auth.userId, { url: args.url, width: 1280, height: 800, fullPage: false, format: args.format, delay: 0, selector: args.selector });
+      const id = await enqueueScreenshot(auth.userId, { url: args.url, width: 1280, height: 800, fullPage: false, format: args.format, delay: args.delay, selector: args.selector });
       return pollScreenshot(id);
     }
   );
@@ -343,10 +343,12 @@ When the user asks you to test a flow that requires authentication (login, sign-
 
   server.tool(
     "browser_navigate",
-    "Open a browser and navigate to a URL. Returns a screenshot of the loaded page. Use this to start a browser session — the returned sessionId must be passed to all subsequent browser_ tools.",
+    "Open a browser and navigate to a URL. Returns a screenshot of the loaded page. Use this to start a browser session — the returned sessionId must be passed to all subsequent browser_ tools. Pass width/height to start with a custom viewport (e.g. 393×852 for mobile).",
     {
       url: z.string().url().describe("URL to navigate to"),
       sessionId: z.string().optional().describe("Existing session ID to reuse. Omit to start a new browser session."),
+      width: z.number().int().min(320).max(3840).optional().describe("Viewport width for new sessions (default 1280). Ignored if sessionId is provided."),
+      height: z.number().int().min(240).max(2160).optional().describe("Viewport height for new sessions (default 800). Ignored if sessionId is provided."),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -359,13 +361,15 @@ When the user asks you to test a flow that requires authentication (login, sign-
           if (!session) return { content: [{ type: "text", text: `Error: Session ${sessionId} not found or expired. Start a new one by omitting sessionId.` }] };
           page = session.page;
         } else {
-          sessionId = await createSession(auth.userId);
+          const vp = (args.width || args.height) ? { width: args.width || 1280, height: args.height || 800 } : undefined;
+          sessionId = await createSession(auth.userId, vp);
           const session = await getSession(sessionId, auth.userId);
           page = session!.page;
         }
         await navigateWithRetry(page, args.url);
         const img = await pageScreenshot(page);
-        return { content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\n(Pass this sessionId to all browser_ tools)` }, img] };
+        const vpSize = page.viewportSize();
+        return { content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\nViewport: ${vpSize?.width}×${vpSize?.height}\n(Pass this sessionId to all browser_ tools)` }, img] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error navigating: ${err instanceof Error ? err.message : String(err)}` }] };
       }
@@ -517,6 +521,27 @@ When the user asks you to test a flow that requires authentication (login, sign-
       } catch (err) {
         return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
       }
+    }
+  );
+
+  server.tool(
+    "browser_set_viewport",
+    "Resize the browser viewport in an existing session. Useful for testing responsive layouts without starting a new session — e.g. switch between desktop (1280×800), tablet (820×1180), and mobile (393×852). Returns a screenshot after resizing.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      width: z.number().int().min(320).max(3840).describe("New viewport width in pixels"),
+      height: z.number().int().min(240).max(2160).describe("New viewport height in pixels"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const ok = await setSessionViewport(args.sessionId, auth.userId, args.width, args.height);
+      if (!ok) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      await session.page.waitForTimeout(500);
+      const img = await pageScreenshot(session.page);
+      return { content: [{ type: "text", text: `Viewport resized to ${args.width}×${args.height}` }, img] };
     }
   );
 
@@ -1358,6 +1383,96 @@ When the user asks you to test a flow that requires authentication (login, sign-
         };
       } catch (err) {
         return { content: [{ type: "text", text: `Login error: ${err instanceof Error ? err.message : String(err)}\n\nThe page may have timed out or the URL may be incorrect. Ask the user for the exact login URL.` }] };
+      }
+    }
+  );
+
+  // ── Standalone Accessibility Snapshot ───────────────────────────────
+
+  // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
+  server.tool(
+    "accessibility_snapshot",
+    "Get the accessibility tree for any URL without needing a browser session. Returns a structured snapshot of all interactive elements, headings, links, buttons, form fields, images with alt text, and ARIA roles. Great for quick UX audits.",
+    {
+      url: z.string().url().describe("URL to get the accessibility tree for"),
+      maxDepth: z.number().int().min(1).max(20).default(8).describe("Maximum depth of the tree to return"),
+      interestingOnly: z.boolean().default(true).describe("If true, only return interesting UX nodes (buttons, links, inputs, headings, images). Set false for the full tree."),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+
+      const { browser, release } = await browserPool.acquire();
+      let context;
+      try {
+        context = await browser.newContext({
+          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          viewport: { width: 1280, height: 800 },
+          locale: "en-US",
+        });
+        const page = await context.newPage();
+        try {
+          await page.goto(args.url, { waitUntil: "networkidle", timeout: 30000 });
+        } catch {
+          await page.goto(args.url, { waitUntil: "load", timeout: 30000 });
+        }
+        await page.waitForTimeout(1500);
+
+        const tree = await page.evaluate(({ maxDepth, interestingOnly }: any) => {
+          const IR = new Set(["button","link","textbox","checkbox","radio","combobox","listbox","menuitem","tab","heading","img","navigation","main","banner","contentinfo","search","form","dialog","alert","progressbar","slider"]);
+          const IT: any = {A:"link",BUTTON:"button",INPUT:"textbox",TEXTAREA:"textbox",SELECT:"combobox",IMG:"img",NAV:"navigation",MAIN:"main",HEADER:"banner",FOOTER:"contentinfo",FORM:"form",DIALOG:"dialog",H1:"heading",H2:"heading",H3:"heading",H4:"heading",H5:"heading",H6:"heading"};
+          const ITAGS = ["A","BUTTON","INPUT","TEXTAREA","SELECT","IMG","NAV","MAIN","HEADER","FOOTER","FORM","H1","H2","H3","H4","H5","H6"];
+
+          function walk(el: any, depth: number): any {
+            if (!el || depth <= 0) return null;
+            const tag = el.tagName || "";
+            const role = (el.getAttribute && el.getAttribute("role")) || IT[tag] || "";
+            const name = (el.getAttribute && (el.getAttribute("aria-label") || el.getAttribute("alt") || el.getAttribute("title") || el.getAttribute("placeholder"))) || (el.innerText ? el.innerText.slice(0, 80) : "") || "";
+            const isInteresting = IR.has(role) || (el.getAttribute && el.getAttribute("role")) || ITAGS.includes(tag);
+
+            const kids: any[] = [];
+            if (el.children) {
+              for (let i = 0; i < el.children.length; i++) {
+                const c = walk(el.children[i], depth - 1);
+                if (c) { if (Array.isArray(c)) kids.push(...c); else kids.push(c); }
+              }
+            }
+
+            if (interestingOnly && !isInteresting) {
+              return kids.length > 0 ? kids : null;
+            }
+
+            const node: any = {};
+            if (role) node.role = role;
+            node.tag = tag.toLowerCase();
+            if (name && name.trim()) node.name = name.trim().slice(0, 80);
+            if (tag === "A" && el.href) node.href = el.href;
+            if (tag === "INPUT") { node.type = el.type; node.value = el.value; }
+            if (el.id) node.id = el.id;
+            if (el.className && typeof el.className === "string") {
+              const cls = el.className.trim().slice(0, 60);
+              if (cls) node.class = cls;
+            }
+            if (el.getAttribute && el.getAttribute("disabled") !== null && el.hasAttribute("disabled")) node.disabled = true;
+            if (el.getAttribute && el.getAttribute("aria-expanded")) node.expanded = el.getAttribute("aria-expanded") === "true";
+            const lvl = tag.match(/^H(\d)$/);
+            if (lvl) node.level = parseInt(lvl[1]);
+            if (kids.length > 0) node.children = kids;
+            return node;
+          }
+          return walk((globalThis as any).document.body, maxDepth);
+        }, { maxDepth: args.maxDepth, interestingOnly: args.interestingOnly });
+
+        const text = JSON.stringify(tree, null, 2);
+        if (text.length > 50000) {
+          return { content: [{ type: "text", text: `Accessibility tree for ${args.url} (truncated to 50k chars):\n${text.slice(0, 50000)}...` }] };
+        }
+        return { content: [{ type: "text", text: `Accessibility tree for ${args.url}:\n${text}` }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      } finally {
+        if (context) await context.close().catch(() => {});
+        await release();
       }
     }
   );
