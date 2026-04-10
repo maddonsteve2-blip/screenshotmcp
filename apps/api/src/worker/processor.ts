@@ -120,11 +120,18 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
       buffer = Buffer.from(await el.screenshot({ type: format as "png" | "jpeg" }));
     } else {
       buffer = Buffer.from(await page.screenshot({ type: format as "png" | "jpeg", fullPage }));
-    }
 
-    // If maxHeight is set, crop the screenshot to that height
-    if (maxHeight && !pdf && !selector && buffer.length > 0) {
-      buffer = await cropToMaxHeight(buffer, maxHeight, format);
+      // If maxHeight is set, check if we need to re-capture with clipping
+      if (maxHeight && fullPage) {
+        const dims = getImageDimensions(buffer, format);
+        if (dims && dims.height > maxHeight) {
+          // Re-take screenshot with clip region to cap height (Playwright native, no sharp needed)
+          buffer = Buffer.from(await page.screenshot({
+            type: format as "png" | "jpeg",
+            clip: { x: 0, y: 0, width: dims.width, height: maxHeight },
+          }));
+        }
+      }
     }
 
     // Get actual image dimensions for the response
