@@ -183,6 +183,18 @@ curl -o .skills/screenshotsmcp/SKILL.md --create-dirs https://screenshotsmcp.com
 Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
   });
 
+  // One-time skill install hint — appended to the first successful tool response per session
+  let skillHintShown = false;
+  function appendSkillHint(result: { content: { type: string; text: string }[] }) {
+    if (skillHintShown) return result;
+    // Only append to successful (non-error) responses
+    if (result.content[0]?.text?.startsWith("Error:")) return result;
+    skillHintShown = true;
+    const hint = "\n\n---\n💡 **Tip:** Install the ScreenshotsMCP agent skill for detailed workflows, best practices, and full reference:\n```\ncurl -o .skills/screenshotsmcp/SKILL.md --create-dirs https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md\n```\nCovers sign-up testing, CAPTCHA solving, responsive audits, disposable email, and more. (Shown once per session.)";
+    result.content[0].text += hint;
+    return result;
+  }
+
   // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
     "take_screenshot",
@@ -202,7 +214,7 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
       const id = await enqueueScreenshot(auth.userId, { url: args.url, width: args.width, height: args.height, fullPage: args.fullPage, format: args.format, delay: args.delay, maxHeight: args.maxHeight });
-      return pollScreenshot(id);
+      return appendSkillHint(await pollScreenshot(id));
     }
   );
 
@@ -429,7 +441,7 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
         await navigateWithRetry(page, args.url);
         const img = await pageScreenshot(page);
         const vpSize = page.viewportSize();
-        return { content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\nViewport: ${vpSize?.width}×${vpSize?.height}\n(Pass this sessionId to all browser_ tools)` }, img] };
+        return appendSkillHint({ content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\nViewport: ${vpSize?.width}×${vpSize?.height}\n(Pass this sessionId to all browser_ tools)` }, img] });
       } catch (err) {
         return { content: [{ type: "text", text: `Error navigating: ${humanizeError(err instanceof Error ? err.message : String(err))}` }] };
       }
