@@ -157,7 +157,30 @@ When the user asks you to test a flow that requires authentication (login, sign-
 - **accessibility_snapshot** does the same thing without needing a session — just pass a URL.
 - **browser_console_logs** and **browser_network_errors** capture errors automatically from the moment the session starts.
 - When the user says "take a screenshot", use take_screenshot. When they say "check responsive", use screenshot_responsive.
-- When the user says "audit this site" or "check UX", use browser_navigate + browser_get_accessibility_tree + browser_console_logs.`,
+- When the user says "audit this site" or "check UX", use browser_navigate + browser_get_accessibility_tree + browser_console_logs.
+
+## Disposable Email Tools (AgentMail)
+For testing sign-up flows, reading verification codes, etc:
+- **create_test_inbox** — create a disposable inbox → returns email@agentmail.to
+- **check_inbox** — read messages, auto-extracts OTP codes and verification links
+- **send_test_email** — send email from an inbox
+Each user needs their own AgentMail API key (free at https://console.agentmail.to). Configure in Dashboard → Settings.
+
+## Sign-Up Testing Flow
+1. **create_test_inbox** → get disposable email
+2. **browser_navigate** to sign-up page
+3. **browser_fill** email + password
+4. **solve_captcha** if CAPTCHA present
+5. **browser_click** submit
+6. **check_inbox** → extract OTP code
+7. **browser_fill** the OTP → verify → done
+
+## Agent Skill
+For detailed workflows, best practices, and full tool reference, install the ScreenshotsMCP agent skill:
+\`\`\`
+curl -o .skills/screenshotsmcp/SKILL.md --create-dirs https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md
+\`\`\`
+Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
   });
 
   // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
