@@ -1290,7 +1290,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
 
   server.tool(
     "smart_login",
-    "Attempt to log in to a website. Navigates to the login URL, finds email/username and password fields, fills them in, and submits the form. Returns a screenshot and reports whether login succeeded or failed. Always ask the user for credentials first — never guess.",
+    "Attempt to log in to a website. Navigates to the login URL, finds email/username and password fields, fills them in, and submits the form. Returns a screenshot and reports whether login succeeded or failed. Always ask the user for credentials first — never guess. If the site requires email verification (OTP code), use read_verification_email to automatically fetch the code from Gmail (requires one-time authorize_email_access setup).",
     {
       loginUrl: z.string().url().describe("The login page URL to navigate to"),
       username: z.string().describe("The username or email to enter"),
@@ -2002,6 +2002,168 @@ When the user asks you to test a flow that requires authentication (login, sign-
         return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
       } finally {
         await release();
+      }
+    }
+  );
+
+  // ── Composio Gmail Integration ──────────────────────────────────────
+  const COMPOSIO_API_KEY = process.env.COMPOSIO_API_KEY || "";
+  const COMPOSIO_USER_ID = process.env.COMPOSIO_USER_ID || "";
+  const COMPOSIO_BASE = "https://backend.composio.dev/api/v3";
+
+  // @ts-ignore
+  server.tool(
+    "authorize_email_access",
+    "One-time setup: Connect the user's Gmail account via OAuth so the AI can read verification emails automatically. Returns an authorization URL the user must visit. After authorizing, the AI can use read_verification_email to fetch OTP codes.",
+    {},
+    async () => {
+      try {
+        if (!COMPOSIO_API_KEY) {
+          return { content: [{ type: "text", text: "Error: COMPOSIO_API_KEY not configured. Please set it in environment variables." }] };
+        }
+
+        // Create a session and authorize Gmail
+        const resp = await fetch(`${COMPOSIO_BASE}/sessions/create`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-API-Key": COMPOSIO_API_KEY },
+          body: JSON.stringify({
+            user_id: COMPOSIO_USER_ID || "screenshotsmcp-default",
+            manage_connections: false,
+          }),
+        });
+        const session = await resp.json();
+
+        // Request Gmail authorization
+        const authResp = await fetch(`${COMPOSIO_BASE}/sessions/${session.id || session.session_id}/authorize`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-API-Key": COMPOSIO_API_KEY },
+          body: JSON.stringify({
+            toolkit: "gmail",
+            callback_url: "https://screenshotsmcp-api-production.up.railway.app/composio/callback",
+          }),
+        });
+        const authData = await authResp.json();
+
+        const authUrl = authData.redirect_url || authData.redirectUrl || authData.url;
+        if (authUrl) {
+          return {
+            content: [{
+              type: "text",
+              text: `## Gmail Authorization Required\n\nPlease visit this URL to connect your Gmail account:\n\n**${authUrl}**\n\nAfter authorizing, I'll be able to automatically read verification codes from your email when logging into websites.\n\nThis is a one-time setup.`,
+            }],
+          };
+        }
+
+        return { content: [{ type: "text", text: `Authorization response: ${JSON.stringify(authData)}` }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  // @ts-ignore
+  server.tool(
+    "read_verification_email",
+    "Read the latest email verification code / OTP from the user's Gmail inbox. Use this after smart_login encounters a verification code screen. The user must have previously authorized Gmail access via authorize_email_access. Searches recent emails for verification codes from common senders (Clerk, Auth0, etc).",
+    {
+      sender: z.string().optional().describe("Optional sender email to filter by (e.g. 'noreply@clerk.dev')"),
+      subject_keyword: z.string().optional().describe("Optional keyword to search in subject (e.g. 'verification', 'sign in')"),
+      max_age_minutes: z.number().optional().default(5).describe("Only look at emails from the last N minutes (default: 5)"),
+    },
+    async ({ sender, subject_keyword, max_age_minutes }) => {
+      try {
+        if (!COMPOSIO_API_KEY) {
+          return { content: [{ type: "text", text: "Error: COMPOSIO_API_KEY not configured." }] };
+        }
+
+        const userId = COMPOSIO_USER_ID || "screenshotsmcp-default";
+
+        // Build Gmail search query
+        const queryParts: string[] = [];
+        if (sender) queryParts.push(`from:${sender}`);
+        if (subject_keyword) queryParts.push(`subject:${subject_keyword}`);
+        // Always filter to recent emails
+        const ageMinutes = max_age_minutes || 5;
+        queryParts.push(`newer_than:${ageMinutes}m`);
+        // Common verification senders if no specific sender given
+        if (!sender && !subject_keyword) {
+          queryParts.push("(subject:verification OR subject:code OR subject:sign OR subject:confirm OR subject:OTP)");
+        }
+
+        const gmailQuery = queryParts.join(" ");
+
+        // Execute GMAIL_FETCH_EMAILS via Composio
+        const resp = await fetch(`${COMPOSIO_BASE}/tools/execute/GMAIL_FETCH_EMAILS`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-API-Key": COMPOSIO_API_KEY },
+          body: JSON.stringify({
+            user_id: userId,
+            arguments: {
+              query: gmailQuery,
+              max_results: 3,
+              include_body: true,
+            },
+          }),
+        });
+        const result = await resp.json();
+
+        if (!result.successful && !result.data) {
+          // Gmail might not be connected yet
+          return {
+            content: [{
+              type: "text",
+              text: "Gmail is not connected yet. Please ask the user to run **authorize_email_access** first to connect their Gmail account, then retry.",
+            }],
+          };
+        }
+
+        const messages = result.data?.messages || result.messages || [];
+        if (messages.length === 0) {
+          return {
+            content: [{
+              type: "text",
+              text: `No verification emails found in the last ${ageMinutes} minutes. The email may not have arrived yet — wait a moment and try again, or ask the user to check their inbox manually.`,
+            }],
+          };
+        }
+
+        // Extract verification codes from email bodies
+        const codePatterns = [
+          /\b(\d{6})\b/,          // 6-digit code
+          /\b(\d{4})\b/,          // 4-digit code  
+          /\b(\d{8})\b/,          // 8-digit code
+          /code[:\s]+(\d{4,8})/i, // "code: 123456"
+          /pin[:\s]+(\d{4,8})/i,  // "pin: 1234"
+        ];
+
+        const results: string[] = [];
+        for (const msg of messages) {
+          const body = msg.body || msg.snippet || msg.text || "";
+          const subject = msg.subject || "";
+          const from = msg.from || "";
+          
+          let code = "";
+          for (const pattern of codePatterns) {
+            const match = body.match(pattern) || subject.match(pattern);
+            if (match) {
+              code = match[1];
+              break;
+            }
+          }
+
+          results.push(
+            `**From:** ${from}\n**Subject:** ${subject}\n**Code found:** ${code || "No numeric code detected"}\n**Snippet:** ${(body || "").substring(0, 200)}`
+          );
+        }
+
+        return {
+          content: [{
+            type: "text",
+            text: `## Verification Emails Found (${messages.length})\n\n${results.join("\n\n---\n\n")}`,
+          }],
+        };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error reading email: ${err instanceof Error ? err.message : String(err)}` }] };
       }
     }
   );
