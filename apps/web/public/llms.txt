@@ -1,8 +1,12 @@
 # ScreenshotsMCP
 
-> Give your AI coding assistant eyes. Screenshot any URL, automate browsers, audit performance and SEO — all via MCP tools.
+> Give your AI coding assistant eyes and hands for the web. Screenshot any URL, automate browsers, solve CAPTCHAs, create disposable email inboxes, audit performance and SEO — all via MCP tools.
 
-ScreenshotsMCP is a Model Context Protocol (MCP) server that gives AI coding assistants the ability to see and interact with websites. It works with Claude, Cursor, Windsurf, VS Code, and any MCP-compatible client.
+ScreenshotsMCP is a Model Context Protocol (MCP) server with 46+ tools that gives AI coding assistants the ability to see, interact with, and test websites. It works with Claude, Cursor, Windsurf, VS Code, and any MCP-compatible client.
+
+## Agent Skill
+
+Download the complete Agent Skill for all tools: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md
 
 ## Quick Start
 
@@ -41,326 +45,273 @@ Rate limits by plan:
 
 ---
 
-## Tools Reference (28 tools)
+## Tools Reference (46+ tools)
 
-### take_screenshot
+### Screenshot Tools (no session needed)
+
+#### take_screenshot
 Capture a screenshot of any URL and return a public image URL.
 
 Parameters:
 - url (string, required): The URL to screenshot
 - width (number, default: 1280): Viewport width in pixels (320–3840)
 - height (number, default: 800): Viewport height in pixels (240–2160)
-- fullPage (boolean, default: false): Capture full scrollable page
+- fullPage (boolean, default: true): Capture full scrollable page
+- maxHeight (number, optional): Cap extremely tall captures
 - format (string, default: "png"): png, jpeg, or webp
 - delay (number, default: 0): Wait ms after page load (0–10000)
 
-Notes: Screenshots stored on Cloudflare R2 CDN. Pages rendered with real Chromium + stealth mode. Supports SPAs.
+#### screenshot_fullpage
+Capture entire scrollable page.
+Params: url, width, format, maxHeight
 
-### screenshot_fullpage
-Capture a full-page screenshot (entire scrollable content) of any URL.
+#### screenshot_mobile
+iPhone 14 Pro (393×852).
+Params: url, fullPage, format
 
-Parameters:
-- url (string, required): The URL to screenshot
-- width (number, default: 1280): Viewport width in pixels (320–3840)
-- format (string, default: "png"): png, jpeg, or webp
+#### screenshot_tablet
+iPad (820×1180).
+Params: url, fullPage, format
 
-Notes: Scrolls entire page. Max resolution 8192px.
+#### screenshot_responsive
+Desktop + tablet + mobile in ONE call. Most efficient for responsive checks.
+Params: url, fullPage, format
 
-### screenshot_mobile
-Capture a screenshot at iPhone 14 Pro viewport (393x852).
+#### screenshot_dark
+Dark mode emulated (prefers-color-scheme: dark).
+Params: url, width, height, format
 
-Parameters:
-- url (string, required): The URL to screenshot
-- fullPage (boolean, default: false): Capture full scrollable page
-- format (string, default: "png"): png, jpeg, or webp
+#### screenshot_element
+Specific element by CSS selector. SPA-friendly with auto-wait.
+Params: url, selector, format, delay
 
-### screenshot_tablet
-Capture a screenshot at iPad viewport (820x1180).
+#### screenshot_pdf
+Export as PDF (A4 with backgrounds).
+Params: url
 
-Parameters:
-- url (string, required): The URL to screenshot
-- fullPage (boolean, default: false): Capture full scrollable page
-- format (string, default: "png"): png, jpeg, or webp
+#### screenshot_batch
+Capture multiple URLs in one call (max 10).
+Params: urls[], width, height, format, fullPage
 
-### screenshot_responsive
-Capture screenshots at desktop (1280x800), tablet (820x1180), and mobile (393x852) in one call.
+#### screenshot_cross_browser
+Chromium + Firefox + WebKit simultaneously.
+Params: url, width, height, fullPage
 
-Parameters:
-- url (string, required): The URL to screenshot
-- fullPage (boolean, default: false): Capture full scrollable page
-- format (string, default: "png"): png, jpeg, or webp
+#### screenshot_diff
+Pixel-diff two URLs. Returns diff image + percentage changed + match score.
+Params: urlA, urlB, width, height, threshold
 
-Returns three screenshot URLs in a single call. Most efficient for responsive testing.
+#### find_breakpoints
+Detect responsive breakpoints (scans 320px–1920px).
+Params: url
 
-### screenshot_dark
-Capture a screenshot with dark mode (prefers-color-scheme: dark) emulated.
+#### list_recent_screenshots
+View recent captures.
+Params: limit (1–20)
 
-Parameters:
-- url (string, required): The URL to screenshot
-- width (number, default: 1280): Viewport width (320–3840)
-- height (number, default: 800): Viewport height (240–2160)
-- fullPage (boolean, default: false): Capture full scrollable page
-- format (string, default: "png"): png, jpeg, or webp
-
-### screenshot_element
-Capture a screenshot of a specific element on the page by CSS selector.
-
-Parameters:
-- url (string, required): The URL to screenshot
-- selector (string, required): CSS selector of the element to capture
-- format (string, default: "png"): png, jpeg, or webp
-
-### screenshot_pdf
-Export a webpage as a PDF document (A4 format with background graphics).
-
-Parameters:
-- url (string, required): The URL to export as PDF
-
-### get_screenshot_status
-Check the status of a screenshot job by ID.
-
-Parameters:
-- id (string, required): The screenshot job ID
-
-Returns: status (pending, processing, done, failed) and public URL when ready.
-
-### list_recent_screenshots
-List the most recent screenshots taken with your API key.
-
-Parameters:
-- limit (number, default: 5): Number of screenshots to return (1–20)
+#### get_screenshot_status
+Check if a job is done.
+Params: id
 
 ---
 
-### browser_navigate
-Open a browser and navigate to a URL. Returns a screenshot and session ID.
+### Browser Session Tools
 
-Parameters:
-- url (string, required): URL to navigate to
-- sessionId (string, optional): Reuse an existing session
+Start with `browser_navigate` → get sessionId → pass to all tools → `browser_close` when done.
 
-Sessions persist for 5 minutes of inactivity. Max 6 concurrent sessions. Always call browser_close when done.
+#### browser_navigate
+Open URL, returns screenshot + sessionId.
+Params: url, sessionId (optional), width, height
 
-### browser_click
-Click an element by CSS selector or visible text.
+#### browser_click
+Click by CSS selector or visible text.
+Params: sessionId, selector
 
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- selector (string, required): CSS selector or visible text (e.g. "Sign in")
+#### browser_click_at
+Click at x,y coordinates — for CAPTCHAs, canvas, iframes.
+Params: sessionId, x, y, clickCount, delay
 
-### browser_fill
-Type text into an input field. Clears field first.
+#### browser_fill
+Type into input field (clears first).
+Params: sessionId, selector, value
 
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- selector (string, required): CSS selector for the input field
-- value (string, required): Text to type
+#### browser_hover
+Trigger hover states/tooltips/dropdowns.
+Params: sessionId, selector
 
-### browser_hover
-Hover over an element to trigger hover states, tooltips, or dropdowns.
+#### browser_select_option
+Select from dropdown.
+Params: sessionId, selector, value
 
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- selector (string, required): CSS selector of element to hover
+#### browser_press_key
+Keyboard: Enter, Tab, Escape, Control+a, etc.
+Params: sessionId, key
 
-### browser_select_option
-Select an option from a dropdown select element.
+#### browser_scroll
+Scroll by pixel amount.
+Params: sessionId, x, y
 
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- selector (string, required): CSS selector for the select element
-- value (string, required): Value or visible text of the option
+#### browser_wait_for
+Wait for element to appear.
+Params: sessionId, selector, timeout
 
-### browser_press_key
-Simulate keyboard key presses.
+#### browser_go_back / browser_go_forward
+Browser history navigation.
+Params: sessionId
 
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- key (string, required): Key to press (Enter, Tab, Escape, ArrowDown, Control+a, etc.)
+#### browser_set_viewport
+Resize viewport mid-session (e.g. desktop ↔ mobile).
+Params: sessionId, width, height
 
-Supports modifiers: Control+key, Shift+key, Alt+key, Meta+key.
+#### browser_close
+Free resources. Always call when done.
+Params: sessionId
 
-### browser_scroll
-Scroll the page by pixel amount.
+#### browser_screenshot
+Screenshot current page state.
+Params: sessionId
 
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- x (number, default: 0): Horizontal scroll pixels
-- y (number, default: 500): Vertical scroll pixels (positive = down)
+#### browser_get_text
+All visible text (or specific element).
+Params: sessionId, selector (optional)
 
-### browser_wait_for
-Wait for an element to appear, then return a screenshot.
+#### browser_get_html
+DOM source.
+Params: sessionId, selector (optional), outer
 
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- selector (string, required): CSS selector to wait for
-- timeout (number, default: 5000): Max wait time in ms (500–15000)
+#### browser_get_accessibility_tree
+Full a11y tree — best for understanding page structure.
+Params: sessionId, interestingOnly, maxDepth
 
-### browser_go_back
-Navigate back in browser history.
+#### accessibility_snapshot
+A11y tree for any URL without a session.
+Params: url, interestingOnly, maxDepth
 
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-
-### browser_go_forward
-Navigate forward in browser history.
-
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-
-### browser_close
-Close the browser session and free resources. Always call when done.
-
-Parameters:
-- sessionId (string, required): Session ID to close
+#### browser_evaluate
+Run JavaScript, return result.
+Params: sessionId, script
 
 ---
 
-### browser_screenshot
-Take a screenshot of the current page without performing any action.
+### Performance & SEO
 
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
+#### browser_perf_metrics
+Core Web Vitals: LCP, FCP, CLS, TTFB, DOM size, resource counts.
+Good thresholds: TTFB < 800ms, FCP < 1.8s, LCP < 2.5s, CLS < 0.1
+Params: sessionId
 
-### browser_get_text
-Extract all visible text from the page or a specific element.
+#### browser_network_requests
+Full network waterfall with timing.
+Params: sessionId, resourceType, minDuration, limit
 
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- selector (string, optional): CSS selector. Omit for entire page.
-
-### browser_get_html
-Get the HTML source of the page or a specific element.
-
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- selector (string, optional): CSS selector. Omit for full page.
-
-### browser_get_accessibility_tree
-Get the accessibility tree for a11y analysis.
-
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-
-Returns: structured tree with role, name, level, and state for each element.
-
-### browser_evaluate
-Run JavaScript in the browser and return the result.
-
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- script (string, required): JavaScript expression to evaluate
-
-Has full DOM access: window, document, localStorage, etc.
+#### browser_seo_audit
+Meta, OG, Twitter cards, headings, JSON-LD, alt text, structured data.
+Params: sessionId
 
 ---
 
-### browser_perf_metrics
-Get Core Web Vitals and performance metrics.
+### Debugging
 
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
+#### browser_console_logs
+Console errors, warnings, logs, exceptions.
+Params: sessionId, level, limit
 
-Returns: TTFB, FCP, LCP, CLS, DOM load time, full load time, DOM node count, resource count, transfer size, and resource breakdown by type.
+#### browser_network_errors
+Failed requests (4xx, 5xx).
+Params: sessionId, limit
 
-Good thresholds: TTFB < 800ms, FCP < 1.8s, LCP < 2.5s, CLS < 0.1.
+#### browser_cookies
+Get/set/clear cookies.
+Params: sessionId, action, cookies[]
 
-### browser_network_requests
-Get the full network request waterfall.
-
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- resourceType (string, optional): Filter: script, stylesheet, image, font, fetch, xhr
-- minDuration (number, default: 0): Only requests slower than this (ms)
-- limit (number, default: 50): Max requests to return
-
-Returns per request: status code, method, duration, transfer size, resource type, URL.
+#### browser_storage
+Read/write localStorage and sessionStorage.
+Params: sessionId, storageType, action, key, value
 
 ---
 
-### browser_seo_audit
-Run a comprehensive SEO audit.
+### Smart Login
 
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
+#### find_login_page
+Discover login pages via sitemap.xml + common paths.
+Params: url
 
-Returns: title, meta description, canonical URL, robots, viewport, Open Graph tags, Twitter Card tags, heading hierarchy (h1–h6), image alt text coverage, internal/external link counts, JSON-LD structured data.
+#### smart_login
+Auto-detect form fields, fill credentials, submit, report result.
+Params: loginUrl, username, password, usernameSelector, passwordSelector, submitSelector
 
-### browser_console_logs
-Get console messages (errors, warnings, logs) from the session.
-
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-
-Returns: all console.log, console.warn, console.error, and unhandled exceptions since session start.
-
-### browser_network_errors
-Get all failed network requests (4xx, 5xx, timeouts).
-
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-
-Returns: status code, URL, and error type for each failed request.
-
-### browser_cookies
-Get, set, or clear cookies.
-
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- action (string, required): get, set, or clear
-- name (string, optional): Cookie name (for set)
-- value (string, optional): Cookie value (for set)
-- domain (string, optional): Cookie domain (for set)
-- path (string, default: "/"): Cookie path (for set)
-
-### browser_storage
-Read and write localStorage and sessionStorage.
-
-Parameters:
-- sessionId (string, required): Session ID from browser_navigate
-- storageType (string, required): local or session
-- action (string, required): get, set, remove, or clear
-- key (string, optional): Storage key (for get, set, remove)
-- value (string, optional): Value (for set)
+Returns: screenshot + status (SUCCESS/FAILED/UNCERTAIN) + sessionId.
 
 ---
 
-## Smart Login Flow (30 tools total)
+### CAPTCHA Solving
 
-When the user asks you to test a flow that requires authentication:
+#### solve_captcha
+Auto-detect and solve Cloudflare Turnstile, reCAPTCHA v2/v3, hCaptcha using AI (CapSolver).
+For Clerk-powered sites, automatically calls sign-up/sign-in API with the solved token.
+Params: sessionId, type (auto), sitekey (auto), pageUrl (auto), autoSubmit (default: true)
 
-1. Call find_login_page with the site's base URL — it checks sitemap.xml and common login paths automatically.
-2. It returns candidate login URLs. Pick the best one (or ask the user if ambiguous).
-3. Ask the user for their username/email and password. NEVER guess credentials.
-4. Call smart_login with the login URL + credentials — it auto-detects form fields and submits.
-5. It reports: LOGIN SUCCESS, LOGIN FAILED, or LOGIN UNCERTAIN with a screenshot.
-6. If login fails, ask the user to double-check credentials or provide the exact login URL.
-7. Once logged in, use the returned session ID to continue testing the authenticated flow.
+---
 
-### find_login_page
-Discover login/sign-in pages for a website. Checks sitemap.xml and probes common login URL paths.
+### Disposable Email (AgentMail)
 
-Parameters:
-- url (string, required): Base URL of the site (e.g. https://myapp.com)
+Each user needs their own AgentMail API key (free at https://console.agentmail.to). Configure in Dashboard → Settings.
 
-Returns: list of candidate login URLs found via sitemap and common path probing.
+#### create_test_inbox
+Create a disposable email inbox → returns email@agentmail.to.
+Params: username (optional), display_name (optional)
 
-Common paths checked: /login, /signin, /sign-in, /auth/login, /auth/signin, /account/login, /user/login, /users/sign_in, /admin/login, /admin, /wp-login.php, /wp-admin, /dashboard/login, /portal/login, /sso/login, /auth, /session/new, /log-in, /member/login
+#### check_inbox
+Read messages, auto-extracts OTP codes and verification links.
+Params: inbox_id, limit
 
-### smart_login
-Attempt to log in to a website. Navigates to the login URL, auto-detects email/username and password fields, fills them in, submits the form, and reports success or failure with a screenshot.
+#### send_test_email
+Send email from an inbox.
+Params: inbox_id, to, subject, text
 
-Parameters:
-- loginUrl (string, required): The login page URL
-- username (string, required): The username or email to enter
-- password (string, required): The password to enter
-- usernameSelector (string, optional): CSS selector for username field. Auto-detected if omitted.
-- passwordSelector (string, optional): CSS selector for password field. Auto-detected if omitted.
-- submitSelector (string, optional): CSS selector for submit button. Auto-detected if omitted.
+---
 
-Returns: screenshot + status (SUCCESS/FAILED/UNCERTAIN) + session ID for continuing authenticated testing.
+### Gmail Verification (OAuth)
 
-Auto-detects: input[type=email], input[name=email/username], input[type=password], button[type=submit], and common button text patterns.
+#### authorize_email_access
+One-time OAuth setup for Gmail.
+
+#### read_verification_email
+Read OTP codes from user's Gmail inbox.
+Params: sender (optional), subject_keyword (optional), max_age_minutes
+
+---
+
+### AI-Powered Analysis
+
+#### ux_review
+AI-powered UX review using vision. Returns actionable feedback across Accessibility, SEO, Performance, Navigation, Content, and Mobile-friendliness.
+Params: url, width, height
+
+---
+
+## Common Workflows
+
+### Responsive Testing
+→ `screenshot_responsive` for desktop + tablet + mobile in one call
+
+### Full Site Audit
+→ `browser_navigate` → `browser_get_accessibility_tree` → `browser_perf_metrics` → `browser_seo_audit` → `browser_console_logs` → `browser_network_errors`
+
+### Sign-Up Testing with Disposable Email
+1. `create_test_inbox` → email@agentmail.to
+2. `browser_navigate` to sign-up page
+3. `browser_fill` email + password
+4. `solve_captcha` if CAPTCHA present
+5. `browser_click` submit
+6. `check_inbox` → extract OTP
+7. Enter code → done
+
+### Before/After Comparison
+→ `screenshot_diff` with urlA and urlB → pixel diff + match score
+
+### Cross-Browser Testing
+→ `screenshot_cross_browser` for Chromium + Firefox + WebKit
 
 ---
 
@@ -369,39 +320,14 @@ Auto-detects: input[type=email], input[name=email/username], input[type=password
 Base URL: https://screenshotsmcp-api-production.up.railway.app
 
 ### POST /v1/screenshot
-
 Enqueue a screenshot job.
-
-Headers:
-- Authorization: Bearer sk_live_...
-- Content-Type: application/json
-
-Request body:
-- url (string, required): URL to screenshot
-- width (number, default: 1280): Viewport width
-- height (number, default: 800): Viewport height
-- fullPage (boolean, default: false): Capture full page
-- format (string, default: "png"): png, jpeg, or webp
-- delay (number, default: 0): Wait ms after load
-
-Response:
-```json
-{ "id": "abc123", "status": "pending" }
-```
+Headers: Authorization: Bearer sk_live_...
+Body: { url, width, height, fullPage, format, delay }
+Response: { id, status: "pending" }
 
 ### GET /v1/screenshot/:id
-
-Poll for screenshot status.
-
-Headers:
-- Authorization: Bearer sk_live_...
-
-Response:
-```json
-{ "id": "abc123", "status": "done", "url": "https://...", "error": null, "createdAt": "2025-01-01T00:00:00.000Z" }
-```
-
-Status values: pending, processing, done, failed.
+Poll for status.
+Response: { id, status, url, error, createdAt }
 
 ---
 
@@ -418,8 +344,7 @@ Status values: pending, processing, done, failed.
 { "mcpServers": { "screenshotsmcp": { "serverUrl": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
 ```
 
-### Claude Desktop
-claude_desktop_config.json:
+### Claude Desktop / Claude Code
 ```json
 { "mcpServers": { "screenshotsmcp": { "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
 ```
@@ -430,8 +355,14 @@ claude_desktop_config.json:
 { "mcpServers": { "screenshotsmcp": { "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
 ```
 
+### Gemini CLI / OpenCode / Roo Code / Other MCP clients
+```json
+{ "mcpServers": { "screenshotsmcp": { "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
+```
+
 ---
 
 ## Documentation
 
 Full docs: https://screenshotsmcp.com/docs
+Agent Skill: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md
