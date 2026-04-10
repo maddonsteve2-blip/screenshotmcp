@@ -4,7 +4,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "../lib/db.js";
-import { screenshots, apiKeys, users, usageEvents } from "@screenshotsmcp/db";
+import { screenshots, apiKeys, users, usageEvents, testInboxes } from "@screenshotsmcp/db";
 import { screenshotQueue } from "../lib/queue.js";
 import { createHash } from "crypto";
 import { eq, and, count, gte, desc } from "drizzle-orm";
@@ -161,15 +161,20 @@ When the user asks you to test a flow that requires authentication (login, sign-
 
 ## Disposable Email Tools (AgentMail)
 For testing sign-up flows, reading verification codes, etc:
-- **create_test_inbox** — create a disposable inbox → returns email@agentmail.to
+- **create_test_inbox** — creates or **reuses** a saved inbox. Returns email + generated password. Saved to dashboard.
 - **check_inbox** — read messages, auto-extracts OTP codes and verification links
 - **send_test_email** — send email from an inbox
 Each user needs their own AgentMail API key (free at https://console.agentmail.to). Configure in Dashboard → Settings.
 
+**IMPORTANT — Inbox & Password Rules:**
+- create_test_inbox returns a **unique generated password** with each new inbox. ALWAYS use this password — never invent your own (they may trigger breach detection).
+- Existing inboxes are **automatically reused** across sessions. Only use force_new: true when you specifically need a fresh registration.
+- The email + password are saved in **Dashboard → Settings → Test Inboxes** for the user to see and copy.
+
 ## Sign-Up Testing Flow
-1. **create_test_inbox** → get disposable email
+1. **create_test_inbox** → get email + generated password (or reuse existing)
 2. **browser_navigate** to sign-up page
-3. **browser_fill** email + password
+3. **browser_fill** email + the password from step 1
 4. **solve_captcha** if CAPTCHA present
 5. **browser_click** submit
 6. **check_inbox** → extract OTP code
@@ -183,17 +188,6 @@ curl -o .skills/screenshotsmcp/SKILL.md --create-dirs https://screenshotsmcp.com
 Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
   });
 
-  // One-time skill install hint — appended to the first successful tool response per session
-  let skillHintShown = false;
-  function appendSkillHint(result: { content: { type: string; text: string }[] }) {
-    if (skillHintShown) return result;
-    // Only append to successful (non-error) responses
-    if (result.content[0]?.text?.startsWith("Error:")) return result;
-    skillHintShown = true;
-    const hint = "\n\n---\n💡 **Tip:** Install the ScreenshotsMCP agent skill for detailed workflows, best practices, and full reference:\n```\ncurl -o .skills/screenshotsmcp/SKILL.md --create-dirs https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md\n```\nCovers sign-up testing, CAPTCHA solving, responsive audits, disposable email, and more. (Shown once per session.)";
-    result.content[0].text += hint;
-    return result;
-  }
 
   // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
@@ -214,7 +208,7 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
       const id = await enqueueScreenshot(auth.userId, { url: args.url, width: args.width, height: args.height, fullPage: args.fullPage, format: args.format, delay: args.delay, maxHeight: args.maxHeight });
-      return appendSkillHint(await pollScreenshot(id));
+      return pollScreenshot(id);
     }
   );
 
@@ -441,7 +435,7 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
         await navigateWithRetry(page, args.url);
         const img = await pageScreenshot(page);
         const vpSize = page.viewportSize();
-        return appendSkillHint({ content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\nViewport: ${vpSize?.width}×${vpSize?.height}\n(Pass this sessionId to all browser_ tools)` }, img] });
+        return { content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\nViewport: ${vpSize?.width}×${vpSize?.height}\n(Pass this sessionId to all browser_ tools)` }, img] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error navigating: ${humanizeError(err instanceof Error ? err.message : String(err))}` }] };
       }
@@ -2249,37 +2243,92 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
     return null;
   }
 
+  // Generate a unique, strong password that won't be in breach databases
+  function generateUniquePassword(): string {
+    const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    const lower = "abcdefghjkmnpqrstuvwxyz";
+    const digits = "23456789";
+    const symbols = "!@#$%&*?";
+    const all = upper + lower + digits + symbols;
+    let pw = "";
+    // Ensure at least one of each type
+    pw += upper[Math.floor(Math.random() * upper.length)];
+    pw += lower[Math.floor(Math.random() * lower.length)];
+    pw += digits[Math.floor(Math.random() * digits.length)];
+    pw += symbols[Math.floor(Math.random() * symbols.length)];
+    // Fill to 20 chars
+    for (let i = 0; i < 16; i++) pw += all[Math.floor(Math.random() * all.length)];
+    // Shuffle
+    return pw.split("").sort(() => Math.random() - 0.5).join("");
+  }
+
   // @ts-ignore
   server.tool(
     "create_test_inbox",
-    "Create a disposable email inbox for testing website registrations and logins. Returns a real email address (e.g. random123@agentmail.to) that can receive emails. Use this when you need to sign up for a website or service during testing. The inbox is temporary and perfect for automated testing workflows.",
+    "Create or reuse a disposable email inbox for testing. Returns email, password, and inbox ID. Automatically reuses an existing saved inbox when available — only creates a new one when needed or when force_new is true. The inbox and password are saved to the user's dashboard for reuse across sessions.",
     {
       username: z.string().optional().describe("Optional username prefix for the email (e.g. 'test-user' → test-user@agentmail.to). Auto-generated if omitted."),
       display_name: z.string().optional().describe("Optional display name for the inbox (e.g. 'Test User')"),
+      force_new: z.boolean().optional().default(false).describe("Force creation of a new inbox even if existing ones are available. Use when testing registration flows."),
     },
-    async ({ username, display_name }) => {
+    async ({ username, display_name, force_new }) => {
       try {
         const auth = await validateKey(apiKey);
+        if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
         const amKey = getAgentMailKey(auth);
         if (!amKey) {
           return { content: [{ type: "text", text: NO_KEY_MSG }] };
         }
 
-        const client = new AgentMailClient({ apiKey: amKey });
+        // Check for existing active inboxes (reuse when possible)
+        if (!force_new) {
+          const existing = await db
+            .select()
+            .from(testInboxes)
+            .where(and(eq(testInboxes.userId, auth.userId), eq(testInboxes.isActive, true)))
+            .orderBy(desc(testInboxes.lastUsedAt))
+            .limit(1);
 
+          if (existing.length > 0) {
+            const inbox = existing[0];
+            // Update last used
+            await db.update(testInboxes).set({ lastUsedAt: new Date() }).where(eq(testInboxes.id, inbox.id));
+            return {
+              content: [{
+                type: "text",
+                text: `## Reusing Saved Inbox\n\n- **Email:** ${inbox.email}\n- **Password:** ${inbox.password}\n- **Inbox ID:** ${inbox.email}\n\nThis is a previously saved inbox. Use this email and password for sign-up or login testing.\nUse **check_inbox** to read any emails that arrive.\n\nTo create a fresh inbox instead, call create_test_inbox with force_new: true.`,
+              }],
+            };
+          }
+        }
+
+        // Create new inbox
+        const client = new AgentMailClient({ apiKey: amKey });
         const opts: Record<string, string> = {};
         if (username) opts.username = username;
         if (display_name) opts.displayName = display_name;
 
         const inbox = await client.inboxes.create(opts);
-
         const inboxId = (inbox as any).inboxId || (inbox as any).inbox_id || (inbox as any).id;
         const email = (inbox as any).email || inboxId;
+
+        // Generate a unique password
+        const password = generateUniquePassword();
+
+        // Save to database
+        await db.insert(testInboxes).values({
+          id: nanoid(),
+          userId: auth.userId,
+          email,
+          password,
+          displayName: display_name || null,
+          lastUsedAt: new Date(),
+        });
 
         return {
           content: [{
             type: "text",
-            text: `## Disposable Inbox Created\n\n- **Email:** ${email}\n- **Inbox ID:** ${inboxId}\n\nUse this email address to register on websites. Then use **check_inbox** to read any verification emails that arrive.\n\nThis inbox will receive real emails at the address above.`,
+            text: `## Disposable Inbox Created\n\n- **Email:** ${email}\n- **Password:** \`${password}\`\n- **Inbox ID:** ${inboxId}\n\nUse this email and password to register on websites. Then use **check_inbox** to read any verification emails that arrive.\n\n**Important:** Always use the password above — it is unique and won't trigger breach detection.\nThis inbox is saved to your dashboard (Settings → Test Inboxes) for reuse.`,
           }],
         };
       } catch (err) {
@@ -2303,10 +2352,14 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
     async ({ inbox_id, limit }) => {
       try {
         const auth = await validateKey(apiKey);
+        if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
         const amKey = getAgentMailKey(auth);
         if (!amKey) {
           return { content: [{ type: "text", text: NO_KEY_MSG }] };
         }
+
+        // Update lastUsedAt for this inbox
+        await db.update(testInboxes).set({ lastUsedAt: new Date() }).where(and(eq(testInboxes.email, inbox_id), eq(testInboxes.userId, auth.userId)));
 
         const client = new AgentMailClient({ apiKey: amKey });
 

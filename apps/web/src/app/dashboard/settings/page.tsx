@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Mail, ExternalLink, Check, AlertCircle, Trash2, Eye, EyeOff } from "lucide-react";
+import { Mail, ExternalLink, Check, AlertCircle, Trash2, Eye, EyeOff, Inbox, Copy, Clock } from "lucide-react";
 
 export default function SettingsPage() {
   const [agentmailKey, setAgentmailKey] = useState("");
@@ -15,13 +15,19 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showKey, setShowKey] = useState(false);
+  const [inboxes, setInboxes] = useState<Array<{ id: string; email: string; password: string; displayName?: string; lastUsedAt?: string; createdAt: string }>>([]);
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => r.json())
-      .then((data) => {
-        setHasKey(data.hasAgentmailKey ?? false);
-        setMaskedKey(data.agentmailApiKey ?? null);
+    Promise.all([
+      fetch("/api/settings").then((r) => r.json()),
+      fetch("/api/test-inboxes").then((r) => r.json()),
+    ])
+      .then(([settings, inboxData]) => {
+        setHasKey(settings.hasAgentmailKey ?? false);
+        setMaskedKey(settings.agentmailApiKey ?? null);
+        setInboxes(inboxData.inboxes ?? []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -230,6 +236,109 @@ export default function SettingsPage() {
               Learn more at agentmail.to <ExternalLink className="h-3 w-3" />
             </a>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Test Inboxes */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Inbox className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                Test Inboxes
+                {inboxes.length > 0 && <Badge variant="secondary" className="text-xs">{inboxes.length}</Badge>}
+              </CardTitle>
+              <CardDescription>Disposable email accounts created by your AI assistant</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border bg-muted/40 p-4">
+            <p className="text-sm text-muted-foreground">
+              When your AI assistant uses the <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">create_test_inbox</code> tool,
+              the inbox email and generated password are saved here so they can be reused across sessions.
+              Your assistant will automatically reuse existing inboxes when possible.
+            </p>
+          </div>
+
+          {inboxes.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Inbox className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No test inboxes yet</p>
+              <p className="text-xs mt-1">Your AI assistant will create them when testing sign-up flows</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {inboxes.map((inbox) => (
+                <div key={inbox.id} className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-mono font-medium truncate">{inbox.email}</p>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(inbox.email);
+                            setCopiedId(inbox.id + "-email");
+                            setTimeout(() => setCopiedId(null), 2000);
+                          }}
+                          className="text-muted-foreground hover:text-foreground shrink-0"
+                          title="Copy email"
+                        >
+                          {copiedId === inbox.id + "-email" ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-muted-foreground">Password:</span>
+                        <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                          {showPasswords[inbox.id] ? inbox.password : "••••••••••••"}
+                        </code>
+                        <button
+                          onClick={() => setShowPasswords((p) => ({ ...p, [inbox.id]: !p[inbox.id] }))}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          {showPasswords[inbox.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(inbox.password);
+                            setCopiedId(inbox.id + "-pw");
+                            setTimeout(() => setCopiedId(null), 2000);
+                          }}
+                          className="text-muted-foreground hover:text-foreground"
+                          title="Copy password"
+                        >
+                          {copiedId === inbox.id + "-pw" ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={async () => {
+                        await fetch(`/api/test-inboxes?id=${inbox.id}`, { method: "DELETE" });
+                        setInboxes((prev) => prev.filter((i) => i.id !== inbox.id));
+                      }}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Created {new Date(inbox.createdAt).toLocaleDateString()}
+                    </span>
+                    {inbox.lastUsedAt && (
+                      <span>Last used {new Date(inbox.lastUsedAt).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

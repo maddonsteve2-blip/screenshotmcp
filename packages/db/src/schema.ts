@@ -64,6 +64,19 @@ export const screenshots = pgTable("screenshots", {
   completedAt: timestamp("completed_at"),
 });
 
+export const testInboxes = pgTable("test_inboxes", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  password: text("password").notNull(),
+  displayName: text("display_name"),
+  isActive: boolean("is_active").notNull().default(true),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const usageEvents = pgTable("usage_events", {
   id: text("id").primaryKey(),
   userId: text("user_id")
