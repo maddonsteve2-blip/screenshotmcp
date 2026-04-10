@@ -15,6 +15,7 @@ import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
 import OpenAI from "openai";
 import { uploadScreenshot } from "../lib/r2.js";
+import { AgentMailClient } from "agentmail";
 
 export const mcpRouter = Router();
 
@@ -2164,6 +2165,159 @@ When the user asks you to test a flow that requires authentication (login, sign-
         };
       } catch (err) {
         return { content: [{ type: "text", text: `Error reading email: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  // ── AgentMail Integration ─────────────────────────────────────────────
+  const AGENTMAIL_API_KEY = process.env.AGENTMAIL_API_KEY || "";
+
+  // @ts-ignore
+  server.tool(
+    "create_test_inbox",
+    "Create a disposable email inbox for testing website registrations and logins. Returns a real email address (e.g. random123@agentmail.to) that can receive emails. Use this when you need to sign up for a website or service during testing. The inbox is temporary and perfect for automated testing workflows.",
+    {
+      username: z.string().optional().describe("Optional username prefix for the email (e.g. 'test-user' → test-user@agentmail.to). Auto-generated if omitted."),
+      display_name: z.string().optional().describe("Optional display name for the inbox (e.g. 'Test User')"),
+    },
+    async ({ username, display_name }) => {
+      try {
+        if (!AGENTMAIL_API_KEY) {
+          return { content: [{ type: "text", text: "Error: AGENTMAIL_API_KEY not configured. Please set it in environment variables." }] };
+        }
+
+        const client = new AgentMailClient({ apiKey: AGENTMAIL_API_KEY });
+
+        const opts: Record<string, string> = {};
+        if (username) opts.username = username;
+        if (display_name) opts.displayName = display_name;
+
+        const inbox = await client.inboxes.create(opts);
+
+        const inboxId = (inbox as any).inboxId || (inbox as any).inbox_id || (inbox as any).id;
+        const email = (inbox as any).email || inboxId;
+
+        return {
+          content: [{
+            type: "text",
+            text: `## Disposable Inbox Created\n\n- **Email:** ${email}\n- **Inbox ID:** ${inboxId}\n\nUse this email address to register on websites. Then use **check_inbox** to read any verification emails that arrive.\n\nThis inbox will receive real emails at the address above.`,
+          }],
+        };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error creating inbox: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  // @ts-ignore
+  server.tool(
+    "check_inbox",
+    "Check a disposable AgentMail inbox for new messages. Use after create_test_inbox to read verification emails, OTP codes, welcome emails, or password reset links. Automatically extracts verification codes from email content.",
+    {
+      inbox_id: z.string().describe("The inbox ID or email address from create_test_inbox (e.g. 'random123@agentmail.to')"),
+      limit: z.number().optional().default(5).describe("Max number of messages to retrieve (default: 5)"),
+    },
+    async ({ inbox_id, limit }) => {
+      try {
+        if (!AGENTMAIL_API_KEY) {
+          return { content: [{ type: "text", text: "Error: AGENTMAIL_API_KEY not configured." }] };
+        }
+
+        const client = new AgentMailClient({ apiKey: AGENTMAIL_API_KEY });
+
+        const res = await client.inboxes.messages.list(inbox_id, { limit: limit || 5 });
+        const messages = (res as any).messages || [];
+
+        if (messages.length === 0) {
+          return {
+            content: [{
+              type: "text",
+              text: `No messages yet in ${inbox_id}. The email may not have arrived yet — wait a few seconds and try again.`,
+            }],
+          };
+        }
+
+        // Code extraction patterns
+        const codePatterns = [
+          /\b(\d{6})\b/,
+          /\b(\d{4})\b/,
+          /\b(\d{8})\b/,
+          /code[:\s]+(\d{4,8})/i,
+          /pin[:\s]+(\d{4,8})/i,
+          /verification[:\s]+(\d{4,8})/i,
+        ];
+        // URL extraction for verification links
+        const linkPattern = /https?:\/\/[^\s<>"]+(?:verify|confirm|activate|token|auth)[^\s<>"]*/gi;
+
+        const results: string[] = [];
+        for (const msg of messages) {
+          const body = (msg as any).extractedText || (msg as any).extracted_text || (msg as any).text || (msg as any).snippet || "";
+          const subject = (msg as any).subject || "";
+          const from = (msg as any).from || "";
+          const date = (msg as any).createdAt || (msg as any).created_at || (msg as any).date || "";
+
+          // Extract codes
+          let code = "";
+          for (const pattern of codePatterns) {
+            const match = body.match(pattern) || subject.match(pattern);
+            if (match) { code = match[1]; break; }
+          }
+
+          // Extract verification links
+          const links = body.match(linkPattern) || [];
+
+          let entry = `**From:** ${from}\n**Subject:** ${subject}\n**Date:** ${date}`;
+          if (code) entry += `\n**Verification Code:** \`${code}\``;
+          if (links.length > 0) entry += `\n**Verification Links:**\n${links.map((l: string) => `- ${l}`).join("\n")}`;
+          entry += `\n**Body Preview:** ${body.substring(0, 300)}`;
+
+          results.push(entry);
+        }
+
+        return {
+          content: [{
+            type: "text",
+            text: `## Inbox: ${inbox_id} (${messages.length} messages)\n\n${results.join("\n\n---\n\n")}`,
+          }],
+        };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error checking inbox: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  // @ts-ignore
+  server.tool(
+    "send_test_email",
+    "Send an email from a disposable AgentMail inbox. Useful for testing contact forms, reply workflows, or sending test data to services.",
+    {
+      inbox_id: z.string().describe("The inbox ID or email address to send from"),
+      to: z.string().describe("Recipient email address"),
+      subject: z.string().describe("Email subject line"),
+      text: z.string().describe("Plain text email body"),
+    },
+    async ({ inbox_id, to, subject, text }) => {
+      try {
+        if (!AGENTMAIL_API_KEY) {
+          return { content: [{ type: "text", text: "Error: AGENTMAIL_API_KEY not configured." }] };
+        }
+
+        const client = new AgentMailClient({ apiKey: AGENTMAIL_API_KEY });
+
+        await client.inboxes.messages.send(inbox_id, {
+          to,
+          subject,
+          text,
+        });
+
+        return {
+          content: [{
+            type: "text",
+            text: `Email sent successfully!\n\n- **From:** ${inbox_id}\n- **To:** ${to}\n- **Subject:** ${subject}`,
+          }],
+        };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error sending email: ${err instanceof Error ? err.message : String(err)}` }] };
       }
     }
   );
