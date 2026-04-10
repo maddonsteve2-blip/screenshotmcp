@@ -20,19 +20,19 @@ import { AgentMailClient } from "agentmail";
 export const mcpRouter = Router();
 
 type AuthResult =
-  | { ok: true; userId: string; plan: "free" | "starter" | "pro" }
+  | { ok: true; userId: string; plan: "free" | "starter" | "pro"; agentmailApiKey?: string | null }
   | { ok: false; error: string };
 
 async function validateKey(apiKey: string | undefined): Promise<AuthResult> {
   if (!apiKey) return { ok: false, error: "API key required. Pass sk_live_... as x-api-key header." };
   const keyHash = createHash("sha256").update(apiKey).digest("hex");
   const [row] = await db
-    .select({ userId: apiKeys.userId, plan: users.plan })
+    .select({ userId: apiKeys.userId, plan: users.plan, agentmailApiKey: users.agentmailApiKey })
     .from(apiKeys)
     .innerJoin(users, eq(apiKeys.userId, users.id))
     .where(and(eq(apiKeys.keyHash, keyHash), eq(apiKeys.revoked, false)));
   if (!row) return { ok: false, error: "Invalid or revoked API key." };
-  return { ok: true, userId: row.userId, plan: (row.plan ?? "free") as "free" | "starter" | "pro" };
+  return { ok: true, userId: row.userId, plan: (row.plan ?? "free") as "free" | "starter" | "pro", agentmailApiKey: row.agentmailApiKey };
 }
 
 async function checkLimit(userId: string, plan: "free" | "starter" | "pro"): Promise<string | null> {
@@ -124,7 +124,8 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
 2. Pass that sessionId to all subsequent tools.
 3. Call **browser_close** when done to free resources.
 
-**Interaction:** browser_click, browser_fill, browser_hover, browser_select_option, browser_scroll, browser_press_key
+**Interaction:** browser_click, browser_click_at (coordinate-based for CAPTCHAs), browser_fill, browser_hover, browser_select_option, browser_scroll, browser_press_key
+**CAPTCHA:** solve_captcha — auto-detect and solve Cloudflare Turnstile, reCAPTCHA, hCaptcha using AI (CapSolver)
 **Navigation:** browser_navigate (supports width/height params), browser_go_back, browser_go_forward, browser_wait_for
 **Viewport:** browser_set_viewport — resize the browser viewport mid-session (e.g. switch between desktop and mobile)
 **Inspection:** browser_screenshot, browser_get_text, browser_get_html, browser_get_accessibility_tree, browser_evaluate
@@ -440,6 +441,40 @@ When the user asks you to test a flow that requires authentication (login, sign-
         const raw = err instanceof Error ? err.message : String(err);
         const friendly = raw.includes("Timeout") ? `Could not find element "${args.selector}" within 5 seconds. Check that the selector is correct and the element is visible.` : humanizeError(raw);
         return { content: [{ type: "text", text: `Error clicking: ${friendly}` }] };
+      }
+    }
+  );
+
+  server.tool(
+    "browser_click_at",
+    "Click at specific x,y coordinates on the current browser page. Use this when elements cannot be targeted by CSS selector — such as CAPTCHA checkboxes, canvas elements, iframes, or Cloudflare Turnstile widgets. Returns a screenshot after clicking.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      x: z.number().describe("X coordinate (pixels from left edge of viewport)"),
+      y: z.number().describe("Y coordinate (pixels from top edge of viewport)"),
+      clickCount: z.number().optional().default(1).describe("Number of clicks (default: 1, use 2 for double-click)"),
+      delay: z.number().optional().default(0).describe("Delay in ms between mousedown and mouseup (simulates human-like click)"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+      try {
+        const page = session.page;
+        // Move mouse smoothly to target (more human-like)
+        await page.mouse.move(args.x, args.y, { steps: 5 });
+        await page.mouse.click(args.x, args.y, {
+          clickCount: args.clickCount || 1,
+          delay: args.delay || 50,
+        });
+        await page.waitForLoadState("domcontentloaded").catch(() => {});
+        await page.waitForTimeout(500);
+        const img = await pageScreenshot(page);
+        return { content: [{ type: "text", text: `Clicked at coordinates (${args.x}, ${args.y})` }, img] };
+      } catch (err) {
+        const raw = err instanceof Error ? err.message : String(err);
+        return { content: [{ type: "text", text: `Error clicking at coordinates: ${humanizeError(raw)}` }] };
       }
     }
   );
@@ -2170,7 +2205,14 @@ When the user asks you to test a flow that requires authentication (login, sign-
   );
 
   // ── AgentMail Integration ─────────────────────────────────────────────
-  const AGENTMAIL_API_KEY = process.env.AGENTMAIL_API_KEY || "";
+  const AGENTMAIL_API_KEY_FALLBACK = process.env.AGENTMAIL_API_KEY || "";
+  const NO_KEY_MSG = "Error: No AgentMail API key configured. Please add your AgentMail API key in **Dashboard → Settings** at https://web-phi-eight-56.vercel.app/dashboard/settings.\n\nAgentMail is free — sign up at https://console.agentmail.to to get your API key (starts with `am_`).";
+
+  function getAgentMailKey(auth: AuthResult): string | null {
+    if (auth.ok && auth.agentmailApiKey) return auth.agentmailApiKey;
+    if (AGENTMAIL_API_KEY_FALLBACK) return AGENTMAIL_API_KEY_FALLBACK;
+    return null;
+  }
 
   // @ts-ignore
   server.tool(
@@ -2182,11 +2224,13 @@ When the user asks you to test a flow that requires authentication (login, sign-
     },
     async ({ username, display_name }) => {
       try {
-        if (!AGENTMAIL_API_KEY) {
-          return { content: [{ type: "text", text: "Error: AGENTMAIL_API_KEY not configured. Please set it in environment variables." }] };
+        const auth = await validateKey(apiKey);
+        const amKey = getAgentMailKey(auth);
+        if (!amKey) {
+          return { content: [{ type: "text", text: NO_KEY_MSG }] };
         }
 
-        const client = new AgentMailClient({ apiKey: AGENTMAIL_API_KEY });
+        const client = new AgentMailClient({ apiKey: amKey });
 
         const opts: Record<string, string> = {};
         if (username) opts.username = username;
@@ -2204,7 +2248,11 @@ When the user asks you to test a flow that requires authentication (login, sign-
           }],
         };
       } catch (err) {
-        return { content: [{ type: "text", text: `Error creating inbox: ${err instanceof Error ? err.message : String(err)}` }] };
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("limit") || msg.includes("Limit")) {
+          return { content: [{ type: "text", text: `Error: Inbox limit reached. Delete unused inboxes in the AgentMail console or upgrade your plan at https://agentmail.to\n\nOriginal error: ${msg}` }] };
+        }
+        return { content: [{ type: "text", text: `Error creating inbox: ${msg}` }] };
       }
     }
   );
@@ -2219,11 +2267,13 @@ When the user asks you to test a flow that requires authentication (login, sign-
     },
     async ({ inbox_id, limit }) => {
       try {
-        if (!AGENTMAIL_API_KEY) {
-          return { content: [{ type: "text", text: "Error: AGENTMAIL_API_KEY not configured." }] };
+        const auth = await validateKey(apiKey);
+        const amKey = getAgentMailKey(auth);
+        if (!amKey) {
+          return { content: [{ type: "text", text: NO_KEY_MSG }] };
         }
 
-        const client = new AgentMailClient({ apiKey: AGENTMAIL_API_KEY });
+        const client = new AgentMailClient({ apiKey: amKey });
 
         const res = await client.inboxes.messages.list(inbox_id, { limit: limit || 5 });
         const messages = (res as any).messages || [];
@@ -2298,11 +2348,13 @@ When the user asks you to test a flow that requires authentication (login, sign-
     },
     async ({ inbox_id, to, subject, text }) => {
       try {
-        if (!AGENTMAIL_API_KEY) {
-          return { content: [{ type: "text", text: "Error: AGENTMAIL_API_KEY not configured." }] };
+        const auth = await validateKey(apiKey);
+        const amKey = getAgentMailKey(auth);
+        if (!amKey) {
+          return { content: [{ type: "text", text: NO_KEY_MSG }] };
         }
 
-        const client = new AgentMailClient({ apiKey: AGENTMAIL_API_KEY });
+        const client = new AgentMailClient({ apiKey: amKey });
 
         await client.inboxes.messages.send(inbox_id, {
           to,
@@ -2318,6 +2370,383 @@ When the user asks you to test a flow that requires authentication (login, sign-
         };
       } catch (err) {
         return { content: [{ type: "text", text: `Error sending email: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  // ── CapSolver CAPTCHA Integration ────────────────────────────────────
+  const CAPSOLVER_API_KEY = process.env.CAPSOLVER_API_KEY || "";
+
+  server.tool(
+    "solve_captcha",
+    "Automatically solve CAPTCHAs on the current page using CapSolver AI. Supports Cloudflare Turnstile, reCAPTCHA v2/v3, and hCaptcha. Detects the CAPTCHA type and sitekey automatically, sends it to CapSolver for solving, injects the token, and optionally submits the form. Use this when a CAPTCHA blocks form submission during browser automation.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+      type: z.enum(["turnstile", "recaptchav2", "recaptchav3", "hcaptcha"]).optional().describe("CAPTCHA type. Auto-detected if omitted."),
+      sitekey: z.string().optional().describe("The CAPTCHA sitekey. Auto-detected from the page if omitted."),
+      pageUrl: z.string().optional().describe("The page URL. Auto-detected from current page if omitted."),
+      autoSubmit: z.boolean().optional().default(true).describe("Automatically click the submit button after solving (default: true)"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      if (!CAPSOLVER_API_KEY) return { content: [{ type: "text", text: "Error: CAPSOLVER_API_KEY not configured. Set it in environment variables." }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+
+      try {
+        const page = session.page;
+        const url = args.pageUrl || page.url();
+
+        // Auto-detect CAPTCHA type and sitekey from page
+        const detection = await page.evaluate(() => {
+          const result: { type?: string; sitekey?: string } = {};
+
+          // Turnstile detection
+          const tsInput = document.querySelector('input[name="cf-turnstile-response"]');
+          const tsDiv = document.querySelector('[data-sitekey]');
+          const hasTurnstile = !!window.turnstile || !!tsInput;
+          if (hasTurnstile) {
+            result.type = 'turnstile';
+            result.sitekey = tsDiv?.getAttribute('data-sitekey') || '';
+            // Try to get sitekey from Clerk's captcha container or turnstile render
+            if (!result.sitekey) {
+              const scripts = document.querySelectorAll('script');
+              for (const s of scripts) {
+                const match = s.textContent?.match(/sitekey['":\s]+['"]?(0x[a-fA-F0-9]+)/);
+                if (match) { result.sitekey = match[1]; break; }
+              }
+            }
+          }
+
+          // reCAPTCHA detection
+          const recapDiv = document.querySelector('.g-recaptcha, [data-sitekey]');
+          if (recapDiv && !hasTurnstile) {
+            result.sitekey = recapDiv.getAttribute('data-sitekey') || '';
+            const isV3 = !!document.querySelector('script[src*="recaptcha/api.js?render="]');
+            result.type = isV3 ? 'recaptchav3' : 'recaptchav2';
+          }
+
+          // hCaptcha detection
+          const hcapDiv = document.querySelector('.h-captcha, [data-sitekey]');
+          if (hcapDiv && !hasTurnstile && !recapDiv) {
+            result.type = 'hcaptcha';
+            result.sitekey = hcapDiv.getAttribute('data-sitekey') || '';
+          }
+
+          return result;
+        });
+
+        const captchaType = args.type || detection.type;
+        const sitekey = args.sitekey || detection.sitekey || '';
+
+        if (!captchaType) {
+          return { content: [{ type: "text", text: "No CAPTCHA detected on this page. If you're sure there is one, specify the type and sitekey manually." }] };
+        }
+
+        // If Turnstile and no sitekey found, try to get it from network requests
+        let finalSitekey = sitekey;
+        if (captchaType === 'turnstile' && !finalSitekey) {
+          // Check network requests for Turnstile sitekey
+          const networkSitekey = session.networkRequests
+            .map(r => r.url)
+            .find(u => u.includes('turnstile') && u.includes('sitekey='));
+          if (networkSitekey) {
+            const match = networkSitekey.match(/sitekey=([^&]+)/);
+            if (match) finalSitekey = match[1];
+          }
+          // Last resort: try Clerk's Turnstile config from page
+          if (!finalSitekey) {
+            finalSitekey = await page.evaluate(() => {
+              // Clerk passes sitekey via their API response, check for it in page state
+              const els = document.querySelectorAll('[id*="clerk"]');
+              for (const el of els) {
+                const sk = el.getAttribute('data-sitekey') || el.getAttribute('data-cl-sitekey') || '';
+                if (sk) return sk;
+              }
+              // Check for Clerk's environment config
+              try {
+                const clerkEnv = (window as any).__clerk_frontend_api || (window as any).Clerk;
+                if (clerkEnv?.__unstable__environment?.displayConfig?.captchaPublicKey) {
+                  return clerkEnv.__unstable__environment.displayConfig.captchaPublicKey;
+                }
+              } catch {}
+              return '';
+            });
+          }
+        }
+
+        if (!finalSitekey) {
+          // For Clerk sites: fetch sitekey from the Clerk environment API
+          const clerkSitekey = await page.evaluate(async () => {
+            try {
+              const clerkFapi = (window as any).Clerk?.frontendApi || '';
+              if (!clerkFapi) return '';
+              const dbJwt = document.cookie.match(/__clerk_db_jwt=([^;]+)/)?.[1] || '';
+              const envResp = await fetch('https://' + clerkFapi + '/v1/environment?__clerk_api_version=2025-11-10&_clerk_js_version=6.6.0&__dev_session=' + dbJwt, { credentials: 'include' });
+              const envText = await envResp.text();
+              const keyMatch = envText.match(/"captcha_public_key":"([^"]+)"/);
+              return keyMatch?.[1] || '';
+            } catch { return ''; }
+          });
+          if (clerkSitekey) finalSitekey = clerkSitekey;
+        }
+
+        if (!finalSitekey) {
+          return { content: [{ type: "text", text: `Detected ${captchaType} CAPTCHA but couldn't find the sitekey. Please provide it manually via the sitekey parameter.` }] };
+        }
+
+        // Map to CapSolver task types
+        const taskTypeMap: Record<string, string> = {
+          turnstile: 'AntiTurnstileTaskProxyLess',
+          recaptchav2: 'ReCaptchaV2TaskProxyLess',
+          recaptchav3: 'ReCaptchaV3TaskProxyLess',
+          hcaptcha: 'HCaptchaTaskProxyLess',
+        };
+        const taskType = taskTypeMap[captchaType] || 'AntiTurnstileTaskProxyLess';
+
+        // Step 1: Create task
+        const createRes = await fetch('https://api.capsolver.com/createTask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientKey: CAPSOLVER_API_KEY,
+            task: {
+              type: taskType,
+              websiteURL: url,
+              websiteKey: finalSitekey,
+            },
+          }),
+        });
+        const createData = await createRes.json() as any;
+
+        if (createData.errorId && createData.errorId !== 0) {
+          return { content: [{ type: "text", text: `CapSolver error: ${createData.errorDescription || createData.errorCode || 'Unknown error'}` }] };
+        }
+
+        const taskId = createData.taskId;
+        if (!taskId) {
+          return { content: [{ type: "text", text: `CapSolver failed to create task. Response: ${JSON.stringify(createData).substring(0, 200)}` }] };
+        }
+
+        // Step 2: Poll for result with auto-retry
+        const startTime = Date.now();
+        let token = '';
+        let lastError = '';
+
+        for (let attempt = 0; attempt < 2 && !token; attempt++) {
+          let currentTaskId = taskId;
+
+          // On retry, create a new task
+          if (attempt > 0) {
+            const retryRes = await fetch('https://api.capsolver.com/createTask', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ clientKey: CAPSOLVER_API_KEY, task: { type: taskType, websiteURL: url, websiteKey: finalSitekey } }),
+            });
+            const retryData = await retryRes.json() as any;
+            if (!retryData.taskId) break;
+            currentTaskId = retryData.taskId;
+          }
+
+          const pollStart = Date.now();
+          while (Date.now() - pollStart < 60000) {
+            await new Promise(r => setTimeout(r, 2000));
+            const resultRes = await fetch('https://api.capsolver.com/getTaskResult', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ clientKey: CAPSOLVER_API_KEY, taskId: currentTaskId }),
+            });
+            const resultData = await resultRes.json() as any;
+
+            if (resultData.status === 'ready') {
+              token = resultData.solution?.token || '';
+              break;
+            }
+            if (resultData.status === 'failed' || (resultData.errorId && resultData.errorId !== 0)) {
+              lastError = resultData.errorDescription || resultData.errorCode || 'Unknown error';
+              break;
+            }
+          }
+        }
+
+        if (!token) {
+          return { content: [{ type: "text", text: `CapSolver failed after retry. ${lastError || 'Timed out (60s).'}` }] };
+        }
+
+        // Step 3: Inject token into the page
+        const injected = await page.evaluate((data) => {
+          const { type, token } = data;
+          if (type === 'turnstile') {
+            // Set the hidden input value
+            const input = document.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement;
+            if (input) {
+              input.value = token;
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            // Also try turnstile callback
+            try {
+              const widgets = (window as any).turnstile;
+              if (widgets?.getResponse) {
+                // Override getResponse to return our token
+                (window as any).turnstile.getResponse = () => token;
+              }
+            } catch {}
+            return !!input;
+          }
+          if (type === 'recaptchav2' || type === 'recaptchav3') {
+            const textarea = document.querySelector('#g-recaptcha-response, textarea[name="g-recaptcha-response"]') as HTMLTextAreaElement;
+            if (textarea) {
+              textarea.value = token;
+              textarea.style.display = 'block';
+            }
+            try { (window as any).___grecaptcha_cfg?.clients?.[0]?.callback?.(token); } catch {}
+            return !!textarea;
+          }
+          if (type === 'hcaptcha') {
+            const textarea = document.querySelector('textarea[name="h-captcha-response"]') as HTMLTextAreaElement;
+            if (textarea) textarea.value = token;
+            try { (window as any).hcaptcha?.getRespKey?.(); } catch {}
+            return !!textarea;
+          }
+          return false;
+        }, { type: captchaType, token });
+
+        // For Clerk/Turnstile: call the Clerk sign-up/sign-in API directly with the token
+        let clerkResult = '';
+        if (captchaType === 'turnstile') {
+          clerkResult = await page.evaluate(async (tk) => {
+            try {
+              // Find Clerk's frontend API base URL
+              const clerkFapi = (window as any).Clerk?.frontendApi || '';
+              if (!clerkFapi) return 'no-clerk';
+
+              const dbJwt = document.cookie.match(/__clerk_db_jwt=([^;]+)/)?.[1] || '';
+              const baseUrl = 'https://' + clerkFapi;
+
+              // Detect Clerk JS version dynamically
+              const clerkVer = (window as any).Clerk?.version || '6.6.0';
+              const qs = `__clerk_api_version=2025-11-10&_clerk_js_version=${clerkVer}&__dev_session=${dbJwt}`;
+
+              // Get current form values
+              const emailInput = document.querySelector('input[name="emailAddress"]') as HTMLInputElement;
+              const passwordInput = document.querySelector('input[name="password"]') as HTMLInputElement;
+              const email = emailInput?.value || '';
+              const password = passwordInput?.value || '';
+
+              if (!email) return 'no-email';
+
+              // Determine if this is sign-up or sign-in
+              const isSignUp = location.pathname.includes('sign-up');
+
+              if (isSignUp) {
+                const res = await fetch(baseUrl + '/v1/client/sign_ups?' + qs, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: new URLSearchParams({
+                    email_address: email,
+                    password: password,
+                    strategy: 'email_code',
+                    captcha_token: tk,
+                    captcha_widget_type: 'smart'
+                  }),
+                  credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.errors) return 'error:' + (data.errors[0]?.code || 'unknown') + ':' + (data.errors[0]?.message || '').substring(0, 100);
+                // Clerk returns sign_up in different paths depending on version
+                const signUp = data?.meta?.client?.sign_up || data?.response?.sign_up || data?.client?.sign_up || {};
+                const suId = signUp.id || '';
+                const suStatus = signUp.status || '';
+
+                if (suId && suStatus === 'missing_requirements') {
+                  // Clerk auto-sends verification email on sign-up creation,
+                  // but call prepare_verification to be safe
+                  try {
+                    await fetch(baseUrl + '/v1/client/sign_ups/' + suId + '/prepare_verification?' + qs, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                      body: new URLSearchParams({ strategy: 'email_code' }),
+                      credentials: 'include'
+                    });
+                  } catch {}
+                  return 'signup-ok:' + suId + ':verification-sent';
+                }
+                return 'signup:' + (suStatus || 'created');
+              } else {
+                // Sign-in flow
+                const res = await fetch(baseUrl + '/v1/client/sign_ins?' + qs, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: new URLSearchParams({
+                    identifier: email,
+                    password: password,
+                    strategy: 'password',
+                    captcha_token: tk,
+                    captcha_widget_type: 'smart'
+                  }),
+                  credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.errors) return 'error:' + (data.errors[0]?.code || 'unknown') + ':' + (data.errors[0]?.message || '').substring(0, 100);
+                const signIn = data?.meta?.client?.sign_in || data?.response?.sign_in || data?.client?.sign_in || {};
+                return 'signin:' + (signIn.status || 'unknown');
+              }
+            } catch (e) {
+              return 'exception:' + (e as Error).message;
+            }
+          }, token);
+
+          // If Clerk API succeeded, reload the page to pick up the new session state
+          if (clerkResult.startsWith('signup-ok') || clerkResult.startsWith('signin:complete')) {
+            await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+            await page.waitForTimeout(2000);
+          }
+        }
+
+        // Auto-submit for non-Clerk sites, or Clerk sites where API call failed/wasn't applicable
+        const shouldAutoSubmit = args.autoSubmit !== false && (!clerkResult || clerkResult === 'no-clerk' || clerkResult === 'no-email');
+        if (shouldAutoSubmit) {
+          await page.waitForTimeout(1000);
+          try {
+            const submitBtn = page.locator('button[type="submit"], button.cl-formButtonPrimary, form button:not([type="button"]), input[type="submit"]').first();
+            if (await submitBtn.count() > 0) {
+              await submitBtn.click({ timeout: 5000 });
+            }
+          } catch {}
+          await page.waitForTimeout(2000);
+        }
+
+        const img = await pageScreenshot(page);
+        const solveTime = ((Date.now() - startTime) / 1000).toFixed(1);
+
+        // Build result message
+        let clerkInfo = '';
+        if (clerkResult) {
+          if (clerkResult.startsWith('signup-ok')) {
+            const parts = clerkResult.split(':');
+            clerkInfo = `\n- **Clerk sign-up:** Created (ID: ${parts[1]})\n- **Email verification:** Code sent to inbox`;
+          } else if (clerkResult.startsWith('signin:complete')) {
+            clerkInfo = `\n- **Clerk sign-in:** Completed successfully`;
+          } else if (clerkResult.startsWith('error:')) {
+            clerkInfo = `\n- **Clerk API:** ${clerkResult.substring(6)}`;
+          } else {
+            clerkInfo = `\n- **Clerk:** ${clerkResult}`;
+          }
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `## CAPTCHA Solved!\n\n- **Type:** ${captchaType}\n- **Sitekey:** ${finalSitekey.substring(0, 20)}...\n- **Solve time:** ${solveTime}s\n- **Token injected:** ${injected ? 'Yes' : 'Manual injection needed'}${clerkInfo}\n\nToken: \`${token.substring(0, 40)}...\``,
+            },
+            img,
+          ],
+        };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error solving CAPTCHA: ${err instanceof Error ? err.message : String(err)}` }] };
       }
     }
   );

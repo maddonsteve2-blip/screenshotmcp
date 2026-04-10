@@ -1,0 +1,237 @@
+"use client";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Mail, ExternalLink, Check, AlertCircle, Trash2, Eye, EyeOff } from "lucide-react";
+
+export default function SettingsPage() {
+  const [agentmailKey, setAgentmailKey] = useState("");
+  const [maskedKey, setMaskedKey] = useState<string | null>(null);
+  const [hasKey, setHasKey] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [showKey, setShowKey] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        setHasKey(data.hasAgentmailKey ?? false);
+        setMaskedKey(data.agentmailApiKey ?? null);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  async function saveKey() {
+    setSaving(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentmailApiKey: agentmailKey }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ type: "error", text: data.error || "Failed to save" });
+      } else {
+        setMessage({ type: "success", text: "AgentMail API key saved successfully!" });
+        setHasKey(data.hasAgentmailKey);
+        setMaskedKey(data.agentmailApiKey);
+        setAgentmailKey("");
+      }
+    } catch {
+      setMessage({ type: "error", text: "Network error. Please try again." });
+    }
+    setSaving(false);
+  }
+
+  async function removeKey() {
+    setSaving(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentmailApiKey: "" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ type: "error", text: data.error || "Failed to remove" });
+      } else {
+        setMessage({ type: "success", text: "AgentMail API key removed." });
+        setHasKey(false);
+        setMaskedKey(null);
+        setAgentmailKey("");
+      }
+    } catch {
+      setMessage({ type: "error", text: "Network error. Please try again." });
+    }
+    setSaving(false);
+  }
+
+  return (
+    <div className="p-8 space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold">Settings</h1>
+        <p className="text-muted-foreground">Manage your integrations and preferences</p>
+      </div>
+
+      {/* AgentMail Integration */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Mail className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  AgentMail
+                  {hasKey && <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">Connected</Badge>}
+                </CardTitle>
+                <CardDescription>Disposable email inboxes for automated testing</CardDescription>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* What is AgentMail */}
+          <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
+            <p className="text-sm font-medium">What is AgentMail?</p>
+            <p className="text-sm text-muted-foreground">
+              AgentMail is an API platform that gives AI agents their own email inboxes to send, receive, and act upon emails.
+              ScreenshotsMCP uses AgentMail to power the <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">create_test_inbox</code> and <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">check_inbox</code> tools,
+              which let your AI assistant create disposable email addresses for testing sign-up flows, reading verification codes, and more.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-1">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Check className="h-3.5 w-3.5 text-green-600" />
+                <span><strong>Free plan:</strong> 3 inboxes, 3,000 emails/mo</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Check className="h-3.5 w-3.5 text-green-600" />
+                <span>No credit card required</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Check className="h-3.5 w-3.5 text-green-600" />
+                <span>Real email addresses (@agentmail.to)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* How to get a key */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium">How to get your API key</p>
+            <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+              <li>
+                Create a free account at{" "}
+                <a href="https://console.agentmail.to" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                  console.agentmail.to <ExternalLink className="h-3 w-3" />
+                </a>
+              </li>
+              <li>Navigate to your API keys in the console</li>
+              <li>Copy your API key (starts with <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">am_</code>) and paste it below</li>
+            </ol>
+          </div>
+
+          {/* Current key status */}
+          {hasKey && maskedKey && (
+            <div className="flex items-center gap-3 p-3 rounded-lg border bg-green-50 dark:bg-green-950/20">
+              <Check className="h-4 w-4 text-green-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-green-800 dark:text-green-200">API key configured</p>
+                <p className="text-xs text-green-600 dark:text-green-400 font-mono">{maskedKey}</p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={removeKey}
+                disabled={saving}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {/* Input */}
+          <div className="space-y-2">
+            <Label htmlFor="agentmail-key">{hasKey ? "Replace API key" : "API key"}</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  id="agentmail-key"
+                  type={showKey ? "text" : "password"}
+                  placeholder="am_..."
+                  value={agentmailKey}
+                  onChange={(e) => setAgentmailKey(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && agentmailKey.trim() && saveKey()}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <Button onClick={saveKey} disabled={saving || !agentmailKey.trim()}>
+                {saving ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Status message */}
+          {message && (
+            <div className={`flex items-center gap-2 text-sm ${message.type === "success" ? "text-green-600" : "text-red-600"}`}>
+              {message.type === "success" ? <Check className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+              {message.text}
+            </div>
+          )}
+
+          {/* Pricing info */}
+          <div className="rounded-lg border p-4 space-y-3">
+            <p className="text-sm font-medium">AgentMail Plans</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-md border p-3 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">Free</span>
+                  <span className="text-sm font-bold">$0</span>
+                </div>
+                <p className="text-xs text-muted-foreground">3 inboxes, 3K emails/mo</p>
+              </div>
+              <div className="rounded-md border p-3 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">Developer</span>
+                  <span className="text-sm font-bold">$20<span className="text-xs font-normal text-muted-foreground">/mo</span></span>
+                </div>
+                <p className="text-xs text-muted-foreground">10 inboxes, 10K emails/mo</p>
+              </div>
+              <div className="rounded-md border p-3 space-y-1 border-primary/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">Startup</span>
+                  <span className="text-sm font-bold">$200<span className="text-xs font-normal text-muted-foreground">/mo</span></span>
+                </div>
+                <p className="text-xs text-muted-foreground">150 inboxes, 150K emails/mo</p>
+              </div>
+            </div>
+            <a
+              href="https://agentmail.to"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+            >
+              Learn more at agentmail.to <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

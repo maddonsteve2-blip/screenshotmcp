@@ -14,6 +14,18 @@ const BROWSER_ARGS = [
   "--disable-background-timer-throttling",
   "--disable-renderer-backgrounding",
   "--disable-backgrounding-occluded-windows",
+  // Anti-detection flags
+  "--disable-features=IsolateOrigins,site-per-process",
+  "--flag-switches-begin",
+  "--flag-switches-end",
+  "--window-size=1920,1080",
+  "--start-maximized",
+  "--disable-component-extensions-with-background-pages",
+  "--disable-default-apps",
+  "--no-first-run",
+  "--no-default-browser-check",
+  "--disable-extensions",
+  "--disable-popup-blocking",
 ];
 
 interface PoolEntry {
