@@ -11,6 +11,10 @@ import { eq, and, count, gte, desc } from "drizzle-orm";
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
 import { createSession, getSession, closeSession, pageScreenshot, navigateWithRetry, setSessionViewport } from "../lib/sessions.js";
 import { browserPool } from "../lib/browser-pool.js";
+import { PNG } from "pngjs";
+import pixelmatch from "pixelmatch";
+import OpenAI from "openai";
+import { uploadScreenshot } from "../lib/r2.js";
 
 export const mcpRouter = Router();
 
@@ -59,19 +63,37 @@ async function enqueueScreenshot(userId: string, options: {
   return id;
 }
 
+function humanizeError(msg: string): string {
+  if (msg.includes("ERR_NAME_NOT_RESOLVED")) return "DNS resolution failed — the domain does not exist or is unreachable.";
+  if (msg.includes("ERR_CERT_DATE_INVALID")) return "SSL certificate has expired for this site.";
+  if (msg.includes("ERR_CERT_AUTHORITY_INVALID")) return "SSL certificate is self-signed or from an untrusted authority.";
+  if (msg.includes("ERR_CONNECTION_REFUSED")) return "Connection refused — the server is not accepting connections.";
+  if (msg.includes("ERR_CONNECTION_TIMED_OUT")) return "Connection timed out — the server took too long to respond.";
+  if (msg.includes("ERR_CERT_COMMON_NAME_INVALID")) return "SSL certificate does not match the domain name.";
+  // Strip Playwright 'Call log:' noise
+  const callLogIdx = msg.indexOf("Call log:");
+  if (callLogIdx > 0) return msg.slice(0, callLogIdx).trim();
+  // Strip 'page.goto: ' prefix
+  return msg.replace(/^page\.goto:\s*/i, "").replace(/^locator\.\w+:\s*/i, "");
+}
+
 async function pollScreenshot(id: string) {
+  const startTime = Date.now();
   for (let i = 0; i < 30; i++) {
     await new Promise((r) => setTimeout(r, 2000));
     const [row] = await db.select().from(screenshots).where(eq(screenshots.id, id));
     if (row?.status === "done" && row.publicUrl) {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      const isPdf = row.publicUrl.endsWith(".pdf");
+      const sizeStr = isPdf ? "PDF document" : `${row.width ?? "?"}×${row.height ?? "?"} ${(row.format ?? "png").toUpperCase()}`;
       return {
         content: [
-          { type: "text" as const, text: `Screenshot ready!\nURL: ${row.publicUrl}\nSize: ${row.width ?? "?"}×${row.height ?? "?"} ${(row.format ?? "png").toUpperCase()}` },
+          { type: "text" as const, text: `Screenshot ready!\nURL: ${row.publicUrl}\nSize: ${sizeStr}\nCaptured in: ${elapsed}s` },
         ],
       };
     }
     if (row?.status === "failed") {
-      return { content: [{ type: "text" as const, text: `Screenshot failed: ${row.errorMessage}` }] };
+      return { content: [{ type: "text" as const, text: `Screenshot failed: ${humanizeError(row.errorMessage ?? "Unknown error")}` }] };
     }
   }
   return { content: [{ type: "text" as const, text: `Screenshot timed out after 60s. Job ID: ${id}` }] };
@@ -161,7 +183,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
 
   server.tool(
     "screenshot_mobile",
-    "Capture a screenshot at iPhone 14 Pro viewport (393×852). By default captures viewport-only (not the full scrollable page). Set fullPage to true for full-page capture.",
+    "Capture a screenshot at iPhone 14 Pro viewport (393×852). By default captures viewport-only (not the full scrollable page). Set fullPage to true for full-page capture. Returns device name, dimensions, and public image URL.",
     {
       url: z.string().url().describe("The URL to screenshot"),
       fullPage: z.boolean().default(false).describe("If true, captures entire scrollable page. Default false = viewport-only (recommended for mobile)."),
@@ -173,13 +195,16 @@ When the user asks you to test a flow that requires authentication (login, sign-
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
       const id = await enqueueScreenshot(auth.userId, { url: args.url, width: 393, height: 852, fullPage: args.fullPage, format: args.format, delay: 0 });
-      return pollScreenshot(id);
+      const result = await pollScreenshot(id);
+      const txt = result.content.find((c: any) => c.type === "text") as any;
+      if (txt) txt.text = `Device: iPhone 14 Pro (393×852)\n${txt.text}`;
+      return result;
     }
   );
 
   server.tool(
     "screenshot_tablet",
-    "Capture a screenshot at iPad viewport (820×1180). By default captures viewport-only (not the full scrollable page). Set fullPage to true for full-page capture.",
+    "Capture a screenshot at iPad viewport (820×1180). By default captures viewport-only (not the full scrollable page). Set fullPage to true for full-page capture. Returns device name, dimensions, and public image URL.",
     {
       url: z.string().url().describe("The URL to screenshot"),
       fullPage: z.boolean().default(false).describe("If true, captures entire scrollable page. Default false = viewport-only (recommended for tablet)."),
@@ -191,7 +216,10 @@ When the user asks you to test a flow that requires authentication (login, sign-
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
       const id = await enqueueScreenshot(auth.userId, { url: args.url, width: 820, height: 1180, fullPage: args.fullPage, format: args.format, delay: 0 });
-      return pollScreenshot(id);
+      const result = await pollScreenshot(id);
+      const txt = result.content.find((c: any) => c.type === "text") as any;
+      if (txt) txt.text = `Device: iPad (820×1180)\n${txt.text}`;
+      return result;
     }
   );
 
@@ -261,7 +289,10 @@ When the user asks you to test a flow that requires authentication (login, sign-
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
       const id = await enqueueScreenshot(auth.userId, { ...args, fullPage: true, delay: 0, darkMode: true });
-      return pollScreenshot(id);
+      const result = await pollScreenshot(id);
+      const txt = result.content.find((c: any) => c.type === "text") as any;
+      if (txt) txt.text = `Dark mode: enabled\n${txt.text}`;
+      return result;
     }
   );
 
@@ -316,9 +347,11 @@ When the user asks you to test a flow that requires authentication (login, sign-
         .orderBy(desc(screenshots.createdAt))
         .limit(args.limit);
       if (rows.length === 0) return { content: [{ type: "text", text: "No screenshots found." }] };
-      const list = rows.map((r, i) =>
-        `${i + 1}. ${r.url}\n   Image: ${r.publicUrl}\n   Size: ${r.width}×${r.height} ${r.format?.toUpperCase()}\n   Taken: ${new Date(r.createdAt).toLocaleString()}`
-      ).join("\n\n");
+      const list = rows.map((r, i) => {
+        const isPdf = r.publicUrl?.endsWith(".pdf");
+        const sizeStr = isPdf ? "PDF document" : `${r.width ?? "?"}×${r.height ?? "?"} ${(r.format ?? "png").toUpperCase()}`;
+        return `${i + 1}. ${r.url}\n   Image: ${r.publicUrl}\n   Size: ${sizeStr}\n   Taken: ${new Date(r.createdAt).toLocaleString()}`;
+      }).join("\n\n");
       return { content: [{ type: "text", text: `Recent screenshots:\n\n${list}` }] };
     }
   );
@@ -333,11 +366,13 @@ When the user asks you to test a flow that requires authentication (login, sign-
       const auth = await validateKey(apiKey);
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const [row] = await db.select().from(screenshots).where(and(eq(screenshots.id, args.id), eq(screenshots.userId, auth.userId)));
-      if (!row) return { content: [{ type: "text", text: "Screenshot not found." }] };
+      if (!row) return { content: [{ type: "text", text: "Screenshot not found. The ID may be wrong or it may belong to a different API key." }] };
       if (row.status === "done" && row.publicUrl) {
-        return { content: [{ type: "text", text: `Status: done\nURL: ${row.publicUrl}` }] };
+        const isPdf = row.publicUrl.endsWith(".pdf");
+        const sizeStr = isPdf ? "PDF document" : `${row.width ?? "?"}×${row.height ?? "?"} ${(row.format ?? "png").toUpperCase()}`;
+        return { content: [{ type: "text", text: `Status: done\nURL: ${row.publicUrl}\nSize: ${sizeStr}\nOriginal URL: ${row.url}\nCreated: ${new Date(row.createdAt).toLocaleString()}` }] };
       }
-      return { content: [{ type: "text", text: `Status: ${row.status}${row.errorMessage ? `\nError: ${row.errorMessage}` : ""}` }] };
+      return { content: [{ type: "text", text: `Status: ${row.status}${row.errorMessage ? `\nError: ${humanizeError(row.errorMessage)}` : ""}` }] };
     }
   );
 
@@ -371,7 +406,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
         const vpSize = page.viewportSize();
         return { content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\nViewport: ${vpSize?.width}×${vpSize?.height}\n(Pass this sessionId to all browser_ tools)` }, img] };
       } catch (err) {
-        return { content: [{ type: "text", text: `Error navigating: ${err instanceof Error ? err.message : String(err)}` }] };
+        return { content: [{ type: "text", text: `Error navigating: ${humanizeError(err instanceof Error ? err.message : String(err))}` }] };
       }
     }
   );
@@ -401,7 +436,9 @@ When the user asks you to test a flow that requires authentication (login, sign-
         const img = await pageScreenshot(page);
         return { content: [{ type: "text", text: `Clicked: ${args.selector}` }, img] };
       } catch (err) {
-        return { content: [{ type: "text", text: `Error clicking: ${err instanceof Error ? err.message : String(err)}` }] };
+        const raw = err instanceof Error ? err.message : String(err);
+        const friendly = raw.includes("Timeout") ? `Could not find element "${args.selector}" within 5 seconds. Check that the selector is correct and the element is visible.` : humanizeError(raw);
+        return { content: [{ type: "text", text: `Error clicking: ${friendly}` }] };
       }
     }
   );
@@ -425,7 +462,9 @@ When the user asks you to test a flow that requires authentication (login, sign-
         const img = await pageScreenshot(page);
         return { content: [{ type: "text", text: `Filled ${args.selector} with value` }, img] };
       } catch (err) {
-        return { content: [{ type: "text", text: `Error filling field: ${err instanceof Error ? err.message : String(err)}` }] };
+        const raw = err instanceof Error ? err.message : String(err);
+        const friendly = raw.includes("Timeout") ? `Could not find input "${args.selector}" within 5 seconds. Check that the selector is correct.` : humanizeError(raw);
+        return { content: [{ type: "text", text: `Error filling field: ${friendly}` }] };
       }
     }
   );
@@ -495,7 +534,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
       } catch (err) {
         const img = await pageScreenshot(session.page).catch(() => null);
         const content: Array<{ type: "text"; text: string } | { type: "image"; data: string; mimeType: string }> = [
-          { type: "text", text: `Element not found: ${args.selector}` },
+          { type: "text", text: `Element "${args.selector}" not found within ${args.timeout}ms. The element may not exist, may be hidden, or the page may still be loading. Try increasing the timeout or checking the selector.` },
         ];
         if (img) content.push(img);
         return { content };
@@ -517,7 +556,8 @@ When the user asks you to test a flow that requires authentication (login, sign-
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       try {
         const result = await session.page.evaluate(args.script);
-        return { content: [{ type: "text", text: `Result: ${JSON.stringify(result, null, 2)}` }] };
+        const formatted = typeof result === "string" ? result : JSON.stringify(result, null, 2);
+        return { content: [{ type: "text", text: `Result: ${formatted}` }] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
       }
@@ -580,9 +620,11 @@ When the user asks you to test a flow that requires authentication (login, sign-
           const IT: any = {A:"link",BUTTON:"button",INPUT:"textbox",TEXTAREA:"textbox",SELECT:"combobox",IMG:"img",NAV:"navigation",MAIN:"main",HEADER:"banner",FOOTER:"contentinfo",FORM:"form",DIALOG:"dialog",H1:"heading",H2:"heading",H3:"heading",H4:"heading",H5:"heading",H6:"heading"};
           const ITAGS = ["A","BUTTON","INPUT","TEXTAREA","SELECT","IMG","NAV","MAIN","HEADER","FOOTER","FORM","H1","H2","H3","H4","H5","H6"];
 
+          const SKIP = new Set(["SCRIPT","STYLE","NOSCRIPT","SVG","LINK","META"]);
           function walk(el: any, depth: number): any {
             if (!el || depth <= 0) return null;
             const tag = el.tagName || "";
+            if (SKIP.has(tag)) return null;
             const role = (el.getAttribute && el.getAttribute("role")) || IT[tag] || "";
             const name = (el.getAttribute && (el.getAttribute("aria-label") || el.getAttribute("alt") || el.getAttribute("title") || el.getAttribute("placeholder"))) || (el.innerText ? el.innerText.slice(0, 80) : "") || "";
             const isInteresting = IR.has(role) || (el.getAttribute && el.getAttribute("role")) || ITAGS.includes(tag);
@@ -621,10 +663,11 @@ When the user asks you to test a flow that requires authentication (login, sign-
         }, { maxDepth: args.maxDepth, interestingOnly: args.interestingOnly });
 
         const text = JSON.stringify(tree, null, 2);
+        const nodeCount = (text.match(/"role"/g) || []).length;
         if (text.length > 50000) {
-          return { content: [{ type: "text", text: `Accessibility tree (truncated to 50k chars):\n${text.slice(0, 50000)}...` }] };
+          return { content: [{ type: "text", text: `Accessibility tree (~${nodeCount} nodes, truncated to 50k chars):\n${text.slice(0, 50000)}...` }] };
         }
-        return { content: [{ type: "text", text: `Accessibility tree:\n${text}` }] };
+        return { content: [{ type: "text", text: `Accessibility tree (~${nodeCount} nodes):\n${text}` }] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
       }
@@ -669,6 +712,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       try {
         let html: string;
+        const source = args.selector || "full page";
         if (args.selector) {
           const prop = args.outer ? "outerHTML" : "innerHTML";
           html = await session.page.locator(args.selector).first().evaluate((el, p) => (el as any)[p], prop);
@@ -676,7 +720,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
           html = await session.page.content();
         }
         const trimmed = html.length > 50000 ? html.slice(0, 50000) + "\n...(truncated)" : html;
-        return { content: [{ type: "text", text: trimmed }] };
+        return { content: [{ type: "text", text: `HTML from ${source} (${html.length} chars${html.length > 50000 ? ", truncated" : ""}):\n\n${trimmed}` }] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
       }
@@ -792,9 +836,10 @@ When the user asks you to test a flow that requires authentication (login, sign-
         logs = logs.filter((l) => l.level === args.level);
       }
       logs = logs.slice(-args.limit);
-      if (logs.length === 0) return { content: [{ type: "text", text: "No console logs captured." }] };
+      if (logs.length === 0) return { content: [{ type: "text", text: `No console logs captured.\nSession ID: ${args.sessionId}` }] };
       const text = logs.map((l) => `[${l.level.toUpperCase()}] ${l.text}`).join("\n");
-      return { content: [{ type: "text", text: `Console logs (${logs.length} entries):\n\n${text}` }] };
+      const label = logs.length === 1 ? "1 entry" : `${logs.length} entries`;
+      return { content: [{ type: "text", text: `Console logs (${label}):\n\n${text}\n\nSession ID: ${args.sessionId}` }] };
     }
   );
 
@@ -811,9 +856,10 @@ When the user asks you to test a flow that requires authentication (login, sign-
       const session = await getSession(args.sessionId, auth.userId);
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       const errors = session.networkErrors.slice(-args.limit);
-      if (errors.length === 0) return { content: [{ type: "text", text: "No failed network requests captured." }] };
+      if (errors.length === 0) return { content: [{ type: "text", text: `No failed network requests captured. All requests returned 2xx/3xx status codes.\nSession ID: ${args.sessionId}` }] };
       const text = errors.map((e) => `${e.status} ${e.statusText} — ${e.url}`).join("\n");
-      return { content: [{ type: "text", text: `Failed network requests (${errors.length}):\n\n${text}` }] };
+      const label = errors.length === 1 ? "1 failed request" : `${errors.length} failed requests`;
+      return { content: [{ type: "text", text: `Failed network requests (${label}):\n\n${text}\n\nSession ID: ${args.sessionId}` }] };
     }
   );
 
@@ -868,7 +914,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
           `Core Web Vitals:`,
           `  TTFB:  ${metrics.ttfb !== null ? metrics.ttfb + "ms" : "N/A"}`,
           `  FCP:   ${metrics.fcp !== null ? metrics.fcp + "ms" : "N/A"}`,
-          `  LCP:   ${metrics.lcp !== null ? metrics.lcp + "ms" : "N/A"}`,
+          `  LCP:   ${metrics.lcp !== null ? metrics.lcp + "ms" : "N/A (measured at page load; may update with lazy content)"}`,
           `  CLS:   ${metrics.cls}`,
           ``,
           `Page Load:`,
@@ -917,7 +963,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
 
       const header = `Network Requests (${reqs.length} captured, ${Math.round(totalSize / 1024)}KB total, avg ${avgDuration}ms)\nSlowest: ${slowest.duration}ms — ${slowest.url.slice(0, 80)}\n`;
       const lines = reqs.map((r) => {
-        const sizeStr = r.size > 0 ? `${Math.round(r.size / 1024)}KB` : "?";
+        const sizeStr = r.size > 0 ? `${Math.round(r.size / 1024)}KB` : "0KB";
         return `${r.status} ${r.method.padEnd(4)} ${r.duration.toString().padStart(5)}ms ${sizeStr.padStart(6)} [${r.resourceType}] ${r.url.slice(0, 100)}`;
       });
       return { content: [{ type: "text", text: header + lines.join("\n") }] };
@@ -1013,7 +1059,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
           ...(seo.images.missingAlt.length > 0 ? [`  Missing alt: ${seo.images.missingAlt.join(", ")}`] : []),
           ``,
           `Links: ${seo.links.total} total (${seo.links.internal} internal, ${seo.links.external} external)`,
-          ...(seo.jsonLd ? [`\nStructured Data (JSON-LD): ${JSON.stringify(seo.jsonLd).slice(0, 500)}`] : []),
+          ...(seo.jsonLd ? [`\nStructured Data (JSON-LD):\n${JSON.stringify(seo.jsonLd, null, 2).slice(0, 2000)}`] : []),
         ];
 
         return { content: [{ type: "text", text: lines.join("\n") }] };
@@ -1187,7 +1233,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
         } catch { /* timeout or fetch error — skip */ }
       }
 
-      // 2. Probe common login paths
+      // 2. Probe common login paths (use GET to check page content for login indicators)
       const commonPaths = [
         "/login", "/signin", "/sign-in", "/auth/login", "/auth/signin",
         "/account/login", "/account/signin", "/user/login", "/users/sign_in",
@@ -1196,16 +1242,25 @@ When the user asks you to test a flow that requires authentication (login, sign-
         "/auth", "/session/new", "/log-in", "/member/login",
       ];
 
+      const loginIndicators = /password|sign.?in|log.?in|username|email.*password|credential/i;
+
       const probes = commonPaths.map(async (path) => {
         const probeUrl = `${base}${path}`;
         try {
           const res = await fetch(probeUrl, {
-            method: "HEAD",
+            method: "GET",
             redirect: "follow",
             signal: AbortSignal.timeout(4000),
           });
-          if (res.ok || res.status === 401 || res.status === 403) {
+          if (res.status === 401 || res.status === 403) {
             found.push({ url: probeUrl, source: "common-path", status: res.status });
+          } else if (res.ok) {
+            // Check body for login-related content to avoid false positives
+            const body = await res.text().catch(() => "");
+            const snippet = body.slice(0, 5000).toLowerCase();
+            if (loginIndicators.test(snippet)) {
+              found.push({ url: probeUrl, source: "common-path", status: res.status });
+            }
           }
         } catch { /* skip timeouts and errors */ }
       });
@@ -1424,9 +1479,11 @@ When the user asks you to test a flow that requires authentication (login, sign-
           const IT: any = {A:"link",BUTTON:"button",INPUT:"textbox",TEXTAREA:"textbox",SELECT:"combobox",IMG:"img",NAV:"navigation",MAIN:"main",HEADER:"banner",FOOTER:"contentinfo",FORM:"form",DIALOG:"dialog",H1:"heading",H2:"heading",H3:"heading",H4:"heading",H5:"heading",H6:"heading"};
           const ITAGS = ["A","BUTTON","INPUT","TEXTAREA","SELECT","IMG","NAV","MAIN","HEADER","FOOTER","FORM","H1","H2","H3","H4","H5","H6"];
 
+          const SKIP = new Set(["SCRIPT","STYLE","NOSCRIPT","SVG","LINK","META"]);
           function walk(el: any, depth: number): any {
             if (!el || depth <= 0) return null;
             const tag = el.tagName || "";
+            if (SKIP.has(tag)) return null;
             const role = (el.getAttribute && el.getAttribute("role")) || IT[tag] || "";
             const name = (el.getAttribute && (el.getAttribute("aria-label") || el.getAttribute("alt") || el.getAttribute("title") || el.getAttribute("placeholder"))) || (el.innerText ? el.innerText.slice(0, 80) : "") || "";
             const isInteresting = IR.has(role) || (el.getAttribute && el.getAttribute("role")) || ITAGS.includes(tag);
@@ -1465,14 +1522,485 @@ When the user asks you to test a flow that requires authentication (login, sign-
         }, { maxDepth: args.maxDepth, interestingOnly: args.interestingOnly });
 
         const text = JSON.stringify(tree, null, 2);
+        const nodeCount = (text.match(/"role"/g) || []).length;
         if (text.length > 50000) {
-          return { content: [{ type: "text", text: `Accessibility tree for ${args.url} (truncated to 50k chars):\n${text.slice(0, 50000)}...` }] };
+          return { content: [{ type: "text", text: `Accessibility tree for ${args.url} (~${nodeCount} nodes, truncated to 50k chars):\n${text.slice(0, 50000)}...` }] };
         }
-        return { content: [{ type: "text", text: `Accessibility tree for ${args.url}:\n${text}` }] };
+        return { content: [{ type: "text", text: `Accessibility tree for ${args.url} (~${nodeCount} nodes):\n${text}` }] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
       } finally {
         if (context) await context.close().catch(() => {});
+        await release();
+      }
+    }
+  );
+
+  // ── Visual Diff ──────────────────────────────────────────────
+  server.tool(
+    "screenshot_diff",
+    "Compare two URLs pixel-by-pixel and return a diff overlay image showing exactly what changed. Returns the diff image URL, percentage of pixels changed, total changed pixel count, and a match score.",
+    {
+      urlA: z.string().url().describe("First URL (before)"),
+      urlB: z.string().url().describe("Second URL (after)"),
+      width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width"),
+      height: z.number().int().min(240).max(2160).default(800).describe("Viewport height"),
+      threshold: z.number().min(0).max(1).default(0.1).describe("Color difference threshold (0=exact, 1=lenient)"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const limitErr = await checkLimit(auth.userId, auth.plan);
+      if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
+
+      const { acquire, release } = browserPool();
+      const browser = await acquire();
+      try {
+        const page = await browser.newPage({ viewport: { width: args.width, height: args.height } });
+
+        // Capture A
+        await page.goto(args.urlA, { waitUntil: "networkidle", timeout: 30000 }).catch(() =>
+          page.goto(args.urlA, { waitUntil: "load", timeout: 30000 })
+        );
+        const bufA = await page.screenshot({ type: "png", fullPage: false });
+
+        // Capture B
+        await page.goto(args.urlB, { waitUntil: "networkidle", timeout: 30000 }).catch(() =>
+          page.goto(args.urlB, { waitUntil: "load", timeout: 30000 })
+        );
+        const bufB = await page.screenshot({ type: "png", fullPage: false });
+        await page.close();
+
+        // Decode PNGs
+        const imgA = PNG.sync.read(Buffer.from(bufA));
+        const imgB = PNG.sync.read(Buffer.from(bufB));
+
+        // Ensure same size (use smaller dimensions)
+        const w = Math.min(imgA.width, imgB.width);
+        const h = Math.min(imgA.height, imgB.height);
+        const diff = new PNG({ width: w, height: h });
+
+        const changedPixels = pixelmatch(
+          imgA.data, imgB.data, diff.data, w, h,
+          { threshold: args.threshold, includeAA: true }
+        );
+
+        const totalPixels = w * h;
+        const changedPct = ((changedPixels / totalPixels) * 100).toFixed(2);
+        const matchScore = (100 - (changedPixels / totalPixels) * 100).toFixed(1);
+
+        // Upload diff image to R2
+        const diffBuf = PNG.sync.write(diff);
+        const diffKey = `screenshots/diff-${nanoid()}.png`;
+        const diffUrl = await uploadScreenshot(diffKey, Buffer.from(diffBuf), "image/png");
+
+        // Also upload the two captures for reference
+        const keyA = `screenshots/diff-a-${nanoid()}.png`;
+        const keyB = `screenshots/diff-b-${nanoid()}.png`;
+        const urlAImg = await uploadScreenshot(keyA, Buffer.from(bufA), "image/png");
+        const urlBImg = await uploadScreenshot(keyB, Buffer.from(bufB), "image/png");
+
+        // Track usage
+        await db.insert(usageEvents).values({ id: nanoid(), userId: auth.userId, screenshotId: null });
+
+        return {
+          content: [{
+            type: "text",
+            text: [
+              `Visual Diff Complete!`,
+              ``,
+              `Before: ${urlAImg}`,
+              `After:  ${urlBImg}`,
+              `Diff:   ${diffUrl}`,
+              ``,
+              `Changed: ${changedPixels.toLocaleString()} pixels (${changedPct}%)`,
+              `Match score: ${matchScore}%`,
+              `Resolution: ${w}×${h}`,
+              `Threshold: ${args.threshold}`,
+            ].join("\n"),
+          }],
+        };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${humanizeError(err instanceof Error ? err.message : String(err))}` }] };
+      } finally {
+        await release();
+      }
+    }
+  );
+
+  // ── Batch Screenshots ──────────────────────────────────────
+  // @ts-ignore - TS2589: MCP SDK generic inference too deep
+  server.tool(
+    "screenshot_batch",
+    "Capture screenshots of multiple URLs in one call (max 10). Returns an array of results with screenshot URLs and metadata. All screenshots share the same viewport and format settings.",
+    {
+      urls: z.array(z.string().url()).min(1).max(10).describe("Array of URLs to screenshot (1-10)"),
+      width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width"),
+      height: z.number().int().min(240).max(2160).default(800).describe("Viewport height"),
+      fullPage: z.boolean().default(false).describe("Capture full scrollable page"),
+      format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const limitErr = await checkLimit(auth.userId, auth.plan);
+      if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
+
+      const startTime = Date.now();
+      const results: string[] = [];
+
+      // Enqueue all screenshots and poll
+      const jobs = await Promise.all(
+        args.urls.map((url) =>
+          enqueueScreenshot(auth.userId, {
+            url,
+            width: args.width,
+            height: args.height,
+            fullPage: args.fullPage,
+            format: args.format,
+            delay: 0,
+          })
+        )
+      );
+
+      // Poll all jobs
+      for (let i = 0; i < 30; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        let allDone = true;
+        for (let j = 0; j < jobs.length; j++) {
+          if (results[j]) continue; // already done
+          const [row] = await db.select().from(screenshots).where(eq(screenshots.id, jobs[j]));
+          if (row?.status === "done" && row.publicUrl) {
+            const isPdf = row.publicUrl.endsWith(".pdf");
+            const sizeStr = isPdf ? "PDF" : `${row.width ?? "?"}×${row.height ?? "?"} ${(row.format ?? "png").toUpperCase()}`;
+            results[j] = `✅ ${args.urls[j]}\n   ${row.publicUrl}\n   ${sizeStr}`;
+          } else if (row?.status === "failed") {
+            results[j] = `❌ ${args.urls[j]}\n   Failed: ${humanizeError(row.errorMessage ?? "Unknown error")}`;
+          } else {
+            allDone = false;
+          }
+        }
+        if (allDone) break;
+      }
+
+      // Fill any still-pending
+      for (let j = 0; j < jobs.length; j++) {
+        if (!results[j]) results[j] = `⏳ ${args.urls[j]}\n   Timed out after 60s. Job ID: ${jobs[j]}`;
+      }
+
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      const successCount = results.filter((r) => r.startsWith("✅")).length;
+
+      return {
+        content: [{
+          type: "text",
+          text: [
+            `Batch Screenshots Complete! (${successCount}/${args.urls.length} succeeded in ${elapsed}s)`,
+            ``,
+            ...results,
+          ].join("\n"),
+        }],
+      };
+    }
+  );
+
+  // ── Cross-Browser Screenshots ──────────────────────────────
+  server.tool(
+    "screenshot_cross_browser",
+    "Capture a URL in Chromium, Firefox, and WebKit simultaneously. Returns three screenshot URLs — one per browser engine. Useful for cross-browser visual testing.",
+    {
+      url: z.string().url().describe("The URL to screenshot"),
+      width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width"),
+      height: z.number().int().min(240).max(2160).default(800).describe("Viewport height"),
+      fullPage: z.boolean().default(false).describe("Capture full scrollable page"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const limitErr = await checkLimit(auth.userId, auth.plan);
+      if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
+
+      const pw = await import("playwright");
+      const browsers = [
+        { name: "Chromium", launcher: pw.chromium },
+        { name: "Firefox", launcher: pw.firefox },
+        { name: "WebKit", launcher: pw.webkit },
+      ];
+
+      const startTime = Date.now();
+      const results: string[] = [];
+
+      await Promise.all(
+        browsers.map(async ({ name, launcher }) => {
+          try {
+            const browser = await launcher.launch({ headless: true });
+            const page = await browser.newPage({ viewport: { width: args.width, height: args.height } });
+            await page.goto(args.url, { waitUntil: "networkidle", timeout: 30000 }).catch(() =>
+              page.goto(args.url, { waitUntil: "load", timeout: 30000 })
+            );
+            const buf = await page.screenshot({ type: "png", fullPage: args.fullPage });
+            await browser.close();
+
+            const key = `screenshots/${name.toLowerCase()}-${nanoid()}.png`;
+            const publicUrl = await uploadScreenshot(key, Buffer.from(buf), "image/png");
+            await db.insert(usageEvents).values({ id: nanoid(), userId: auth.userId, screenshotId: null });
+            results.push(`✅ ${name}: ${publicUrl}`);
+          } catch (err) {
+            results.push(`❌ ${name}: ${humanizeError(err instanceof Error ? err.message : String(err))}`);
+          }
+        })
+      );
+
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+      return {
+        content: [{
+          type: "text",
+          text: [
+            `Cross-Browser Screenshots (${elapsed}s)`,
+            `URL: ${args.url}`,
+            `Viewport: ${args.width}×${args.height}${args.fullPage ? " (full page)" : ""}`,
+            ``,
+            ...results,
+          ].join("\n"),
+        }],
+      };
+    }
+  );
+
+  // ── Responsive Breakpoint Detection ────────────────────────
+  server.tool(
+    "find_breakpoints",
+    "Detect responsive layout breakpoints for a URL. Scans viewport widths from 320px to 1920px and identifies where significant layout changes occur (large height jumps, content reflows). Returns a list of detected breakpoint widths.",
+    {
+      url: z.string().url().describe("The URL to analyze"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+
+      const { acquire, release } = browserPool();
+      const browser = await acquire();
+      try {
+        const page = await browser.newPage({ viewport: { width: 1920, height: 800 } });
+        await page.goto(args.url, { waitUntil: "networkidle", timeout: 30000 }).catch(() =>
+          page.goto(args.url, { waitUntil: "load", timeout: 30000 })
+        );
+
+        // Scan widths
+        const widths = [320, 375, 414, 480, 540, 600, 640, 720, 768, 800, 834, 900, 960, 1024, 1080, 1152, 1200, 1280, 1366, 1440, 1536, 1680, 1920];
+        const measurements: { width: number; bodyHeight: number; scrollWidth: number }[] = [];
+
+        for (const w of widths) {
+          await page.setViewportSize({ width: w, height: 800 });
+          await page.waitForTimeout(300);
+          const m = await page.evaluate(() => ({
+            bodyHeight: document.body.scrollHeight,
+            scrollWidth: document.body.scrollWidth,
+          }));
+          measurements.push({ width: w, ...m });
+        }
+
+        // Also detect common CSS breakpoints in stylesheets (before closing page)
+        const cssBreakpoints = await page.evaluate(() => {
+          const bps = new Set<number>();
+          try {
+            for (const sheet of document.styleSheets) {
+              try {
+                for (const rule of sheet.cssRules) {
+                  if (rule instanceof CSSMediaRule) {
+                    const match = rule.conditionText?.match(/(?:min|max)-width:\s*(\d+)/g);
+                    if (match) {
+                      for (const m of match) {
+                        const num = parseInt(m.replace(/\D/g, ""));
+                        if (num >= 300 && num <= 2000) bps.add(num);
+                      }
+                    }
+                  }
+                }
+              } catch { /* cross-origin */ }
+            }
+          } catch { /* no access */ }
+          return [...bps].sort((a, b) => a - b);
+        }).catch(() => [] as number[]);
+
+        await page.close();
+
+        // Detect breakpoints (significant height changes > 15%)
+        const breakpoints: { width: number; description: string }[] = [];
+        for (let i = 1; i < measurements.length; i++) {
+          const prev = measurements[i - 1];
+          const curr = measurements[i];
+          const heightChange = Math.abs(curr.bodyHeight - prev.bodyHeight) / Math.max(prev.bodyHeight, 1);
+          const overflowChanged = (prev.scrollWidth > prev.width) !== (curr.scrollWidth > curr.width);
+
+          if (heightChange > 0.15) {
+            const direction = curr.bodyHeight > prev.bodyHeight ? "taller" : "shorter";
+            breakpoints.push({
+              width: curr.width,
+              description: `Layout shifts at ${curr.width}px — content becomes ${direction} (${Math.round(heightChange * 100)}% height change from ${prev.width}px)`,
+            });
+          }
+          if (overflowChanged) {
+            const status = curr.scrollWidth > curr.width ? "starts overflowing" : "stops overflowing";
+            breakpoints.push({
+              width: curr.width,
+              description: `Content ${status} at ${curr.width}px (scrollWidth: ${curr.scrollWidth}px)`,
+            });
+          }
+        }
+
+        return {
+          content: [{
+            type: "text",
+            text: [
+              `Breakpoint Analysis for: ${args.url}`,
+              ``,
+              breakpoints.length > 0
+                ? `Detected Layout Shifts (${breakpoints.length}):` + "\n" + breakpoints.map((b) => `  • ${b.description}`).join("\n")
+                : `No significant layout shifts detected across ${widths.length} viewport widths.`,
+              ``,
+              cssBreakpoints.length > 0
+                ? `CSS Media Query Breakpoints: ${cssBreakpoints.join("px, ")}px`
+                : `No CSS @media breakpoints detected (may be cross-origin restricted).`,
+              ``,
+              `Scanned ${widths.length} widths: ${widths[0]}px → ${widths[widths.length - 1]}px`,
+            ].join("\n"),
+          }],
+        };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${humanizeError(err instanceof Error ? err.message : String(err))}` }] };
+      } finally {
+        await release();
+      }
+    }
+  );
+
+  // ── AI UX Review (Kimi k2.5 Vision) ───────────────────────
+  server.tool(
+    "ux_review",
+    "Run an AI-powered UX review on any URL. Captures a screenshot and analyzes it along with accessibility tree, SEO metadata, and performance metrics using Kimi k2.5 vision. Returns actionable UX feedback across categories: Accessibility, SEO, Performance, Navigation, Content, and Mobile-friendliness.",
+    {
+      url: z.string().url().describe("The URL to review"),
+      width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width"),
+      height: z.number().int().min(240).max(2160).default(800).describe("Viewport height"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+
+      const kimiKey = process.env.KIMI_API_KEY;
+      if (!kimiKey) return { content: [{ type: "text", text: "Error: KIMI_API_KEY not configured on the server." }] };
+
+      const { acquire, release } = browserPool();
+      const browser = await acquire();
+      try {
+        const page = await browser.newPage({ viewport: { width: args.width, height: args.height } });
+        await page.goto(args.url, { waitUntil: "networkidle", timeout: 30000 }).catch(() =>
+          page.goto(args.url, { waitUntil: "load", timeout: 30000 })
+        );
+
+        // 1. Take screenshot
+        const screenshotBuf = await page.screenshot({ type: "png", fullPage: false });
+
+        // 2. Get accessibility tree (simplified)
+        const a11yTree = await page.evaluate(() => {
+          const items: string[] = [];
+          const walk = (el: Element, depth: number) => {
+            if (depth > 4) return;
+            const tag = el.tagName.toLowerCase();
+            if (["script", "style", "noscript", "svg"].includes(tag)) return;
+            const role = el.getAttribute("role") || "";
+            const ariaLabel = el.getAttribute("aria-label") || "";
+            const text = el.textContent?.trim().slice(0, 60) || "";
+            if (role || ariaLabel || ["h1", "h2", "h3", "h4", "a", "button", "input", "img", "nav", "main", "footer", "header"].includes(tag)) {
+              items.push(`${"  ".repeat(depth)}<${tag}${role ? ` role="${role}"` : ""}${ariaLabel ? ` aria-label="${ariaLabel}"` : ""}> ${text}`);
+            }
+            for (const child of el.children) walk(child, depth + 1);
+          };
+          walk(document.body, 0);
+          return items.slice(0, 80).join("\n");
+        });
+
+        // 3. Get basic SEO + perf data
+        const pageData = await page.evaluate(() => {
+          const getMeta = (name: string) => document.querySelector(`meta[name="${name}"], meta[property="${name}"]`)?.getAttribute("content") || "";
+          return {
+            title: document.title,
+            description: getMeta("description"),
+            ogTitle: getMeta("og:title"),
+            ogImage: getMeta("og:image"),
+            h1Count: document.querySelectorAll("h1").length,
+            imgCount: document.querySelectorAll("img").length,
+            imgWithoutAlt: document.querySelectorAll("img:not([alt])").length,
+            linkCount: document.querySelectorAll("a").length,
+            formCount: document.querySelectorAll("form").length,
+          };
+        });
+
+        await page.close();
+
+        // 4. Build prompt and call Kimi k2.5
+        const b64 = "data:image/png;base64," + Buffer.from(screenshotBuf).toString("base64");
+
+        const client = new OpenAI({ apiKey: kimiKey, baseURL: "https://api.moonshot.ai/v1" });
+
+        const systemPrompt = `You are a senior UX reviewer. Analyze the provided screenshot and structured page data to give a professional UX audit. Rate each category 1-10 and provide specific, actionable recommendations. Be concise but thorough. Categories: Visual Design, Accessibility, SEO, Performance Indicators, Navigation/Layout, Content Quality, Mobile-friendliness.`;
+
+        const userContent = [
+          { type: "image_url" as const, image_url: { url: b64 } },
+          {
+            type: "text" as const,
+            text: [
+              `URL: ${args.url}`,
+              `Viewport: ${args.width}×${args.height}`,
+              ``,
+              `Page Metadata:`,
+              `  Title: ${pageData.title}`,
+              `  Description: ${pageData.description || "(none)"}`,
+              `  OG Title: ${pageData.ogTitle || "(none)"}`,
+              `  OG Image: ${pageData.ogImage || "(none)"}`,
+              `  H1 count: ${pageData.h1Count}`,
+              `  Images: ${pageData.imgCount} total, ${pageData.imgWithoutAlt} missing alt`,
+              `  Links: ${pageData.linkCount}`,
+              `  Forms: ${pageData.formCount}`,
+              ``,
+              `Accessibility Tree (top nodes):`,
+              a11yTree,
+              ``,
+              `Provide your UX review with scores and specific recommendations.`,
+            ].join("\n"),
+          },
+        ];
+
+        const completion = await client.chat.completions.create({
+          model: "kimi-k2.5",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent },
+          ],
+          max_tokens: 2000,
+          // @ts-ignore - Kimi specific parameter
+          thinking: { type: "disabled" },
+        });
+
+        const review = completion.choices[0]?.message?.content ?? "No review generated.";
+        const tokens = completion.usage?.total_tokens ?? 0;
+
+        return {
+          content: [{
+            type: "text",
+            text: [
+              `🔍 AI UX Review — ${args.url}`,
+              `Viewport: ${args.width}×${args.height} | Powered by Kimi k2.5 Vision | ${tokens} tokens`,
+              ``,
+              review,
+            ].join("\n"),
+          }],
+        };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      } finally {
         await release();
       }
     }

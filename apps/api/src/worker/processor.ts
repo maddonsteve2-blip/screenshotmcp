@@ -134,8 +134,8 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
       }
     }
 
-    // Get actual image dimensions for the response
-    const dimensions = getImageDimensions(buffer, format);
+    // Get actual image dimensions for the response (skip for PDF — binary format differs)
+    const dimensions = pdf ? null : getImageDimensions(buffer, outputFormat);
 
     const ext = pdf ? "pdf" : format;
     const r2Key = `screenshots/${id}.${ext}`;
@@ -164,22 +164,6 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
   }
 }
 
-/**
- * Crop a screenshot buffer to a maximum height using PNG/JPEG header parsing.
- * Uses Playwright's sharp-free approach: re-screenshot with a clipped region.
- */
-async function cropToMaxHeight(buffer: Buffer, maxHeight: number, format: string): Promise<Buffer> {
-  // Parse PNG dimensions from IHDR chunk (bytes 16-23)
-  if (format === "png" && buffer.length > 24) {
-    const imgWidth = buffer.readUInt32BE(16);
-    const imgHeight = buffer.readUInt32BE(20);
-    if (imgHeight <= maxHeight) return buffer;
-    // We can't crop without an image library, so we'll use the browser approach below
-  }
-  // For non-trivial cropping, we'd need sharp or similar — for now just return as-is
-  // The maxHeight is primarily enforced by the viewport approach (fullPage: false + tall viewport)
-  return buffer;
-}
 
 /**
  * Extract image dimensions from PNG header.

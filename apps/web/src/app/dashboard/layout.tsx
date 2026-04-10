@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { Camera, Key, LayoutDashboard, FileText, CreditCard, Download, Image } from "lucide-react";
+import { Camera, Key, LayoutDashboard, FileText, CreditCard, Download, Image, Play, BarChart3, ScrollText } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const nav = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/install", label: "Install", icon: Download },
-  { href: "/dashboard/keys", label: "API Keys", icon: Key },
+  { href: "/dashboard/playground", label: "Playground", icon: Play },
   { href: "/dashboard/screenshots", label: "Screenshots", icon: Image },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/dashboard/keys", label: "API Keys", icon: Key },
+  { href: "/dashboard/install", label: "Install", icon: Download },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
+  { href: "/changelog", label: "Changelog", icon: ScrollText },
   { href: "/docs", label: "Docs", icon: FileText },
 ];
 

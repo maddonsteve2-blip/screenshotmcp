@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Copy, Check, ImageOff } from "lucide-react";
+import { ExternalLink, Copy, Check, ImageOff, FileText } from "lucide-react";
 
 type Screenshot = {
   id: string;
@@ -108,33 +108,61 @@ export default function ScreenshotsPage() {
                   <Card key={s.id} className="overflow-hidden group">
                     <div className="h-36 bg-muted overflow-hidden relative">
                       {s.publicUrl ? (
-                        <>
-                          <img
-                            src={s.publicUrl}
-                            alt={s.url}
-                            className="w-full h-full object-cover object-top transition-transform group-hover:scale-105"
-                            loading="lazy"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                            <a href={s.publicUrl} target="_blank" rel="noopener noreferrer">
-                              <Button size="sm" variant="secondary" className="h-7 text-xs gap-1">
-                                <ExternalLink className="h-3 w-3" />
-                                View
+                        s.publicUrl.endsWith(".pdf") ? (
+                          <>
+                            <div className="flex flex-col items-center justify-center h-full gap-2">
+                              <FileText className="h-10 w-10 text-muted-foreground/50" />
+                              <span className="text-xs text-muted-foreground">PDF Document</span>
+                            </div>
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                              <a href={s.publicUrl} target="_blank" rel="noopener noreferrer">
+                                <Button size="sm" variant="secondary" className="h-7 text-xs gap-1">
+                                  <ExternalLink className="h-3 w-3" />
+                                  Open PDF
+                                </Button>
+                              </a>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => copy(s.publicUrl!, `url-${s.id}`)}
+                              >
+                                {copiedId === `url-${s.id}`
+                                  ? <Check className="h-3 w-3 text-green-500" />
+                                  : <Copy className="h-3 w-3" />}
+                                Copy URL
                               </Button>
-                            </a>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-7 text-xs gap-1"
-                              onClick={() => copy(s.publicUrl!, `url-${s.id}`)}
-                            >
-                              {copiedId === `url-${s.id}`
-                                ? <Check className="h-3 w-3 text-green-500" />
-                                : <Copy className="h-3 w-3" />}
-                              Copy URL
-                            </Button>
-                          </div>
-                        </>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <img
+                              src={s.publicUrl}
+                              alt={s.url}
+                              className="w-full h-full object-cover object-top transition-transform group-hover:scale-105"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                              <a href={s.publicUrl} target="_blank" rel="noopener noreferrer">
+                                <Button size="sm" variant="secondary" className="h-7 text-xs gap-1">
+                                  <ExternalLink className="h-3 w-3" />
+                                  View
+                                </Button>
+                              </a>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => copy(s.publicUrl!, `url-${s.id}`)}
+                              >
+                                {copiedId === `url-${s.id}`
+                                  ? <Check className="h-3 w-3 text-green-500" />
+                                  : <Copy className="h-3 w-3" />}
+                                Copy URL
+                              </Button>
+                            </div>
+                          </>
+                        )
                       ) : (
                         <div className="flex items-center justify-center h-full">
                           <ImageOff className="h-6 w-6 text-muted-foreground/30" />
@@ -145,8 +173,8 @@ export default function ScreenshotsPage() {
                       <p className="text-xs text-muted-foreground truncate" title={s.url}>{s.url}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
-                          {s.width}×{s.height} · {s.format.toUpperCase()}
-                          {s.fullPage ? " · Full page" : ""}
+                          {s.publicUrl?.endsWith(".pdf") ? "PDF document" : `${s.width}×${s.height} · ${s.format.toUpperCase()}`}
+                          {s.fullPage && !s.publicUrl?.endsWith(".pdf") ? " · Full page" : ""}
                         </span>
                         <span className="text-xs text-muted-foreground">{timeAgo(s.createdAt)}</span>
                       </div>

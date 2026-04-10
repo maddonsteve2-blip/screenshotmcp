@@ -3,7 +3,7 @@ import { Show } from "@clerk/nextjs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Camera, Code2, Cpu, Globe, Key, Zap, MousePointer, Eye, GitCompare, MonitorSmartphone } from "lucide-react";
+import { Camera, Code2, Cpu, Globe, Key, Zap, MousePointer, Eye, GitCompare, MonitorSmartphone, Search, BarChart2, Lock, Accessibility, Diff, Layers } from "lucide-react";
 
 const steps = [
   {
@@ -27,7 +27,7 @@ const features = [
   {
     icon: Eye,
     title: "Visual AI Browser",
-    description: "AI agents can navigate, click, fill forms, and screenshot any website — just like a human.",
+    description: "AI agents can navigate, click, fill forms, scroll, and screenshot any website — just like a human.",
   },
   {
     icon: Cpu,
@@ -37,12 +37,12 @@ const features = [
   {
     icon: Zap,
     title: "Lightning Fast",
-    description: "Results in seconds via async BullMQ queue. Sync mode available for simple use cases.",
+    description: "Results in seconds via async queue. Sync mode available for simple use cases.",
   },
   {
     icon: MonitorSmartphone,
     title: "Any Viewport",
-    description: "Desktop, mobile, tablet. Custom width/height or use built-in presets.",
+    description: "Desktop, mobile, tablet, dark mode, custom width/height or built-in presets.",
   },
   {
     icon: GitCompare,
@@ -50,24 +50,39 @@ const features = [
     description: "Capture entire scrollable pages or export as PDF. Perfect for docs and reports.",
   },
   {
-    icon: Globe,
-    title: "Global CDN",
-    description: "Screenshots served via Cloudflare R2 — zero egress fees, instant worldwide delivery.",
+    icon: Search,
+    title: "SEO Audit",
+    description: "Check meta tags, Open Graph, Twitter cards, headings, structured data, and canonical URLs.",
   },
   {
-    icon: Code2,
-    title: "Simple REST API",
-    description: "Two endpoints. POST a URL, GET the result. Ship in minutes with any language.",
+    icon: BarChart2,
+    title: "Performance Metrics",
+    description: "Capture Core Web Vitals (TTFB, FCP, LCP, CLS), network waterfall, and resource breakdown.",
+  },
+  {
+    icon: Lock,
+    title: "Smart Login",
+    description: "Auto-detect login forms, fill credentials, submit, and continue testing as an authenticated user.",
+  },
+  {
+    icon: Accessibility,
+    title: "Accessibility Tree",
+    description: "Inspect ARIA roles, headings, links, and interactive elements — no session required.",
+  },
+  {
+    icon: Diff,
+    title: "Visual Diff",
+    description: "Compare two screenshots pixel-by-pixel and get a diff overlay showing exactly what changed.",
+  },
+  {
+    icon: Layers,
+    title: "Batch & Cross-Browser",
+    description: "Screenshot multiple URLs in one call, or capture in Chromium, Firefox, and WebKit simultaneously.",
   },
   {
     icon: Key,
     title: "API Keys",
     description: "Scoped API keys with usage tracking and one-click revocation.",
-  },
-  {
-    icon: MousePointer,
-    title: "Click & Navigate",
-    description: "Coming soon: persistent sessions so AI can log in, click, and complete workflows.",
   },
 ];
 
@@ -78,6 +93,9 @@ const useCases = [
   { emoji: "📱", title: "Responsive Testing", desc: "Check mobile and desktop in seconds" },
   { emoji: "📸", title: "Auto Documentation", desc: "Keep screenshots in docs always up to date" },
   { emoji: "🧪", title: "Visual QA", desc: "Catch regressions before they reach production" },
+  { emoji: "♿", title: "Accessibility Audit", desc: "Inspect ARIA tree and detect a11y issues" },
+  { emoji: "⚡", title: "Performance Testing", desc: "Measure Core Web Vitals and find bottlenecks" },
+  { emoji: "🔐", title: "Authenticated Testing", desc: "Log in and test protected pages automatically" },
 ];
 
 const plans = [
@@ -145,7 +163,7 @@ export default function HomePage() {
       {/* Hero */}
       <section className="mx-auto max-w-5xl px-6 py-24 text-center">
         <Badge variant="secondary" className="mb-6">
-          MCP Server + REST API · Free forever
+          38 AI-Powered Tools · MCP Server + REST API · Free forever
         </Badge>
         <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-6 leading-tight">
           Give your AI coding
@@ -170,8 +188,8 @@ export default function HomePage() {
 
         {/* Works with */}
         <div className="mt-14 flex items-center justify-center gap-3 flex-wrap">
-          <span className="text-sm text-muted-foreground">Works with</span>
-          {["Cursor", "Windsurf", "Claude", "VS Code"].map((ide) => (
+          <span className="text-sm font-medium mb-2">MCP config (Cursor / Windsurf / Claude / VS Code)</span>
+          {["Cursor", "Windsurf", "Claude", "VS Code", "n8n"].map((ide) => (
             <Badge key={ide} variant="outline" className="text-sm font-normal px-3 py-1">
               {ide}
             </Badge>
@@ -242,7 +260,8 @@ export default function HomePage() {
 
       {/* Features */}
       <section className="mx-auto max-w-5xl px-6 py-20">
-        <h2 className="text-3xl font-bold text-center mb-12">Everything you need</h2>
+        <h2 className="text-3xl font-bold text-center mb-3">Everything you need</h2>
+        <p className="text-center text-muted-foreground mb-12">38 tools across screenshots, browser automation, SEO, performance, accessibility, and AI analysis.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((f) => (
             <Card key={f.title}>
@@ -296,7 +315,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-5xl px-6 flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Camera className="h-4 w-4" />
-            <span>© 2025 ScreenshotsMCP</span>
+            <span>© 2026 ScreenshotsMCP</span>
           </div>
           <div className="flex gap-4">
             <Link href="/docs" className="hover:text-foreground">Docs</Link>
