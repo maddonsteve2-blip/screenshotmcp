@@ -524,6 +524,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
     }
   );
 
+  // @ts-ignore - TS2589: MCP SDK generic inference too deep
   server.tool(
     "browser_set_viewport",
     "Resize the browser viewport in an existing session. Useful for testing responsive layouts without starting a new session — e.g. switch between desktop (1280×800), tablet (820×1180), and mobile (393×852). Returns a screenshot after resizing.",
