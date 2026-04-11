@@ -15,12 +15,58 @@ const CONTENT_TYPES: Record<string, string> = {
 };
 
 /**
+ * Wait until the page DOM is truly idle:
+ * - document.readyState is "complete"
+ * - no in-flight network fetches (or timeout after 5s)
+ * - all <img> elements have loaded (or timeout after 8s)
+ * - requestIdleCallback fires (or timeout after 3s)
+ */
+async function waitForDomReady(page: Page): Promise<void> {
+  // 1. Wait for document.readyState === "complete"
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    if ((globalThis as any).document.readyState === "complete") return resolve();
+    (globalThis as any).window.addEventListener("load", () => resolve(), { once: true });
+  })).catch(() => {});
+
+  // 2. Wait for network to go quiet (no fetches in 500ms window, max 5s)
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    let pending = 0;
+    let timer: any;
+    const done = () => { clearTimeout(timer); resolve(); };
+    const check = () => { if (pending <= 0) { timer = setTimeout(done, 500); } };
+    const maxTimer = setTimeout(done, 5000);
+    const origFetch = (globalThis as any).window.fetch;
+    (globalThis as any).window.fetch = (...args: any[]) => {
+      pending++;
+      return origFetch.apply((globalThis as any).window, args).finally(() => { pending--; check(); });
+    };
+    check();
+    // Clean up on resolve
+    void new Promise<void>((r) => { const t = setTimeout(() => { clearTimeout(maxTimer); r(); }, 6000); });
+  })).catch(() => {});
+
+  // 3. Wait for all visible images to load (max 8s)
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    const timeout = setTimeout(resolve, 8000);
+    const imgs: any[] = Array.from((globalThis as any).document.querySelectorAll("img"));
+    if (imgs.length === 0) { clearTimeout(timeout); return resolve(); }
+    let loaded = 0;
+    const total = imgs.length;
+    const onDone = () => { loaded++; if (loaded >= total) { clearTimeout(timeout); resolve(); } };
+    for (const img of imgs) {
+      if (img.complete && img.naturalWidth > 0) { onDone(); continue; }
+      img.addEventListener("load", onDone, { once: true });
+      img.addEventListener("error", onDone, { once: true });
+    }
+  })).catch(() => {});
+}
+
+/**
  * Scroll through the page in increments to trigger lazy-loaded content
  * and scroll-triggered animations (IntersectionObserver, Framer Motion whileInView, etc.)
- * This ensures all content is rendered before taking a full-page screenshot.
+ * After scrolling, waits for all images in each viewport to load before moving on.
  */
 async function scrollToTriggerContent(page: Page): Promise<void> {
-  // Get the full scrollable height of the page using string evaluate to avoid TS DOM errors
   const scrollHeight = await page.evaluate(() => Math.max(
     (globalThis as any).document.body.scrollHeight,
     (globalThis as any).document.documentElement.scrollHeight,
@@ -30,8 +76,8 @@ async function scrollToTriggerContent(page: Page): Promise<void> {
 
   const viewportHeight = await page.evaluate(() => (globalThis as any).window.innerHeight);
 
-  // If page is shorter than viewport, no need to scroll
   if (scrollHeight <= viewportHeight) {
+    await waitForDomReady(page);
     return;
   }
 
@@ -41,16 +87,47 @@ async function scrollToTriggerContent(page: Page): Promise<void> {
   for (let i = 0; i < scrollSteps; i++) {
     const scrollY = Math.min((i + 1) * viewportHeight, scrollHeight);
     await page.evaluate((y: number) => { (globalThis as any).window.scrollTo(0, y); }, scrollY);
-    // Wait for animations and lazy content to load
-    await page.waitForTimeout(300);
+    // Wait for lazy images in this viewport slice to start loading
+    await page.waitForTimeout(400);
+    // Wait for any images that just entered the viewport to finish loading
+    await page.evaluate(() => new Promise<void>((resolve) => {
+      const timeout = setTimeout(resolve, 3000);
+      const imgs: any[] = Array.from((globalThis as any).document.querySelectorAll("img"));
+      if (imgs.length === 0) { clearTimeout(timeout); return resolve(); }
+      let pending = 0;
+      for (const img of imgs) {
+        if (img.complete && img.naturalWidth > 0) continue;
+        pending++;
+        const done = () => { pending--; if (pending <= 0) { clearTimeout(timeout); resolve(); } };
+        img.addEventListener("load", done, { once: true });
+        img.addEventListener("error", done, { once: true });
+      }
+      if (pending === 0) { clearTimeout(timeout); resolve(); }
+    })).catch(() => {});
   }
 
-  // Additional wait for any final animations
-  await page.waitForTimeout(500);
+  // Re-measure in case lazy content expanded the page
+  const newScrollHeight = await page.evaluate(() => Math.max(
+    (globalThis as any).document.body.scrollHeight,
+    (globalThis as any).document.documentElement.scrollHeight
+  ));
+
+  // If page grew significantly, do one more pass on the new content
+  if (newScrollHeight > scrollHeight + viewportHeight) {
+    const extraSteps = Math.ceil((newScrollHeight - scrollHeight) / viewportHeight);
+    for (let i = 0; i < extraSteps; i++) {
+      const scrollY = scrollHeight + (i + 1) * viewportHeight;
+      await page.evaluate((y: number) => { (globalThis as any).window.scrollTo(0, y); }, scrollY);
+      await page.waitForTimeout(400);
+    }
+  }
+
+  // Final wait for any trailing animations/transitions
+  await page.waitForTimeout(800);
 
   // Scroll back to top for consistent full-page capture
   await page.evaluate(() => { (globalThis as any).window.scrollTo(0, 0); });
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(300);
 }
 
 export async function processScreenshotJob(job: Job<ScreenshotJob>) {
@@ -92,6 +169,9 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
       await page.goto(url, { waitUntil: "load", timeout: 30000 });
     }
     await page.waitForTimeout(Math.max(delay, 1500));
+
+    // Wait for DOM to be truly ready (images loaded, network quiet)
+    await waitForDomReady(page);
 
     // For element screenshots, wait for the selector to appear (SPA support)
     if (selector) {
