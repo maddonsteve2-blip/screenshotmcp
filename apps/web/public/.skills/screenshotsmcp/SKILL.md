@@ -41,25 +41,81 @@ Get an API key at https://screenshotsmcp.com/dashboard/keys and add to your MCP 
 }
 ```
 
-## CLI
+## CLI (for agents and humans)
 
-ScreenshotsMCP also has a CLI (`npm install -g screenshotsmcp`) that exposes all the same tools from the terminal:
+ScreenshotsMCP has a CLI (`npm install -g screenshotsmcp` or `npx screenshotsmcp`) that exposes all the same tools as terminal commands. **AI agents can and should use the CLI directly via `run_command` / terminal** — it's often faster than MCP tool calls.
 
+Install: `npm install -g screenshotsmcp` or use `npx screenshotsmcp` without installing.
+
+### Authentication
 ```bash
-screenshotsmcp screenshot https://example.com     # Take a screenshot
-screenshotsmcp responsive https://example.com      # Desktop + tablet + mobile
-screenshotsmcp mobile https://example.com          # iPhone 14 Pro viewport
-screenshotsmcp dark https://example.com            # Dark mode
-screenshotsmcp diff https://a.com https://b.com    # Pixel diff
-screenshotsmcp review https://example.com          # AI UX review
-screenshotsmcp perf https://example.com            # Core Web Vitals
-screenshotsmcp seo https://example.com             # SEO audit
-screenshotsmcp a11y https://example.com            # Accessibility tree
-screenshotsmcp browse https://example.com          # Interactive browser session
-screenshotsmcp inbox:create                         # Disposable test email
+screenshotsmcp login                    # OAuth login (opens browser, saves key)
+screenshotsmcp login --key sk_live_...  # Direct API key login
+screenshotsmcp whoami                   # Check auth status
+screenshotsmcp logout                   # Clear saved credentials
 ```
 
-Run `screenshotsmcp --help` for all 38 commands.
+### Screenshots
+```bash
+screenshotsmcp screenshot <url>                    # Default 1280×800 viewport
+screenshotsmcp screenshot <url> --width 1920 --height 1080 --full-page
+screenshotsmcp screenshot <url> --format jpeg --delay 2000
+screenshotsmcp responsive <url>                    # Desktop + tablet + mobile in one call
+screenshotsmcp mobile <url>                        # iPhone 14 Pro (393×852)
+screenshotsmcp tablet <url>                        # iPad (820×1180)
+screenshotsmcp dark <url>                          # Dark mode emulated
+screenshotsmcp element <url> --selector "#hero"    # Specific CSS element
+screenshotsmcp diff <urlA> <urlB>                  # Pixel-diff two URLs
+screenshotsmcp cross-browser <url>                 # Chromium + Firefox + WebKit
+screenshotsmcp batch <url1> <url2> <url3>          # Multiple URLs (max 10)
+screenshotsmcp pdf <url>                           # Export as PDF
+```
+
+### Browser Sessions (interactive)
+```bash
+screenshotsmcp browse <url>                                    # Start session, returns sessionId
+screenshotsmcp browse:click <sessionId> <selector>             # Click element
+screenshotsmcp browse:fill <sessionId> <selector> <value>      # Type into input
+screenshotsmcp browse:screenshot <sessionId>                   # Capture current state
+screenshotsmcp browse:text <sessionId>                         # Get visible text
+screenshotsmcp browse:html <sessionId>                         # Get page HTML
+screenshotsmcp browse:scroll <sessionId> --y 500               # Scroll down
+screenshotsmcp browse:key <sessionId> Enter                    # Press key
+screenshotsmcp browse:goto <sessionId> <newUrl>                # Navigate
+screenshotsmcp browse:close <sessionId>                        # End session
+```
+
+### Reviews & Audits
+```bash
+screenshotsmcp review <url>              # AI-powered UX review
+screenshotsmcp seo <url>                 # SEO metadata extraction
+screenshotsmcp perf <url>                # Core Web Vitals
+screenshotsmcp a11y <url>                # Accessibility tree
+screenshotsmcp breakpoints <url>         # Detect responsive breakpoints
+```
+
+### Disposable Email
+```bash
+screenshotsmcp inbox:create              # Create test inbox → email@agentmail.to
+screenshotsmcp inbox:check <inboxId>     # Read messages, extract OTP codes
+screenshotsmcp inbox:send <inboxId> --to user@example.com --subject "Test" --text "Hello"
+```
+
+### MCP Client Auto-Configure
+```bash
+screenshotsmcp install cursor            # Writes ~/.cursor/mcp.json
+screenshotsmcp install vscode            # Writes .vscode/mcp.json
+screenshotsmcp install windsurf          # Writes ~/.codeium/windsurf/mcp_config.json
+screenshotsmcp install claude            # Writes Claude Desktop config
+screenshotsmcp install claude-code       # Prints `claude mcp add` command
+```
+
+### Agent Tips
+- **Use the CLI when you have terminal access** — it returns structured text output, no JSON-RPC overhead.
+- Every screenshot command returns a public CDN URL you can share or embed.
+- Browser sessions work the same as MCP: start with `browse`, get a sessionId, pass it to subsequent commands.
+- The CLI reads credentials from `~/.config/screenshotsmcp/config.json`. If the user has logged in once, all subsequent commands are authenticated.
+- Use `npx screenshotsmcp` if unsure whether it's installed globally.
 
 ## Tool Categories
 
