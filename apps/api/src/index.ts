@@ -10,6 +10,8 @@ import { mcpRouter } from "./mcp/server.js";
 import { errorHandler } from "./middleware/error.js";
 import { startWorker } from "./lib/queue.js";
 import { browserPool } from "./lib/browser-pool.js";
+import { attachAnalyticsWs } from "./routes/analytics-ws.js";
+import { createServer } from "http";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -144,7 +146,10 @@ app.use("/mcp", mcpRouter);
 
 app.use(errorHandler);
 
-app.listen(PORT, async () => {
+const server = createServer(app);
+attachAnalyticsWs(server);
+
+server.listen(PORT, async () => {
   console.log(`API server running on port ${PORT}`);
   await browserPool.init();
   startWorker();

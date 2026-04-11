@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Camera, TrendingUp, CheckCircle, Calendar, Zap, ArrowUpRight } from "lucide-react";
+import { Camera, TrendingUp, CheckCircle, Calendar, Zap, ArrowUpRight, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
 
 type PlanData = {
@@ -125,13 +125,80 @@ const FORMAT_COLORS: Record<string, string> = {
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [connected, setConnected] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  const connectWs = useCallback(async () => {
+    try {
+      // Get WebSocket URL with auth token from our API
+      const res = await fetch("/api/analytics-ws-token");
+      if (!res.ok) {
+        // Fallback to REST if WS token fails
+        const fallback = await fetch("/api/analytics");
+        if (fallback.ok) {
+          const d = await fallback.json();
+          setData(d);
+        }
+        setLoading(false);
+        return;
+      }
+      const { wsUrl } = await res.json();
+
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => setConnected(true);
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === "analytics") {
+            setData(msg.data);
+            setLoading(false);
+            setRefreshing(false);
+          }
+        } catch {}
+      };
+
+      ws.onclose = () => {
+        setConnected(false);
+        wsRef.current = null;
+        // Reconnect after 5s
+        setTimeout(connectWs, 5000);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+    } catch {
+      // Fallback to REST
+      try {
+        const fallback = await fetch("/api/analytics");
+        if (fallback.ok) setData(await fallback.json());
+      } catch {}
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetch("/api/analytics")
-      .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
+    connectWs();
+    return () => { wsRef.current?.close(); };
+  }, [connectWs]);
+
+  const handleRefresh = () => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      setRefreshing(true);
+      wsRef.current.send(JSON.stringify({ type: "refresh" }));
+    } else {
+      // Fallback: re-fetch via REST
+      setRefreshing(true);
+      fetch("/api/analytics")
+        .then((r) => r.json())
+        .then((d) => { setData(d); setRefreshing(false); })
+        .catch(() => setRefreshing(false));
+    }
+  };
 
   if (loading) {
     return (
@@ -167,9 +234,25 @@ export default function AnalyticsPage() {
 
   return (
     <div className="p-8 space-y-6 max-w-5xl">
-      <div>
-        <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-muted-foreground mt-1">Your screenshot usage at a glance</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Analytics</h1>
+          <p className="text-muted-foreground mt-1">Your screenshot usage at a glance</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {connected ? <Wifi className="h-3.5 w-3.5 text-green-500" /> : <WifiOff className="h-3.5 w-3.5 text-muted-foreground" />}
+            <span>{connected ? "Live" : "Offline"}</span>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Plan & Usage */}
