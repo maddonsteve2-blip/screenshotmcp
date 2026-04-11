@@ -17,6 +17,8 @@ const createSchema = z.object({
   fullPage: z.boolean().optional().default(false),
   format: z.enum(["png", "jpeg", "webp"]).optional().default("png"),
   delay: z.number().int().min(0).max(10000).optional().default(0),
+  pdf: z.boolean().optional().default(false),
+  darkMode: z.boolean().optional().default(false),
 });
 
 screenshotRouter.post(

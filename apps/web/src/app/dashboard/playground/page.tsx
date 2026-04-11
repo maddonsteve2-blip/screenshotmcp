@@ -33,6 +33,7 @@ const FORMATS: { value: Format; label: string }[] = [
   { value: "png", label: "PNG" },
   { value: "jpeg", label: "JPEG" },
   { value: "webp", label: "WebP" },
+  { value: "pdf", label: "PDF" },
 ];
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://screenshotsmcp-api-production.up.railway.app";
@@ -57,6 +58,8 @@ async function captureScreenshot(params: {
       height: params.height,
       fullPage: params.fullPage,
       format: params.format === "pdf" ? "png" : params.format,
+      pdf: params.format === "pdf",
+      darkMode: params.dark,
     }),
   });
 
