@@ -24,36 +24,33 @@ type AnalyticsData = {
 };
 
 function BarChart({ data }: { data: { day: string; count: number }[] }) {
-  // Build full 30-day array using UTC dates to match Postgres to_char() output
-  const days: { label: string; count: number }[] = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 86400000);
-    // Use UTC methods to match the DB's UTC-based to_char()
-    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-    const found = data.find((r) => r.day === key);
-    days.push({ label: d.toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" }), count: found?.count ?? 0 });
-  }
+  // Data comes pre-filled from API (30 entries, one per day) — just render directly
+  const max = Math.max(...data.map((d) => d.count), 1);
+  const hasData = data.some((d) => d.count > 0);
 
-  const max = Math.max(...days.map((d) => d.count), 1);
-  const hasData = days.some((d) => d.count > 0);
-
-  if (!hasData) {
+  if (!data.length || !hasData) {
     return <div className="h-36 flex items-center justify-center text-sm text-muted-foreground">No usage data yet</div>;
   }
 
   return (
     <div className="flex items-end gap-[3px] h-36 w-full">
-      {days.map((d, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center group relative">
-          <div
-            className="w-full bg-primary/60 rounded-t-sm group-hover:bg-primary transition-colors"
-            style={{ height: `${Math.max((d.count / max) * 100, d.count > 0 ? 6 : 0)}%` }}
-          />
-          <div className="absolute bottom-full mb-1.5 bg-popover border text-xs px-2 py-1 rounded-md shadow-md hidden group-hover:block whitespace-nowrap z-10 font-medium">
-            {d.label}: <span className="text-primary">{d.count}</span>
+      {data.map((d, i) => {
+        // Parse YYYY-MM-DD to readable label
+        const parts = d.day.split("-");
+        const dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        const label = dateObj.toLocaleDateString("en", { month: "short", day: "numeric" });
+        return (
+          <div key={i} className="flex-1 flex flex-col items-center group relative">
+            <div
+              className="w-full bg-primary/60 rounded-t-sm group-hover:bg-primary transition-colors"
+              style={{ height: `${Math.max((d.count / max) * 100, d.count > 0 ? 6 : 0)}%` }}
+            />
+            <div className="absolute bottom-full mb-1.5 bg-popover border text-xs px-2 py-1 rounded-md shadow-md hidden group-hover:block whitespace-nowrap z-10 font-medium">
+              {label}: <span className="text-primary">{d.count}</span>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

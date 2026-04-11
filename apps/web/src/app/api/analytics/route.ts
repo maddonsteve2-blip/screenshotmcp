@@ -73,17 +73,25 @@ export async function GET() {
       today: Number(todayCount),
       successRate,
     },
-    daily: dailyRows.map((r) => {
-      // Ensure day is always YYYY-MM-DD string even if driver returns Date
-      const raw: unknown = r.day;
-      let day: string;
-      if (raw instanceof Date) {
-        day = raw.toISOString().slice(0, 10);
-      } else {
-        day = String(raw);
+    daily: (() => {
+      // Build a map from the DB rows
+      const map = new Map<string, number>();
+      for (const r of dailyRows) {
+        const raw: unknown = r.day;
+        let key: string;
+        if (raw instanceof Date) key = raw.toISOString().slice(0, 10);
+        else key = String(raw).slice(0, 10); // ensure "YYYY-MM-DD"
+        map.set(key, Number(r.count));
       }
-      return { day, count: Number(r.count) };
-    }),
+      // Generate full 30-day array server-side so frontend has no date-matching to do
+      const result: { day: string; count: number }[] = [];
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 86400000);
+        const key = d.toISOString().slice(0, 10); // UTC YYYY-MM-DD
+        result.push({ day: key, count: map.get(key) ?? 0 });
+      }
+      return result;
+    })(),
     topUrls: topUrlRows.map((r) => ({ url: r.url, count: Number(r.count) })),
     formats: formatRows.map((r) => ({ format: r.format, count: Number(r.count) })),
     devices: deviceBreakdown,
