@@ -2868,6 +2868,12 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
 }
 
 function resolveKey(req: Request): string | undefined {
+  // Support OAuth Bearer token (Authorization: Bearer sk_live_...)
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    if (token.startsWith("sk_live_")) return token;
+  }
   return (
     (req.headers["x-api-key"] as string | undefined) ||
     (req.params.key as string | undefined) ||
