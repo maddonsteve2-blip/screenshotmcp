@@ -1,0 +1,71 @@
+---
+title: Changelog
+description: Every update, fix, and new feature — in one place.
+---
+
+## April 2026 — v2.0
+
+**New**
+
+- CLI with `setup` command — one-liner install for all IDEs (`npx screenshotsmcp setup`)
+- Install scripts: `install.sh` (bash) and `install.ps1` (PowerShell)
+- Session Recording — record browser sessions as `.webm` video
+- CAPTCHA Solver — auto-solve Cloudflare Turnstile, reCAPTCHA, hCaptcha
+- Disposable Email (AgentMail) — `create_test_inbox`, `check_inbox`, `send_test_email`
+- Visual Diff tool — pixel-level comparison between two URLs with diff overlay image
+- Batch Screenshots — capture up to 10 URLs in a single call
+- Cross-Browser tool — capture in Chromium, Firefox, and WebKit simultaneously
+- Responsive Breakpoint Detection — auto-detect where your layout shifts
+- AI UX Review — powered by Kimi k2.5 vision + accessibility + performance data
+- Playground page — interactive screenshot capture in the dashboard
+- Analytics dashboard — daily usage charts, top URLs, format + device breakdown
+
+## March 2026 — v1.5
+
+**Improved**
+
+- 38 tools total (up from 33)
+- Friendlier error messages for DNS failures, SSL errors, connection timeouts
+- PDF fix — gallery now shows "PDF document" instead of broken image
+- Mobile/tablet screenshots now default to viewport-only
+- Session browser tools now include sessionId in every response
+- Accessibility tree filtering — SCRIPT, STYLE, SVG nodes excluded
+- SEO audit JSON-LD structured data displayed without truncation
+- find_login_page — reduced false positives by checking page content
+
+## February 2026 — v1.4
+
+**New**
+
+- Smart Login tools — `find_login_page` + `smart_login` with auto form detection
+- `accessibility_snapshot` standalone tool — no session required
+- `browser_set_viewport` — resize viewport mid-session
+- `browser_navigate` now accepts width/height for custom viewport
+- `screenshot_element` now supports delay param + auto-waits for SPA elements
+- `take_screenshot` fullPage toggle + maxHeight cap
+
+## January 2026 — v1.3
+
+**New**
+
+- Browser session tools: navigate, click, fill, hover, scroll, press key, go back/forward
+- Inspection tools: get_text, get_html, get_accessibility_tree, evaluate
+- Performance tools: perf_metrics, network_requests
+- SEO audit tool
+- Debugging tools: console_logs, network_errors, cookies, storage
+- Responsive screenshots (desktop + tablet + mobile in one call)
+- Dark mode screenshots
+- PDF export
+
+## December 2025 — v1.0
+
+**New**
+
+- Initial launch
+- `take_screenshot` — async screenshot with BullMQ queue
+- `screenshot_mobile`, `screenshot_tablet`, `screenshot_fullpage`
+- REST API + MCP Server
+- Cloudflare R2 storage with CDN delivery
+- API key management
+- Clerk authentication
+- Dashboard with screenshot gallery

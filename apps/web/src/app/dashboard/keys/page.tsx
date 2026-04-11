@@ -2,169 +2,198 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Copy, Check } from "lucide-react";
-import type { ApiKey } from "@screenshotsmcp/types";
+import { Copy, Check, RefreshCw, Trash2, Key, AlertTriangle } from "lucide-react";
+
+interface ActiveKey {
+  id: string;
+  name: string;
+  keyPreview: string;
+  lastUsed: string | null;
+  createdAt: string;
+}
 
 export default function KeysPage() {
-  const [keys, setKeys] = useState<ApiKey[]>([]);
+  const [activeKey, setActiveKey] = useState<ActiveKey | null>(null);
   const [loading, setLoading] = useState(true);
-  const [name, setName] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [newKey, setNewKey] = useState<string | null>(null);
+  const [rawKey, setRawKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [acting, setActing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  async function fetchKeys() {
+  async function fetchKey() {
     const res = await fetch("/api/keys");
     const data = await res.json();
-    setKeys(data.keys ?? []);
+    setActiveKey(data.key ?? null);
     setLoading(false);
   }
 
-  useEffect(() => { fetchKeys(); }, []);
+  useEffect(() => { fetchKey(); }, []);
 
   async function createKey() {
-    if (!name.trim()) return;
-    setCreating(true);
-    const res = await fetch("/api/keys", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
+    setActing(true);
+    const res = await fetch("/api/keys", { method: "POST" });
     const data = await res.json();
-    setNewKey(data.key);
-    setName("");
-    setCreating(false);
-    fetchKeys();
+    if (data.existing) {
+      // Already have one — just refresh
+      await fetchKey();
+    } else if (data.key) {
+      setRawKey(data.key);
+      await fetchKey();
+    }
+    setActing(false);
   }
 
-  async function revokeKey(id: string) {
-    await fetch(`/api/keys/${id}`, { method: "DELETE" });
-    fetchKeys();
+  async function rollKey() {
+    setActing(true);
+    const res = await fetch("/api/keys", { method: "PUT" });
+    const data = await res.json();
+    if (data.key) {
+      setRawKey(data.key);
+      await fetchKey();
+    }
+    setActing(false);
   }
 
-  async function copyKey() {
-    if (!newKey) return;
-    await navigator.clipboard.writeText(newKey);
+  async function deleteKey() {
+    if (!activeKey) return;
+    setActing(true);
+    await fetch(`/api/keys/${activeKey.id}`, { method: "DELETE" });
+    setActiveKey(null);
+    setRawKey(null);
+    setConfirmDelete(false);
+    setActing(false);
+  }
+
+  async function copyToClipboard(text: string) {
+    await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
+  if (loading) {
+    return (
+      <div className="p-8">
+        <h1 className="text-2xl font-bold mb-2">API Key</h1>
+        <p className="text-muted-foreground text-sm">Loading...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">API Keys</h1>
-          <p className="text-muted-foreground">Manage your API keys for REST and MCP access</p>
-        </div>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setNewKey(null); }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New key
+    <div className="p-8 space-y-6 max-w-2xl">
+      <div>
+        <h1 className="text-2xl font-bold">API Key</h1>
+        <p className="text-muted-foreground mt-1">
+          Your single API key for REST API, MCP server, CLI, and Playground access.
+        </p>
+      </div>
+
+      {/* Show raw key banner when just created/rolled */}
+      {rawKey && (
+        <Card className="border-green-500/50 bg-green-50 dark:bg-green-950/20">
+          <CardContent className="pt-4 pb-4 space-y-3">
+            <p className="text-sm font-medium text-green-800 dark:text-green-300">
+              Copy your API key now — it won&apos;t be shown again.
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 rounded bg-white dark:bg-gray-900 border px-3 py-2 text-sm font-mono break-all">
+                {rawKey}
+              </code>
+              <Button size="icon" variant="outline" onClick={() => copyToClipboard(rawKey)}>
+                {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setRawKey(null)}>
+              I&apos;ve copied it
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create API Key</DialogTitle>
-              <DialogDescription>Give your key a name to identify it later.</DialogDescription>
-            </DialogHeader>
-            {!newKey ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Key name</Label>
-                  <Input
-                    id="name"
-                    placeholder="e.g. Production, Claude Desktop"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && createKey()}
-                  />
+          </CardContent>
+        </Card>
+      )}
+
+      {activeKey ? (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Key className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-base">Active Key</CardTitle>
+                  <CardDescription>Used for all API, MCP, and CLI access</CardDescription>
                 </div>
-                <Button onClick={createKey} disabled={creating || !name.trim()} className="w-full">
-                  {creating ? "Creating..." : "Create key"}
-                </Button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Copy this key now — it won&apos;t be shown again.
-                </p>
+              <Badge variant="secondary">Active</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3">
+              <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
+                {activeKey.keyPreview}
+              </code>
+              <Button size="sm" variant="outline" onClick={() => copyToClipboard(activeKey.keyPreview)} title="Copy preview">
+                {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span>Created {new Date(activeKey.createdAt).toLocaleDateString()}</span>
+              <span>•</span>
+              <span>Last used: {activeKey.lastUsed ? new Date(activeKey.lastUsed).toLocaleDateString() : "Never"}</span>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={rollKey} disabled={acting}>
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                Roll key
+              </Button>
+              {!confirmDelete ? (
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setConfirmDelete(true)}>
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                  Delete
+                </Button>
+              ) : (
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono break-all">
-                    {newKey}
-                  </code>
-                  <Button size="icon" variant="outline" onClick={copyKey}>
-                    {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  <span className="text-xs text-destructive flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" /> Are you sure?
+                  </span>
+                  <Button variant="destructive" size="sm" onClick={deleteKey} disabled={acting}>
+                    Yes, delete
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
+                    Cancel
                   </Button>
                 </div>
-                <Button variant="outline" className="w-full" onClick={() => { setOpen(false); setNewKey(null); }}>
-                  Done
-                </Button>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
+            <Key className="h-10 w-10 text-muted-foreground/40" />
+            <div className="text-center">
+              <p className="font-medium">No API key yet</p>
+              <p className="text-sm text-muted-foreground mt-1">Create one to use the REST API, MCP server, CLI, and Playground.</p>
+            </div>
+            <Button onClick={createKey} disabled={acting}>
+              {acting ? "Creating..." : "Create API Key"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
-          <CardTitle>Your keys</CardTitle>
-          <CardDescription>Keys are hashed — only the prefix is stored.</CardDescription>
+          <CardTitle className="text-sm">How to use your key</CardTitle>
         </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
-          ) : keys.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No keys yet. Create one above.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Key</TableHead>
-                  <TableHead>Last used</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {keys.map((k) => (
-                  <TableRow key={k.id}>
-                    <TableCell className="font-medium">{k.name}</TableCell>
-                    <TableCell>
-                      <code className="text-sm bg-muted px-2 py-0.5 rounded">{k.keyPreview}</code>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {k.lastUsed ? new Date(k.lastUsed).toLocaleDateString() : "Never"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={k.revoked ? "destructive" : "secondary"}>
-                        {k.revoked ? "Revoked" : "Active"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {!k.revoked && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => revokeKey(k.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p><strong>MCP Server URL:</strong></p>
+          <code className="block rounded bg-muted px-3 py-2 text-xs font-mono break-all">
+            https://screenshotsmcp-api-production.up.railway.app/mcp/{activeKey ? activeKey.keyPreview.split("...")[0] + "..." : "YOUR_KEY"}
+          </code>
+          <p><strong>REST API:</strong> Pass as <code className="bg-muted px-1 rounded">Authorization: Bearer sk_live_...</code> header</p>
+          <p><strong>CLI:</strong> <code className="bg-muted px-1 rounded">screenshotsmcp login --key sk_live_...</code></p>
+          <p><strong>Playground:</strong> Your key is automatically loaded — just go to Playground and start capturing.</p>
         </CardContent>
       </Card>
     </div>

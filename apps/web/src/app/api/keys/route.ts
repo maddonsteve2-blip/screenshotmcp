@@ -7,13 +7,14 @@ import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
 import { apiKeys, users } from "@screenshotsmcp/db";
 
+// GET: return the user's single active key (or null)
 export async function GET() {
   const { userId: clerkId } = await auth();
   if (!clerkId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const db = getDb();
   const user = await getOrCreateDbUser(clerkId);
-  if (!user) return NextResponse.json({ keys: [] });
+  if (!user) return NextResponse.json({ key: null });
 
   const rows = await db
     .select({
@@ -25,21 +26,31 @@ export async function GET() {
       revoked: apiKeys.revoked,
     })
     .from(apiKeys)
-    .where(eq(apiKeys.userId, user.id));
+    .where(and(eq(apiKeys.userId, user.id), eq(apiKeys.revoked, false)));
 
-  return NextResponse.json({ keys: rows });
+  const active = rows[0] ?? null;
+  return NextResponse.json({ key: active });
 }
 
-export async function POST(req: NextRequest) {
+// POST: create or get-or-create the user's single key.
+// If they already have an active key, return its preview (not raw — that's only shown once).
+export async function POST() {
   const { userId: clerkId } = await auth();
   if (!clerkId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { name } = await req.json();
-  if (!name?.trim()) return NextResponse.json({ error: "Name required" }, { status: 400 });
 
   const db = getDb();
   const user = await getOrCreateDbUser(clerkId);
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+  // Check for existing active key
+  const existing = await db
+    .select({ id: apiKeys.id, keyPreview: apiKeys.keyPreview })
+    .from(apiKeys)
+    .where(and(eq(apiKeys.userId, user.id), eq(apiKeys.revoked, false)));
+
+  if (existing.length > 0) {
+    return NextResponse.json({ key: null, id: existing[0].id, existing: true, keyPreview: existing[0].keyPreview });
+  }
 
   const rawKey = `sk_live_${randomBytes(24).toString("hex")}`;
   const keyHash = createHash("sha256").update(rawKey).digest("hex");
@@ -49,7 +60,39 @@ export async function POST(req: NextRequest) {
   await db.insert(apiKeys).values({
     id,
     userId: user.id,
-    name: name.trim(),
+    name: "Default",
+    keyHash,
+    keyPreview,
+  });
+
+  return NextResponse.json({ key: rawKey, id, existing: false });
+}
+
+// PUT: roll/regenerate the key — revoke old, create new, return raw key once
+export async function PUT() {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const db = getDb();
+  const user = await getOrCreateDbUser(clerkId);
+  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+  // Revoke all existing keys
+  await db
+    .update(apiKeys)
+    .set({ revoked: true })
+    .where(and(eq(apiKeys.userId, user.id), eq(apiKeys.revoked, false)));
+
+  // Create fresh key
+  const rawKey = `sk_live_${randomBytes(24).toString("hex")}`;
+  const keyHash = createHash("sha256").update(rawKey).digest("hex");
+  const keyPreview = `${rawKey.slice(0, 12)}...${rawKey.slice(-4)}`;
+  const id = nanoid();
+
+  await db.insert(apiKeys).values({
+    id,
+    userId: user.id,
+    name: "Default",
     keyHash,
     keyPreview,
   });

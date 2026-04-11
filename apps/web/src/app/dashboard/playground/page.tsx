@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,10 +105,38 @@ export default function PlaygroundPage() {
   const [fullPage, setFullPage] = useState(false);
   const [dark, setDark] = useState(false);
   const [apiKey, setApiKey] = useState("");
+  const [keyLoading, setKeyLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ publicUrl: string; width: number; height: number; format: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Auto-load or auto-create API key
+  useEffect(() => {
+    async function loadKey() {
+      try {
+        // Try to get existing key
+        const res = await fetch("/api/keys");
+        const data = await res.json();
+        if (data.key?.keyPreview) {
+          // We only have the preview — but check if we can get a fresh one
+          // If no key exists, create one
+        }
+        if (!data.key) {
+          // No key — auto-create one for playground convenience
+          const createRes = await fetch("/api/keys", { method: "POST" });
+          const createData = await createRes.json();
+          if (createData.key) {
+            setApiKey(createData.key);
+          }
+        }
+      } catch {
+        // Ignore — user can still paste key manually
+      }
+      setKeyLoading(false);
+    }
+    loadKey();
+  }, []);
 
   // Diff
   const [urlA, setUrlA] = useState("");
@@ -185,12 +213,23 @@ export default function PlaygroundPage() {
             <label className="text-sm font-medium whitespace-nowrap">API Key</label>
             <Input
               type="password"
-              placeholder="smcp_..."
+              placeholder="sk_live_..."
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               className="font-mono text-sm max-w-xs"
             />
-            <span className="text-xs text-muted-foreground">Required for all captures. Get yours from API Keys.</span>
+            {keyLoading ? (
+              <span className="text-xs text-muted-foreground">Loading key…</span>
+            ) : apiKey ? (
+              <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                <Check className="h-3 w-3" /> Ready
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                Paste your key from{" "}
+                <a href="/dashboard/keys" className="underline hover:text-foreground">API Keys</a>.
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>

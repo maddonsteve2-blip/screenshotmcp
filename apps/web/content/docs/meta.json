@@ -49,6 +49,8 @@
     "tools/find-login-page",
     "tools/smart-login",
     "---Reference---",
-    "rest-api"
+    "rest-api",
+    "---",
+    "changelog"
   ]
 }

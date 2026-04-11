@@ -13,7 +13,7 @@ const nav = [
   { href: "/dashboard/install", label: "Install", icon: Download },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
-  { href: "/changelog", label: "Changelog", icon: ScrollText },
+  { href: "/dashboard/changelog", label: "Changelog", icon: ScrollText },
   { href: "/docs", label: "Docs", icon: FileText },
 ];
 
