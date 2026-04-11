@@ -1,7 +1,9 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
 import { screenshotRouter } from "./routes/screenshot.js";
 import { webhookRouter } from "./routes/webhook.js";
+import { recordingsRouter } from "./routes/recordings.js";
 import { mcpRouter } from "./mcp/server.js";
 import { errorHandler } from "./middleware/error.js";
 import { startWorker } from "./lib/queue.js";
@@ -13,6 +15,7 @@ const APP_URL = process.env.APP_URL || "https://screenshotsmcp-api-production.up
 
 app.use("/webhooks", express.raw({ type: "application/json" }));
 app.use(express.json());
+app.use(cors({ origin: [process.env.WEB_URL || "https://web-phi-eight-56.vercel.app", "http://localhost:3000"], credentials: true }));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", ts: new Date().toISOString(), pool: browserPool.stats() });
@@ -47,6 +50,7 @@ app.get("/oauth/authorize", (req, res) => {
 
 app.use("/v1/screenshot", screenshotRouter);
 app.use("/webhooks", webhookRouter);
+app.use("/v1/recordings", recordingsRouter);
 app.use("/mcp", mcpRouter);
 
 app.use(errorHandler);

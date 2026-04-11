@@ -33,10 +33,10 @@ export async function uploadScreenshot(
   return `${R2_PUBLIC_URL}/${key}`;
 }
 
-export async function getPresignedUrl(key: string): Promise<string> {
+export async function getPresignedUrl(key: string, expiresIn = 3600): Promise<string> {
   return getSignedUrl(
     r2,
     new GetObjectCommand({ Bucket: BUCKET, Key: key }),
-    { expiresIn: 3600 }
+    { expiresIn }
   );
 }

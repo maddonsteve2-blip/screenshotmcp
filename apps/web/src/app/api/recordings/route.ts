@@ -1,10 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { eq, desc } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
-import { recordings } from "@screenshotsmcp/db";
-import { getPresignedUrl } from "@/lib/r2";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
 
 export async function GET() {
   const { userId: clerkId } = await auth();
@@ -13,28 +11,10 @@ export async function GET() {
   const user = await getOrCreateDbUser(clerkId);
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  const db = getDb();
-  const rows = await db
-    .select()
-    .from(recordings)
-    .where(eq(recordings.userId, user.id))
-    .orderBy(desc(recordings.createdAt))
-    .limit(50);
-
-  // Generate signed URLs for each recording
-  const items = await Promise.all(
-    rows.map(async (r) => ({
-      id: r.id,
-      sessionId: r.sessionId,
-      pageUrl: r.pageUrl,
-      fileSize: r.fileSize,
-      durationMs: r.durationMs,
-      viewportWidth: r.viewportWidth,
-      viewportHeight: r.viewportHeight,
-      createdAt: r.createdAt,
-      videoUrl: await getPresignedUrl(r.r2Key, 3600),
-    }))
-  );
-
-  return NextResponse.json({ recordings: items });
+  // Proxy to Railway API
+  const res = await fetch(`${API_URL}/v1/recordings`, {
+    headers: { Authorization: `Bearer ${clerkId}` },
+  });
+  const data = await res.json();
+  return NextResponse.json(data);
 }
