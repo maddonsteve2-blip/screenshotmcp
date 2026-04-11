@@ -77,6 +77,21 @@ export const testInboxes = pgTable("test_inboxes", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const recordings = pgTable("recordings", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  sessionId: text("session_id").notNull(),
+  r2Key: text("r2_key").notNull(),
+  pageUrl: text("page_url"),
+  fileSize: integer("file_size"),
+  durationMs: integer("duration_ms"),
+  viewportWidth: integer("viewport_width"),
+  viewportHeight: integer("viewport_height"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const usageEvents = pgTable("usage_events", {
   id: text("id").primaryKey(),
   userId: text("user_id")

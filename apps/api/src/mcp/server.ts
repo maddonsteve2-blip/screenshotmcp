@@ -451,6 +451,9 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
           isRecording = session!.recording;
         }
         await navigateWithRetry(page, args.url);
+        // Track start URL for recording metadata
+        const session2 = await getSession(sessionId, auth.userId);
+        if (session2) session2.startUrl = args.url;
         const img = await pageScreenshot(page);
         const vpSize = page.viewportSize();
         const recordingNote = isRecording ? "\n🔴 Recording session — call browser_close to get the video URL" : "";
