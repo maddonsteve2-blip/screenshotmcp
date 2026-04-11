@@ -1,0 +1,28 @@
+{
+  "name": "screenshotsmcp",
+  "version": "1.0.0",
+  "description": "CLI for ScreenshotsMCP — take screenshots, record sessions, audit sites from the terminal",
+  "type": "module",
+  "bin": {
+    "screenshotsmcp": "./dist/index.js",
+    "smcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node --loader ts-node/esm src/index.ts"
+  },
+  "keywords": ["screenshots", "mcp", "cli", "browser", "automation", "playwright"],
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.1.0",
+    "chalk": "^5.3.0",
+    "ora": "^8.1.0",
+    "open": "^10.1.0",
+    "conf": "^13.0.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
