@@ -24,14 +24,14 @@ type AnalyticsData = {
 };
 
 function BarChart({ data }: { data: { day: string; count: number }[] }) {
-  // Build full 30-day array, matching API's YYYY-MM-DD format
+  // Build full 30-day array using UTC dates to match Postgres to_char() output
   const days: { label: string; count: number }[] = [];
   for (let i = 29; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000);
-    // Format as YYYY-MM-DD in local timezone to match API's to_char()
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    // Use UTC methods to match the DB's UTC-based to_char()
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
     const found = data.find((r) => r.day === key);
-    days.push({ label: d.toLocaleDateString("en", { month: "short", day: "numeric" }), count: found?.count ?? 0 });
+    days.push({ label: d.toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" }), count: found?.count ?? 0 });
   }
 
   const max = Math.max(...days.map((d) => d.count), 1);

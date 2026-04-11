@@ -35,13 +35,13 @@ export async function GET() {
     db.select({ value: count() }).from(screenshots).where(and(eq(screenshots.userId, user.id), gte(screenshots.createdAt, today))),
     db.select({ value: count() }).from(screenshots).where(and(eq(screenshots.userId, user.id), eq(screenshots.status, "done"))),
     db.select({
-      day: sql<string>`to_char(${screenshots.createdAt}, 'YYYY-MM-DD')`.as("day"),
+      day: sql<string>`to_char(${screenshots.createdAt}::timestamptz AT TIME ZONE 'UTC', 'YYYY-MM-DD')`.as("day"),
       count: count(),
     })
       .from(screenshots)
       .where(and(eq(screenshots.userId, user.id), gte(screenshots.createdAt, thirtyDaysAgo)))
-      .groupBy(sql`to_char(${screenshots.createdAt}, 'YYYY-MM-DD')`)
-      .orderBy(sql`to_char(${screenshots.createdAt}, 'YYYY-MM-DD')`),
+      .groupBy(sql`to_char(${screenshots.createdAt}::timestamptz AT TIME ZONE 'UTC', 'YYYY-MM-DD')`)
+      .orderBy(sql`to_char(${screenshots.createdAt}::timestamptz AT TIME ZONE 'UTC', 'YYYY-MM-DD')`),
     db.select({ url: screenshots.url, count: count() }).from(screenshots).where(eq(screenshots.userId, user.id)).groupBy(screenshots.url).orderBy(desc(count())).limit(10),
     db.select({ format: screenshots.format, count: count() }).from(screenshots).where(eq(screenshots.userId, user.id)).groupBy(screenshots.format),
     db.select({ width: screenshots.width, count: count() }).from(screenshots).where(eq(screenshots.userId, user.id)).groupBy(screenshots.width),
@@ -73,7 +73,17 @@ export async function GET() {
       today: Number(todayCount),
       successRate,
     },
-    daily: dailyRows.map((r) => ({ day: String(r.day), count: Number(r.count) })),
+    daily: dailyRows.map((r) => {
+      // Ensure day is always YYYY-MM-DD string even if driver returns Date
+      const raw: unknown = r.day;
+      let day: string;
+      if (raw instanceof Date) {
+        day = raw.toISOString().slice(0, 10);
+      } else {
+        day = String(raw);
+      }
+      return { day, count: Number(r.count) };
+    }),
     topUrls: topUrlRows.map((r) => ({ url: r.url, count: Number(r.count) })),
     formats: formatRows.map((r) => ({ format: r.format, count: Number(r.count) })),
     devices: deviceBreakdown,
