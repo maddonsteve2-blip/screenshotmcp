@@ -1,6 +1,6 @@
 {
   "name": "screenshotsmcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "CLI for ScreenshotsMCP — take screenshots, record sessions, audit sites from the terminal",
   "type": "module",
   "bin": {
