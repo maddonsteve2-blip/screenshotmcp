@@ -130,6 +130,20 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
 **Viewport:** browser_set_viewport — resize the browser viewport mid-session (e.g. switch between desktop and mobile)
 **Inspection:** browser_screenshot, browser_get_text, browser_get_html, browser_get_accessibility_tree, browser_evaluate
 **Standalone:** accessibility_snapshot — get accessibility tree for any URL without a session
+
+## Session Recording (Video)
+Record a full video of any browser session:
+1. Start with **browser_navigate** and set **record_video: true** — a recording indicator appears.
+2. Perform your workflow (click, fill, scroll, etc.) — everything is captured as a .webm video.
+3. Call **browser_close** — the video is uploaded and the **public URL** is returned.
+
+Use recording when:
+- The user asks to "record", "film", "show me what happened", or "replay"
+- Testing sign-up / login flows (proof of work)
+- UX audits where the user wants to see transitions and animations
+- Bug reports that benefit from video evidence
+
+The video URL is permanent and shareable. Recording adds minimal overhead to the session.
 **Performance:** browser_perf_metrics (Core Web Vitals: LCP, FCP, CLS, TTFB), browser_network_requests (full waterfall)
 **SEO:** browser_seo_audit (meta, OG, Twitter cards, headings, structured data, alt text)
 **Debugging:** browser_console_logs, browser_network_errors, browser_cookies, browser_storage
@@ -409,12 +423,13 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
 
   server.tool(
     "browser_navigate",
-    "Open a browser and navigate to a URL. Returns a screenshot of the loaded page. Use this to start a browser session — the returned sessionId must be passed to all subsequent browser_ tools. Pass width/height to start with a custom viewport (e.g. 393×852 for mobile).",
+    "Open a browser and navigate to a URL. Returns a screenshot of the loaded page. Use this to start a browser session — the returned sessionId must be passed to all subsequent browser_ tools. Pass width/height to start with a custom viewport (e.g. 393×852 for mobile). Set record_video to true to record the entire session as a video — the recording URL is returned when browser_close is called.",
     {
       url: z.string().url().describe("URL to navigate to"),
       sessionId: z.string().optional().describe("Existing session ID to reuse. Omit to start a new browser session."),
       width: z.number().int().min(320).max(3840).optional().describe("Viewport width for new sessions (default 1280). Ignored if sessionId is provided."),
       height: z.number().int().min(240).max(2160).optional().describe("Viewport height for new sessions (default 800). Ignored if sessionId is provided."),
+      record_video: z.boolean().optional().default(false).describe("Record a video of the entire browser session. The .webm recording URL is returned when you call browser_close. Only applies to new sessions."),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -422,20 +437,24 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
       try {
         let sessionId = args.sessionId;
         let page;
+        let isRecording = false;
         if (sessionId) {
           const session = await getSession(sessionId, auth.userId);
           if (!session) return { content: [{ type: "text", text: `Error: Session ${sessionId} not found or expired. Start a new one by omitting sessionId.` }] };
           page = session.page;
+          isRecording = session.recording;
         } else {
           const vp = (args.width || args.height) ? { width: args.width || 1280, height: args.height || 800 } : undefined;
-          sessionId = await createSession(auth.userId, vp);
+          sessionId = await createSession(auth.userId, vp, args.record_video);
           const session = await getSession(sessionId, auth.userId);
           page = session!.page;
+          isRecording = session!.recording;
         }
         await navigateWithRetry(page, args.url);
         const img = await pageScreenshot(page);
         const vpSize = page.viewportSize();
-        return { content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\nViewport: ${vpSize?.width}×${vpSize?.height}\n(Pass this sessionId to all browser_ tools)` }, img] };
+        const recordingNote = isRecording ? "\n🔴 Recording session — call browser_close to get the video URL" : "";
+        return { content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\nViewport: ${vpSize?.width}×${vpSize?.height}\n(Pass this sessionId to all browser_ tools)${recordingNote}` }, img] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error navigating: ${humanizeError(err instanceof Error ? err.message : String(err))}` }] };
       }
@@ -653,14 +672,17 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
 
   server.tool(
     "browser_close",
-    "Close the browser session and free all resources. Always call this when the browser workflow is complete.",
+    "Close the browser session and free all resources. Always call this when the browser workflow is complete. If the session was started with record_video: true, the video recording URL is returned.",
     {
       sessionId: z.string().describe("Session ID to close"),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
-      await closeSession(args.sessionId);
+      const result = await closeSession(args.sessionId);
+      if (result.videoUrl) {
+        return { content: [{ type: "text", text: `Session ${args.sessionId} closed.\n\n🎬 **Session Recording:** ${result.videoUrl}\n\nThis .webm video shows everything that happened during the browser session. Share it with users or use it for debugging.` }] };
+      }
       return { content: [{ type: "text", text: `Session ${args.sessionId} closed.` }] };
     }
   );

@@ -2,6 +2,11 @@ import { Browser, BrowserContext, Page } from "playwright";
 import { nanoid } from "nanoid";
 import { browserPool } from "./browser-pool.js";
 import { STEALTH_SCRIPT, DEFAULT_USER_AGENT } from "./stealth.js";
+import { uploadScreenshot } from "./r2.js";
+import { existsSync } from "fs";
+import { readFile, rm } from "fs/promises";
+import { tmpdir } from "os";
+import { join } from "path";
 
 export interface NetworkEntry {
   url: string;
@@ -24,6 +29,9 @@ export interface Session {
   consoleLogs: Array<{ level: string; text: string; ts: number }>;
   networkErrors: Array<{ url: string; status: number; statusText: string; ts: number }>;
   networkRequests: NetworkEntry[];
+  recording: boolean;
+  videoDir?: string;
+  videoUrl?: string;
 }
 
 const sessions = new Map<string, Session>();
@@ -34,10 +42,9 @@ setInterval(() => {
   const now = Date.now();
   for (const [id, session] of sessions) {
     if (now - session.lastUsed.getTime() > SESSION_TTL_MS) {
-      session.context.close().catch(() => {});
-      session.release().catch(() => {});
-      sessions.delete(id);
-      console.log(`[Sessions] Expired session ${id}`);
+      // Use closeSession to handle video upload for recorded sessions
+      closeSession(id).catch(() => {});
+      console.log(`[Sessions] Expired session ${id}${session.recording ? " (recording)" : ""}`);
     }
   }
 }, 30_000);
@@ -89,7 +96,7 @@ function attachPageListeners(page: Page, session: Pick<Session, "consoleLogs" | 
   });
 }
 
-export async function createSession(userId: string, viewport?: { width: number; height: number }): Promise<string> {
+export async function createSession(userId: string, viewport?: { width: number; height: number }, recordVideo?: boolean): Promise<string> {
   const sessionId = nanoid();
   // Enforce max session limit — close oldest
   if (sessions.size >= MAX_SESSIONS) {
@@ -103,11 +110,19 @@ export async function createSession(userId: string, viewport?: { width: number; 
 
   const vp = viewport || { width: 1280, height: 800 };
   const { browser, release } = await browserPool.acquire();
-  const context = await browser.newContext({
+
+  // Video recording setup
+  const videoDir = recordVideo ? join(tmpdir(), `smcp-video-${sessionId}`) : undefined;
+  const contextOpts: any = {
     userAgent: DEFAULT_USER_AGENT,
     viewport: vp,
     locale: "en-US",
-  });
+  };
+  if (recordVideo && videoDir) {
+    contextOpts.recordVideo = { dir: videoDir, size: vp };
+  }
+
+  const context = await browser.newContext(contextOpts);
   const page = await context.newPage();
   await page.addInitScript(STEALTH_SCRIPT);
 
@@ -115,7 +130,7 @@ export async function createSession(userId: string, viewport?: { width: number; 
   const networkErrors: Session["networkErrors"] = [];
   const networkRequests: NetworkEntry[] = [];
 
-  const session: Session = { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors, networkRequests };
+  const session: Session = { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors, networkRequests, recording: !!recordVideo, videoDir };
   attachPageListeners(page, session);
 
   sessions.set(sessionId, session);
@@ -168,13 +183,48 @@ export async function getSession(sessionId: string, userId: string): Promise<Ses
   return session;
 }
 
-export async function closeSession(sessionId: string): Promise<void> {
+export async function closeSession(sessionId: string): Promise<{ videoUrl?: string }> {
   const session = sessions.get(sessionId);
-  if (session) {
+  if (!session) return {};
+
+  let videoUrl: string | undefined;
+
+  // If recording, extract the video before closing context
+  if (session.recording) {
+    try {
+      // Get the video path from the page (must be done before context.close)
+      const video = session.page.video();
+      if (video) {
+        const videoPath = await video.path();
+        // Close context first — this finalizes the video file
+        await session.context.close().catch(() => {});
+
+        // Wait briefly for file to be fully written
+        await new Promise(r => setTimeout(r, 500));
+
+        if (videoPath && existsSync(videoPath)) {
+          const videoBuffer = await readFile(videoPath);
+          const r2Key = `recordings/${sessionId}.webm`;
+          videoUrl = await uploadScreenshot(r2Key, videoBuffer, "video/webm");
+          session.videoUrl = videoUrl;
+          console.log(`[Sessions] Video uploaded: ${videoUrl} (${(videoBuffer.length / 1024 / 1024).toFixed(1)}MB)`);
+          // Cleanup temp files
+          await rm(session.videoDir!, { recursive: true, force: true }).catch(() => {});
+        }
+      } else {
+        await session.context.close().catch(() => {});
+      }
+    } catch (err) {
+      console.error(`[Sessions] Video upload failed for ${sessionId}:`, err);
+      await session.context.close().catch(() => {});
+    }
+  } else {
     await session.context.close().catch(() => {});
-    await session.release().catch(() => {});
-    sessions.delete(sessionId);
   }
+
+  await session.release().catch(() => {});
+  sessions.delete(sessionId);
+  return { videoUrl };
 }
 
 export async function pageScreenshot(page: Page): Promise<{ type: "image"; data: string; mimeType: string }> {
