@@ -33,7 +33,6 @@ const FORMATS: { value: Format; label: string }[] = [
   { value: "png", label: "PNG" },
   { value: "jpeg", label: "JPEG" },
   { value: "webp", label: "WebP" },
-  { value: "pdf", label: "PDF" },
 ];
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://screenshotsmcp-api-production.up.railway.app";
@@ -47,11 +46,7 @@ async function captureScreenshot(params: {
   format: Format;
   apiKey: string;
 }): Promise<{ publicUrl: string; width: number; height: number; format: string; elapsed: string } | { error: string }> {
-  const endpoint = params.format === "pdf"
-    ? "/screenshot/pdf"
-    : params.dark
-    ? "/screenshot/dark"
-    : "/screenshot";
+  const endpoint = "/v1/screenshot";
 
   const res = await fetch(`${API_BASE}${endpoint}`, {
     method: "POST",
@@ -71,26 +66,26 @@ async function captureScreenshot(params: {
   }
 
   const job = await res.json();
-  const jobId: string = job.jobId ?? job.id;
+  const jobId: string = job.id ?? job.jobId;
 
   // Poll for result
   for (let i = 0; i < 30; i++) {
     await new Promise((r) => setTimeout(r, 2000));
-    const poll = await fetch(`${API_BASE}/screenshot/${jobId}`, {
+    const poll = await fetch(`${API_BASE}/v1/screenshot/${jobId}`, {
       headers: { Authorization: `Bearer ${params.apiKey}` },
     });
     if (!poll.ok) continue;
     const data = await poll.json();
-    if (data.status === "done" && data.publicUrl) {
+    if (data.status === "done" && (data.url || data.publicUrl)) {
       return {
-        publicUrl: data.publicUrl,
+        publicUrl: data.url ?? data.publicUrl,
         width: data.width ?? params.width,
         height: data.height ?? params.height,
         format: data.format ?? params.format,
         elapsed: data.elapsed ?? "?",
       };
     }
-    if (data.status === "failed") return { error: data.errorMessage ?? "Screenshot failed" };
+    if (data.status === "failed") return { error: data.error ?? data.errorMessage ?? "Screenshot failed" };
   }
   return { error: "Timed out after 60s" };
 }
@@ -167,7 +162,7 @@ export default function PlaygroundPage() {
     setDiffResult(null);
     setDiffError(null);
     try {
-      const res = await fetch(`${API_BASE}/screenshot/diff`, {
+      const res = await fetch(`${API_BASE}/v1/screenshot/diff`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({ urlA: urlA.trim(), urlB: urlB.trim(), width: device.width, height: device.height }),
