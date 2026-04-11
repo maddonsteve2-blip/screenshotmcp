@@ -5,7 +5,7 @@ import { users } from "@screenshotsmcp/db";
 import { eq } from "drizzle-orm";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://screenshotsmcp-api-production.up.railway.app";
-const INTERNAL_SECRET = process.env.INTERNAL_API_SECRET ?? "";
+const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET ?? "").trim();
 
 async function getDbUserId(clerkId: string): Promise<string | null> {
   const db = getDb();
@@ -23,6 +23,11 @@ export async function POST(req: Request) {
 
   const body = await req.json();
 
+  if (!INTERNAL_SECRET) {
+    console.error("[playground proxy] INTERNAL_API_SECRET is not set");
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
+
   const res = await fetch(`${API_BASE}/v1/screenshot`, {
     method: "POST",
     headers: {
@@ -33,5 +38,8 @@ export async function POST(req: Request) {
   });
 
   const data = await res.json();
+  if (!res.ok) {
+    console.error("[playground proxy] API returned", res.status, data);
+  }
   return NextResponse.json(data, { status: res.status });
 }

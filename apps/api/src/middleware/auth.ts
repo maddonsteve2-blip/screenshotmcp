@@ -9,7 +9,7 @@ export interface AuthRequest extends Request {
   userPlan?: string;
 }
 
-const INTERNAL_SECRET = process.env.INTERNAL_API_SECRET || "";
+const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET || "").trim();
 
 export async function requireApiKey(
   req: AuthRequest,

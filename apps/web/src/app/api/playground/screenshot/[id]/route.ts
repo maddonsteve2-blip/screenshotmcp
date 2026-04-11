@@ -5,7 +5,7 @@ import { users } from "@screenshotsmcp/db";
 import { eq } from "drizzle-orm";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://screenshotsmcp-api-production.up.railway.app";
-const INTERNAL_SECRET = process.env.INTERNAL_API_SECRET ?? "";
+const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET ?? "").trim();
 
 async function getDbUserId(clerkId: string): Promise<string | null> {
   const db = getDb();
