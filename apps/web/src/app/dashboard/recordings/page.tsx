@@ -176,12 +176,10 @@ export default function RecordingsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      asChild
+                      render={<a href={rec.videoUrl} target="_blank" rel="noopener noreferrer" />}
                     >
-                      <a href={rec.videoUrl} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                        Open
-                      </a>
+                      <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                      Open
                     </Button>
                     <Button
                       size="sm"

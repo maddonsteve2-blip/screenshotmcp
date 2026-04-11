@@ -85,10 +85,8 @@ function AuthorizeContent() {
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
-            <Button asChild>
-              <a href={`/sign-in?redirect_url=${encodeURIComponent(currentUrl)}`}>
-                Sign In
-              </a>
+            <Button render={<a href={`/sign-in?redirect_url=${encodeURIComponent(currentUrl)}`} />}>
+              Sign In
             </Button>
           </CardContent>
         </Card>

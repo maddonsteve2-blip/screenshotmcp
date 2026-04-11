@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart, Cell, LabelList, RadialBar, RadialBarChart } from "recharts";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Camera, TrendingUp, CheckCircle, Calendar, Zap, ArrowUpRight, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
 
@@ -23,84 +26,36 @@ type AnalyticsData = {
   devices: { mobile: number; tablet: number; desktop: number };
 };
 
-function BarChart({ data }: { data: { day: string; count: number }[] }) {
-  // Data comes pre-filled from API (30 entries, one per day) — just render directly
-  const max = Math.max(...data.map((d) => d.count), 1);
-  const hasData = data.some((d) => d.count > 0);
+const dailyChartConfig = {
+  screenshots: {
+    label: "Screenshots",
+    color: "var(--chart-1)",
+  },
+} satisfies ChartConfig;
 
-  if (!data.length || !hasData) {
-    return <div className="h-36 flex items-center justify-center text-sm text-muted-foreground">No usage data yet</div>;
-  }
+const deviceChartConfig = {
+  count: { label: "Count" },
+  desktop: { label: "Desktop", color: "var(--chart-1)" },
+  tablet: { label: "Tablet", color: "var(--chart-2)" },
+  mobile: { label: "Mobile", color: "var(--chart-3)" },
+} satisfies ChartConfig;
 
-  return (
-    <div className="flex items-end gap-[3px] h-36 w-full">
-      {data.map((d, i) => {
-        // Parse YYYY-MM-DD to readable label
-        const parts = d.day.split("-");
-        const dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-        const label = dateObj.toLocaleDateString("en", { month: "short", day: "numeric" });
-        const pct = Math.max((d.count / max) * 100, d.count > 0 ? 6 : 0);
-        return (
-          <div key={i} className="flex-1 h-full flex flex-col justify-end items-center group relative">
-            <div
-              className="w-full bg-primary/60 rounded-t-sm group-hover:bg-primary transition-colors"
-              style={{ height: `${pct}%` }}
-            />
-            <div className="absolute bottom-full mb-1.5 bg-popover border text-xs px-2 py-1 rounded-md shadow-md hidden group-hover:block whitespace-nowrap z-10 font-medium">
-              {label}: <span className="text-primary">{d.count}</span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function PieSlice({ segments }: { segments: { label: string; value: number; color: string }[] }) {
-  const total = segments.reduce((a, b) => a + b.value, 0);
-  if (!total) return <div className="h-20 flex items-center justify-center text-sm text-muted-foreground">No data yet</div>;
-  let offset = 0;
-  return (
-    <div className="flex items-center gap-4">
-      <svg viewBox="0 0 36 36" className="h-20 w-20 -rotate-90 shrink-0">
-        {segments.map((seg, i) => {
-          const pct = (seg.value / total) * 100;
-          const circle = (
-            <circle
-              key={i}
-              cx="18" cy="18" r="15.9"
-              fill="transparent"
-              stroke={seg.color}
-              strokeWidth="3.8"
-              strokeDasharray={`${pct} ${100 - pct}`}
-              strokeDashoffset={-offset}
-            />
-          );
-          offset += pct;
-          return circle;
-        })}
-      </svg>
-      <div className="space-y-1">
-        {segments.map((seg) => (
-          <div key={seg.label} className="flex items-center gap-2 text-xs">
-            <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
-            <span className="text-muted-foreground">{seg.label}</span>
-            <span className="font-medium">{total > 0 ? Math.round((seg.value / total) * 100) : 0}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const PLAN_LABELS: Record<string, { label: string }> = {
+  free: { label: "Free" },
+  starter: { label: "Starter" },
+  pro: { label: "Pro" },
+};
 
 function UsageBar({ used, limit }: { used: number; limit: number }) {
   const isUnlimited = limit > 100000;
   const pct = isUnlimited ? Math.min((used / 1000) * 100, 100) : Math.min((used / limit) * 100, 100);
-  const color = pct > 90 ? "bg-red-500" : pct > 70 ? "bg-amber-500" : "bg-primary";
   return (
-    <div className="space-y-1.5">
+    <div className="flex flex-col gap-1.5">
       <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all duration-500 ${color}`} style={{ width: `${Math.max(pct, 1)}%` }} />
+        <div
+          className="h-full rounded-full transition-all duration-500 bg-primary"
+          style={{ width: `${Math.max(pct, 1)}%` }}
+        />
       </div>
       <div className="flex justify-between text-xs text-muted-foreground">
         <span>{used.toLocaleString()} used</span>
@@ -109,19 +64,6 @@ function UsageBar({ used, limit }: { used: number; limit: number }) {
     </div>
   );
 }
-
-const PLAN_LABELS: Record<string, { label: string; color: string }> = {
-  free: { label: "Free", color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200" },
-  starter: { label: "Starter", color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
-  pro: { label: "Pro", color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" },
-};
-
-const FORMAT_COLORS: Record<string, string> = {
-  png: "#3b82f6",
-  jpeg: "#f59e0b",
-  webp: "#10b981",
-  pdf: "#ef4444",
-};
 
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -132,25 +74,18 @@ export default function AnalyticsPage() {
 
   const connectWs = useCallback(async () => {
     try {
-      // Get WebSocket URL with auth token from our API
       const res = await fetch("/api/analytics-ws-token");
       if (!res.ok) {
-        // Fallback to REST if WS token fails
         const fallback = await fetch("/api/analytics");
-        if (fallback.ok) {
-          const d = await fallback.json();
-          setData(d);
-        }
+        if (fallback.ok) setData(await fallback.json());
         setLoading(false);
         return;
       }
       const { wsUrl } = await res.json();
-
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => setConnected(true);
-
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data);
@@ -161,19 +96,13 @@ export default function AnalyticsPage() {
           }
         } catch {}
       };
-
       ws.onclose = () => {
         setConnected(false);
         wsRef.current = null;
-        // Reconnect after 5s
         setTimeout(connectWs, 5000);
       };
-
-      ws.onerror = () => {
-        ws.close();
-      };
+      ws.onerror = () => ws.close();
     } catch {
-      // Fallback to REST
       try {
         const fallback = await fetch("/api/analytics");
         if (fallback.ok) setData(await fallback.json());
@@ -192,7 +121,6 @@ export default function AnalyticsPage() {
       setRefreshing(true);
       wsRef.current.send(JSON.stringify({ type: "refresh" }));
     } else {
-      // Fallback: re-fetch via REST
       setRefreshing(true);
       fetch("/api/analytics")
         .then((r) => r.json())
@@ -201,9 +129,43 @@ export default function AnalyticsPage() {
     }
   };
 
+  const dailyChartData = useMemo(() =>
+    (data?.daily ?? []).map((d) => ({
+      date: d.day,
+      screenshots: d.count,
+    })),
+    [data?.daily]
+  );
+
+  const formatChartConfig = useMemo(() => {
+    const config: ChartConfig = { count: { label: "Count" } };
+    (data?.formats ?? []).forEach((f, i) => {
+      config[f.format] = { label: f.format.toUpperCase(), color: `var(--chart-${i + 1})` };
+    });
+    return config;
+  }, [data?.formats]);
+
+  const formatChartData = useMemo(() =>
+    (data?.formats ?? []).map((f) => ({
+      name: f.format,
+      count: f.count,
+      fill: `var(--color-${f.format})`,
+    })),
+    [data?.formats]
+  );
+
+  const deviceChartData = useMemo(() => {
+    if (!data?.devices) return [];
+    return [
+      { name: "desktop", count: data.devices.desktop, fill: "var(--color-desktop)" },
+      { name: "tablet", count: data.devices.tablet, fill: "var(--color-tablet)" },
+      { name: "mobile", count: data.devices.mobile, fill: "var(--color-mobile)" },
+    ].filter((d) => d.count > 0);
+  }, [data?.devices]);
+
   if (loading) {
     return (
-      <div className="p-8 space-y-6 max-w-5xl">
+      <div className="p-8 flex flex-col gap-6 max-w-5xl">
         <div>
           <div className="h-7 w-32 bg-muted animate-pulse rounded mb-2" />
           <div className="h-4 w-56 bg-muted animate-pulse rounded" />
@@ -212,7 +174,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-28 bg-muted animate-pulse rounded-lg" />)}
         </div>
-        <div className="h-48 bg-muted animate-pulse rounded-lg" />
+        <div className="h-[300px] bg-muted animate-pulse rounded-lg" />
       </div>
     );
   }
@@ -221,20 +183,11 @@ export default function AnalyticsPage() {
   const planInfo = PLAN_LABELS[plan.name] ?? PLAN_LABELS.free;
   const stats = data?.stats ?? { total: 0, thisMonth: 0, today: 0, successRate: 100 };
   const deviceTotal = (data?.devices.mobile ?? 0) + (data?.devices.tablet ?? 0) + (data?.devices.desktop ?? 0);
-
-  const deviceSegments = [
-    { label: "Desktop", value: data?.devices.desktop ?? 0, color: "#3b82f6" },
-    { label: "Tablet", value: data?.devices.tablet ?? 0, color: "#8b5cf6" },
-    { label: "Mobile", value: data?.devices.mobile ?? 0, color: "#f59e0b" },
-  ];
-  const formatSegments = (data?.formats ?? []).map((f) => ({
-    label: f.format.toUpperCase(),
-    value: f.count,
-    color: FORMAT_COLORS[f.format] ?? "#6b7280",
-  }));
+  const totalDaily = dailyChartData.reduce((a, b) => a + b.screenshots, 0);
 
   return (
-    <div className="p-8 space-y-6 max-w-5xl">
+    <div className="p-8 flex flex-col gap-6 max-w-5xl">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Analytics</h1>
@@ -242,34 +195,30 @@ export default function AnalyticsPage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            {connected ? <Wifi className="h-3.5 w-3.5 text-green-500" /> : <WifiOff className="h-3.5 w-3.5 text-muted-foreground" />}
+            {connected ? <Wifi className="size-3.5 text-green-500" /> : <WifiOff className="size-3.5 text-muted-foreground" />}
             <span>{connected ? "Live" : "Offline"}</span>
           </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw data-icon="inline-start" className={refreshing ? "animate-spin" : ""} />
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Plan & Usage */}
       <Card>
-        <CardContent className="pt-5 pb-5">
-          <div className="flex items-center justify-between mb-4">
+        <CardHeader>
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Zap className="h-5 w-5 text-primary" />
+              <Zap className="size-5 text-primary" />
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">Monthly Usage</span>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${planInfo.color}`}>{planInfo.label} Plan</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <CardTitle className="flex items-center gap-2">
+                  Monthly Usage
+                  <Badge variant="secondary">{planInfo.label} Plan</Badge>
+                </CardTitle>
+                <CardDescription>
                   {plan.used.toLocaleString()} of {plan.screenshotsPerMonth > 100000 ? "unlimited" : plan.screenshotsPerMonth.toLocaleString()} screenshots this month
-                </p>
+                </CardDescription>
               </div>
             </div>
             {plan.name === "free" && (
@@ -277,10 +226,12 @@ export default function AnalyticsPage() {
                 href="/dashboard/billing"
                 className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
               >
-                Upgrade <ArrowUpRight className="h-3 w-3" />
+                Upgrade <ArrowUpRight className="size-3" />
               </Link>
             )}
           </div>
+        </CardHeader>
+        <CardContent>
           <UsageBar used={plan.used} limit={plan.screenshotsPerMonth} />
         </CardContent>
       </Card>
@@ -288,71 +239,114 @@ export default function AnalyticsPage() {
       {/* Stats cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center gap-2 mb-1">
-              <Camera className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Total</span>
-            </div>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2">
+              <Camera className="size-4" />
+              Total
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <p className="text-3xl font-bold">{stats.total.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">This month</span>
-            </div>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2">
+              <Calendar className="size-4" />
+              This month
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <p className="text-3xl font-bold">{stats.thisMonth.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Today</span>
-            </div>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2">
+              <TrendingUp className="size-4" />
+              Today
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <p className="text-3xl font-bold">{stats.today.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Success rate</span>
-            </div>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2">
+              <CheckCircle className="size-4" />
+              Success rate
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <p className="text-3xl font-bold">{stats.successRate}%</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Daily chart */}
+      {/* Daily usage bar chart */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Daily Usage (last 30 days)</CardTitle>
+        <CardHeader>
+          <CardTitle>Daily Usage</CardTitle>
+          <CardDescription>Last 30 days — {totalDaily.toLocaleString()} total screenshots</CardDescription>
         </CardHeader>
         <CardContent>
-          <BarChart data={data?.daily ?? []} />
-          <div className="flex justify-between text-xs text-muted-foreground mt-2">
-            <span>30 days ago</span>
-            <span>Today</span>
-          </div>
+          {totalDaily > 0 ? (
+            <ChartContainer config={dailyChartConfig} className="aspect-auto h-[250px] w-full">
+              <BarChart accessibilityLayer data={dailyChartData} margin={{ left: 12, right: 12 }}>
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  minTickGap={32}
+                  tickFormatter={(value) => {
+                    const date = new Date(value + "T00:00:00");
+                    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  }}
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      className="w-[160px]"
+                      nameKey="screenshots"
+                      labelFormatter={(value) => {
+                        return new Date(value + "T00:00:00").toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        });
+                      }}
+                    />
+                  }
+                />
+                <Bar dataKey="screenshots" fill="var(--color-screenshots)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
+          ) : (
+            <div className="h-[250px] flex items-center justify-center text-sm text-muted-foreground">
+              No usage data yet
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Top URLs */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Top URLs</CardTitle>
+          <CardHeader>
+            <CardTitle>Top URLs</CardTitle>
+            <CardDescription>Most screenshotted domains</CardDescription>
           </CardHeader>
           <CardContent>
             {data?.topUrls.length ? (
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 {data.topUrls.map((u, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground w-4 text-right shrink-0">{i + 1}</span>
-                    <span className="flex-1 text-xs truncate" title={u.url}>{u.url}</span>
-                    <Badge variant="secondary" className="text-xs shrink-0">{u.count}</Badge>
+                    <span className="flex-1 text-sm truncate" title={u.url}>{u.url}</span>
+                    <Badge variant="secondary">{u.count}</Badge>
                   </div>
                 ))}
               </div>
@@ -362,34 +356,78 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Device + Format breakdown */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Device Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {deviceTotal > 0 ? (
-                <PieSlice segments={deviceSegments} />
-              ) : (
-                <p className="text-sm text-muted-foreground py-2 text-center">No data yet</p>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Format Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {formatSegments.length > 0 ? (
-                <PieSlice segments={formatSegments} />
-              ) : (
-                <p className="text-sm text-muted-foreground py-2 text-center">No data yet</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        {/* Device breakdown — Radial bar chart */}
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle>Device Breakdown</CardTitle>
+            <CardDescription>Screenshots by viewport size</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 pb-0">
+            {deviceTotal > 0 ? (
+              <ChartContainer config={deviceChartConfig} className="mx-auto aspect-square max-h-[250px]">
+                <RadialBarChart data={deviceChartData} startAngle={-90} endAngle={380} innerRadius={30} outerRadius={110}>
+                  <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel nameKey="name" />} />
+                  <RadialBar dataKey="count" background>
+                    <LabelList
+                      position="insideStart"
+                      dataKey="name"
+                      className="fill-white capitalize mix-blend-luminosity"
+                      fontSize={11}
+                    />
+                  </RadialBar>
+                </RadialBarChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">No data yet</div>
+            )}
+          </CardContent>
+          {deviceTotal > 0 && (
+            <CardFooter className="flex justify-center gap-4 text-xs text-muted-foreground">
+              {deviceChartData.map((d) => (
+                <div key={d.name} className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-full" style={{ backgroundColor: `var(--color-${d.name})` }} />
+                  <span className="capitalize">{d.name}</span>
+                  <span className="font-medium text-foreground">{Math.round((d.count / deviceTotal) * 100)}%</span>
+                </div>
+              ))}
+            </CardFooter>
+          )}
+        </Card>
       </div>
+
+      {/* Format breakdown — Pie chart */}
+      {(data?.formats ?? []).length > 0 && (
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle>Format Breakdown</CardTitle>
+            <CardDescription>Screenshot output formats</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 pb-0">
+            <ChartContainer config={formatChartConfig} className="mx-auto aspect-square max-h-[250px]">
+              <PieChart>
+                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                <Pie data={formatChartData} dataKey="count" nameKey="name" innerRadius={50} strokeWidth={4}>
+                  <LabelList
+                    dataKey="name"
+                    className="fill-background text-xs uppercase font-medium"
+                    stroke="none"
+                    fontSize={11}
+                  />
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+          </CardContent>
+          <CardFooter className="flex justify-center gap-4 text-xs text-muted-foreground">
+            {formatChartData.map((f) => (
+              <div key={f.name} className="flex items-center gap-1.5">
+                <span className="size-2.5 rounded-full" style={{ backgroundColor: `var(--color-${f.name})` }} />
+                <span className="uppercase">{f.name}</span>
+                <span className="font-medium text-foreground">{f.count}</span>
+              </div>
+            ))}
+          </CardFooter>
+        </Card>
+      )}
     </div>
   );
 }
