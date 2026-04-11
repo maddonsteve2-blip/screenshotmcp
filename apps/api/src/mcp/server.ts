@@ -2882,8 +2882,22 @@ function resolveKey(req: Request): string | undefined {
 }
 
 async function handleMcp(req: Request, res: Response, body: unknown) {
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   const apiKey = resolveKey(req);
+
+  // If no API key resolved, return 401 with OAuth hint so MCP clients
+  // can discover the authorization server and start the OAuth flow.
+  if (!apiKey) {
+    const appUrl = process.env.APP_URL || "https://screenshotsmcp-api-production.up.railway.app";
+    res.setHeader("WWW-Authenticate", `Bearer resource_metadata="${appUrl}/.well-known/oauth-protected-resource"`);
+    res.status(401).json({
+      jsonrpc: "2.0",
+      error: { code: -32001, message: "Unauthorized — API key or OAuth Bearer token required" },
+      id: null,
+    });
+    return;
+  }
+
+  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   const server = createMcpServer(apiKey);
   res.on("close", () => { transport.close(); server.close(); });
   await server.connect(transport);

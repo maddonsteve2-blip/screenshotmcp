@@ -91,7 +91,8 @@ app.post("/oauth/callback", (req, res) => {
 });
 
 // POST /oauth/token — exchange authorization code for access token
-app.post("/oauth/token", (req, res) => {
+// OAuth clients typically send application/x-www-form-urlencoded
+app.post("/oauth/token", express.urlencoded({ extended: false }), (req, res) => {
   const grantType = req.body.grant_type;
   const code = req.body.code;
   const codeVerifier = req.body.code_verifier;

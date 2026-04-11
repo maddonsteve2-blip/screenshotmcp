@@ -261,63 +261,79 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
         <div className="p-6 space-y-6">
           {toolId === "cursor" && (
             <>
-              <Step n={1} title="Copy the MCP URL">
-                <CopyBlock code={mcpKeyUrl} id="cursor-url" copiedId={copiedId} onCopy={onCopy} />
-              </Step>
-              <Step n={2} title="One-click install (recommended)">
-                <a href={isKeySet ? cursorDeepLink : undefined}>
-                  <Button disabled={!isKeySet} className="gap-2 w-full">
-                    <Download className="h-4 w-4" /> Install in Cursor
-                  </Button>
-                </a>
-                {!isKeySet && <p className="text-xs text-muted-foreground mt-2">Enter an API key first (go back and scroll down).</p>}
-              </Step>
-              <Step n={3} title="Or add manually to ~/.cursor/mcp.json">
+              <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 p-4 text-sm text-green-800 dark:text-green-200">
+                <strong>✨ OAuth — No API key needed!</strong> Cursor supports OAuth. Just use the base URL and you&apos;ll be prompted to sign in automatically.
+              </div>
+              <Step n={1} title="Option A: OAuth (recommended)">
                 <CopyBlock code={`{
   "mcpServers": {
     "screenshotsmcp": {
-      "url": "${mcpKeyUrl}"
+      "url": "${mcpBaseUrl}"
     }
   }
-}`} id="cursor-manual" copiedId={copiedId} onCopy={onCopy} />
+}`} id="cursor-oauth" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Add to <code className="bg-muted px-1 rounded">~/.cursor/mcp.json</code>. Cursor will open a browser to authorize on first use.</p>
+              </Step>
+              <Separator />
+              <Step n={2} title="Option B: API key in URL (no browser popup)">
+                <CopyBlock code={mcpKeyUrl} id="cursor-url" copiedId={copiedId} onCopy={onCopy} />
+                <a href={isKeySet ? cursorDeepLink : undefined}>
+                  <Button disabled={!isKeySet} className="gap-2 w-full mt-3">
+                    <Download className="h-4 w-4" /> One-click Install in Cursor
+                  </Button>
+                </a>
+                {!isKeySet && <p className="text-xs text-muted-foreground mt-2">Enter an API key first (go back and scroll down).</p>}
               </Step>
             </>
           )}
 
           {toolId === "vscode" && (
             <>
-              <Step n={1} title="Copy the MCP URL">
-                <CopyBlock code={mcpKeyUrl} id="vscode-url" copiedId={copiedId} onCopy={onCopy} />
-              </Step>
-              <Step n={2} title="One-click install (VS Code 1.99+)">
-                <a href={isKeySet ? vscodeDeepLink : undefined}>
-                  <Button disabled={!isKeySet} className="gap-2 w-full">
-                    <Download className="h-4 w-4" /> Install in VS Code
-                  </Button>
-                </a>
-              </Step>
-              <Step n={3} title="Or add manually to .vscode/mcp.json">
+              <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 p-4 text-sm text-green-800 dark:text-green-200">
+                <strong>✨ OAuth — No API key needed!</strong> VS Code supports OAuth. Just use the base URL and you&apos;ll be prompted to sign in.
+              </div>
+              <Step n={1} title="Option A: OAuth (recommended)">
                 <CopyBlock code={`{
   "mcp": {
     "servers": {
       "screenshotsmcp": {
         "type": "http",
-        "url": "${mcpKeyUrl}"
+        "url": "${mcpBaseUrl}"
       }
     }
   }
-}`} id="vscode-manual" copiedId={copiedId} onCopy={onCopy} />
-                <p className="text-xs text-muted-foreground mt-2">Enable <code className="bg-muted px-1 rounded">chat.mcp.enabled</code> in VS Code settings.</p>
+}`} id="vscode-oauth" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Add to <code className="bg-muted px-1 rounded">.vscode/mcp.json</code>. Enable <code className="bg-muted px-1 rounded">chat.mcp.enabled</code> in settings.</p>
+              </Step>
+              <Separator />
+              <Step n={2} title="Option B: API key in URL">
+                <CopyBlock code={mcpKeyUrl} id="vscode-url" copiedId={copiedId} onCopy={onCopy} />
+                <a href={isKeySet ? vscodeDeepLink : undefined}>
+                  <Button disabled={!isKeySet} className="gap-2 w-full mt-3">
+                    <Download className="h-4 w-4" /> One-click Install in VS Code
+                  </Button>
+                </a>
               </Step>
             </>
           )}
 
           {toolId === "windsurf" && (
             <>
-              <Step n={1} title="Copy the MCP URL">
-                <CopyBlock code={mcpKeyUrl} id="windsurf-url" copiedId={copiedId} onCopy={onCopy} />
+              <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 p-4 text-sm text-green-800 dark:text-green-200">
+                <strong>✨ OAuth — No API key needed!</strong> Windsurf supports OAuth. Just use the base URL and you&apos;ll be prompted to sign in.
+              </div>
+              <Step n={1} title="Option A: OAuth (recommended)">
+                <CopyBlock code={`{
+  "mcpServers": {
+    "screenshotsmcp": {
+      "serverUrl": "${mcpBaseUrl}"
+    }
+  }
+}`} id="windsurf-oauth" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Add to <code className="bg-muted px-1 rounded">~/.codeium/windsurf/mcp_config.json</code>. Windsurf will open a browser to authorize on first use.</p>
               </Step>
-              <Step n={2} title="Add to ~/.codeium/windsurf/mcp_config.json">
+              <Separator />
+              <Step n={2} title="Option B: API key in URL">
                 <CopyBlock code={`{
   "mcpServers": {
     "screenshotsmcp": {
@@ -326,7 +342,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
   }
 }`} id="windsurf-config" copiedId={copiedId} onCopy={onCopy} />
               </Step>
-              <Step n={3} title="Reload MCP Servers in Windsurf">
+              <Step n={3} title="Reload MCP Servers">
                 <p className="text-sm text-muted-foreground">Click <strong>Reload MCP Servers</strong> in the Windsurf command palette or restart the IDE.</p>
               </Step>
             </>
@@ -334,36 +350,44 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
 
           {toolId === "claude" && (
             <>
-              <Step n={1} title="Copy the MCP URL">
-                <CopyBlock code={mcpKeyUrl} id="claude-url" copiedId={copiedId} onCopy={onCopy} />
-              </Step>
               <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 p-4 text-sm text-green-800 dark:text-green-200">
-                <strong>Pro/Max Plan?</strong> Just go to Settings → Integrations → Add Custom Integration → paste the URL above. No extra setup needed.
+                <strong>Pro/Max Plan?</strong> Go to Settings → Integrations → Add Custom Integration → paste the base URL below. OAuth will handle auth automatically.
               </div>
-              <Separator />
-              <Step n={2} title="Free Plan — Edit claude_desktop_config.json">
+              <Step n={1} title="Option A: OAuth via mcp-remote (recommended)">
                 <p className="text-xs text-muted-foreground mb-3">
-                  macOS: <code className="bg-muted px-1 rounded">~/Library/Application Support/Claude/</code><br />
-                  Windows: <code className="bg-muted px-1 rounded">%APPDATA%\Claude\</code>
+                  No API key needed! mcp-remote handles OAuth automatically.<br />
+                  macOS: <code className="bg-muted px-1 rounded">~/Library/Application Support/Claude/</code> · Windows: <code className="bg-muted px-1 rounded">%APPDATA%\Claude\</code>
                 </p>
                 <CopyBlock code={`{
   "mcpServers": {
     "screenshotsmcp": {
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "mcp-remote@latest", "${mcpKeyUrl}"]
+      "args": ["/c", "npx", "-y", "mcp-remote@latest", "${mcpBaseUrl}"]
     }
   }
-}`} id="claude-win" label="Windows" copiedId={copiedId} onCopy={onCopy} />
+}`} id="claude-oauth-win" label="Windows" copiedId={copiedId} onCopy={onCopy} />
                 <div className="mt-3">
                   <CopyBlock code={`{
+  "mcpServers": {
+    "screenshotsmcp": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote@latest", "${mcpBaseUrl}"]
+    }
+  }
+}`} id="claude-oauth-mac" label="macOS / Linux" copiedId={copiedId} onCopy={onCopy} />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">A browser window will open on first launch to sign in. The token is cached automatically.</p>
+              </Step>
+              <Separator />
+              <Step n={2} title="Option B: API key in URL (no browser popup)">
+                <CopyBlock code={`{
   "mcpServers": {
     "screenshotsmcp": {
       "command": "npx",
       "args": ["-y", "mcp-remote@latest", "${mcpKeyUrl}"]
     }
   }
-}`} id="claude-mac" label="macOS / Linux" copiedId={copiedId} onCopy={onCopy} />
-                </div>
+}`} id="claude-key" copiedId={copiedId} onCopy={onCopy} />
               </Step>
               <Step n={3} title="Restart Claude Desktop">
                 <p className="text-sm text-muted-foreground">Fully quit and relaunch Claude Desktop to load the new MCP server.</p>
@@ -373,15 +397,19 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
 
           {toolId === "claude-code" && (
             <>
-              <Step n={1} title="Run this command in your terminal">
+              <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 p-4 text-sm text-green-800 dark:text-green-200">
+                <strong>✨ OAuth — No API key needed!</strong> Claude Code supports OAuth. A browser will open to sign in on first use.
+              </div>
+              <Step n={1} title="Option A: OAuth (recommended)">
+                <CopyBlock code={`claude mcp add --transport http screenshotsmcp -s user ${mcpBaseUrl}`} id="claude-code-oauth" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Claude Code will open a browser to authorize on first use. No API key needed.</p>
+              </Step>
+              <Separator />
+              <Step n={2} title="Option B: API key in URL">
                 <CopyBlock code={`claude mcp add --transport http screenshotsmcp -s user ${mcpKeyUrl}`} id="claude-code-cmd" copiedId={copiedId} onCopy={onCopy} />
-                <p className="text-xs text-muted-foreground mt-2">The <code className="bg-muted px-1 rounded">-s user</code> flag makes it available globally, not just this project.</p>
               </Step>
-              <Step n={2} title="Verify the connection">
+              <Step n={3} title="Verify the connection">
                 <p className="text-sm text-muted-foreground">Type <code className="bg-muted px-1.5 py-0.5 rounded font-mono">/mcp</code> in Claude Code to see connected servers.</p>
-              </Step>
-              <Step n={3} title="Start using it">
-                <p className="text-sm text-muted-foreground">Ask Claude Code: &quot;Take a screenshot of my localhost:3000&quot;</p>
               </Step>
             </>
           )}
