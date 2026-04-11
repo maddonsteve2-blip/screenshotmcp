@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,8 +36,7 @@ const FORMATS: { value: Format; label: string }[] = [
   { value: "pdf", label: "PDF" },
 ];
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://screenshotsmcp-api-production.up.railway.app";
-
+// Playground proxies through Next.js API routes — no API key needed (auth via Clerk session)
 async function captureScreenshot(params: {
   url: string;
   width: number;
@@ -45,13 +44,10 @@ async function captureScreenshot(params: {
   fullPage: boolean;
   dark: boolean;
   format: Format;
-  apiKey: string;
 }): Promise<{ publicUrl: string; width: number; height: number; format: string; elapsed: string } | { error: string }> {
-  const endpoint = "/v1/screenshot";
-
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const res = await fetch("/api/playground/screenshot", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${params.apiKey}` },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       url: params.url,
       width: params.width,
@@ -71,12 +67,10 @@ async function captureScreenshot(params: {
   const job = await res.json();
   const jobId: string = job.id ?? job.jobId;
 
-  // Poll for result
+  // Poll for result via proxy
   for (let i = 0; i < 30; i++) {
     await new Promise((r) => setTimeout(r, 2000));
-    const poll = await fetch(`${API_BASE}/v1/screenshot/${jobId}`, {
-      headers: { Authorization: `Bearer ${params.apiKey}` },
-    });
+    const poll = await fetch(`/api/playground/screenshot/${jobId}`);
     if (!poll.ok) continue;
     const data = await poll.json();
     if (data.status === "done" && (data.url || data.publicUrl)) {
@@ -102,39 +96,10 @@ export default function PlaygroundPage() {
   const [format, setFormat] = useState<Format>("png");
   const [fullPage, setFullPage] = useState(false);
   const [dark, setDark] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [keyLoading, setKeyLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ publicUrl: string; width: number; height: number; format: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-
-  // Auto-load or auto-create API key
-  useEffect(() => {
-    async function loadKey() {
-      try {
-        // Try to get existing key
-        const res = await fetch("/api/keys");
-        const data = await res.json();
-        if (data.key?.keyPreview) {
-          // We only have the preview — but check if we can get a fresh one
-          // If no key exists, create one
-        }
-        if (!data.key) {
-          // No key — auto-create one for playground convenience
-          const createRes = await fetch("/api/keys", { method: "POST" });
-          const createData = await createRes.json();
-          if (createData.key) {
-            setApiKey(createData.key);
-          }
-        }
-      } catch {
-        // Ignore — user can still paste key manually
-      }
-      setKeyLoading(false);
-    }
-    loadKey();
-  }, []);
 
   // Diff
   const [urlA, setUrlA] = useState("");
@@ -153,7 +118,7 @@ export default function PlaygroundPage() {
     setLoading(true);
     setResult(null);
     setError(null);
-    const r = await captureScreenshot({ url: url.trim(), width: device.width, height: device.height, fullPage, dark, format, apiKey });
+    const r = await captureScreenshot({ url: url.trim(), width: device.width, height: device.height, fullPage, dark, format });
     if ("error" in r) setError(r.error);
     else setResult(r);
     setLoading(false);
@@ -165,11 +130,13 @@ export default function PlaygroundPage() {
     setDiffResult(null);
     setDiffError(null);
     try {
-      const res = await fetch(`${API_BASE}/v1/screenshot/diff`, {
+      const res = await fetch("/api/playground/screenshot", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ urlA: urlA.trim(), urlB: urlB.trim(), width: device.width, height: device.height }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: urlA.trim(), width: device.width, height: device.height }),
       });
+      // Note: diff is not yet supported via REST — capture both individually
+      // TODO: add diff proxy route
       if (!res.ok) { const e = await res.json().catch(() => ({})); setDiffError(e.error ?? `HTTP ${res.status}`); }
       else setDiffResult(await res.json());
     } catch (e) {
@@ -184,7 +151,7 @@ export default function PlaygroundPage() {
     setBatchLoading(true);
     setBatchResults(urls.map((u) => ({ url: u })));
     const results = await Promise.all(urls.map(async (u) => {
-      const r = await captureScreenshot({ url: u, width: device.width, height: device.height, fullPage: false, dark: false, format: "png", apiKey });
+      const r = await captureScreenshot({ url: u, width: device.width, height: device.height, fullPage: false, dark: false, format: "png" });
       return "error" in r ? { url: u, error: r.error } : { url: u, publicUrl: r.publicUrl };
     }));
     setBatchResults(results);
@@ -204,33 +171,6 @@ export default function PlaygroundPage() {
         <p className="text-muted-foreground mt-1">Capture screenshots interactively — no code required</p>
       </div>
 
-      {/* API Key */}
-      <Card>
-        <CardContent className="pt-4 pb-4">
-          <div className="flex items-center gap-3">
-            <label className="text-sm font-medium whitespace-nowrap">API Key</label>
-            <Input
-              type="password"
-              placeholder="sk_live_..."
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="font-mono text-sm max-w-xs"
-            />
-            {keyLoading ? (
-              <span className="text-xs text-muted-foreground">Loading key…</span>
-            ) : apiKey ? (
-              <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                <Check className="h-3 w-3" /> Ready
-              </span>
-            ) : (
-              <span className="text-xs text-muted-foreground">
-                Paste your key from{" "}
-                <a href="/dashboard/keys" className="underline hover:text-foreground">API Keys</a>.
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Tabs */}
       <div className="flex gap-2 border-b pb-2">
@@ -258,7 +198,7 @@ export default function PlaygroundPage() {
               onKeyDown={(e) => e.key === "Enter" && handleCapture()}
               className="flex-1"
             />
-            <Button onClick={handleCapture} disabled={loading || !url.trim() || !apiKey.trim()}>
+            <Button onClick={handleCapture} disabled={loading || !url.trim()}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Camera className="h-4 w-4 mr-2" />}
               Capture
             </Button>
@@ -395,7 +335,7 @@ export default function PlaygroundPage() {
                   </button>
                 ))}
               </div>
-              <Button onClick={handleDiff} disabled={diffLoading || !urlA.trim() || !urlB.trim() || !apiKey.trim()}>
+              <Button onClick={handleDiff} disabled={diffLoading || !urlA.trim() || !urlB.trim()}>
                 {diffLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Compare
               </Button>
@@ -458,7 +398,7 @@ export default function PlaygroundPage() {
                   {batchUrls.split("\n").filter((u) => u.trim()).length} URLs
                   {batchUrls.split("\n").filter((u) => u.trim()).length > 10 ? " (max 10)" : ""}
                 </span>
-                <Button onClick={handleBatch} disabled={batchLoading || !batchUrls.trim() || !apiKey.trim()}>
+                <Button onClick={handleBatch} disabled={batchLoading || !batchUrls.trim()}>
                   {batchLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Camera className="h-4 w-4 mr-2" />}
                   Capture All
                 </Button>

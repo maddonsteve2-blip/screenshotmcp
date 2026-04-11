@@ -9,13 +9,37 @@ export interface AuthRequest extends Request {
   userPlan?: string;
 }
 
+const INTERNAL_SECRET = process.env.INTERNAL_API_SECRET || "";
+
 export async function requireApiKey(
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
+  if (!authHeader) {
+    res.status(401).json({ error: "Missing API key" });
+    return;
+  }
+
+  // Internal auth from web server (playground proxy)
+  if (authHeader.startsWith("Internal ") && INTERNAL_SECRET) {
+    const token = authHeader.slice(9);
+    const [secret, userId] = token.split(":");
+    if (secret === INTERNAL_SECRET && userId) {
+      const [user] = await db.select({ id: users.id, plan: users.plan }).from(users).where(eq(users.id, userId));
+      if (user) {
+        req.userId = user.id;
+        req.userPlan = user.plan;
+        return next();
+      }
+    }
+    res.status(401).json({ error: "Invalid internal auth" });
+    return;
+  }
+
+  // Standard Bearer API key auth
+  if (!authHeader.startsWith("Bearer ")) {
     res.status(401).json({ error: "Missing API key" });
     return;
   }
