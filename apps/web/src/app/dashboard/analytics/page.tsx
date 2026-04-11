@@ -39,11 +39,12 @@ function BarChart({ data }: { data: { day: string; count: number }[] }) {
         const parts = d.day.split("-");
         const dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
         const label = dateObj.toLocaleDateString("en", { month: "short", day: "numeric" });
+        const pct = Math.max((d.count / max) * 100, d.count > 0 ? 6 : 0);
         return (
-          <div key={i} className="flex-1 flex flex-col items-center group relative">
+          <div key={i} className="flex-1 h-full flex flex-col justify-end items-center group relative">
             <div
               className="w-full bg-primary/60 rounded-t-sm group-hover:bg-primary transition-colors"
-              style={{ height: `${Math.max((d.count / max) * 100, d.count > 0 ? 6 : 0)}%` }}
+              style={{ height: `${pct}%` }}
             />
             <div className="absolute bottom-full mb-1.5 bg-popover border text-xs px-2 py-1 rounded-md shadow-md hidden group-hover:block whitespace-nowrap z-10 font-medium">
               {label}: <span className="text-primary">{d.count}</span>
