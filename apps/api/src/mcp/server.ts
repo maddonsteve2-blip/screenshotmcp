@@ -1643,8 +1643,7 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
       const limitErr = await checkLimit(auth.userId, auth.plan);
       if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
 
-      const { acquire, release } = browserPool();
-      const browser = await acquire();
+      const { browser, release } = await browserPool.acquire();
       try {
         const page = await browser.newPage({ viewport: { width: args.width, height: args.height } });
 
@@ -1869,8 +1868,7 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
       const auth = await validateKey(apiKey);
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
 
-      const { acquire, release } = browserPool();
-      const browser = await acquire();
+      const { browser, release } = await browserPool.acquire();
       try {
         const page = await browser.newPage({ viewport: { width: 1920, height: 800 } });
         await page.goto(args.url, { waitUntil: "networkidle", timeout: 30000 }).catch(() =>
@@ -1982,8 +1980,7 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
       const kimiKey = process.env.KIMI_API_KEY;
       if (!kimiKey) return { content: [{ type: "text", text: "Error: KIMI_API_KEY not configured on the server." }] };
 
-      const { acquire, release } = browserPool();
-      const browser = await acquire();
+      const { browser, release } = await browserPool.acquire();
       try {
         const page = await browser.newPage({ viewport: { width: args.width, height: args.height } });
         await page.goto(args.url, { waitUntil: "networkidle", timeout: 30000 }).catch(() =>
