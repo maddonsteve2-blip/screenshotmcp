@@ -9,10 +9,15 @@ interface OAuthResult {
 }
 
 // --- IDE Fingerprinting ---
-type DetectedIDE = "cursor" | "windsurf" | "vscode" | "unknown";
+type DetectedIDE = "cursor" | "windsurf" | "vscode" | "claude-code" | "terminal" | "unknown";
 
 function detectIDE(): DetectedIDE {
   const env = process.env;
+
+  // Claude Code — runs as a standalone terminal CLI
+  if (env.CLAUDE_CODE || env.CLAUDE_CODE_VERSION) return "claude-code";
+  const execPath = env._ || "";
+  if (/claude/i.test(execPath)) return "claude-code";
 
   // Cursor-specific markers
   if (env.CURSOR_LAYOUT || env.CURSOR_SPAWNED_BY_EXTENSION_ID) return "cursor";
@@ -38,13 +43,18 @@ function detectIDE(): DetectedIDE {
   if (/windsurf|codeium/i.test(editorPath)) return "windsurf";
   if (/code/i.test(editorPath)) return "vscode";
 
+  // No IDE detected — standalone terminal (iTerm2, Windows Terminal, etc.)
+  if (!env.VSCODE_PID && !env.VSCODE_IPC_HOOK) return "terminal";
+
   return "unknown";
 }
 
-const IDE_SCHEMES: Record<DetectedIDE, string> = {
+const IDE_SCHEMES: Record<DetectedIDE, string | null> = {
   cursor: "cursor://",
   windsurf: "windsurf://",
   vscode: "vscode://",
+  "claude-code": null,  // Terminal CLI — no protocol scheme
+  terminal: null,       // Standalone terminal — no protocol scheme
   unknown: "vscode://",
 };
 
@@ -52,6 +62,8 @@ const IDE_NAMES: Record<DetectedIDE, string> = {
   cursor: "Cursor",
   windsurf: "Windsurf",
   vscode: "VS Code",
+  "claude-code": "Claude Code",
+  terminal: "your terminal",
   unknown: "your editor",
 };
 
@@ -62,16 +74,26 @@ function refocusIDE(ide: DetectedIDE): void {
     const pid = process.env.VSCODE_PID;
 
     if (platform === "darwin") {
-      // macOS: use AppleScript to activate IDE by PID or app name
-      if (pid) {
+      if (ide === "claude-code" || ide === "terminal") {
+        // For terminal-based tools, refocus the terminal app itself
+        const termApp = process.env.TERM_PROGRAM || "";
+        const appTarget = /iterm/i.test(termApp) ? "iTerm2"
+          : /warp/i.test(termApp) ? "Warp"
+          : /ghostty/i.test(termApp) ? "Ghostty"
+          : /alacritty/i.test(termApp) ? "Alacritty"
+          : "Terminal";
+        execSync(`osascript -e 'tell application "${appTarget}" to activate'`, { stdio: "ignore" });
+      } else if (pid) {
         execSync(`osascript -e 'tell application "System Events" to set frontmost of the first process whose unix id is ${pid} to true'`, { stdio: "ignore" });
       } else {
         const appName = ide === "cursor" ? "Cursor" : ide === "windsurf" ? "Windsurf" : "Visual Studio Code";
         execSync(`osascript -e 'tell application "${appName}" to activate'`, { stdio: "ignore" });
       }
     } else if (platform === "win32") {
-      // Windows: use PowerShell to bring IDE window to foreground
-      if (pid) {
+      if (ide === "claude-code" || ide === "terminal") {
+        // Refocus Windows Terminal or PowerShell
+        execSync(`powershell -NoProfile -Command "(New-Object -ComObject WScript.Shell).AppActivate('Windows Terminal')"`, { stdio: "ignore" });
+      } else if (pid) {
         execSync(`powershell -NoProfile -Command "(New-Object -ComObject WScript.Shell).AppActivate((Get-Process -Id ${pid}).MainWindowTitle)"`, { stdio: "ignore" });
       } else {
         const procName = ide === "cursor" ? "Cursor" : ide === "windsurf" ? "Windsurf" : "Code";
@@ -89,6 +111,26 @@ function buildSuccessPage(ide: DetectedIDE): string {
   const scheme = IDE_SCHEMES[ide];
   const name = IDE_NAMES[ide];
 
+  // For terminal-based tools (Claude Code, standalone terminal) — no protocol handler
+  if (!scheme) {
+    return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>ScreenshotsMCP</title></head>
+<body style="font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #fafafa; color: #111;">
+  <div style="text-align: center; max-width: 400px; padding: 2rem;">
+    <div style="width: 64px; height: 64px; border-radius: 50%; background: #dcfce7; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+      <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.5rem;">Logged in to ScreenshotsMCP</h1>
+    <p style="color: #666; margin: 0 0 1rem; font-size: 0.95rem;">Authentication successful. You can close this tab.</p>
+    <p style="color: #999; font-size: 0.85rem;">Return to ${name} — it's already logged in.</p>
+  </div>
+  <script>setTimeout(function() { window.close(); }, 2000);</script>
+</body>
+</html>`;
+  }
+
+  // For IDEs with protocol handlers — show a return button + auto-redirect
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>ScreenshotsMCP</title></head>
@@ -105,11 +147,9 @@ function buildSuccessPage(ide: DetectedIDE): string {
     <p style="color: #999; font-size: 0.8rem; margin-top: 1rem;">Or close this tab and return to your terminal.</p>
   </div>
   <script>
-    // Auto-attempt the protocol redirect after 1 second (user-initiated feel from page load)
     setTimeout(function() {
       try { window.location.href = "${scheme}"; } catch(e) {}
     }, 1000);
-    // Try to close this tab after 3 seconds
     setTimeout(function() { window.close(); }, 3000);
   </script>
 </body>
