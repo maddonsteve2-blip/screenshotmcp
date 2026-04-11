@@ -14,6 +14,7 @@ import {
   uxReviewCommand, seoCommand, perfCommand, a11yCommand, breakpointsCommand,
 } from "./commands/review.js";
 import { installCommand } from "./commands/install.js";
+import { setupCommand } from "./commands/setup.js";
 
 const program = new Command();
 
@@ -65,5 +66,6 @@ program.addCommand(breakpointsCommand);
 
 // Setup
 program.addCommand(installCommand);
+program.addCommand(setupCommand);
 
 program.parse();
