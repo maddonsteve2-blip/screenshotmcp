@@ -101,8 +101,14 @@ screenshotsmcp inbox:check <inboxId>     # Read messages, extract OTP codes
 screenshotsmcp inbox:send <inboxId> --to user@example.com --subject "Test" --text "Hello"
 ```
 
-### MCP Client Auto-Configure
+### Setup & Install
 ```bash
+screenshotsmcp setup                     # Interactive: login + choose IDE + auto-configure (recommended)
+screenshotsmcp setup --client cursor     # Non-interactive: for AI agents, skips prompt
+screenshotsmcp setup --client windsurf
+screenshotsmcp setup --client vscode
+screenshotsmcp setup --client claude
+screenshotsmcp setup --client claude-code
 screenshotsmcp install cursor            # Writes ~/.cursor/mcp.json
 screenshotsmcp install vscode            # Writes .vscode/mcp.json
 screenshotsmcp install windsurf          # Writes ~/.codeium/windsurf/mcp_config.json
@@ -110,7 +116,20 @@ screenshotsmcp install claude            # Writes Claude Desktop config
 screenshotsmcp install claude-code       # Prints `claude mcp add` command
 ```
 
+### One-liner Install
+```bash
+# macOS/Linux
+curl -fsSL https://screenshotsmcp.com/install.sh | bash
+
+# Windows PowerShell
+irm https://screenshotsmcp.com/install.ps1 | iex
+
+# Or just use npx (no install needed)
+npx screenshotsmcp setup
+```
+
 ### Agent Tips
+- **AI agents: use `npx screenshotsmcp setup --client <ide>` to install non-interactively.**
 - **Use the CLI when you have terminal access** — it returns structured text output, no JSON-RPC overhead.
 - Every screenshot command returns a public CDN URL you can share or embed.
 - Browser sessions work the same as MCP: start with `browse`, get a sessionId, pass it to subsequent commands.
