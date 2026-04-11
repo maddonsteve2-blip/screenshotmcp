@@ -2,6 +2,7 @@ FROM node:20-slim
 
 RUN apt-get update && apt-get install -y \
   chromium \
+  ffmpeg \
   fonts-liberation \
   libappindicator3-1 \
   libasound2 \
@@ -53,6 +54,9 @@ COPY packages/types/package*.json ./packages/types/
 COPY apps/api/package*.json ./apps/api/
 
 RUN npm ci --include=dev
+
+# Install Playwright ffmpeg binary for video recording
+RUN npx playwright install ffmpeg
 
 COPY packages/db ./packages/db
 COPY packages/types ./packages/types
