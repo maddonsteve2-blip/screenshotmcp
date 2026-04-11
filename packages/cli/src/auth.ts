@@ -58,14 +58,30 @@ export async function oauthLogin(): Promise<OAuthResult> {
           // Save the key
           setApiKey(tokenData.access_token);
 
-          res.writeHead(200, { "Content-Type": "text/html" });
+          res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
           res.end(`
+            <!DOCTYPE html>
             <html>
+              <head><meta charset="utf-8"><title>ScreenshotMCP</title></head>
               <body style="font-family: system-ui; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #fafafa;">
                 <div style="text-align: center;">
-                  <h1 style="color: #16a34a;">✓ Logged in!</h1>
-                  <p>You can close this window and return to the terminal.</p>
+                  <h1 style="color: #16a34a;">Logged in to ScreenshotMCP</h1>
+                  <p>Redirecting back to your editor...</p>
+                  <p style="color: #888; font-size: 14px;">If nothing happens, you can close this tab.</p>
                 </div>
+                <script>
+                  // Try to redirect back to the IDE that initiated the login
+                  const schemes = ['cursor://', 'vscode://', 'windsurf://'];
+                  let redirected = false;
+                  for (const scheme of schemes) {
+                    try {
+                      const w = window.open(scheme, '_self');
+                      if (w) { redirected = true; break; }
+                    } catch(e) {}
+                  }
+                  // Auto-close tab after a short delay
+                  setTimeout(() => { window.close(); }, 2000);
+                </script>
               </body>
             </html>
           `);
