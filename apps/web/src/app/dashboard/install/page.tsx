@@ -65,6 +65,12 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
+    label: "CLI",
+    tools: [
+      { id: "cli", name: "CLI", subtitle: "npm install", icon: <Terminal className="h-5 w-5" />, badge: "NEW" },
+    ],
+  },
+  {
     label: "MCP",
     tools: [
       { id: "mcp-url", name: "MCP URL", subtitle: "For Custom Clients", icon: <Globe className="h-5 w-5" /> },
@@ -231,6 +237,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
     windsurf: { name: "Windsurf", icon: <Sparkles className="h-5 w-5" /> },
     claude: { name: "Claude Desktop", icon: <MessageSquare className="h-5 w-5" /> },
     "claude-code": { name: "Claude Code", icon: <Terminal className="h-5 w-5" /> },
+    cli: { name: "CLI", icon: <Terminal className="h-5 w-5" /> },
     "mcp-url": { name: "MCP URL", icon: <Globe className="h-5 w-5" /> },
     n8n: { name: "n8n & Others", icon: <Smartphone className="h-5 w-5" /> },
   };
@@ -410,6 +417,33 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
               </Step>
               <Step n={3} title="Verify the connection">
                 <p className="text-sm text-muted-foreground">Type <code className="bg-muted px-1.5 py-0.5 rounded font-mono">/mcp</code> in Claude Code to see connected servers.</p>
+              </Step>
+            </>
+          )}
+
+          {toolId === "cli" && (
+            <>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/20 p-4 text-sm text-blue-800 dark:text-blue-200">
+                <strong>Terminal tool</strong> — Use ScreenshotsMCP directly from the command line, or auto-configure any MCP client.
+              </div>
+              <Step n={1} title="Install and login">
+                <CopyBlock code={`npx screenshotsmcp login`} id="cli-login" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Opens your browser to authenticate via OAuth. No API key needed.</p>
+              </Step>
+              <Step n={2} title="Auto-configure your MCP client">
+                <CopyBlock code={`npx screenshotsmcp install cursor`} id="cli-install" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Supported: <code className="bg-muted px-1 rounded">cursor</code>, <code className="bg-muted px-1 rounded">vscode</code>, <code className="bg-muted px-1 rounded">windsurf</code>, <code className="bg-muted px-1 rounded">claude</code>, <code className="bg-muted px-1 rounded">claude-code</code></p>
+              </Step>
+              <Separator />
+              <Step n={3} title="Or use it standalone from the terminal">
+                <CopyBlock code={`screenshotsmcp screenshot https://example.com
+screenshotsmcp responsive https://example.com
+screenshotsmcp mobile https://example.com
+screenshotsmcp dark https://example.com
+screenshotsmcp review https://example.com
+screenshotsmcp perf https://example.com
+screenshotsmcp --help`} id="cli-commands" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Install globally with <code className="bg-muted px-1 rounded">npm install -g screenshotsmcp</code> for ongoing use.</p>
               </Step>
             </>
           )}

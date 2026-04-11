@@ -3,13 +3,36 @@ title: Quickstart
 description: Get ScreenshotsMCP running in your AI coding assistant in 60 seconds.
 ---
 
-## 1. Get Your API Key
+## Option A: CLI (Fastest)
+
+Run two commands in your terminal:
+
+```bash
+npx screenshotsmcp login
+npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
+```
+
+Done. Your AI assistant now has access to 46+ tools for screenshots, browser automation, and more.
+
+The CLI also works standalone from the terminal:
+
+```bash
+npx screenshotsmcp screenshot https://example.com
+npx screenshotsmcp responsive https://example.com
+npx screenshotsmcp review https://example.com
+```
+
+---
+
+## Option B: Manual Setup
+
+### 1. Get Your API Key
 
 Sign up at [screenshotsmcp.com](https://screenshotsmcp.com) and create an API key from your [dashboard](/dashboard/keys).
 
-## 2. Add to Your IDE
+### 2. Add to Your IDE
 
-### Cursor
+#### Cursor
 
 Add to your Cursor MCP settings (`~/.cursor/mcp.json`):
 
@@ -23,7 +46,7 @@ Add to your Cursor MCP settings (`~/.cursor/mcp.json`):
 }
 ```
 
-### Windsurf
+#### Windsurf
 
 Add to your Windsurf MCP config:
 
@@ -37,7 +60,7 @@ Add to your Windsurf MCP config:
 }
 ```
 
-### Claude Desktop
+#### Claude Desktop
 
 Add to `claude_desktop_config.json`:
 
@@ -51,7 +74,7 @@ Add to `claude_desktop_config.json`:
 }
 ```
 
-## 3. Start Using It
+### 3. Start Using It
 
 Ask your AI assistant:
 
@@ -66,4 +89,4 @@ That's it. Your AI can now see any website.
 - **[Browser Sessions](/docs/tools/browser-navigate)** — Navigate, click, fill forms interactively
 - **[Performance Metrics](/docs/tools/browser-perf-metrics)** — Measure Core Web Vitals
 - **[SEO Audit](/docs/tools/browser-seo-audit)** — Full SEO analysis in one call
-- **[All 28 Tools](/docs/installation)** — See every tool available
+- **[All 46+ Tools](/docs/installation)** — See every tool available

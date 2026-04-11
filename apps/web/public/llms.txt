@@ -10,6 +10,15 @@ Download the complete Agent Skill for all tools: https://screenshotsmcp.com/.ski
 
 ## Quick Start
 
+### Option A: CLI (fastest)
+
+```bash
+npx screenshotsmcp login
+npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
+```
+
+### Option B: Manual
+
 1. Get an API key at https://screenshotsmcp.com/dashboard/keys
 2. Add to your MCP config:
 
@@ -24,6 +33,31 @@ Download the complete Agent Skill for all tools: https://screenshotsmcp.com/.ski
 ```
 
 3. Ask your AI: "Take a screenshot of https://example.com"
+
+## CLI
+
+Install: `npm install -g screenshotsmcp`
+npm: https://www.npmjs.com/package/screenshotsmcp
+
+The CLI exposes all MCP tools as terminal commands:
+
+```
+screenshotsmcp login                              # OAuth login (opens browser)
+screenshotsmcp screenshot <url>                   # Take a screenshot
+screenshotsmcp responsive <url>                   # Desktop + tablet + mobile
+screenshotsmcp mobile <url>                       # iPhone 14 Pro (393×852)
+screenshotsmcp dark <url>                         # Dark mode emulated
+screenshotsmcp diff <urlA> <urlB>                 # Pixel diff two URLs
+screenshotsmcp review <url>                       # AI UX review
+screenshotsmcp perf <url>                         # Core Web Vitals
+screenshotsmcp seo <url>                          # SEO metadata
+screenshotsmcp a11y <url>                         # Accessibility tree
+screenshotsmcp browse <url>                       # Interactive browser session
+screenshotsmcp inbox:create                       # Disposable test email
+screenshotsmcp install <cursor|vscode|windsurf|claude|claude-code>  # Auto-configure MCP client
+```
+
+Run `screenshotsmcp --help` for all 38 commands.
 
 ## Server URL
 

@@ -18,9 +18,18 @@ Give your AI assistant eyes and hands for the web. This skill covers all 46+ too
 
 ## Setup
 
-You need a ScreenshotsMCP API key. Get one free at https://screenshotsmcp.com/dashboard/keys
+### Option A: CLI (fastest)
 
-Add to your MCP config:
+```bash
+npx screenshotsmcp login
+npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
+```
+
+The CLI handles authentication via OAuth (opens browser) and auto-configures your MCP client.
+
+### Option B: Manual
+
+Get an API key at https://screenshotsmcp.com/dashboard/keys and add to your MCP config:
 
 ```json
 {
@@ -31,6 +40,26 @@ Add to your MCP config:
   }
 }
 ```
+
+## CLI
+
+ScreenshotsMCP also has a CLI (`npm install -g screenshotsmcp`) that exposes all the same tools from the terminal:
+
+```bash
+screenshotsmcp screenshot https://example.com     # Take a screenshot
+screenshotsmcp responsive https://example.com      # Desktop + tablet + mobile
+screenshotsmcp mobile https://example.com          # iPhone 14 Pro viewport
+screenshotsmcp dark https://example.com            # Dark mode
+screenshotsmcp diff https://a.com https://b.com    # Pixel diff
+screenshotsmcp review https://example.com          # AI UX review
+screenshotsmcp perf https://example.com            # Core Web Vitals
+screenshotsmcp seo https://example.com             # SEO audit
+screenshotsmcp a11y https://example.com            # Accessibility tree
+screenshotsmcp browse https://example.com          # Interactive browser session
+screenshotsmcp inbox:create                         # Disposable test email
+```
+
+Run `screenshotsmcp --help` for all 38 commands.
 
 ## Tool Categories
 

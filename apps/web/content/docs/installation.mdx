@@ -3,9 +3,31 @@ title: Installation
 description: Configure ScreenshotsMCP for Cursor, Windsurf, Claude Desktop, VS Code, and any MCP-compatible client.
 ---
 
-## Supported Clients
+## CLI Install (Fastest)
 
-ScreenshotsMCP works with any client that supports the **Model Context Protocol (MCP)**. Here's how to configure each one.
+The quickest way to set up ScreenshotsMCP is with the CLI. Run these two commands in your terminal:
+
+```bash
+npx screenshotsmcp login
+npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
+```
+
+This will:
+1. Open your browser to authenticate via OAuth
+2. Auto-configure the MCP server in your chosen client
+
+You can also install it globally for ongoing use:
+
+```bash
+npm install -g screenshotsmcp
+screenshotsmcp --help
+```
+
+---
+
+## Manual Configuration
+
+ScreenshotsMCP works with any client that supports the **Model Context Protocol (MCP)**. Here's how to configure each one manually.
 
 ## Cursor
 
@@ -85,7 +107,7 @@ If you see a screenshot returned inline, you're all set.
 
 ## Available Tools
 
-Once connected, your AI assistant has access to **28 tools**:
+Once connected, your AI assistant has access to **46+ tools**:
 
 | Category | Tools |
 | --- | --- |
