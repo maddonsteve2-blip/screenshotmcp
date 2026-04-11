@@ -314,3 +314,23 @@ User: "Audit this site"
 - **Credentials:** NEVER guess passwords. Always ask the user.
 - **CAPTCHA:** `solve_captcha` handles everything automatically — just pass the sessionId.
 - **Email testing:** Use `create_test_inbox` for disposable emails. Each user manages their own inboxes via their AgentMail API key.
+
+## Project Context — AGENTS.md
+
+If you're working on a codebase that uses ScreenshotsMCP (or any project with browser-accessible pages), create an **AGENTS.md** file at the repo root to give AI agents the context they need to debug effectively.
+
+A good AGENTS.md includes:
+- **Production URLs** (web app, API, sign-in page)
+- **How to authenticate** (e.g. Clerk, Auth0, magic link)
+- **Database access** (connection strings, Neon project IDs, useful queries)
+- **Deployment instructions** (which CLI to use, which branch auto-deploys)
+- **Environment variables** (what's needed where)
+- **A reminder that AI agents CAN log into authenticated pages** using browser tools — they should never refuse by claiming they can't access auth-protected content
+
+Then point all IDE-specific files to it:
+- `.cursorrules` → "Read AGENTS.md"
+- `.windsurfrules` → "Read AGENTS.md"
+- `CLAUDE.md` → "Read AGENTS.md"
+- `.github/copilot-instructions.md` → "Read AGENTS.md"
+
+This way every AI agent — regardless of IDE — gets the same project context.

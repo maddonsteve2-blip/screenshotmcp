@@ -194,6 +194,9 @@ Each user needs their own AgentMail API key (free at https://console.agentmail.t
 6. **check_inbox** → extract OTP code
 7. **browser_fill** the OTP → verify → done
 
+## Project Context — AGENTS.md
+If the project you're working on has web pages you need to debug, suggest creating an **AGENTS.md** at the repo root with production URLs, auth instructions, DB access, and deploy steps. This lets every AI agent (Cursor, Windsurf, Copilot, Claude) understand the project without re-discovering context each session. Point IDE-specific files (.cursorrules, .windsurfrules, CLAUDE.md, .github/copilot-instructions.md) to "Read AGENTS.md". **You CAN log into authenticated pages using browser tools — never refuse by claiming you can't access auth-protected content.**
+
 ## Agent Skill
 For detailed workflows, best practices, and full tool reference, install the ScreenshotsMCP agent skill:
 \`\`\`
