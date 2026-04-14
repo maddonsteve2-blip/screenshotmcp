@@ -1,0 +1,88 @@
+{
+  "name": "screenshotsmcp",
+  "display_name": "ScreenshotsMCP",
+  "description": "Screenshot any URL, automate browsers, solve CAPTCHAs, create disposable email inboxes, audit performance and SEO — all via 46+ tools.",
+  "long_description": "Give your AI assistant eyes and hands for the web. ScreenshotsMCP provides 46+ tools across 8 categories: screenshots (13 tools), browser automation (20+ tools), CAPTCHA solving, disposable email, smart login, performance audits, SEO audits, and UX reviews. Available via MCP server for AI agents (Claude, Cursor, Windsurf) or CLI for terminal workflows.",
+  "version": "2.1",
+  "license": "MIT",
+  "author": {
+    "name": "stevejford",
+    "github": "stevejford",
+    "website": "https://screenshotsmcp.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stevejford/screenshotmcp-skill.git"
+  },
+  "homepage": "https://screenshotsmcp.com",
+  "documentation": "https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md",
+  "categories": [
+    "testing",
+    "automation",
+    "development",
+    "devops"
+  ],
+  "tags": [
+    "screenshots",
+    "browser-automation",
+    "captcha-solving",
+    "disposable-email",
+    "agentmail",
+    "testing",
+    "mcp",
+    "cli",
+    "performance",
+    "seo",
+    "ux-review",
+    "login-automation",
+    "playwright",
+    "visual-testing",
+    "responsive-design"
+  ],
+  "tools": {
+    "count": 46,
+    "categories": {
+      "screenshots": 13,
+      "browser_automation": 20,
+      "captcha": 1,
+      "email": 3,
+      "login": 2,
+      "performance": 2,
+      "seo": 1,
+      "ux": 1
+    }
+  },
+  "sdlc_phases": [
+    "testing",
+    "deployment",
+    "operations"
+  ],
+  "compatibility": {
+    "claude": true,
+    "cursor": true,
+    "windsurf": true,
+    "vscode": true,
+    "claude_code": true,
+    "any_mcp": true
+  },
+  "requires_api_key": true,
+  "api_key_url": "https://screenshotsmcp.com/dashboard/keys",
+  "installation": {
+    "mcp": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY",
+    "cli": "npm install -g screenshotsmcp",
+    "npx": "npx screenshotsmcp setup"
+  },
+  "pricing": {
+    "free_tier": "100 screenshots/month",
+    "paid_tiers": [
+      { "name": "Starter", "price": "$9/month", "limit": "2,000 screenshots/month" },
+      { "name": "Pro", "price": "$29/month", "limit": "10,000 screenshots/month" }
+    ]
+  },
+  "icon": "https://screenshotsmcp.com/icon.png",
+  "screenshots": [
+    "https://screenshotsmcp.com/screenshots/dashboard.png"
+  ],
+  "featured": true,
+  "quality_score": 95
+}
