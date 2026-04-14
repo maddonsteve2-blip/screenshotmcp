@@ -8,6 +8,11 @@ import { cn } from "@/lib/utils";
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-sans" });
 const sora = Sora({ subsets: ["latin"], variable: "--font-heading", weight: ["400", "600", "700", "800"] });
 
+function envValue(value?: string) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
@@ -39,10 +44,22 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const publishableKey = envValue(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+  const signInUrl = envValue(process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL) ?? "/sign-in";
+  const signUpUrl = envValue(process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL) ?? "/sign-up";
+  const signInFallbackRedirectUrl = envValue(process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL) ?? "/dashboard";
+  const signUpFallbackRedirectUrl = envValue(process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL) ?? "/dashboard";
+
   return (
     <html lang="en" suppressHydrationWarning className={cn("font-sans", outfit.variable, sora.variable)}>
       <body className={`${outfit.className} flex flex-col min-h-screen`}>
-        <ClerkProvider>
+        <ClerkProvider
+          publishableKey={publishableKey}
+          signInUrl={signInUrl}
+          signUpUrl={signUpUrl}
+          signInFallbackRedirectUrl={signInFallbackRedirectUrl}
+          signUpFallbackRedirectUrl={signUpFallbackRedirectUrl}
+        >
           <RootProvider>
             {children}
           </RootProvider>
