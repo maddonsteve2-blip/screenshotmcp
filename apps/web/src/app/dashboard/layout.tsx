@@ -7,9 +7,9 @@ import { Separator } from "@/components/ui/separator";
 const nav = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/playground", label: "Playground", icon: Play },
-  { href: "/dashboard/screenshots", label: "Screenshots", icon: Image },
-  { href: "/dashboard/recordings", label: "Recordings", icon: Video },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/dashboard/screenshots", label: "Captures", icon: Image },
+  { href: "/dashboard/recordings", label: "Replays", icon: Video },
+  { href: "/dashboard/analytics", label: "Usage", icon: BarChart3 },
   { href: "/dashboard/keys", label: "API Keys", icon: Key },
   { href: "/dashboard/install", label: "Install", icon: Download },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },

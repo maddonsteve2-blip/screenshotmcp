@@ -52,8 +52,8 @@ export default function ScreenshotsPage() {
   return (
     <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Screenshots</h1>
-        <p className="text-muted-foreground mt-1">Your recent screenshot history</p>
+        <h1 className="text-2xl font-bold">Captures</h1>
+        <p className="text-muted-foreground mt-1">Recent screenshot, PDF, and export artifacts from your browser workflows</p>
       </div>
 
       {loading ? (

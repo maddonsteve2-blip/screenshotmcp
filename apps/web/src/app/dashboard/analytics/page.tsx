@@ -204,8 +204,8 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Analytics</h1>
-          <p className="text-muted-foreground mt-1">Your screenshot usage at a glance</p>
+          <h1 className="text-2xl font-bold">Usage</h1>
+          <p className="text-muted-foreground mt-1">Volume, activity patterns, and output mix across your browser workflows</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

@@ -76,10 +76,10 @@ export default function RecordingsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Video className="h-6 w-6" />
-          Session Recordings
+          Replays
         </h1>
         <p className="text-muted-foreground mt-1">
-          Video recordings of browser automation sessions. Start recording by passing{" "}
+          Replayable video evidence from browser automation sessions. Start recording by passing{" "}
           <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">record_video: true</code>{" "}
           to <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">browser_navigate</code>.
         </p>
