@@ -9,11 +9,13 @@ import {
   browseCloseCommand, browseNavigateCommand, browseScrollCommand, browseKeyCommand,
   browseTextCommand, browseHtmlCommand,
 } from "./commands/browse.js";
+import { browserCommand } from "./commands/browser.js";
 import { inboxCreateCommand, inboxCheckCommand, inboxSendCommand } from "./commands/inbox.js";
 import {
-  uxReviewCommand, seoCommand, perfCommand, a11yCommand, breakpointsCommand,
+  uxReviewCommand, seoCommand, perfCommand, a11yCommand, ogPreviewCommand, breakpointsCommand,
 } from "./commands/review.js";
 import { installCommand } from "./commands/install.js";
+import { skillsCommand } from "./commands/skills.js";
 import { setupCommand } from "./commands/setup.js";
 
 const program = new Command();
@@ -41,6 +43,7 @@ program.addCommand(crossBrowserCommand);
 program.addCommand(batchCommand);
 
 // Browser sessions
+program.addCommand(browserCommand);
 program.addCommand(browseCommand);
 program.addCommand(browseClickCommand);
 program.addCommand(browseCloseCommand);
@@ -62,10 +65,12 @@ program.addCommand(uxReviewCommand);
 program.addCommand(seoCommand);
 program.addCommand(perfCommand);
 program.addCommand(a11yCommand);
+program.addCommand(ogPreviewCommand);
 program.addCommand(breakpointsCommand);
 
 // Setup
 program.addCommand(installCommand);
+program.addCommand(skillsCommand);
 program.addCommand(setupCommand);
 
 program.parse();

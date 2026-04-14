@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Get ScreenshotsMCP running in your AI coding assistant in 60 seconds.
+description: Get ScreenshotsMCP running fast so your AI can inspect, test, and verify websites with real browser evidence.
 ---
 
 ## Option A: CLI (Fastest)
@@ -12,7 +12,9 @@ npx screenshotsmcp login
 npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
-Done. Your AI assistant now has access to 46+ tools for screenshots, browser automation, and more.
+Done. Your AI assistant now has access to 46+ tools for screenshots, browser automation, audits, and evidence capture, and the CLI also syncs the managed core ScreenshotsMCP skill into `~/.agents/skills/screenshotsmcp`.
+
+Note: `screenshotsmcp skills ...` only manages the local core ScreenshotsMCP skill. To discover or install community skills such as Anthropic's `frontend-design`, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...`.
 
 The CLI also works standalone from the terminal:
 
@@ -20,7 +22,44 @@ The CLI also works standalone from the terminal:
 npx screenshotsmcp screenshot https://example.com
 npx screenshotsmcp responsive https://example.com
 npx screenshotsmcp review https://example.com
+npx screenshotsmcp browser evidence --label homepage-check
+npx screenshotsmcp browser open https://example.com
+npx screenshotsmcp skills sync
 ```
+
+Use remote execution first for public websites. When you need localhost access, private apps, VPN-only environments, or more realistic manual-browser behavior, switch to the managed local browser without installing an extension:
+
+```bash
+npx screenshotsmcp browser open https://example.com
+npx screenshotsmcp browser open https://example.com --record-video
+npx screenshotsmcp browser status
+npx screenshotsmcp browser goto https://example.org
+npx screenshotsmcp browser back
+npx screenshotsmcp browser forward
+npx screenshotsmcp browser click-at 320 480
+npx screenshotsmcp browser hover ".menu-trigger"
+npx screenshotsmcp browser wait-for ".results-loaded" --timeout 8000
+npx screenshotsmcp browser select "select[name=country]" "Australia"
+npx screenshotsmcp browser viewport 393 852
+npx screenshotsmcp browser screenshot
+npx screenshotsmcp browser text
+npx screenshotsmcp browser console --level error
+npx screenshotsmcp browser network-errors
+npx screenshotsmcp browser network-requests --resource-type fetch --min-duration 200
+npx screenshotsmcp browser evidence --label checkout-bug
+npx screenshotsmcp browser close --evidence --label checkout-bug
+npx screenshotsmcp browser cookies get
+npx screenshotsmcp browser storage getAll --type localStorage
+npx screenshotsmcp browser eval "document.title"
+npx screenshotsmcp browser a11y --max-depth 6
+npx screenshotsmcp browser perf
+npx screenshotsmcp browser seo
+npx screenshotsmcp browser close
+```
+
+This opens an installed local browser in a fresh dedicated ScreenshotsMCP profile after an explicit approval prompt, keeps console logs and network activity flowing into the tracked session while that browser stays open, and lets the CLI reconnect for local actions like history navigation, coordinate clicks, hover states, wait conditions, dropdown selection, viewport changes, screenshots, text extraction, cookies/storage inspection, script evaluation, accessibility inspection, performance metrics, SEO auditing, and timestamped evidence bundle export. Use `browser evidence` for a live proof snapshot, or `browser close --evidence` when you want the finalized local `.webm` included in the same bundle after recording finishes.
+
+The goal is not just capture. It is verification: run the workflow, inspect what happened, and keep the proof with the result.
 
 ---
 
@@ -28,7 +67,7 @@ npx screenshotsmcp review https://example.com
 
 ### 1. Get Your API Key
 
-Sign up at [screenshotsmcp.com](https://screenshotsmcp.com) and create an API key from your [dashboard](/dashboard/keys).
+Sign up at [screenshotmcp.com](https://www.screenshotmcp.com) and create an API key from your [dashboard](/dashboard/keys).
 
 ### 2. Add to Your IDE
 
@@ -79,14 +118,54 @@ Add to `claude_desktop_config.json`:
 Ask your AI assistant:
 
 ```
-Take a screenshot of https://stripe.com
+Open https://stripe.com, inspect the page, and tell me what you see
 ```
 
-That's it. Your AI can now see any website.
+Or ask for a more evidence-heavy workflow:
+
+```
+Test my checkout flow and capture proof if anything fails
+```
+
+That's it. Your AI can now see websites, run browser workflows, and return evidence instead of guesses.
+
+---
+
+## Option C: Chrome Extension Preview
+
+If you want ScreenshotsMCP directly in Chrome, the monorepo includes an unpacked extension preview in `packages/chrome-extension`.
+
+### What it does
+
+- **Public URLs** use the same ScreenshotsMCP Playwright-backed MCP path as the CLI when an API key is configured.
+- **Localhost and private pages** stay local-first so you can still capture dev servers and pages the cloud browser cannot access.
+- **Page tools** in the popup can read visible text and DOM HTML for the active tab.
+- **Cloud save** reuses existing cloud-backed captures when available and can still upload local-only captures from the viewer.
+
+### Load it in Chrome
+
+1. Open `chrome://extensions`
+2. Enable **Developer mode**
+3. Click **Load unpacked**
+4. Select `packages/chrome-extension`
+5. Pin the extension to your toolbar
+
+### Authenticate it
+
+1. Open the extension popup
+2. Open **Settings**
+3. Paste your existing `sk_live_...` key from [Dashboard → Keys](/dashboard/keys)
+4. Save — the extension validates the key before storing it
+
+### Use it
+
+1. Open a public page to use the platform-backed Playwright capture path, or open `localhost` to use the local fallback path
+2. Click **Screenshot** or **Full Page Screenshot**
+3. Use **Read Text** or **Read DOM** to inspect the current page
 
 ## What's Next?
 
-- **[Browser Sessions](/docs/tools/browser-navigate)** — Navigate, click, fill forms interactively
+- **[Browser Sessions](/docs/tools/browser-navigate)** — Navigate, click, fill forms, and verify multi-step flows
 - **[Performance Metrics](/docs/tools/browser-perf-metrics)** — Measure Core Web Vitals
-- **[SEO Audit](/docs/tools/browser-seo-audit)** — Full SEO analysis in one call
-- **[All 46+ Tools](/docs/installation)** — See every tool available
+- **[SEO Audit](/docs/tools/browser-seo-audit)** — Review search-facing issues with findings
+- **[All 46+ Tools](/docs/installation)** — See every tool and setup path available

@@ -1,0 +1,11 @@
+export const EXTENSION_DISPLAY_NAME = "ScreenshotsMCP";
+export const MCP_PROVIDER_ID = "screenshotsmcp.provider";
+export const OUTPUT_CHANNEL_NAME = "ScreenshotsMCP";
+export const SECRET_API_KEY = "screenshotsmcp.apiKey";
+export const CONFIG_NAMESPACE = "screenshotsmcp";
+export const SIDEBAR_CONTAINER_ID = "screenshotsmcp";
+export const SIDEBAR_VIEW_ID = "screenshotsmcp.sidebar";
+export const DEFAULT_API_URL = "https://screenshotsmcp-api-production.up.railway.app";
+export const DEFAULT_DASHBOARD_URL = "https://www.screenshotmcp.com/dashboard";
+export const DEFAULT_KEYS_URL = "https://www.screenshotmcp.com/dashboard/keys";
+export const WORKSPACE_MCP_PATH = ".vscode/mcp.json";

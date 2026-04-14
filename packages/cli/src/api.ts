@@ -1,4 +1,4 @@
-import { getApiKey, getApiUrl } from "./config.js";
+import { getApiKey, getApiUrl, syncApiKeyFromEditorConfigs } from "./config.js";
 
 interface McpResponse {
   result?: {
@@ -13,6 +13,16 @@ export async function callTool(toolName: string, args: Record<string, unknown> =
   if (!apiKey) {
     throw new Error("Not logged in. Run `screenshotsmcp login` first.");
   }
+
+  return callToolWithKey(toolName, args, apiKey, true);
+}
+
+async function callToolWithKey(
+  toolName: string,
+  args: Record<string, unknown>,
+  apiKey: string,
+  allowEditorSyncRetry: boolean,
+): Promise<McpResponse> {
 
   const apiUrl = getApiUrl();
   const url = `${apiUrl}/mcp`;
@@ -39,6 +49,12 @@ export async function callTool(toolName: string, args: Record<string, unknown> =
 
   if (!initRes.ok) {
     const text = await initRes.text();
+    if (allowEditorSyncRetry && isInvalidApiKeyResponse(initRes.status, text)) {
+      const syncedKey = syncApiKeyFromEditorConfigs(apiKey);
+      if (syncedKey && syncedKey !== apiKey) {
+        return callToolWithKey(toolName, args, syncedKey, false);
+      }
+    }
     throw new Error(`API error (${initRes.status}): ${text}`);
   }
 
@@ -67,11 +83,37 @@ export async function callTool(toolName: string, args: Record<string, unknown> =
 
   if (!toolRes.ok) {
     const text = await toolRes.text();
+    if (allowEditorSyncRetry && isInvalidApiKeyResponse(toolRes.status, text)) {
+      const syncedKey = syncApiKeyFromEditorConfigs(apiKey);
+      if (syncedKey && syncedKey !== apiKey) {
+        return callToolWithKey(toolName, args, syncedKey, false);
+      }
+    }
     throw new Error(`Tool call failed (${toolRes.status}): ${text}`);
   }
 
   const toolBody = await toolRes.text();
-  return parseSseResponse(toolBody);
+  const parsed = parseSseResponse(toolBody);
+  if (allowEditorSyncRetry && hasInvalidApiKeyPayload(parsed)) {
+    const syncedKey = syncApiKeyFromEditorConfigs(apiKey);
+    if (syncedKey && syncedKey !== apiKey) {
+      return callToolWithKey(toolName, args, syncedKey, false);
+    }
+  }
+  return parsed;
+}
+
+function isInvalidApiKeyResponse(status: number, body: string): boolean {
+  return status === 401 || /invalid or revoked api key/i.test(body);
+}
+
+function hasInvalidApiKeyPayload(response: McpResponse): boolean {
+  if (response.error?.message && /invalid or revoked api key/i.test(response.error.message)) {
+    return true;
+  }
+
+  const content = response.result?.content ?? [];
+  return content.some((item) => item.type === "text" && /invalid or revoked api key/i.test(item.text ?? ""));
 }
 
 function parseSseResponse(body: string): McpResponse {

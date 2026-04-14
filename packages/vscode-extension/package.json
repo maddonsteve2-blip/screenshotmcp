@@ -1,0 +1,159 @@
+{
+  "name": "screenshotsmcp-vscode",
+  "displayName": "ScreenshotsMCP",
+  "description": "VS Code extension for ScreenshotsMCP: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
+  "version": "0.0.13",
+  "publisher": "ScreenshotMCP",
+  "license": "SEE LICENSE IN LICENSE",
+  "private": false,
+  "preview": true,
+  "pricing": "Free",
+  "icon": "images/icon.png",
+  "homepage": "https://www.screenshotmcp.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stevejford/screenshotmcp.git",
+    "directory": "packages/vscode-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/stevejford/screenshotmcp/issues"
+  },
+  "markdown": "github",
+  "files": [
+    "dist/**",
+    "images/**",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "package.json"
+  ],
+  "engines": {
+    "vscode": "^1.105.0"
+  },
+  "categories": [
+    "Testing",
+    "Other"
+  ],
+  "keywords": [
+    "screenshots",
+    "mcp",
+    "browser",
+    "automation",
+    "testing",
+    "playwright",
+    "seo",
+    "accessibility"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onUri"
+  ],
+  "main": "./dist/extension.js",
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "vscode:prepublish": "npm run build",
+    "package:vsix": "npx @vscode/vsce package --no-dependencies",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test test/**/*.test.ts"
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "screenshotsmcp",
+          "title": "ScreenshotsMCP",
+          "icon": "images/camera.svg"
+        }
+      ]
+    },
+    "views": {
+      "screenshotsmcp": [
+        {
+          "id": "screenshotsmcp.sidebar",
+          "name": "Home",
+          "icon": "images/icon.png"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "screenshotsmcp.signIn",
+        "title": "ScreenshotsMCP: Sign In"
+      },
+      {
+        "command": "screenshotsmcp.signOut",
+        "title": "ScreenshotsMCP: Sign Out"
+      },
+      {
+        "command": "screenshotsmcp.checkStatus",
+        "title": "ScreenshotsMCP: Check Status"
+      },
+      {
+        "command": "screenshotsmcp.installMcpServer",
+        "title": "ScreenshotsMCP: Configure Editor Integration"
+      },
+      {
+        "command": "screenshotsmcp.syncCoreSkill",
+        "title": "ScreenshotsMCP: Sync Core Skill"
+      },
+      {
+        "command": "screenshotsmcp.browseSkills",
+        "title": "ScreenshotsMCP: Browse Community Skills"
+      },
+      {
+        "command": "screenshotsmcp.installSkill",
+        "title": "ScreenshotsMCP: Install Skill"
+      },
+      {
+        "command": "screenshotsmcp.takeScreenshot",
+        "title": "ScreenshotsMCP: Take Screenshot"
+      },
+      {
+        "command": "screenshotsmcp.openTimeline",
+        "title": "ScreenshotsMCP: Open Timeline"
+      },
+      {
+        "command": "screenshotsmcp.openDashboard",
+        "title": "ScreenshotsMCP: Open Dashboard"
+      },
+      {
+        "command": "screenshotsmcp.showOutput",
+        "title": "ScreenshotsMCP: Show Output"
+      }
+    ],
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "screenshotsmcp.provider",
+        "label": "ScreenshotsMCP"
+      }
+    ],
+    "configuration": {
+      "title": "ScreenshotsMCP",
+      "properties": {
+        "screenshotsmcp.apiUrl": {
+          "type": "string",
+          "default": "https://screenshotsmcp-api-production.up.railway.app",
+          "description": "Base API URL for ScreenshotsMCP."
+        },
+        "screenshotsmcp.dashboardUrl": {
+          "type": "string",
+          "default": "https://www.screenshotmcp.com/dashboard",
+          "description": "Dashboard URL opened by the extension."
+        },
+        "screenshotsmcp.keysUrl": {
+          "type": "string",
+          "default": "https://www.screenshotmcp.com/dashboard/keys",
+          "description": "URL used to retrieve ScreenshotsMCP API keys."
+        }
+      }
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/vscode": "^1.105.0",
+    "esbuild": "^0.24.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

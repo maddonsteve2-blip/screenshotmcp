@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Configure ScreenshotsMCP for Cursor, Windsurf, Claude Desktop, VS Code, and any MCP-compatible client.
+description: Configure ScreenshotsMCP so your AI can inspect, test, and verify websites with real browser execution and proof.
 ---
 
 ## CLI Install (Fastest)
@@ -15,6 +15,11 @@ npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
 This will:
 1. Open your browser to authenticate via OAuth
 2. Auto-configure the MCP server in your chosen client
+3. Install or repair the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp`
+
+Use this path when you want the fastest way to get browser truth into your IDE, CLI, or MCP workflow.
+
+`screenshotsmcp skills ...` only manages that local core ScreenshotsMCP skill. To discover or install community skills from the wider agent ecosystem, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...`.
 
 You can also install it globally for ongoing use:
 
@@ -22,6 +27,58 @@ You can also install it globally for ongoing use:
 npm install -g screenshotsmcp
 screenshotsmcp --help
 ```
+
+For extension-free local browser workflows, you can also launch an installed browser in a dedicated ScreenshotsMCP profile:
+
+```bash
+screenshotsmcp browser open https://example.com
+screenshotsmcp browser open https://example.com --record-video
+screenshotsmcp browser status
+screenshotsmcp browser goto https://example.org
+screenshotsmcp browser back
+screenshotsmcp browser forward
+screenshotsmcp browser click-at 320 480
+screenshotsmcp browser hover ".menu-trigger"
+screenshotsmcp browser wait-for ".results-loaded" --timeout 8000
+screenshotsmcp browser select "select[name=country]" "Australia"
+screenshotsmcp browser viewport 393 852
+screenshotsmcp browser screenshot
+screenshotsmcp browser console --level error
+screenshotsmcp browser network-errors
+screenshotsmcp browser network-requests --resource-type fetch --min-duration 200
+screenshotsmcp browser evidence --label checkout-bug
+screenshotsmcp browser close --evidence --label checkout-bug
+screenshotsmcp browser cookies get
+screenshotsmcp browser storage getAll --type localStorage
+screenshotsmcp browser eval "document.title"
+screenshotsmcp browser a11y --max-depth 6
+screenshotsmcp browser perf
+screenshotsmcp browser seo
+screenshotsmcp browser close
+```
+
+The CLI explains why local access is needed, asks for explicit approval before it opens the browser, continuously captures console logs and network activity while that managed browser stays open, and then reconnects to that tracked session for follow-up local actions including history navigation, coordinate clicks, hover states, wait conditions, dropdown selection, viewport changes, cookies/storage inspection, script evaluation, accessibility inspection, performance metrics, SEO auditing, and timestamped evidence bundle export. Use `browser evidence` for a live proof snapshot, or `browser close --evidence` when you want the finalized local `.webm` included in the same bundle after recording finishes.
+
+Use remote browser workflows for public sites. Escalate to the managed local browser when the work requires `localhost`, intranet access, VPN-only apps, stronger realism, or explicit human approval.
+
+---
+
+## VS Code Extension Preview
+
+A native ScreenshotsMCP VS Code extension is now being developed in the monorepo for a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, API key fallback, command palette actions, output logs, a live activity timeline panel, and native MCP registration.
+
+Current preview commands include:
+
+- `ScreenshotsMCP: Sign In`
+- `ScreenshotsMCP: Check Status`
+- `ScreenshotsMCP: Take Screenshot`
+- `ScreenshotsMCP: Open Timeline`
+- `ScreenshotsMCP: Configure Editor Integration`
+- `ScreenshotsMCP: Sync Core Skill`
+
+The sidebar also surfaces quick actions and recent activity directly inside VS Code, and the extension opens the browser sign-in flow automatically when no credentials are stored. After sign-in, the extension also configures the matching MCP integration automatically when needed and repairs the managed core skill in `~/.agents/skills/screenshotsmcp`.
+
+Until the Marketplace release is ready, install the preview VSIX and sign in once to let the extension configure the editor automatically. If you need to repair the setup later, use `ScreenshotsMCP: Configure Editor Integration` for the MCP connection or `ScreenshotsMCP: Sync Core Skill` for the managed local skill.
 
 ---
 
@@ -100,10 +157,16 @@ It supports **Streamable HTTP transport** — compatible with all MCP clients th
 After configuring, ask your AI assistant:
 
 ```
-Take a screenshot of https://example.com
+Open https://example.com, inspect the page, and tell me what you see
 ```
 
-If you see a screenshot returned inline, you're all set.
+Then try a verification-oriented task:
+
+```
+Test my sign-in flow and capture proof if anything fails
+```
+
+If you get browser output and evidence-rich results back, you're all set.
 
 ## Available Tools
 

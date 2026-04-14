@@ -11,7 +11,6 @@ export default function SettingsPage() {
   const [agentmailKey, setAgentmailKey] = useState("");
   const [maskedKey, setMaskedKey] = useState<string | null>(null);
   const [hasKey, setHasKey] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showKey, setShowKey] = useState(false);
@@ -28,9 +27,8 @@ export default function SettingsPage() {
         setHasKey(settings.hasAgentmailKey ?? false);
         setMaskedKey(settings.agentmailApiKey ?? null);
         setInboxes(inboxData.inboxes ?? []);
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => undefined);
   }, []);
 
   async function saveKey() {

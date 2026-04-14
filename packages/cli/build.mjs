@@ -14,7 +14,19 @@ await esbuild.build({
       "const require = createRequire(import.meta.url);",
     ].join("\n"),
   },
-  external: [],
+  external: ["playwright"],
+  minify: false,
+  sourcemap: false,
+});
+
+await esbuild.build({
+  entryPoints: ["src/local-browser-daemon.ts"],
+  bundle: true,
+  platform: "node",
+  target: "node20",
+  format: "esm",
+  outfile: "dist/local-browser-daemon.js",
+  external: ["playwright"],
   minify: false,
   sourcemap: false,
 });

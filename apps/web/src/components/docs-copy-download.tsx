@@ -3,11 +3,10 @@
 import { useState } from "react";
 
 interface DocsCopyDownloadProps {
-  title: string;
   slug: string;
 }
 
-export function DocsCopyDownload({ title, slug }: DocsCopyDownloadProps) {
+export function DocsCopyDownload({ slug }: DocsCopyDownloadProps) {
   const [copied, setCopied] = useState(false);
 
   const getMarkdownUrl = () => {

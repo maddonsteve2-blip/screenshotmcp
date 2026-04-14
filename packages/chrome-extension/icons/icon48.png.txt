@@ -1,0 +1,2 @@
+Replace this with a real 48x48 PNG icon.
+Open ../generate-icons.html in Chrome to create one.

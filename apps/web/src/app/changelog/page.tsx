@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Camera } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 type Entry = {
   date: string;

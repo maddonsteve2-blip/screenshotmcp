@@ -1,6 +1,6 @@
 {
   "name": "screenshotsmcp",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "CLI for ScreenshotsMCP — take screenshots, record sessions, audit sites from the terminal",
   "type": "module",
   "bin": {
@@ -15,14 +15,32 @@
     "url": "https://github.com/stevejford/screebshotmcp.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://screenshotsmcp.com",
+  "homepage": "https://www.screenshotmcp.com",
   "scripts": {
     "build": "node build.mjs",
     "prepublishOnly": "node build.mjs"
   },
-  "keywords": ["screenshots", "mcp", "cli", "browser", "automation", "playwright", "screenshot", "web", "testing", "audit", "seo", "accessibility", "performance"],
+  "keywords": [
+    "screenshots",
+    "mcp",
+    "cli",
+    "browser",
+    "automation",
+    "playwright",
+    "screenshot",
+    "web",
+    "testing",
+    "audit",
+    "seo",
+    "accessibility",
+    "performance"
+  ],
   "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.59.1"
+  },
   "devDependencies": {
+    "@screenshotsmcp/types": "*",
     "commander": "^12.1.0",
     "chalk": "^5.3.0",
     "ora": "^8.1.0",

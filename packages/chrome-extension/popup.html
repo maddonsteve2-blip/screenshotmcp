@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScreenshotsMCP</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+          <circle cx="12" cy="13" r="3"/>
+        </svg>
+        <span class="title">ScreenshotsMCP</span>
+      </div>
+      <div class="header-right">
+        <span class="screenshot-count" id="screenshotCount" title="Screenshots saved">0</span>
+        <button class="icon-btn" id="settingsBtn" title="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="tab-info" id="tabInfo">
+      <div class="tab-label">
+        <span class="dot-live"></span>
+        Active Tab
+      </div>
+      <span class="tab-url" id="tabUrl">Detecting...</span>
+      <span class="tab-title" id="tabTitle"></span>
+    </div>
+
+    <div class="navigate-section">
+      <div class="history-header">
+        <span class="history-label">Navigate</span>
+      </div>
+      <div class="navigate-actions">
+        <input type="text" id="navigateUrl" class="setting-input navigate-input" placeholder="Enter a URL like google.com" />
+        <button class="btn btn-accent btn-inline navigate-go" id="navigateGo">Go</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="captureVisible">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        </svg>
+        Screenshot
+      </button>
+      <button class="btn btn-accent" id="captureFullPage">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <line x1="3" y1="9" x2="21" y2="9"/>
+          <line x1="3" y1="15" x2="21" y2="15"/>
+        </svg>
+        Full Page Screenshot
+      </button>
+    </div>
+
+    <div class="shortcut-hint">
+      <span><kbd>Alt+Shift+S</kbd> Full page screenshot</span>
+      <span><kbd>Alt+Shift+V</kbd> Screenshot</span>
+    </div>
+
+    <div class="inspect-section">
+      <div class="history-header">
+        <span class="history-label">Page tools</span>
+      </div>
+      <div class="inspect-actions">
+        <button class="btn btn-primary btn-inline" id="inspectText">Read Text</button>
+        <button class="btn btn-primary btn-inline" id="inspectHtml">Read DOM</button>
+      </div>
+      <div class="inspect-panel" id="inspectPanel" style="display:none;">
+        <div class="inspect-panel-header">
+          <span class="inspect-panel-title" id="inspectTitle">Page output</span>
+          <button class="history-clear" id="inspectCopy">Copy</button>
+        </div>
+        <div class="inspect-meta" id="inspectMeta"></div>
+        <pre class="inspect-output" id="inspectOutput"></pre>
+      </div>
+    </div>
+
+    <!-- Recent Screenshots -->
+    <div class="history-section">
+      <div class="history-header">
+        <span class="history-label">Recent</span>
+        <button class="history-clear" id="clearHistory" title="Clear all">Clear</button>
+      </div>
+      <div class="history-grid" id="historyGrid">
+        <div class="history-empty" id="historyEmpty">No screenshots yet</div>
+      </div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel" style="display:none;">
+      <div class="settings-header">
+        <span>Settings</span>
+        <button class="icon-btn" id="settingsClose">&times;</button>
+      </div>
+      <div class="settings-body">
+        <div class="setting-card">
+          <div class="setting-card-header">
+            <span class="setting-card-title">ScreenshotsMCP account</span>
+            <span class="setting-card-badge" id="authBadge">Manual</span>
+          </div>
+          <p class="setting-copy">Sign in with your existing ScreenshotsMCP account. The extension will keep using the same API key unless you choose to replace it.</p>
+          <div class="auth-status" id="authStatus">No saved API key yet.</div>
+          <div class="settings-actions-row">
+            <button class="btn btn-accent btn-inline" id="signInBtn">Sign in</button>
+            <button class="btn btn-primary btn-inline" id="syncAccountBtn">Sync from account</button>
+          </div>
+          <div class="settings-actions-row settings-actions-row-secondary">
+            <button class="btn btn-primary btn-inline" id="openKeysBtn">Open key page</button>
+            <button class="btn btn-primary btn-inline" id="clearSavedKeyBtn">Clear saved key</button>
+          </div>
+          <p class="setting-note" id="authNote">If you already have an active key, paste that same key once below to keep using it here too.</p>
+        </div>
+
+        <div class="setting-card">
+          <div class="setting-card-title">Preferences</div>
+          <label class="setting-row">
+            <span>Auto-open viewer after capture</span>
+            <input type="checkbox" id="settingAutoOpen" checked />
+          </label>
+        </div>
+
+        <div class="setting-card">
+          <div class="setting-card-title">API key</div>
+          <p class="setting-copy">Paste your existing ScreenshotsMCP API key if you want this extension to use the exact same key as VS Code or CLI.</p>
+          <input type="text" id="settingApiKey" placeholder="Paste existing sk_live_..." class="setting-input setting-input-full" />
+          <button class="btn btn-primary btn-save" id="settingSave">Save preferences</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

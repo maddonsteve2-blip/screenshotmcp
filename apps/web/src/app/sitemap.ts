@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { source } from '@/lib/source';
 
-const BASE_URL = 'https://web-phi-eight-56.vercel.app';
+const BASE_URL = 'https://www.screenshotmcp.com';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages = source.getPages().map((page) => ({

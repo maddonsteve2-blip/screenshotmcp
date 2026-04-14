@@ -9,7 +9,11 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
+    "lint:quiet": "npm --workspace @screenshotsmcp/web run lint -- --quiet",
+    "test": "npm --prefix packages/vscode-extension run test",
+    "test:chrome-extension:e2e": "node packages/chrome-extension/e2e/smoke.mjs",
     "typecheck": "turbo typecheck",
+    "verify:quiet": "npm run typecheck && npm run build && npm run lint:quiet && npm test",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate"
   },

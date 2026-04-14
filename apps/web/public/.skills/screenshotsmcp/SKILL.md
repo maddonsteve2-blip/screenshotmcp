@@ -1,20 +1,20 @@
 ---
 name: screenshotsmcp
 description: >
-  Screenshot any URL, automate browsers, solve CAPTCHAs, create disposable email inboxes, audit performance and SEO, and log into websites — all via ScreenshotsMCP tools.
+  Inspect, test, and verify websites with screenshots, browser workflows, audits, evidence capture, CAPTCHA solving, disposable email inboxes, and login tooling — all via ScreenshotsMCP tools.
   Use this skill when the user asks you to take screenshots, test websites, check responsive layouts, audit SEO or performance, solve CAPTCHAs, create test email inboxes, automate sign-ups, or interact with web pages.
 license: MIT
 compatibility: Requires ScreenshotsMCP MCP server connected. Works with any MCP-compatible agent.
 metadata:
   author: screenshotsmcp
-  version: "2.0"
-  website: https://screenshotsmcp.com
+  version: "2.1.0"
+  website: https://www.screenshotmcp.com
   api: https://screenshotsmcp-api-production.up.railway.app
 ---
 
 # ScreenshotsMCP Agent Skill
 
-Give your AI assistant eyes and hands for the web. This skill covers all 46+ tools in the ScreenshotsMCP MCP server.
+Give your AI assistant browser truth. This skill covers all 46+ tools in the ScreenshotsMCP MCP server.
 
 ## Setup
 
@@ -25,11 +25,32 @@ npx screenshotsmcp login
 npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
-The CLI handles authentication via OAuth (opens browser) and auto-configures your MCP client.
+ The CLI handles authentication via OAuth (opens browser), auto-configures your MCP client, and installs or repairs the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp`.
+
+ Prefer remote workflows first for public pages. Escalate to the managed local browser when you need localhost access, private or VPN-only environments, authenticated realism, or explicit local approval.
+
+ Agents: do not treat `screenshotsmcp skills ...` as general skill discovery. It only manages the local ScreenshotsMCP core skill. To discover or install community skills from the broader ecosystem, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...`.
+
+### VS Code Extension Preview
+
+ A native ScreenshotsMCP VS Code extension is now being developed in the monorepo for a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, API key fallback, native MCP registration, command palette actions, a live activity timeline panel, and browser workflow UX inside the editor.
+
+ Current preview commands include `ScreenshotsMCP: Sign In`, `ScreenshotsMCP: Check Status`, `ScreenshotsMCP: Take Screenshot`, `ScreenshotsMCP: Open Timeline`, `ScreenshotsMCP: Configure Editor Integration`, and `ScreenshotsMCP: Sync Core Skill`. The sidebar also exposes quick actions and recent activity directly in VS Code, and the extension opens browser OAuth, configures the editor automatically, and repairs the managed core skill when no credentials are stored.
+
+ Until the Marketplace release is ready, the recommended setup for VS Code is to install the preview VSIX, sign in once, and use `ScreenshotsMCP: Configure Editor Integration` only if you need to repair the automatic setup or `ScreenshotsMCP: Sync Core Skill` when you need to repair the managed local skill.
+
+### Chrome Extension Preview
+
+The monorepo also includes an unpacked Chrome extension preview in `packages/chrome-extension`.
+
+- **Public pages** use the same ScreenshotsMCP Playwright-backed MCP path as the CLI for screenshot capture and page inspection when an API key is configured.
+- **Localhost and private pages** stay local-first so dev servers and private environments still work.
+- **Popup page tools** can read visible text and DOM HTML for the active tab.
+- **API keys are validated before save**, so revoked keys are rejected instead of silently stored.
 
 ### Option B: Manual
 
-Get an API key at https://screenshotsmcp.com/dashboard/keys and add to your MCP config:
+Get an API key at https://www.screenshotmcp.com/dashboard/keys and add to your MCP config:
 
 ```json
 {
@@ -109,6 +130,32 @@ screenshotsmcp setup --client windsurf
 screenshotsmcp setup --client vscode
 screenshotsmcp setup --client claude
 screenshotsmcp setup --client claude-code
+screenshotsmcp browser open https://example.com  # Launch extension-free local browser with explicit approval
+screenshotsmcp browser open https://example.com --record-video  # Record the full managed local browser session to a local .webm file
+screenshotsmcp browser back                     # Navigate browser history backward
+screenshotsmcp browser forward                  # Navigate browser history forward
+screenshotsmcp browser status                   # Inspect the tracked managed local browser
+screenshotsmcp browser goto https://example.org # Navigate the managed local browser
+screenshotsmcp browser click-at 320 480         # Click viewport coordinates in the managed local browser
+screenshotsmcp browser hover ".menu-trigger"    # Trigger hover states in the managed local browser
+screenshotsmcp browser wait-for ".results-loaded" --timeout 8000
+screenshotsmcp browser select "select[name=country]" "Australia"
+screenshotsmcp browser viewport 393 852         # Resize the managed local browser viewport
+screenshotsmcp browser screenshot               # Save a local screenshot from the managed browser
+screenshotsmcp browser text                     # Read visible text from the managed browser
+screenshotsmcp browser console --level error    # Read captured console logs from the managed browser
+screenshotsmcp browser network-errors           # Read failed network requests from the managed browser
+screenshotsmcp browser network-requests --resource-type fetch --min-duration 200
+screenshotsmcp browser cookies get              # Inspect cookies in the managed browser
+screenshotsmcp browser storage getAll --type localStorage
+screenshotsmcp browser eval "document.title"   # Evaluate JavaScript in the managed browser
+screenshotsmcp browser a11y --max-depth 6       # Inspect the accessibility tree from the managed browser
+screenshotsmcp browser perf                     # Read performance metrics from the managed browser
+screenshotsmcp browser seo                      # Audit SEO metadata from the managed browser
+screenshotsmcp browser close                    # Close the tracked managed local browser
+screenshotsmcp skills list               # List installed skills under ~/.agents/skills
+screenshotsmcp skills sync               # Install, update, or repair the managed core skill
+screenshotsmcp skills update             # Alias for core skill sync
 screenshotsmcp install cursor            # Writes ~/.cursor/mcp.json
 screenshotsmcp install vscode            # Writes .vscode/mcp.json
 screenshotsmcp install windsurf          # Writes ~/.codeium/windsurf/mcp_config.json
@@ -116,13 +163,15 @@ screenshotsmcp install claude            # Writes Claude Desktop config
 screenshotsmcp install claude-code       # Prints `claude mcp add` command
 ```
 
+For community skills such as Anthropic's `frontend-design`, use `find-skills` or run `npx skills find frontend design` followed by `npx skills add anthropics/skills@frontend-design -g -y`.
+
 ### One-liner Install
 ```bash
 # macOS/Linux
-curl -fsSL https://screenshotsmcp.com/install.sh | bash
+curl -fsSL https://www.screenshotmcp.com/install.sh | bash
 
 # Windows PowerShell
-irm https://screenshotsmcp.com/install.ps1 | iex
+irm https://www.screenshotmcp.com/install.ps1 | iex
 
 # Or just use npx (no install needed)
 npx screenshotsmcp setup
@@ -133,6 +182,8 @@ npx screenshotsmcp setup
 - **Use the CLI when you have terminal access** — it returns structured text output, no JSON-RPC overhead.
 - Every screenshot command returns a public CDN URL you can share or embed.
 - Browser sessions work the same as MCP: start with `browse`, get a sessionId, pass it to subsequent commands.
+- Managed local browser commands under `screenshotsmcp browser ...` now support continuous console/network capture while the browser stays open, plus history navigation, coordinate clicks, hover states, wait conditions, dropdown selection, viewport resizing, screenshots, text, HTML, cookies/storage inspection, script evaluation, accessibility trees, performance metrics, SEO audits, timestamped evidence bundle export via `browser evidence`, finalized video-inclusive export via `browser close --evidence`, and optional local `.webm` session recording against the tracked local browser.
+- Prefer evidence-rich workflows when debugging or verifying changes: screenshots alone are helpful, but screenshots plus logs, recordings, and bundle exports are much more trustworthy.
 - The CLI reads credentials from `~/.config/screenshotsmcp/config.json`. If the user has logged in once, all subsequent commands are authenticated.
 - Use `npx screenshotsmcp` if unsure whether it's installed globally.
 
@@ -209,6 +260,7 @@ Multi-step workflows: log in, fill forms, navigate, inspect. Start with `browser
 |------|---------|
 | `browser_perf_metrics` | Core Web Vitals: LCP, FCP, CLS, TTFB, DOM size |
 | `browser_seo_audit` | Meta, OG, Twitter cards, headings, JSON-LD, alt text |
+| `og_preview` | Standalone OG/Twitter tag validator + social card mockup screenshot |
 
 ### 3. Smart Login Flow
 
@@ -279,7 +331,7 @@ User: "Check how example.com looks on all devices"
 ### Full site audit
 ```
 User: "Audit this site"
-→ browser_navigate → browser_get_accessibility_tree → browser_perf_metrics → browser_seo_audit → browser_console_logs → browser_network_errors
+→ browser_navigate → browser_get_accessibility_tree → browser_perf_metrics → browser_seo_audit → og_preview → browser_console_logs → browser_network_errors
 ```
 
 ### Test a sign-up flow with disposable email

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate Icons</title></head>
+<body>
+<p>Open this file in your browser, right-click each canvas, and "Save image as" to the icons/ folder.</p>
+<div style="display:flex;gap:20px;padding:20px;">
+  <div>
+    <p>icon16.png</p>
+    <canvas id="c16" width="16" height="16"></canvas>
+  </div>
+  <div>
+    <p>icon48.png</p>
+    <canvas id="c48" width="48" height="48"></canvas>
+  </div>
+  <div>
+    <p>icon128.png</p>
+    <canvas id="c128" width="128" height="128"></canvas>
+  </div>
+</div>
+<script>
+function drawIcon(id, size) {
+  const c = document.getElementById(id);
+  const ctx = c.getContext("2d");
+  // Dark background
+  ctx.fillStyle = "#0a0a0f";
+  ctx.fillRect(0, 0, size, size);
+  // Green camera circle
+  const cx = size / 2, cy = size / 2, r = size * 0.35;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = "#00ff88";
+  ctx.fill();
+  // Dark lens circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.5, 0, Math.PI * 2);
+  ctx.fillStyle = "#0a0a0f";
+  ctx.fill();
+  // Inner dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.2, 0, Math.PI * 2);
+  ctx.fillStyle = "#00ff88";
+  ctx.fill();
+}
+drawIcon("c16", 16);
+drawIcon("c48", 48);
+drawIcon("c128", 128);
+</script>
+</body>
+</html>

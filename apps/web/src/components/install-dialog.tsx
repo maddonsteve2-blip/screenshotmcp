@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { X, ArrowLeft, Copy, Check, ArrowRight, ExternalLink } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 
 type Tool = {
   id: string;

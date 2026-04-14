@@ -18,8 +18,8 @@ const PORT = process.env.PORT || 3001;
 const APP_URL = process.env.APP_URL || "https://screenshotsmcp-api-production.up.railway.app";
 
 app.use("/webhooks", express.raw({ type: "application/json" }));
-app.use(express.json());
-app.use(cors({ origin: [process.env.WEB_URL || "https://web-phi-eight-56.vercel.app", "http://localhost:3000"], credentials: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(cors({ origin: [process.env.WEB_URL || "https://www.screenshotmcp.com", "http://localhost:3000"], credentials: true }));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", ts: new Date().toISOString(), pool: browserPool.stats() });
@@ -47,7 +47,7 @@ app.get("/.well-known/oauth-authorization-server", (_req, res) => {
 });
 
 app.get("/oauth/authorize", (req, res) => {
-  const webUrl = process.env.WEB_URL || "https://web-phi-eight-56.vercel.app";
+  const webUrl = process.env.WEB_URL || "https://www.screenshotmcp.com";
   const params = new URLSearchParams(req.query as Record<string, string>);
   res.redirect(`${webUrl}/oauth/authorize?${params.toString()}`);
 });

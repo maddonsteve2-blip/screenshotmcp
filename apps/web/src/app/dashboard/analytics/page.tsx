@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart, Cell, LabelList, RadialBar, RadialBarChart } from "recharts";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart, LabelList, RadialBar, RadialBarChart } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
@@ -71,50 +71,65 @@ export default function AnalyticsPage() {
   const [connected, setConnected] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
-
-  const connectWs = useCallback(async () => {
-    try {
-      const res = await fetch("/api/analytics-ws-token");
-      if (!res.ok) {
-        const fallback = await fetch("/api/analytics");
-        if (fallback.ok) setData(await fallback.json());
-        setLoading(false);
-        return;
-      }
-      const { wsUrl } = await res.json();
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-
-      ws.onopen = () => setConnected(true);
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === "analytics") {
-            setData(msg.data);
-            setLoading(false);
-            setRefreshing(false);
-          }
-        } catch {}
-      };
-      ws.onclose = () => {
-        setConnected(false);
-        wsRef.current = null;
-        setTimeout(connectWs, 5000);
-      };
-      ws.onerror = () => ws.close();
-    } catch {
-      try {
-        const fallback = await fetch("/api/analytics");
-        if (fallback.ok) setData(await fallback.json());
-      } catch {}
-      setLoading(false);
-    }
-  }, []);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    connectWs();
-    return () => { wsRef.current?.close(); };
-  }, [connectWs]);
+    let disposed = false;
+
+    const connectWs = async () => {
+      try {
+        const res = await fetch("/api/analytics-ws-token");
+        if (!res.ok) {
+          const fallback = await fetch("/api/analytics");
+          if (!disposed && fallback.ok) setData(await fallback.json());
+          if (!disposed) setLoading(false);
+          return;
+        }
+        const { wsUrl } = await res.json();
+        const ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          if (!disposed) setConnected(true);
+        };
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (!disposed && msg.type === "analytics") {
+              setData(msg.data);
+              setLoading(false);
+              setRefreshing(false);
+            }
+          } catch {}
+        };
+        ws.onclose = () => {
+          if (disposed) return;
+          setConnected(false);
+          wsRef.current = null;
+          reconnectTimerRef.current = setTimeout(() => {
+            void connectWs();
+          }, 5000);
+        };
+        ws.onerror = () => ws.close();
+      } catch {
+        try {
+          const fallback = await fetch("/api/analytics");
+          if (!disposed && fallback.ok) setData(await fallback.json());
+        } catch {}
+        if (!disposed) setLoading(false);
+      }
+    };
+
+    void connectWs();
+
+    return () => {
+      disposed = true;
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+      }
+      wsRef.current?.close();
+    };
+  }, []);
 
   const handleRefresh = () => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -154,14 +169,13 @@ export default function AnalyticsPage() {
     [data?.formats]
   );
 
-  const deviceChartData = useMemo(() => {
-    if (!data?.devices) return [];
-    return [
-      { name: "desktop", count: data.devices.desktop, fill: "var(--color-desktop)" },
-      { name: "tablet", count: data.devices.tablet, fill: "var(--color-tablet)" },
-      { name: "mobile", count: data.devices.mobile, fill: "var(--color-mobile)" },
-    ].filter((d) => d.count > 0);
-  }, [data?.devices]);
+  const deviceChartData = !data?.devices
+    ? []
+    : [
+        { name: "desktop", count: data.devices.desktop, fill: "var(--color-desktop)" },
+        { name: "tablet", count: data.devices.tablet, fill: "var(--color-tablet)" },
+        { name: "mobile", count: data.devices.mobile, fill: "var(--color-mobile)" },
+      ].filter((d) => d.count > 0);
 
   if (loading) {
     return (

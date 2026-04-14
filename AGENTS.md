@@ -90,3 +90,22 @@ After any feature/tool change, update ALL of these:
 6. Install page — `apps/web/src/app/dashboard/install/page.tsx`
 
 Current tool count: 46+ MCP tools, 38 CLI commands.
+
+## General Working Principles
+- **Think Before Coding**
+  - State assumptions explicitly. If ambiguity matters, ask rather than guess.
+  - Surface tradeoffs and simpler alternatives when relevant.
+  - Stop and clarify when the request or codebase behavior is unclear.
+- **Simplicity First**
+  - Prefer the minimum code that solves the requested problem.
+  - Avoid speculative abstractions, configurability, or features that were not requested.
+  - If a simpler design satisfies the goal, choose it.
+- **Surgical Changes**
+  - Touch only the code required for the task.
+  - Match existing style and patterns unless refactoring is explicitly requested.
+  - Do not remove or rewrite unrelated comments, formatting, or pre-existing dead code.
+  - Clean up only imports, variables, and helpers made unused by your own changes.
+- **Goal-Driven Execution**
+  - Define clear success criteria before implementing non-trivial work.
+  - Prefer verifiable checks such as tests, reproduction steps, or explicit validation.
+  - For multi-step tasks, state a short plan and verify each step before moving on.

@@ -68,6 +68,7 @@ const CATEGORIES: Category[] = [
     label: "CLI",
     tools: [
       { id: "cli", name: "CLI", subtitle: "npm install", icon: <Terminal className="h-5 w-5" />, badge: "NEW" },
+      { id: "chrome-extension", name: "Chrome Extension", subtitle: "Browser preview", icon: <Globe className="h-5 w-5" /> },
     ],
   },
   {
@@ -80,10 +81,10 @@ const CATEGORIES: Category[] = [
 ];
 
 const TEST_PROMPTS = [
-  "Take a screenshot of https://example.com and describe what you see",
-  "Use screenshot_responsive to capture https://github.com at all device sizes",
-  "Take a dark mode screenshot of https://vercel.com",
-  "Export https://news.ycombinator.com as a PDF",
+  "Open https://example.com, inspect the page, and tell me what you see",
+  "Use screenshot_responsive to capture https://github.com at all device sizes and summarize the differences",
+  "Test my sign-in flow and capture proof if anything fails",
+  "Open my local app, inspect the page, and export evidence for anything suspicious",
 ];
 
 /* ───── main page ───── */
@@ -117,8 +118,8 @@ export default function InstallPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Use Anywhere</h1>
-          <p className="text-muted-foreground text-sm mt-1">Add screenshotsmcp to your AI tool in 30 seconds.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Install browser truth</h1>
+          <p className="text-muted-foreground text-sm mt-1">Connect ScreenshotsMCP so your AI can inspect, test, and verify with real browser evidence.</p>
         </div>
         <Button variant="outline" size="sm" className="gap-2 font-medium" onClick={() => document.getElementById("api-key-section")?.scrollIntoView({ behavior: "smooth" })}>
           <Key className="h-3.5 w-3.5" />
@@ -238,6 +239,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
     claude: { name: "Claude Desktop", icon: <MessageSquare className="h-5 w-5" /> },
     "claude-code": { name: "Claude Code", icon: <Terminal className="h-5 w-5" /> },
     cli: { name: "CLI", icon: <Terminal className="h-5 w-5" /> },
+    "chrome-extension": { name: "Chrome Extension", icon: <Globe className="h-5 w-5" /> },
     "mcp-url": { name: "MCP URL", icon: <Globe className="h-5 w-5" /> },
     n8n: { name: "n8n & Others", icon: <Smartphone className="h-5 w-5" /> },
   };
@@ -296,6 +298,12 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
 
           {toolId === "vscode" && (
             <>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/20 p-4 text-sm text-blue-800 dark:text-blue-200">
+                <strong>Extension preview:</strong> A native ScreenshotsMCP VS Code extension is now being developed in the monorepo with a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, API key fallback, native MCP registration, screenshot commands, output logs, and a live timeline panel.
+              </div>
+              <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
+                Preview commands include <code className="bg-muted px-1 rounded">ScreenshotsMCP: Sign In</code>, <code className="bg-muted px-1 rounded">ScreenshotsMCP: Check Status</code>, <code className="bg-muted px-1 rounded">ScreenshotsMCP: Take Screenshot</code>, <code className="bg-muted px-1 rounded">ScreenshotsMCP: Open Timeline</code>, <code className="bg-muted px-1 rounded">ScreenshotsMCP: Configure Editor Integration</code>, and <code className="bg-muted px-1 rounded">ScreenshotsMCP: Sync Core Skill</code>. The sidebar also exposes quick actions and recent activity directly in VS Code, and the extension configures the editor and repairs the managed core skill automatically after sign-in when needed.
+              </div>
               <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 p-4 text-sm text-green-800 dark:text-green-200">
                 <strong>✨ OAuth — No API key needed!</strong> VS Code supports OAuth. Just use the base URL and you&apos;ll be prompted to sign in.
               </div>
@@ -424,26 +432,76 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
           {toolId === "cli" && (
             <>
               <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/20 p-4 text-sm text-blue-800 dark:text-blue-200">
-                <strong>Terminal tool</strong> — Use ScreenshotsMCP directly from the command line, or auto-configure any MCP client.
+                <strong>Terminal + browser workflow tool</strong> — Use ScreenshotsMCP directly from the command line, auto-configure any MCP client, and escalate to a managed local browser when public cloud execution is not enough.
               </div>
               <Step n={1} title="Install and login">
                 <CopyBlock code={`npx screenshotsmcp login`} id="cli-login" copiedId={copiedId} onCopy={onCopy} />
-                <p className="text-xs text-muted-foreground mt-2">Opens your browser to authenticate via OAuth. No API key needed.</p>
+                <p className="text-xs text-muted-foreground mt-2">Opens your browser to authenticate via OAuth and syncs the managed core skill. No API key needed. This is the fastest path into Cursor, Windsurf, VS Code, Claude, or terminal-first workflows.</p>
               </Step>
               <Step n={2} title="Auto-configure your MCP client">
                 <CopyBlock code={`npx screenshotsmcp install cursor`} id="cli-install" copiedId={copiedId} onCopy={onCopy} />
-                <p className="text-xs text-muted-foreground mt-2">Supported: <code className="bg-muted px-1 rounded">cursor</code>, <code className="bg-muted px-1 rounded">vscode</code>, <code className="bg-muted px-1 rounded">windsurf</code>, <code className="bg-muted px-1 rounded">claude</code>, <code className="bg-muted px-1 rounded">claude-code</code></p>
+                <p className="text-xs text-muted-foreground mt-2">Supported: <code className="bg-muted px-1 rounded">cursor</code>, <code className="bg-muted px-1 rounded">vscode</code>, <code className="bg-muted px-1 rounded">windsurf</code>, <code className="bg-muted px-1 rounded">claude</code>, <code className="bg-muted px-1 rounded">claude-code</code>. This also installs or repairs the managed core skill in <code className="bg-muted px-1 rounded">~/.agents/skills/screenshotsmcp</code> so your local setup and MCP config stay aligned.</p>
               </Step>
               <Separator />
-              <Step n={3} title="Or use it standalone from the terminal">
+              <Step n={3} title="Repair or use it standalone from the terminal">
                 <CopyBlock code={`screenshotsmcp screenshot https://example.com
 screenshotsmcp responsive https://example.com
 screenshotsmcp mobile https://example.com
 screenshotsmcp dark https://example.com
 screenshotsmcp review https://example.com
+screenshotsmcp browser open https://example.com
+screenshotsmcp browser open https://example.com --record-video
+screenshotsmcp browser status
+screenshotsmcp browser goto https://example.org
+screenshotsmcp browser back
+screenshotsmcp browser forward
+screenshotsmcp browser click-at 320 480
+screenshotsmcp browser hover ".menu-trigger"
+screenshotsmcp browser wait-for ".results-loaded" --timeout 8000
+screenshotsmcp browser select "select[name=country]" "Australia"
+screenshotsmcp browser viewport 393 852
+screenshotsmcp browser screenshot
+screenshotsmcp browser text
+screenshotsmcp browser console --level error
+screenshotsmcp browser network-errors
+screenshotsmcp browser network-requests --resource-type fetch --min-duration 200
+screenshotsmcp browser evidence --label checkout-bug
+screenshotsmcp browser close --evidence --label checkout-bug
+screenshotsmcp browser cookies get
+screenshotsmcp browser storage getAll --type localStorage
+screenshotsmcp browser eval "document.title"
+screenshotsmcp browser a11y --max-depth 6
+screenshotsmcp browser perf
+screenshotsmcp browser seo
+screenshotsmcp browser close
 screenshotsmcp perf https://example.com
+screenshotsmcp skills sync
 screenshotsmcp --help`} id="cli-commands" copiedId={copiedId} onCopy={onCopy} />
-                <p className="text-xs text-muted-foreground mt-2">Install globally with <code className="bg-muted px-1 rounded">npm install -g screenshotsmcp</code> for ongoing use.</p>
+                <p className="text-xs text-muted-foreground mt-2">Install globally with <code className="bg-muted px-1 rounded">npm install -g screenshotsmcp</code> for ongoing use. Use <code className="bg-muted px-1 rounded">screenshotsmcp browser open ...</code> to launch an extension-free local browser in a fresh dedicated ScreenshotsMCP profile after an approval prompt. While that browser stays open, ScreenshotsMCP continuously captures console logs and network activity, and you can control it with commands such as <code className="bg-muted px-1 rounded">browser status</code>, <code className="bg-muted px-1 rounded">browser goto</code>, <code className="bg-muted px-1 rounded">browser back</code>, <code className="bg-muted px-1 rounded">browser forward</code>, <code className="bg-muted px-1 rounded">browser click-at</code>, <code className="bg-muted px-1 rounded">browser hover</code>, <code className="bg-muted px-1 rounded">browser wait-for</code>, <code className="bg-muted px-1 rounded">browser select</code>, <code className="bg-muted px-1 rounded">browser viewport</code>, <code className="bg-muted px-1 rounded">browser console</code>, <code className="bg-muted px-1 rounded">browser network-errors</code>, <code className="bg-muted px-1 rounded">browser network-requests</code>, <code className="bg-muted px-1 rounded">browser evidence</code>, <code className="bg-muted px-1 rounded">browser cookies</code>, <code className="bg-muted px-1 rounded">browser storage</code>, <code className="bg-muted px-1 rounded">browser eval</code>, <code className="bg-muted px-1 rounded">browser a11y</code>, <code className="bg-muted px-1 rounded">browser perf</code>, <code className="bg-muted px-1 rounded">browser seo</code>, <code className="bg-muted px-1 rounded">browser screenshot</code>, and <code className="bg-muted px-1 rounded">browser close</code>. Add <code className="bg-muted px-1 rounded">--record-video</code> if you want <code className="bg-muted px-1 rounded">browser close</code> to return a local <code className="bg-muted px-1 rounded">.webm</code> recording path for the full managed session, run <code className="bg-muted px-1 rounded">browser evidence</code> for a live bundle snapshot, or use <code className="bg-muted px-1 rounded">browser close --evidence</code> to export a timestamped evidence bundle that also includes the finalized recording.</p>
+              </Step>
+            </>
+          )}
+
+          {toolId === "chrome-extension" && (
+            <>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/20 p-4 text-sm text-blue-800 dark:text-blue-200">
+                <strong>Chrome preview</strong> — The monorepo includes an unpacked Chrome extension under <code className="bg-muted px-1 rounded">packages/chrome-extension</code>.
+              </div>
+              <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
+                Public pages use the same ScreenshotsMCP Playwright-backed MCP path as the CLI when an API key is configured. Localhost and private pages stay local-first so you can still capture and inspect dev servers.
+              </div>
+              <Step n={1} title="Load the extension in Chrome">
+                <CopyBlock code={`chrome://extensions`} id="chrome-extension-url" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Enable Developer mode, click <strong>Load unpacked</strong>, then select <code className="bg-muted px-1 rounded">packages/chrome-extension</code>.</p>
+              </Step>
+              <Separator />
+              <Step n={2} title="Paste your existing API key into extension settings">
+                <CopyBlock code={apiKey} id="chrome-extension-key" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">The extension validates the key before storing it, so revoked keys are rejected.</p>
+              </Step>
+              <Separator />
+              <Step n={3} title="Use screenshots and page tools">
+                <p className="text-sm text-muted-foreground">Use <strong>Screenshot</strong> and <strong>Full Page Screenshot</strong> for capture, then use <strong>Read Text</strong> and <strong>Read DOM</strong> in the popup to inspect the current page.</p>
               </Step>
             </>
           )}

@@ -23,7 +23,7 @@ export default async function Page(props: {
     <DocsPage toc={page.data.toc} full={page.data.full}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
-      <DocsCopyDownload title={page.data.title} slug={slug} />
+      <DocsCopyDownload slug={slug} />
       <DocsBody>
         <MDX components={getMDXComponents()} />
       </DocsBody>

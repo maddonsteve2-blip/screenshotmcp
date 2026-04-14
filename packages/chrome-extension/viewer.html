@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScreenshotsMCP — Viewer</title>
+  <link rel="stylesheet" href="viewer.css" />
+</head>
+<body>
+  <!-- Top Toolbar -->
+  <header class="toolbar">
+    <div class="toolbar-left">
+      <div class="logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+          <circle cx="12" cy="13" r="3"/>
+        </svg>
+        <span>ScreenshotsMCP</span>
+      </div>
+      <div class="separator"></div>
+      <div class="page-info">
+        <span class="page-title" id="pageTitle">Screenshot</span>
+        <span class="page-url" id="pageUrl"></span>
+      </div>
+    </div>
+
+    <div class="toolbar-center">
+      <button class="tool-btn" id="btnEdit" title="Annotate">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        <span>Edit</span>
+      </button>
+      <div class="separator"></div>
+
+      <button class="tool-btn" id="btnDownloadPng" title="Download PNG">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>PNG</span>
+      </button>
+
+      <button class="tool-btn" id="btnDownloadJpg" title="Download JPG">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>JPG</span>
+      </button>
+
+      <button class="tool-btn" id="btnDownloadPdf" title="Download PDF">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        <span>PDF</span>
+      </button>
+
+      <div class="separator"></div>
+
+      <button class="tool-btn" id="btnCopy" title="Copy to clipboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span>Copy</span>
+      </button>
+
+      <button class="tool-btn" id="btnCloudSave" title="Save to ScreenshotsMCP cloud">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+        </svg>
+        <span>Cloud</span>
+      </button>
+
+      <div class="separator"></div>
+
+      <button class="tool-btn danger" id="btnDelete" title="Delete screenshot">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        <span>Delete</span>
+      </button>
+    </div>
+
+    <div class="toolbar-right">
+      <div class="zoom-controls">
+        <button class="zoom-btn" id="zoomOut" title="Zoom out">−</button>
+        <span class="zoom-level" id="zoomLevel">Fit</span>
+        <button class="zoom-btn" id="zoomIn" title="Zoom in">+</button>
+        <button class="zoom-btn" id="zoomFit" title="Fit to screen">⊡</button>
+      </div>
+      <div class="meta-info">
+        <span id="dimensions"></span>
+        <span id="fileSize"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Screenshot Canvas Area -->
+  <main class="canvas-area" id="canvasArea">
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <img id="screenshotImg" alt="Screenshot" />
+      <!-- Annotation canvas overlay -->
+      <canvas id="annotationCanvas" style="display:none;"></canvas>
+    </div>
+    <div class="loading" id="loading">
+      <div class="loading-spinner"></div>
+      <span>Loading screenshot...</span>
+    </div>
+  </main>
+
+  <!-- Status Bar -->
+  <footer class="statusbar">
+    <span id="statusText"></span>
+    <span id="timestamp"></span>
+  </footer>
+
+  <!-- Cloud Save Modal -->
+  <div class="modal-overlay" id="cloudModal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Save to ScreenshotsMCP Cloud</h3>
+        <button class="modal-close" id="cloudModalClose">&times;</button>
+      </div>
+      <div class="modal-body" id="cloudModalBody">
+        <div class="cloud-logged-out" id="cloudLoggedOut">
+          <p>Sign in to save screenshots to your ScreenshotsMCP account.</p>
+          <p class="cloud-free">First <strong>100 screenshots</strong> free. Then $3/mo for unlimited.</p>
+          <button class="btn-cloud-signin" id="cloudSignIn">Sign in to ScreenshotsMCP</button>
+          <button class="btn-cloud-signup" id="cloudSignUp">Create free account</button>
+        </div>
+        <div class="cloud-logged-in" id="cloudLoggedIn" style="display:none;">
+          <div class="cloud-user" id="cloudUser"></div>
+          <div class="cloud-usage" id="cloudUsage"></div>
+          <button class="btn-cloud-upload" id="cloudUpload">Upload to Cloud</button>
+          <div class="cloud-result" id="cloudResult" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Annotation Toolbar (shown when Edit is active) -->
+  <div class="annotation-bar" id="annotationBar" style="display:none;">
+    <button class="anno-tool active" data-tool="pen" title="Pen">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+    </button>
+    <button class="anno-tool" data-tool="arrow" title="Arrow">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+    <button class="anno-tool" data-tool="rect" title="Rectangle">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+    </button>
+    <button class="anno-tool" data-tool="text" title="Text">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9.5" y1="20" x2="14.5" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+    </button>
+    <div class="anno-separator"></div>
+    <input type="color" id="annoColor" value="#ff0000" title="Color" />
+    <select id="annoSize" title="Stroke size">
+      <option value="2">Thin</option>
+      <option value="4" selected>Medium</option>
+      <option value="8">Thick</option>
+    </select>
+    <div class="anno-separator"></div>
+    <button class="anno-tool" id="annoUndo" title="Undo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+    </button>
+    <button class="anno-tool" id="annoClear" title="Clear all">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="anno-separator"></div>
+    <button class="anno-tool accent" id="annoDone" title="Done editing">Done</button>
+  </div>
+
+  <script src="storage.js"></script>
+  <script src="viewer.js"></script>
+</body>
+</html>

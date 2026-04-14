@@ -4,6 +4,7 @@ import { writeFileSync, readFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import { getApiKey, getApiUrl } from "../config.js";
+import { printSkillSyncResult, syncCoreSkillForCli } from "../skills.js";
 
 const API_URL_DEFAULT = "https://screenshotsmcp-api-production.up.railway.app";
 
@@ -73,6 +74,7 @@ export const installCommand = new Command("install")
         console.log(chalk.green(`✓ Configured Cursor`));
         console.log(chalk.dim(`  ${configPath}`));
         console.log(chalk.dim("  Restart Cursor to load the MCP server."));
+        printSkillSyncResult(syncCoreSkillForCli());
         break;
       }
 
@@ -88,6 +90,7 @@ export const installCommand = new Command("install")
         console.log(chalk.green(`✓ Configured VS Code`));
         console.log(chalk.dim(`  ${configPath}`));
         console.log(chalk.dim("  Enable chat.mcp.enabled in VS Code settings."));
+        printSkillSyncResult(syncCoreSkillForCli());
         break;
       }
 
@@ -112,6 +115,7 @@ export const installCommand = new Command("install")
         console.log(chalk.green(`✓ Configured Windsurf`));
         console.log(chalk.dim(`  ${configPath}`));
         console.log(chalk.dim("  Reload MCP Servers in Windsurf."));
+        printSkillSyncResult(syncCoreSkillForCli());
         break;
       }
 
@@ -134,12 +138,14 @@ export const installCommand = new Command("install")
         console.log(chalk.green(`✓ Configured Claude Desktop`));
         console.log(chalk.dim(`  ${configPath}`));
         console.log(chalk.dim("  Restart Claude Desktop to load the MCP server."));
+        printSkillSyncResult(syncCoreSkillForCli());
         break;
       }
 
       case "claude-code": {
         console.log(chalk.cyan("Run this command to configure Claude Code:\n"));
         console.log(`  claude mcp add --transport http screenshotsmcp -s user ${mcpUrl}\n`);
+        printSkillSyncResult(syncCoreSkillForCli());
         break;
       }
 

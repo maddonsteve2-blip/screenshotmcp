@@ -1,0 +1,2 @@
+Replace this with a real 16x16 PNG icon.
+Open ../generate-icons.html in Chrome to create one.

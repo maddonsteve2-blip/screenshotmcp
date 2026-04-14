@@ -40,6 +40,7 @@ export const apiKeys = pgTable("api_keys", {
   name: text("name").notNull(),
   keyHash: text("key_hash").notNull().unique(),
   keyPreview: text("key_preview").notNull(),
+  encryptedKey: text("encrypted_key"),
   lastUsed: timestamp("last_used"),
   revoked: boolean("revoked").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),

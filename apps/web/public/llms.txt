@@ -1,8 +1,8 @@
 # ScreenshotsMCP
 
-> Give your AI coding assistant eyes and hands for the web. Screenshot any URL, automate browsers, solve CAPTCHAs, create disposable email inboxes, audit performance and SEO — all via MCP tools.
+> Give your AI coding assistant browser truth. Inspect, test, and verify websites with screenshots, browser workflows, audits, and evidence-rich results via MCP tools.
 
-ScreenshotsMCP is a Model Context Protocol (MCP) server with 46+ tools that gives AI coding assistants the ability to see, interact with, and test websites. It works with Claude, Cursor, Windsurf, VS Code, and any MCP-compatible client.
+ScreenshotsMCP is a Model Context Protocol (MCP) server with 46+ tools that gives AI coding assistants the ability to see, interact with, and verify websites. It supports remote browser workflows for public pages, managed local browser workflows for private or local environments, and evidence capture for proof-heavy debugging and QA. It works with Claude, Cursor, Windsurf, VS Code, and any MCP-compatible client.
 
 ## Agent Skill
 
@@ -16,6 +16,12 @@ Download the complete Agent Skill for all tools: https://screenshotsmcp.com/.ski
 npx screenshotsmcp login
 npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
 ```
+
+The CLI now also installs or repairs the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp` during successful `login`, `install`, and `setup` flows.
+
+Use remote workflows first for public sites. Escalate to the managed local browser when you need localhost access, intranet or VPN reachability, authenticated realism, or explicit user-approved local execution.
+
+Important: `screenshotsmcp skills ...` only manages the local core ScreenshotsMCP skill. For community skill discovery or installation, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...` instead.
 
 ### Option B: Manual
 
@@ -33,6 +39,26 @@ npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
 3. Ask your AI: "Take a screenshot of https://example.com"
+
+## VS Code Extension Preview
+
+A native ScreenshotsMCP VS Code extension is now being developed in the monorepo for a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, API key fallback, native MCP registration, command palette actions, a live activity timeline panel, and browser workflow UX inside the editor.
+
+Current preview commands include `ScreenshotsMCP: Sign In`, `ScreenshotsMCP: Check Status`, `ScreenshotsMCP: Take Screenshot`, `ScreenshotsMCP: Open Timeline`, `ScreenshotsMCP: Configure Editor Integration`, and `ScreenshotsMCP: Sync Core Skill`. The sidebar also exposes quick actions and recent activity directly in VS Code, and the extension opens browser OAuth, configures the editor automatically, and repairs the managed core skill when no credentials are stored.
+
+Until the Marketplace release is ready, the recommended VS Code setup is to install the preview VSIX, sign in once, and use `ScreenshotsMCP: Configure Editor Integration` only if you need to repair the automatic MCP setup or `ScreenshotsMCP: Sync Core Skill` when you need to repair the managed local skill.
+
+## Chrome Extension Preview
+
+The monorepo also includes a Chrome extension preview under `packages/chrome-extension`.
+
+- **Public pages** use the same ScreenshotsMCP Playwright-backed MCP path as the CLI for screenshot capture and page inspection when an API key is configured.
+- **Localhost and private pages** stay local-first, so the extension can still capture and inspect pages that the cloud browser cannot reach.
+- **Page tools** in the popup can read visible text and DOM HTML for the active tab.
+- **Saved key validation** happens before the extension accepts a pasted API key, so revoked keys are rejected instead of being silently stored.
+- **Viewer cloud actions** reuse existing cloud-backed captures when available and only upload local-only captures when needed.
+
+Use the extension when you want a browser-native client for current-tab capture and inspection, while keeping parity with the ScreenshotsMCP platform for public URLs.
 
 ## CLI (for agents and humans)
 
@@ -104,12 +130,40 @@ screenshotsmcp setup --client windsurf
 screenshotsmcp setup --client vscode
 screenshotsmcp setup --client claude
 screenshotsmcp setup --client claude-code
+screenshotsmcp browser open https://example.com  # Launch extension-free local browser with explicit approval
+screenshotsmcp browser open https://example.com --record-video  # Record the full managed local browser session to a local .webm file
+screenshotsmcp browser back                     # Navigate browser history backward
+screenshotsmcp browser forward                  # Navigate browser history forward
+screenshotsmcp browser status                   # Inspect the tracked managed local browser
+screenshotsmcp browser goto https://example.org # Navigate the managed local browser
+screenshotsmcp browser click-at 320 480         # Click viewport coordinates in the managed local browser
+screenshotsmcp browser hover ".menu-trigger"    # Trigger hover states in the managed local browser
+screenshotsmcp browser wait-for ".results-loaded" --timeout 8000
+screenshotsmcp browser select "select[name=country]" "Australia"
+screenshotsmcp browser viewport 393 852         # Resize the managed local browser viewport
+screenshotsmcp browser screenshot               # Save a local screenshot from the managed browser
+screenshotsmcp browser text                     # Read visible text from the managed browser
+screenshotsmcp browser console --level error    # Read captured console logs from the managed browser
+screenshotsmcp browser network-errors           # Read failed network requests from the managed browser
+screenshotsmcp browser network-requests --resource-type fetch --min-duration 200
+screenshotsmcp browser cookies get              # Inspect cookies in the managed browser
+screenshotsmcp browser storage getAll --type localStorage
+screenshotsmcp browser eval "document.title"   # Evaluate JavaScript in the managed browser
+screenshotsmcp browser a11y --max-depth 6       # Inspect the accessibility tree from the managed browser
+screenshotsmcp browser perf                     # Read performance metrics from the managed browser
+screenshotsmcp browser seo                      # Audit SEO metadata from the managed browser
+screenshotsmcp browser close                    # Close the tracked managed local browser
+screenshotsmcp skills list               # List installed skills under ~/.agents/skills
+screenshotsmcp skills sync               # Install, update, or repair the managed core skill
+screenshotsmcp skills update             # Alias for core skill sync
 screenshotsmcp install cursor            # Writes ~/.cursor/mcp.json
 screenshotsmcp install vscode            # Writes .vscode/mcp.json
 screenshotsmcp install windsurf          # Writes ~/.codeium/windsurf/mcp_config.json
 screenshotsmcp install claude            # Writes Claude Desktop config
 screenshotsmcp install claude-code       # Prints `claude mcp add` command
 ```
+
+For community skills such as Anthropic's `frontend-design`, use `find-skills` or run `npx skills find frontend design` followed by `npx skills add anthropics/skills@frontend-design -g -y`.
 
 ### One-liner Install
 ```
@@ -128,6 +182,8 @@ npx screenshotsmcp setup
 - **Use CLI when you have terminal access** — structured text output, no JSON-RPC overhead.
 - Every screenshot command returns a public CDN URL.
 - Browser sessions: start with `browse`, get sessionId, pass to subsequent commands, always `browse:close` when done.
+- Managed local browser commands under `screenshotsmcp browser ...` now support continuous console/network capture while the browser stays open, plus history navigation, coordinate clicks, hover states, wait conditions, dropdown selection, viewport resizing, screenshots, text, HTML, cookies/storage inspection, script evaluation, accessibility trees, performance metrics, SEO audits, timestamped evidence bundle export via `browser evidence`, finalized video-inclusive export via `browser close --evidence`, and optional local `.webm` session recording against the tracked local browser.
+- Prefer evidence-rich workflows when debugging: capture screenshots, logs, recordings, and bundle exports so the result is reviewable by both humans and agents.
 - Credentials stored in `~/.config/screenshotsmcp/config.json`. Once logged in, all commands are authenticated.
 - Use `npx screenshotsmcp` if unsure whether it's installed globally.
 
@@ -314,6 +370,10 @@ Params: sessionId, resourceType, minDuration, limit
 Meta, OG, Twitter cards, headings, JSON-LD, alt text, structured data.
 Params: sessionId
 
+#### og_preview
+Preview how a URL will look when shared on social media. Extracts all OG and Twitter Card meta tags from the rendered page, validates them, screenshots the og:image, and generates a social card mockup. Works with JS-rendered pages (SPAs). No browser session needed.
+Params: url (required), platform (twitter|facebook|linkedin|slack|all, default: all)
+
 ---
 
 ### Debugging
@@ -402,7 +462,7 @@ Params: url, width, height
 → `screenshot_responsive` for desktop + tablet + mobile in one call
 
 ### Full Site Audit
-→ `browser_navigate` → `browser_get_accessibility_tree` → `browser_perf_metrics` → `browser_seo_audit` → `browser_console_logs` → `browser_network_errors`
+→ `browser_navigate` → `browser_get_accessibility_tree` → `browser_perf_metrics` → `browser_seo_audit` → `og_preview` → `browser_console_logs` → `browser_network_errors`
 
 ### Sign-Up Testing with Disposable Email
 1. `create_test_inbox` → email@agentmail.to

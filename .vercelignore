@@ -1,0 +1,40 @@
+# VCS / editor
+.git
+.github
+.qodo
+.vscode
+.windsurf
+
+# Local/deployment metadata
+.vercel
+.railway
+railway.toml
+marketplace.json
+
+# Dependencies / caches / build output
+node_modules
+.turbo
+**/node_modules
+**/.next
+**/dist
+**/build
+**/coverage
+**/.cache
+**/*.tsbuildinfo
+
+# Non-web apps and packages
+apps/api
+packages/vscode-extension
+packages/cli
+screenshotmcp-skill
+
+# Local assets / scripts not needed for web deploy
+load-test.ps1
+squarelogo.png
+
+# Logs / misc
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+*.pem

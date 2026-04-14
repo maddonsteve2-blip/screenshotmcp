@@ -131,6 +131,8 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
 **Inspection:** browser_screenshot, browser_get_text, browser_get_html, browser_get_accessibility_tree, browser_evaluate
 **Standalone:** accessibility_snapshot — get accessibility tree for any URL without a session
 
+For extension-free local browser setup outside the remote session tools, the CLI now supports screenshotsmcp browser open <url>, which asks for explicit approval and opens an installed local browser in a fresh ScreenshotsMCP profile. Console logs and network activity are captured continuously while that managed browser stays open, and follow-up commands like browser status, browser goto, browser back, browser forward, browser click-at, browser hover, browser wait-for, browser select, browser viewport, browser screenshot, browser text, browser html, browser console, browser network-errors, browser network-requests, browser evidence, browser cookies, browser storage, browser eval, browser a11y, browser perf, browser seo, and browser close reconnect to that tracked managed browser over CDP. Add --record-video if the user wants browser close to return a local .webm recording path for the managed session, use browser evidence to export a timestamped live artifact bundle with the current screenshot, page state, observability logs, and session metadata, or use browser close --evidence when the finalized local recording should be included in that same bundle. Use that path when the user wants a local managed browser without manually installing an extension.
+
 ## Session Recording (Video)
 Record a full video of any browser session:
 1. Start with **browser_navigate** and set **record_video: true** — a recording indicator appears.
@@ -145,7 +147,7 @@ Use recording when:
 
 The video URL is permanent and shareable. Recording adds minimal overhead to the session.
 **Performance:** browser_perf_metrics (Core Web Vitals: LCP, FCP, CLS, TTFB), browser_network_requests (full waterfall)
-**SEO:** browser_seo_audit (meta, OG, Twitter cards, headings, structured data, alt text)
+**SEO:** browser_seo_audit (meta, OG, Twitter cards, headings, structured data, alt text), og_preview (standalone OG/Twitter validator + social card mockup)
 **Debugging:** browser_console_logs, browser_network_errors, browser_cookies, browser_storage
 
 ## Smart Login Flow
@@ -172,6 +174,7 @@ When the user asks you to test a flow that requires authentication (login, sign-
 - **browser_console_logs** and **browser_network_errors** capture errors automatically from the moment the session starts.
 - When the user says "take a screenshot", use take_screenshot. When they say "check responsive", use screenshot_responsive.
 - When the user says "audit this site" or "check UX", use browser_navigate + browser_get_accessibility_tree + browser_console_logs.
+- When the user says "check OG tags", "how will this look on Twitter/Facebook", or "preview social card", use **og_preview** — it works standalone (no session needed).
 
 ## Disposable Email Tools (AgentMail)
 For testing sign-up flows, reading verification codes, etc:
@@ -200,9 +203,9 @@ If the project you're working on has web pages you need to debug, suggest creati
 ## Agent Skill
 For detailed workflows, best practices, and full tool reference, install the ScreenshotsMCP agent skill:
 \`\`\`
-curl -o .skills/screenshotsmcp/SKILL.md --create-dirs https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md
+curl -o ~/.agents/skills/screenshotsmcp/SKILL.md --create-dirs https://www.screenshotmcp.com/.skills/screenshotsmcp/SKILL.md
 \`\`\`
-Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
+Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core skill automatically. Fetch URL: https://www.screenshotmcp.com/.skills/screenshotsmcp/SKILL.md`,
   });
 
 
@@ -2260,7 +2263,7 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
 
   // ── AgentMail Integration ─────────────────────────────────────────────
   const AGENTMAIL_API_KEY_FALLBACK = process.env.AGENTMAIL_API_KEY || "";
-  const NO_KEY_MSG = "Error: No AgentMail API key configured. Please add your AgentMail API key in **Dashboard → Settings** at https://web-phi-eight-56.vercel.app/dashboard/settings.\n\nAgentMail is free — sign up at https://console.agentmail.to to get your API key (starts with `am_`).";
+  const NO_KEY_MSG = "Error: No AgentMail API key configured. Please add your AgentMail API key in **Dashboard → Settings** at https://www.screenshotmcp.com/dashboard/settings.\n\nAgentMail is free — sign up at https://console.agentmail.to to get your API key (starts with `am_`).";
 
   function getAgentMailKey(auth: AuthResult): string | null {
     if (auth.ok && auth.agentmailApiKey) return auth.agentmailApiKey;
@@ -2860,6 +2863,265 @@ Or fetch: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md`,
         };
       } catch (err) {
         return { content: [{ type: "text", text: `Error solving CAPTCHA: ${err instanceof Error ? err.message : String(err)}` }] };
+      }
+    }
+  );
+
+  // ── OG Image Preview ────────────────────────────────────────
+  // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
+  server.tool(
+    "og_preview",
+    "Preview how a URL will look when shared on social media. Extracts all Open Graph and Twitter Card meta tags from the rendered page, validates them, screenshots the og:image, and generates a social card mockup. Works with JS-rendered pages (SPAs). No browser session needed.",
+    {
+      url: z.string().url().describe("URL to preview Open Graph tags for"),
+      platform: z.enum(["twitter", "facebook", "linkedin", "slack", "all"]).default("all").describe("Social platform to generate mockup for (default: all)"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+
+      const { browser, release } = await browserPool.acquire();
+      let context;
+      try {
+        context = await browser.newContext({
+          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          viewport: { width: 1200, height: 630 },
+          locale: "en-US",
+        });
+        const page = await context.newPage();
+        try {
+          await page.goto(args.url, { waitUntil: "networkidle", timeout: 30000 });
+        } catch {
+          await page.goto(args.url, { waitUntil: "load", timeout: 30000 });
+        }
+        await page.waitForTimeout(1500);
+
+        // Extract OG/Twitter/meta tags from rendered DOM
+        const meta = await page.evaluate(() => {
+          const doc = (globalThis as any).document;
+          const getMeta = (name: string) =>
+            doc.querySelector(`meta[property="${name}"], meta[name="${name}"]`)?.getAttribute("content") || null;
+
+          const og = {
+            title: getMeta("og:title"),
+            description: getMeta("og:description"),
+            image: getMeta("og:image"),
+            imageWidth: getMeta("og:image:width"),
+            imageHeight: getMeta("og:image:height"),
+            imageAlt: getMeta("og:image:alt"),
+            type: getMeta("og:type"),
+            url: getMeta("og:url"),
+            siteName: getMeta("og:site_name"),
+            locale: getMeta("og:locale"),
+          };
+
+          const twitter = {
+            card: getMeta("twitter:card"),
+            title: getMeta("twitter:title"),
+            description: getMeta("twitter:description"),
+            image: getMeta("twitter:image"),
+            imageAlt: getMeta("twitter:image:alt"),
+            site: getMeta("twitter:site"),
+            creator: getMeta("twitter:creator"),
+          };
+
+          return {
+            pageUrl: (globalThis as any).location.href,
+            pageTitle: doc.title || null,
+            metaDescription: getMeta("description"),
+            canonical: doc.querySelector('link[rel="canonical"]')?.href || null,
+            og,
+            twitter,
+            favicon: doc.querySelector('link[rel="icon"], link[rel="shortcut icon"]')?.href || null,
+          };
+        });
+
+        // Validate OG tags
+        const issues: string[] = [];
+        const warnings: string[] = [];
+        const passes: string[] = [];
+
+        // OG validation
+        if (!meta.og.title) issues.push("❌ og:title is missing");
+        else if (meta.og.title.length > 60) warnings.push(`⚠️ og:title is ${meta.og.title.length} chars (recommended ≤60)`);
+        else passes.push(`✅ og:title (${meta.og.title.length} chars)`);
+
+        if (!meta.og.description) issues.push("❌ og:description is missing");
+        else if (meta.og.description.length > 200) warnings.push(`⚠️ og:description is ${meta.og.description.length} chars (recommended ≤200)`);
+        else passes.push(`✅ og:description (${meta.og.description.length} chars)`);
+
+        if (!meta.og.image) issues.push("❌ og:image is missing — social shares will have no preview image");
+        else passes.push(`✅ og:image is set`);
+
+        if (!meta.og.url) warnings.push("⚠️ og:url is missing");
+        else passes.push(`✅ og:url is set`);
+
+        if (!meta.og.type) warnings.push("⚠️ og:type is missing (defaults to 'website')");
+        else passes.push(`✅ og:type: ${meta.og.type}`);
+
+        if (!meta.og.siteName) warnings.push("⚠️ og:site_name is missing");
+        else passes.push(`✅ og:site_name: ${meta.og.siteName}`);
+
+        // Twitter validation
+        if (!meta.twitter.card) warnings.push("⚠️ twitter:card is missing (falls back to OG tags)");
+        else passes.push(`✅ twitter:card: ${meta.twitter.card}`);
+
+        if (!meta.twitter.title && !meta.og.title) issues.push("❌ No twitter:title and no og:title fallback");
+        if (!meta.twitter.image && !meta.og.image) issues.push("❌ No twitter:image and no og:image fallback");
+
+        // Image validation
+        if (meta.og.image && !meta.og.imageAlt && !meta.twitter.imageAlt) {
+          warnings.push("⚠️ og:image:alt is missing — hurts accessibility and some platforms");
+        }
+
+        if (!meta.canonical) warnings.push("⚠️ canonical URL is missing");
+        else passes.push(`✅ canonical: ${meta.canonical}`);
+
+        // Screenshot the og:image if it exists
+        let ogImageScreenshot: { type: "image"; data: string; mimeType: string } | null = null;
+        let ogImageDimensions = "";
+        if (meta.og.image) {
+          try {
+            const imgPage = await context.newPage();
+            // Resolve relative URLs
+            let imgUrl = meta.og.image;
+            if (imgUrl.startsWith("/")) {
+              const parsed = new URL(args.url);
+              imgUrl = `${parsed.origin}${imgUrl}`;
+            }
+            await imgPage.goto(imgUrl, { waitUntil: "load", timeout: 15000 });
+            await imgPage.waitForTimeout(500);
+
+            // Get the actual image dimensions
+            const dims = await imgPage.evaluate(() => {
+              const img = (globalThis as any).document.querySelector("img");
+              if (img) return { w: img.naturalWidth, h: img.naturalHeight };
+              return { w: (globalThis as any).innerWidth, h: (globalThis as any).innerHeight };
+            });
+            ogImageDimensions = `${dims.w}×${dims.h}`;
+
+            // Validate recommended dimensions
+            if (dims.w < 1200 || dims.h < 630) {
+              warnings.push(`⚠️ og:image is ${dims.w}×${dims.h} — recommended minimum is 1200×630`);
+            } else {
+              passes.push(`✅ og:image dimensions: ${dims.w}×${dims.h}`);
+            }
+
+            const buf = await imgPage.screenshot({ type: "jpeg", quality: 80 });
+            ogImageScreenshot = {
+              type: "image",
+              data: Buffer.from(buf).toString("base64"),
+              mimeType: "image/jpeg",
+            };
+            await imgPage.close();
+          } catch {
+            warnings.push("⚠️ Could not load og:image URL for preview");
+          }
+        }
+
+        // Build social card mockup via Playwright
+        const title = meta.og.title || meta.twitter.title || meta.pageTitle || "No title";
+        const desc = meta.og.description || meta.twitter.description || meta.metaDescription || "";
+        const siteName = meta.og.siteName || new URL(args.url).hostname;
+        const ogImgUrl = meta.og.image || meta.twitter.image || "";
+
+        // Generate a social card mockup
+        const mockupPage = await context.newPage();
+        await mockupPage.setViewportSize({ width: 600, height: 340 });
+        await mockupPage.setContent(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; padding: 20px; }
+              .card { background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; max-width: 560px; }
+              .card-img { width: 100%; height: 200px; background: #e4e6eb url('${ogImgUrl}') center/cover no-repeat; display: flex; align-items: center; justify-content: center; color: #65676b; font-size: 14px; }
+              .card-body { padding: 12px 16px; }
+              .card-site { font-size: 12px; color: #65676b; text-transform: uppercase; margin-bottom: 4px; }
+              .card-title { font-size: 16px; font-weight: 600; color: #1c1e21; line-height: 1.3; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+              .card-desc { font-size: 14px; color: #65676b; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+              .label { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+            </style>
+          </head>
+          <body>
+            <div style="position:relative">
+              <div class="label">Social Card Preview</div>
+              <div class="card">
+                <div class="card-img">${ogImgUrl ? "" : "No og:image set"}</div>
+                <div class="card-body">
+                  <div class="card-site">${siteName}</div>
+                  <div class="card-title">${title.replace(/"/g, "&quot;").replace(/</g, "&lt;")}</div>
+                  <div class="card-desc">${desc.replace(/"/g, "&quot;").replace(/</g, "&lt;").slice(0, 150)}</div>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `, { waitUntil: "networkidle" });
+        await mockupPage.waitForTimeout(500);
+        const mockupBuf = await mockupPage.screenshot({ type: "jpeg", quality: 85 });
+        const mockupImage = {
+          type: "image" as const,
+          data: Buffer.from(mockupBuf).toString("base64"),
+          mimeType: "image/jpeg",
+        };
+        await mockupPage.close();
+
+        // Build report
+        const score = Math.round(
+          (passes.length / (passes.length + issues.length + warnings.length)) * 100
+        );
+        const lines = [
+          `# OG Preview: ${args.url}`,
+          ``,
+          `**Score: ${score}/100** (${passes.length} passed, ${warnings.length} warnings, ${issues.length} critical)`,
+          ``,
+          `## Open Graph Tags`,
+          `| Tag | Value |`,
+          `|-----|-------|`,
+          ...Object.entries(meta.og).map(([k, v]) => `| og:${k} | ${v ? String(v).slice(0, 80) : "—"} |`),
+          ``,
+          `## Twitter Card Tags`,
+          `| Tag | Value |`,
+          `|-----|-------|`,
+          ...Object.entries(meta.twitter).map(([k, v]) => `| twitter:${k} | ${v ? String(v).slice(0, 80) : "—"} |`),
+          ``,
+          `## Validation`,
+          ...issues,
+          ...warnings,
+          ...passes,
+          ``,
+          ...(meta.og.image ? [
+            `## og:image`,
+            `URL: ${meta.og.image}`,
+            ...(ogImageDimensions ? [`Dimensions: ${ogImageDimensions}`] : []),
+          ] : []),
+          ``,
+          `## Recommendations`,
+          ...(issues.length > 0 ? [`- Fix ${issues.length} critical issue(s) above`] : []),
+          ...(!meta.og.image ? ["- Add an og:image (recommended 1200×630px) for rich social sharing"] : []),
+          ...(!meta.og.imageAlt ? ["- Add og:image:alt for accessibility"] : []),
+          ...(!meta.twitter.card ? ["- Add twitter:card for Twitter-specific display control"] : []),
+          ...(!meta.twitter.site ? ["- Add twitter:site (@handle) for Twitter attribution"] : []),
+          ...(issues.length === 0 && warnings.length === 0 ? ["🎉 All OG tags look great! Your social cards will display correctly."] : []),
+        ];
+
+        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
+          { type: "text", text: lines.join("\n") },
+          mockupImage,
+        ];
+
+        if (ogImageScreenshot) {
+          content.push(ogImageScreenshot);
+        }
+
+        return { content };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${humanizeError(err instanceof Error ? err.message : String(err))}` }] };
+      } finally {
+        if (context) await context.close().catch(() => {});
+        await release();
       }
     }
   );

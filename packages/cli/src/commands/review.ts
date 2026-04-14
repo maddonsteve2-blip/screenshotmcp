@@ -93,6 +93,26 @@ export const a11yCommand = new Command("a11y")
     }
   });
 
+export const ogPreviewCommand = new Command("og-preview")
+  .description("Preview how a URL looks when shared on social media (OG tags + mockup)")
+  .argument("<url>", "URL to preview")
+  .option("-p, --platform <name>", "Platform: twitter, facebook, linkedin, slack, all", "all")
+  .action(async (url: string, opts: Record<string, string>) => {
+    const spinner = ora(`Generating OG preview for ${url}...`).start();
+    try {
+      const res = await callTool("og_preview", {
+        url,
+        platform: opts.platform || "all",
+      });
+      spinner.stop();
+      console.log(chalk.green("✓ OG Preview\n"));
+      console.log(extractText(res));
+    } catch (err) {
+      spinner.fail(chalk.red("OG preview failed"));
+      console.error(chalk.red(err instanceof Error ? err.message : String(err)));
+    }
+  });
+
 export const breakpointsCommand = new Command("breakpoints")
   .description("Detect responsive layout breakpoints")
   .argument("<url>", "URL to analyze")

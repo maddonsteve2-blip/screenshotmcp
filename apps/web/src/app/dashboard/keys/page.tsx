@@ -28,7 +28,11 @@ export default function KeysPage() {
     setLoading(false);
   }
 
-  useEffect(() => { fetchKey(); }, []);
+  useEffect(() => {
+    queueMicrotask(() => {
+      void fetchKey();
+    });
+  }, []);
 
   async function createKey() {
     setActing(true);

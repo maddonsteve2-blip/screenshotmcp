@@ -3,6 +3,7 @@ import chalk from "chalk";
 import ora from "ora";
 import { oauthLogin } from "../auth.js";
 import { getApiKey, setApiKey, getConfigPath } from "../config.js";
+import { printSkillSyncResult, syncCoreSkillForCli } from "../skills.js";
 
 export const loginCommand = new Command("login")
   .description("Authenticate with ScreenshotsMCP")
@@ -16,6 +17,7 @@ export const loginCommand = new Command("login")
       setApiKey(opts.key);
       console.log(chalk.green("✓ API key saved."));
       console.log(chalk.dim(`  Config: ${getConfigPath()}`));
+      printSkillSyncResult(syncCoreSkillForCli());
       return;
     }
 
@@ -31,6 +33,7 @@ export const loginCommand = new Command("login")
       spinner.succeed(chalk.green("Logged in successfully!"));
       console.log(chalk.dim(`  Key: ${result.apiKey.slice(0, 12)}...${result.apiKey.slice(-4)}`));
       console.log(chalk.dim(`  Config: ${getConfigPath()}`));
+      printSkillSyncResult(syncCoreSkillForCli());
     } catch (err) {
       spinner.fail(chalk.red("Login failed"));
       console.error(chalk.red(err instanceof Error ? err.message : String(err)));

@@ -50,6 +50,49 @@ export interface PlanLimits {
   price: number;
 }
 
+export type BrowserExecutionMode = "remote" | "local-managed-browser" | "local-current-tab";
+
+export type BrowserPermissionLevel = "none" | "launch-local-browser" | "control-local-browser" | "control-current-tab";
+
+export type BrowserCapturePolicy = "none" | "before-after" | "every-step";
+
+export type BrowserEvidenceArtifact = "screenshot" | "video" | "console" | "network" | "accessibility" | "seo";
+
+export type LocalBrowserName = "auto" | "chrome" | "edge" | "chromium";
+
+export interface BrowserEvidencePolicy {
+  capturePolicy: BrowserCapturePolicy;
+  artifacts: BrowserEvidenceArtifact[];
+}
+
+export interface LocalBrowserPermissionPrompt {
+  title: string;
+  reason: string;
+  permissionLevel: Extract<BrowserPermissionLevel, "launch-local-browser" | "control-local-browser" | "control-current-tab">;
+  details: string[];
+}
+
+export interface LocalBrowserLaunchRequest {
+  browser: LocalBrowserName;
+  url?: string;
+  headless?: boolean;
+  recordVideo?: boolean;
+  reason: string;
+  permissionLevel: Extract<BrowserPermissionLevel, "launch-local-browser" | "control-local-browser">;
+}
+
+export interface LocalBrowserLaunchResult {
+  browser: Exclude<LocalBrowserName, "auto">;
+  executablePath: string;
+  userDataDir: string;
+  debugPort: number;
+  pid: number | null;
+  url?: string;
+  recordVideo?: boolean;
+  recordingDir?: string;
+  launchMode?: "spawn" | "daemon";
+}
+
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   free: { screenshotsPerMonth: 999999, price: 0 },
   starter: { screenshotsPerMonth: 2000, price: 9 },
