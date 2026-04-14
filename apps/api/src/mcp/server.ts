@@ -9,7 +9,7 @@ import { screenshotQueue } from "../lib/queue.js";
 import { createHash } from "crypto";
 import { eq, and, count, gte, desc } from "drizzle-orm";
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
-import { createSession, getSession, closeSession, pageScreenshot, navigateWithRetry, setSessionViewport } from "../lib/sessions.js";
+import { createSession, getSession, closeSession, pageScreenshot, navigateWithRetry, setSessionStartUrl, setSessionViewport } from "../lib/sessions.js";
 import { browserPool } from "../lib/browser-pool.js";
 import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
@@ -457,9 +457,7 @@ Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core 
           isRecording = session!.recording;
         }
         await navigateWithRetry(page, args.url);
-        // Track start URL for recording metadata
-        const session2 = await getSession(sessionId, auth.userId);
-        if (session2) session2.startUrl = args.url;
+        await setSessionStartUrl(sessionId, auth.userId, args.url);
         const img = await pageScreenshot(page);
         const vpSize = page.viewportSize();
         const recordingNote = isRecording ? "\n🔴 Recording session — call browser_close to get the video URL" : "";

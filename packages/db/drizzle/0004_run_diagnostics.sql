@@ -1,0 +1,11 @@
+ALTER TABLE "runs" ADD COLUMN "final_url" text;
+ALTER TABLE "runs" ADD COLUMN "page_title" text;
+ALTER TABLE "runs" ADD COLUMN "console_logs" text NOT NULL DEFAULT '[]';
+ALTER TABLE "runs" ADD COLUMN "network_errors" text NOT NULL DEFAULT '[]';
+ALTER TABLE "runs" ADD COLUMN "network_requests" text NOT NULL DEFAULT '[]';
+ALTER TABLE "runs" ADD COLUMN "console_log_count" integer NOT NULL DEFAULT 0;
+ALTER TABLE "runs" ADD COLUMN "console_error_count" integer NOT NULL DEFAULT 0;
+ALTER TABLE "runs" ADD COLUMN "console_warning_count" integer NOT NULL DEFAULT 0;
+ALTER TABLE "runs" ADD COLUMN "network_request_count" integer NOT NULL DEFAULT 0;
+ALTER TABLE "runs" ADD COLUMN "network_error_count" integer NOT NULL DEFAULT 0;
+UPDATE "runs" SET "final_url" = COALESCE("final_url", "start_url") WHERE "final_url" IS NULL;

@@ -16,6 +16,7 @@ export async function GET() {
   const rows = await db
     .select({
       id: screenshots.id,
+      sessionId: screenshots.sessionId,
       url: screenshots.url,
       status: screenshots.status,
       publicUrl: screenshots.publicUrl,

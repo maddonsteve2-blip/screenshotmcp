@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { SignOutButton, UserButton } from "@clerk/nextjs";
-import { Camera, Key, LayoutDashboard, FileText, CreditCard, Download, Image, Play, BarChart3, ScrollText, Settings, Video } from "lucide-react";
+import { Camera, Key, LayoutDashboard, FileText, CreditCard, Download, Image, Play, BarChart3, ScrollText, Settings, Video, ListVideo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const nav = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/runs", label: "Runs", icon: ListVideo },
   { href: "/dashboard/playground", label: "Playground", icon: Play },
   { href: "/dashboard/screenshots", label: "Captures", icon: Image },
   { href: "/dashboard/recordings", label: "Replays", icon: Video },

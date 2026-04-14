@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Camera, Key, Zap, Download, ArrowRight, Video, ExternalLink, Image } from "lucide-react";
+import { Camera, Key, Zap, Download, ArrowRight, Video, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
 import { InstallDialog } from "@/components/install-dialog";
 
@@ -72,7 +72,12 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             <h1 className="text-2xl font-bold">Overview</h1>
             <p className="text-muted-foreground">Recent browser evidence, recording activity, and install status.</p>
           </div>
-          <Badge variant="secondary" className="capitalize">{plan} plan</Badge>
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard/runs">
+              <Button variant="outline" size="sm">Open runs</Button>
+            </Link>
+            <Badge variant="secondary" className="capitalize">{plan} plan</Badge>
+          </div>
         </div>
 
         {keyCount === 0 && (
@@ -182,7 +187,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                   <div key={item.id} className="flex items-start justify-between gap-4 rounded-lg border p-3">
                     <div className="min-w-0 space-y-1">
                       <div className="flex items-center gap-2">
-                        <Image className="h-4 w-4 text-muted-foreground" />
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
                         <p className="text-sm font-medium truncate" title={item.url}>{item.url}</p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import { ExternalLink, Copy, Check, ImageOff, FileText } from "lucide-react";
 
 type Screenshot = {
   id: string;
+  sessionId: string | null;
   url: string;
   status: string;
   publicUrl: string | null;
@@ -53,8 +55,17 @@ export default function ScreenshotsPage() {
     <div className="p-8 space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Captures</h1>
-        <p className="text-muted-foreground mt-1">Recent screenshot, PDF, and export artifacts from your browser workflows</p>
+        <p className="text-muted-foreground mt-1">Artifact library for screenshot, PDF, and export outputs. Use Runs when you want the full story of a session.</p>
       </div>
+
+      <Card>
+        <CardContent className="flex flex-col gap-2 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <span>Runs is the primary review surface. Captures is a library view for individual artifacts.</span>
+          <Link href="/dashboard/runs" className="text-primary hover:underline">
+            Open runs
+          </Link>
+        </CardContent>
+      </Card>
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -89,7 +100,14 @@ export default function ScreenshotsPage() {
                       <p className="text-xs text-muted-foreground truncate">{s.url}</p>
                       <div className="flex items-center justify-between">
                         <Badge variant="secondary" className="text-xs capitalize">{s.status}</Badge>
-                        <span className="text-xs text-muted-foreground">{timeAgo(s.createdAt)}</span>
+                        <div className="flex items-center gap-3">
+                          {s.sessionId && (
+                            <Link href={`/dashboard/runs/${s.sessionId}`} className="text-xs text-primary hover:underline">
+                              View run
+                            </Link>
+                          )}
+                          <span className="text-xs text-muted-foreground">{timeAgo(s.createdAt)}</span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -176,7 +194,14 @@ export default function ScreenshotsPage() {
                           {s.publicUrl?.endsWith(".pdf") ? "PDF document" : `${s.width}×${s.height} · ${s.format.toUpperCase()}`}
                           {s.fullPage && !s.publicUrl?.endsWith(".pdf") ? " · Full page" : ""}
                         </span>
-                        <span className="text-xs text-muted-foreground">{timeAgo(s.createdAt)}</span>
+                        <div className="flex items-center gap-3">
+                          {s.sessionId && (
+                            <Link href={`/dashboard/runs/${s.sessionId}`} className="text-xs text-primary hover:underline">
+                              View run
+                            </Link>
+                          )}
+                          <span className="text-xs text-muted-foreground">{timeAgo(s.createdAt)}</span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

@@ -43,10 +43,16 @@ recordingsRouter.get("/", async (req, res) => {
   const auth = await resolveUser(req);
   if (!auth) { res.status(401).json({ error: "Unauthorized" }); return; }
 
+  const sessionId = typeof req.query.sessionId === "string" && req.query.sessionId.trim()
+    ? req.query.sessionId.trim()
+    : null;
+
   const rows = await db
     .select()
     .from(recordings)
-    .where(eq(recordings.userId, auth.userId))
+    .where(sessionId
+      ? and(eq(recordings.userId, auth.userId), eq(recordings.sessionId, sessionId))
+      : eq(recordings.userId, auth.userId))
     .orderBy(desc(recordings.createdAt))
     .limit(50);
 

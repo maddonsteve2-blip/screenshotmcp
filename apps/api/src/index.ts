@@ -6,6 +6,7 @@ import { nanoid } from "nanoid";
 import { screenshotRouter } from "./routes/screenshot.js";
 import { webhookRouter } from "./routes/webhook.js";
 import { recordingsRouter } from "./routes/recordings.js";
+import { runsRouter } from "./routes/runs.js";
 import { mcpRouter } from "./mcp/server.js";
 import { errorHandler } from "./middleware/error.js";
 import { startWorker } from "./lib/queue.js";
@@ -142,6 +143,7 @@ app.post("/oauth/token", express.urlencoded({ extended: false }), (req, res) => 
 app.use("/v1/screenshot", screenshotRouter);
 app.use("/webhooks", webhookRouter);
 app.use("/v1/recordings", recordingsRouter);
+app.use("/v1/runs", runsRouter);
 app.use("/mcp", mcpRouter);
 
 app.use(errorHandler);

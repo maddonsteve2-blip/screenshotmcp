@@ -4,11 +4,12 @@ import { browserPool } from "./browser-pool.js";
 import { STEALTH_SCRIPT, DEFAULT_USER_AGENT } from "./stealth.js";
 import { uploadScreenshot } from "./r2.js";
 import { db } from "./db.js";
-import { recordings } from "@screenshotsmcp/db";
+import { recordings, runs, screenshots } from "@screenshotsmcp/db";
 import { existsSync } from "fs";
 import { readFile, rm } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
+import { eq } from "drizzle-orm";
 
 export interface NetworkEntry {
   url: string;
@@ -100,15 +101,62 @@ function attachPageListeners(page: Page, session: Pick<Session, "consoleLogs" | 
   });
 }
 
+function getSessionEntryByPage(page: Page): { sessionId: string; session: Session } | null {
+  for (const [sessionId, session] of sessions.entries()) {
+    if (session.page === page) {
+      return { sessionId, session };
+    }
+  }
+  return null;
+}
+
+async function persistRunDiagnostics(
+  sessionId: string,
+  session: Session,
+  status: "active" | "completed" | "failed",
+  endedAt?: Date,
+  pageSnapshot?: { finalUrl: string | null; pageTitle: string | null },
+): Promise<void> {
+  const finalUrl = pageSnapshot?.finalUrl ?? (() => {
+    try {
+      return session.page.url() || session.startUrl || null;
+    } catch {
+      return session.startUrl || null;
+    }
+  })();
+  const pageTitle = pageSnapshot?.pageTitle ?? await session.page.title().catch(() => null);
+  const consoleErrorCount = session.consoleLogs.filter((entry) => entry.level === "error" || entry.level === "exception").length;
+  const consoleWarningCount = session.consoleLogs.filter((entry) => entry.level === "warning").length;
+
+  await db
+    .update(runs)
+    .set({
+      status,
+      startUrl: session.startUrl ?? null,
+      finalUrl,
+      pageTitle,
+      consoleLogs: JSON.stringify(session.consoleLogs),
+      networkErrors: JSON.stringify(session.networkErrors),
+      networkRequests: JSON.stringify(session.networkRequests),
+      consoleLogCount: session.consoleLogs.length,
+      consoleErrorCount,
+      consoleWarningCount,
+      networkRequestCount: session.networkRequests.length,
+      networkErrorCount: session.networkErrors.length,
+      endedAt: endedAt ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(runs.id, sessionId))
+    .catch((err) => console.error(`[Sessions] Failed to persist run diagnostics for ${sessionId}:`, err));
+}
+
 export async function createSession(userId: string, viewport?: { width: number; height: number }, recordVideo?: boolean): Promise<string> {
   const sessionId = nanoid();
   // Enforce max session limit — close oldest
   if (sessions.size >= MAX_SESSIONS) {
     const oldest = [...sessions.entries()].sort((a, b) => a[1].lastUsed.getTime() - b[1].lastUsed.getTime())[0];
     if (oldest) {
-      await oldest[1].context.close().catch(() => {});
-      await oldest[1].release().catch(() => {});
-      sessions.delete(oldest[0]);
+      await closeSession(oldest[0]).catch(() => {});
     }
   }
 
@@ -135,16 +183,42 @@ export async function createSession(userId: string, viewport?: { width: number; 
   const networkRequests: NetworkEntry[] = [];
 
   const session: Session = { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors, networkRequests, recording: !!recordVideo, videoDir, startTime: Date.now() };
+  await db.insert(runs).values({
+    id: sessionId,
+    userId,
+    status: "active",
+    executionMode: "remote",
+    recordingEnabled: !!recordVideo,
+    viewportWidth: vp.width,
+    viewportHeight: vp.height,
+    startedAt: new Date(),
+    updatedAt: new Date(),
+  });
   attachPageListeners(page, session);
 
   sessions.set(sessionId, session);
   return sessionId;
 }
 
+export async function setSessionStartUrl(sessionId: string, userId: string, url: string): Promise<void> {
+  const session = await getSession(sessionId, userId);
+  if (!session) return;
+  session.startUrl = url;
+  await db
+    .update(runs)
+    .set({ startUrl: url, updatedAt: new Date() })
+    .where(eq(runs.id, sessionId));
+}
+
 export async function setSessionViewport(sessionId: string, userId: string, width: number, height: number): Promise<boolean> {
   const session = await getSession(sessionId, userId);
   if (!session) return false;
   await session.page.setViewportSize({ width, height });
+  await db
+    .update(runs)
+    .set({ viewportWidth: width, viewportHeight: height, updatedAt: new Date() })
+    .where(eq(runs.id, sessionId))
+    .catch((err) => console.error(`[Sessions] Failed to update viewport for ${sessionId}:`, err));
   return true;
 }
 
@@ -178,6 +252,7 @@ export async function getSession(sessionId: string, userId: string): Promise<Ses
     } catch (recoverErr) {
       console.error(`[Sessions] Failed to recover session ${sessionId}:`, recoverErr);
       // Kill the session entirely
+      await persistRunDiagnostics(sessionId, session, "failed", new Date());
       await session.release().catch(() => {});
       sessions.delete(sessionId);
       return null;
@@ -194,6 +269,17 @@ export async function closeSession(sessionId: string): Promise<{ videoUrl?: stri
   let videoUrl: string | undefined;
   let r2Key: string | undefined;
   let recordingId: string | undefined;
+  const endedAt = new Date();
+  const pageSnapshot = {
+    finalUrl: (() => {
+      try {
+        return session.page.url() || session.startUrl || null;
+      } catch {
+        return session.startUrl || null;
+      }
+    })(),
+    pageTitle: await session.page.title().catch(() => null),
+  };
 
   // If recording, extract the video before closing context
   if (session.recording) {
@@ -245,6 +331,8 @@ export async function closeSession(sessionId: string): Promise<{ videoUrl?: stri
     await session.context.close().catch(() => {});
   }
 
+  await persistRunDiagnostics(sessionId, session, "completed", endedAt, pageSnapshot);
+
   await session.release().catch(() => {});
   sessions.delete(sessionId);
   return { videoUrl, r2Key, recordingId };
@@ -252,6 +340,28 @@ export async function closeSession(sessionId: string): Promise<{ videoUrl?: stri
 
 export async function pageScreenshot(page: Page): Promise<{ type: "image"; data: string; mimeType: string }> {
   const buf = await page.screenshot({ type: "jpeg", quality: 80, fullPage: true, timeout: 15000 });
+  const sessionEntry = getSessionEntryByPage(page);
+  if (sessionEntry) {
+    const screenshotId = nanoid();
+    const r2Key = `runs/${sessionEntry.sessionId}/screenshots/${screenshotId}.jpeg`;
+    const publicUrl = await uploadScreenshot(r2Key, buf, "image/jpeg");
+    const viewport = page.viewportSize();
+    await db.insert(screenshots).values({
+      id: screenshotId,
+      userId: sessionEntry.session.userId,
+      sessionId: sessionEntry.sessionId,
+      url: page.url(),
+      status: "done",
+      r2Key,
+      publicUrl,
+      width: viewport?.width ?? 1280,
+      height: viewport?.height,
+      fullPage: true,
+      format: "jpeg",
+      delay: 0,
+      completedAt: new Date(),
+    }).catch((err) => console.error(`[Sessions] Failed to persist session screenshot for ${sessionEntry.sessionId}:`, err));
+  }
   return { type: "image", data: Buffer.from(buf).toString("base64"), mimeType: "image/jpeg" };
 }
 

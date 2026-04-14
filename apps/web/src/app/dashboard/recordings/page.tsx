@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,11 +80,20 @@ export default function RecordingsPage() {
           Replays
         </h1>
         <p className="text-muted-foreground mt-1">
-          Replayable video evidence from browser automation sessions. Start recording by passing{" "}
+          Artifact library for replayable video evidence. Use Runs when you want the full session review with captures and replay together. Start recording by passing{" "}
           <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">record_video: true</code>{" "}
           to <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">browser_navigate</code>.
         </p>
       </div>
+
+      <Card className="mb-6">
+        <CardContent className="flex flex-col gap-2 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <span>Runs is the primary review surface. Replays is a library view for individual recordings.</span>
+          <Link href="/dashboard/runs" className="text-primary hover:underline">
+            Open runs
+          </Link>
+        </CardContent>
+      </Card>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
@@ -173,6 +183,11 @@ export default function RecordingsPage() {
                   </div>
 
                   <div className="flex gap-2">
+                    <Link href={`/dashboard/runs/${rec.sessionId}`} className="inline-flex">
+                      <Button size="sm" variant="outline">
+                        View run
+                      </Button>
+                    </Link>
                     <Button
                       size="sm"
                       variant="outline"
