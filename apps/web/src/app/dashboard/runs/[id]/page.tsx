@@ -6,9 +6,10 @@ import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
 import { runs, screenshots } from "@screenshotsmcp/db";
 import RunDetailTabs from "./run-detail-tabs";
+import RunShareDialog from "./run-share-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Clock, Image as ImageIcon, Monitor, Network, SquareTerminal } from "lucide-react";
+import { ArrowLeft, Clock, Globe, Image as ImageIcon, Monitor, Network, SquareTerminal } from "lucide-react";
 
 function formatDate(dateStr?: string | null) {
   if (!dateStr) return "—";
@@ -100,6 +101,8 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
       finalUrl: runs.finalUrl,
       pageTitle: runs.pageTitle,
       recordingEnabled: runs.recordingEnabled,
+      shareToken: runs.shareToken,
+      sharedAt: runs.sharedAt,
       viewportWidth: runs.viewportWidth,
       viewportHeight: runs.viewportHeight,
       consoleLogs: runs.consoleLogs,
@@ -171,6 +174,8 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
     finalUrl: run.finalUrl,
     pageTitle: run.pageTitle,
     recordingEnabled: run.recordingEnabled,
+    shareToken: run.shareToken,
+    sharedAt: run.sharedAt?.toISOString() ?? null,
     viewportWidth: run.viewportWidth,
     viewportHeight: run.viewportHeight,
     startedAt,
@@ -199,14 +204,22 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
               </Badge>
               <Badge variant="outline" className="capitalize">{run.executionMode}</Badge>
               {run.recordingEnabled && <Badge variant="outline">Recording enabled</Badge>}
+              {run.shareToken && <Badge variant="outline" className="border-emerald-200 text-emerald-700">Shared</Badge>}
             </div>
             <p className="text-muted-foreground break-all">{run.finalUrl ?? run.startUrl ?? "Managed browser session"}</p>
+            {run.shareToken && (
+              <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Globe className="h-3.5 w-3.5" />
+                Public review enabled{run.sharedAt ? ` · updated ${formatDate(run.sharedAt.toISOString())}` : ""}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground font-mono">Session ID: {run.id}</p>
           </div>
+          <RunShareDialog runId={run.id} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Started</CardTitle>
@@ -259,6 +272,16 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
           </CardHeader>
           <CardContent>
             <div className="text-sm font-medium">{run.consoleLogCount} events · {run.consoleErrorCount} errors</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Sharing</CardTitle>
+            <Globe className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm font-medium">{run.shareToken ? "Public review enabled" : "Private"}</div>
+            <div className="text-xs text-muted-foreground">{run.shareToken && run.sharedAt ? `Updated ${formatDate(run.sharedAt.toISOString())}` : "Only invited reviewers can access via share link."}</div>
           </CardContent>
         </Card>
       </div>

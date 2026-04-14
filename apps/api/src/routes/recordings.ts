@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { recordings, apiKeys, users } from "@screenshotsmcp/db";
+import { recordings, apiKeys, runs, users } from "@screenshotsmcp/db";
 import { getPresignedUrl } from "../lib/r2.js";
 import { createHash } from "crypto";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
@@ -48,8 +48,21 @@ recordingsRouter.get("/", async (req, res) => {
     : null;
 
   const rows = await db
-    .select()
+    .select({
+      id: recordings.id,
+      sessionId: recordings.sessionId,
+      pageUrl: recordings.pageUrl,
+      fileSize: recordings.fileSize,
+      durationMs: recordings.durationMs,
+      viewportWidth: recordings.viewportWidth,
+      viewportHeight: recordings.viewportHeight,
+      createdAt: recordings.createdAt,
+      r2Key: recordings.r2Key,
+      shareToken: runs.shareToken,
+      sharedAt: runs.sharedAt,
+    })
     .from(recordings)
+    .leftJoin(runs, eq(recordings.sessionId, runs.id))
     .where(sessionId
       ? and(eq(recordings.userId, auth.userId), eq(recordings.sessionId, sessionId))
       : eq(recordings.userId, auth.userId))
@@ -66,6 +79,8 @@ recordingsRouter.get("/", async (req, res) => {
       viewportWidth: r.viewportWidth,
       viewportHeight: r.viewportHeight,
       createdAt: r.createdAt,
+      shareToken: r.shareToken,
+      sharedAt: r.sharedAt,
       videoUrl: await getPresignedUrl(r.r2Key, 3600),
     }))
   );

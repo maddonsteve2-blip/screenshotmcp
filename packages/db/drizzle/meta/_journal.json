@@ -22,6 +22,27 @@
       "when": 1776049200000,
       "tag": "0002_reuse_oauth_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776049200001,
+      "tag": "0003_unified_runs",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776049200002,
+      "tag": "0004_run_diagnostics",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776049200003,
+      "tag": "0005_run_sharing",
+      "breakpoints": true
     }
   ]
 }

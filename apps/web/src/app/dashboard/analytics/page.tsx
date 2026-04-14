@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Camera, TrendingUp, CheckCircle, Calendar, Zap, ArrowUpRight, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { Camera, TrendingUp, CheckCircle, Calendar, Zap, ArrowUpRight, RefreshCw, Wifi, WifiOff, LayoutDashboard, ListVideo, FolderSearch } from "lucide-react";
 import Link from "next/link";
 
 type PlanData = {
@@ -201,11 +201,10 @@ export default function AnalyticsPage() {
 
   return (
     <div className="p-8 flex flex-col gap-6 max-w-5xl">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Usage</h1>
-          <p className="text-muted-foreground mt-1">Volume, activity patterns, and output mix across your browser workflows</p>
+          <p className="text-muted-foreground mt-1">Secondary analytics surface for volume, throughput, and output mix. Use Overview and Runs for operational review.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -219,7 +218,37 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Plan & Usage */}
+      <Card>
+        <CardContent className="flex flex-col gap-4 py-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Keep review workflows summary-first</p>
+            <p className="text-sm text-muted-foreground">
+              Usage helps you spot volume trends and output mix. It should support, not replace, the main review flow through Overview, Runs, and Artifacts.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/dashboard">
+              <Button variant="outline" size="sm">
+                <LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />
+                Overview
+              </Button>
+            </Link>
+            <Link href="/dashboard/runs">
+              <Button variant="outline" size="sm">
+                <ListVideo className="mr-1.5 h-3.5 w-3.5" />
+                Runs
+              </Button>
+            </Link>
+            <Link href="/dashboard/artifacts">
+              <Button variant="outline" size="sm">
+                <FolderSearch className="mr-1.5 h-3.5 w-3.5" />
+                Artifacts
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -250,7 +279,6 @@ export default function AnalyticsPage() {
         </CardContent>
       </Card>
 
-      {/* Stats cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -298,11 +326,10 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Daily usage bar chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Daily Usage</CardTitle>
-          <CardDescription>Last 30 days — {totalDaily.toLocaleString()} total screenshots</CardDescription>
+          <CardTitle>Daily volume</CardTitle>
+          <CardDescription>Last 30 days of capture output volume — {totalDaily.toLocaleString()} total screenshots</CardDescription>
         </CardHeader>
         <CardContent>
           {totalDaily > 0 ? (
@@ -347,11 +374,10 @@ export default function AnalyticsPage() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Top URLs */}
         <Card>
           <CardHeader>
             <CardTitle>Top URLs</CardTitle>
-            <CardDescription>Most screenshotted domains</CardDescription>
+            <CardDescription>Most frequently captured domains across your workflows</CardDescription>
           </CardHeader>
           <CardContent>
             {data?.topUrls.length ? (
@@ -370,11 +396,10 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Device breakdown — Radial bar chart */}
         <Card className="flex flex-col">
           <CardHeader>
             <CardTitle>Device Breakdown</CardTitle>
-            <CardDescription>Screenshots by viewport size</CardDescription>
+            <CardDescription>Capture volume by viewport size</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             {deviceTotal > 0 ? (
@@ -409,12 +434,11 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Format breakdown — Pie chart */}
       {(data?.formats ?? []).length > 0 && (
         <Card className="flex flex-col">
           <CardHeader>
             <CardTitle>Format Breakdown</CardTitle>
-            <CardDescription>Screenshot output formats</CardDescription>
+            <CardDescription>Output mix across image and document artifact formats</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer config={formatChartConfig} className="mx-auto aspect-square max-h-[250px]">
@@ -442,6 +466,18 @@ export default function AnalyticsPage() {
           </CardFooter>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>How to use this page</CardTitle>
+          <CardDescription>Keep analytics in its supporting role inside the broader run-centric workflow.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>Use Overview to see what ran recently and what needs attention.</p>
+          <p>Use Runs to understand what happened inside a specific execution.</p>
+          <p>Use Artifacts to locate a specific screenshot or replay after you already know which run matters.</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { eq, desc } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
-import { screenshots } from "@screenshotsmcp/db";
+import { runs, screenshots } from "@screenshotsmcp/db";
 
 export async function GET() {
   const { userId: clerkId } = await auth();
@@ -26,8 +26,11 @@ export async function GET() {
       format: screenshots.format,
       createdAt: screenshots.createdAt,
       completedAt: screenshots.completedAt,
+      shareToken: runs.shareToken,
+      sharedAt: runs.sharedAt,
     })
     .from(screenshots)
+    .leftJoin(runs, eq(screenshots.sessionId, runs.id))
     .where(eq(screenshots.userId, user.id))
     .orderBy(desc(screenshots.createdAt))
     .limit(100);

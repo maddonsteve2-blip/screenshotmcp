@@ -68,6 +68,8 @@ export const runs = pgTable("runs", {
   consoleWarningCount: integer("console_warning_count").notNull().default(0),
   networkRequestCount: integer("network_request_count").notNull().default(0),
   networkErrorCount: integer("network_error_count").notNull().default(0),
+  shareToken: text("share_token"),
+  sharedAt: timestamp("shared_at"),
   startedAt: timestamp("started_at").notNull().defaultNow(),
   endedAt: timestamp("ended_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

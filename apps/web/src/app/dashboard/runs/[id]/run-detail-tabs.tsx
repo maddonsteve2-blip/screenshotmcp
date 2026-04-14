@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { Activity, AlertTriangle, ExternalLink, Globe, Image as ImageIcon, Monitor, Network, RefreshCw, Search, SquareTerminal } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle2, ExternalLink, Globe, Image as ImageIcon, Monitor, Network, RefreshCw, Search, SquareTerminal, Video } from "lucide-react";
 
 function formatDate(dateStr?: string | null) {
   if (!dateStr) return "—";
@@ -95,6 +95,8 @@ type RunDetails = {
   finalUrl: string | null;
   pageTitle: string | null;
   recordingEnabled: boolean;
+  shareToken: string | null;
+  sharedAt: string | null;
   viewportWidth: number | null;
   viewportHeight: number | null;
   startedAt: string | null;
@@ -137,6 +139,8 @@ type Props = {
   initialNetworkRequests: NetworkRequestEntry[];
 };
 
+type TabValue = "summary" | "captures" | "replay" | "console" | "network" | "session";
+
 export default function RunDetailTabs({
   run,
   screenshots,
@@ -147,6 +151,7 @@ export default function RunDetailTabs({
 }: Props) {
   const primaryRecording = recordings[0] ?? null;
   const latestScreenshot = screenshots[screenshots.length - 1] ?? null;
+  const [activeTab, setActiveTab] = useState<TabValue>("summary");
   const [pollingEnabled, setPollingEnabled] = useState(run.status === "active");
   const [liveSnapshot, setLiveSnapshot] = useState<LiveSnapshotResponse | null>(null);
   const [liveState, setLiveState] = useState<{
@@ -217,6 +222,39 @@ export default function RunDetailTabs({
   const effectiveConsoleWarningCount = liveSnapshot?.consoleWarningCount ?? run.consoleWarningCount;
   const effectiveNetworkRequestCount = liveSnapshot?.networkRequestCount ?? run.networkRequestCount;
   const effectiveNetworkErrorCount = liveSnapshot?.networkErrorCount ?? run.networkErrorCount;
+  const totalIssueCount = effectiveConsoleErrorCount + effectiveNetworkErrorCount;
+  const evidenceItemCount = screenshots.length + recordings.length;
+  const hasPersistedEvidence = evidenceItemCount > 0;
+  const outcomeLabel = run.status === "failed"
+    ? "Failed"
+    : pollingEnabled
+      ? "Active"
+      : totalIssueCount > 0
+        ? "Needs review"
+        : "Healthy";
+  const outcomeClassName = run.status === "failed"
+    ? "border-red-200 text-red-700"
+    : pollingEnabled
+      ? "border-blue-200 text-blue-700"
+      : totalIssueCount > 0
+        ? "border-amber-200 text-amber-700"
+        : "border-emerald-200 text-emerald-700";
+  const outcomeMessage = run.status === "failed"
+    ? "The run ended in a failed state and should be reviewed before retrying or sharing outcomes."
+    : pollingEnabled
+      ? "The run is still active. Live console and network activity may change as the browser continues working."
+      : totalIssueCount > 0
+        ? `The run completed, but ${totalIssueCount} high-priority issue${totalIssueCount === 1 ? " was" : "s were"} captured across console and network diagnostics.`
+        : "The run completed without high-priority console or network failures in the persisted snapshot.";
+  const attentionMessage = run.status === "failed"
+    ? "Prioritize this run for review: it failed before completion and may need a retry or workflow fix."
+    : totalIssueCount > 0
+      ? `Review the failing diagnostics before trusting this run. ${effectiveNetworkErrorCount} network failure${effectiveNetworkErrorCount === 1 ? "" : "s"} and ${effectiveConsoleErrorCount} console error${effectiveConsoleErrorCount === 1 ? "" : "s"} were recorded.`
+      : !hasPersistedEvidence && !pollingEnabled
+        ? "This run finished without persisted evidence. If proof is required, rerun with screenshots or recording enabled."
+        : run.recordingEnabled && !primaryRecording && !pollingEnabled
+          ? "Recording was enabled, but no replay was saved. Use captures and diagnostics to complete the review."
+          : "This run is producing the expected evidence and diagnostic coverage so far.";
 
   const recentConsoleLogs = useMemo(
     () => [...effectiveConsoleLogs].sort((a, b) => b.ts - a.ts),
@@ -266,7 +304,7 @@ export default function RunDetailTabs({
         : { label: "Persisted", className: "border-slate-200 text-slate-700" };
 
   return (
-    <Tabs defaultValue="summary" className="space-y-6">
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)} className="space-y-6">
       <TabsList>
         <TabsTrigger value="summary">Summary</TabsTrigger>
         <TabsTrigger value="captures">Captures</TabsTrigger>
@@ -302,7 +340,50 @@ export default function RunDetailTabs({
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_0.7fr] gap-6">
+        <Card className={cn(
+          "border",
+          (run.status === "failed" || totalIssueCount > 0 || (!hasPersistedEvidence && !pollingEnabled) || (run.recordingEnabled && !primaryRecording && !pollingEnabled))
+            ? "border-amber-200 bg-amber-50/50"
+            : "border-emerald-200 bg-emerald-50/40",
+        )}>
+          <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                {run.status === "failed" || totalIssueCount > 0 || (!hasPersistedEvidence && !pollingEnabled) ? (
+                  <AlertTriangle className="h-4 w-4 text-amber-700" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+                )}
+                <p className="text-sm font-medium">Review priority</p>
+              </div>
+              <p className="text-sm text-muted-foreground">{attentionMessage}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(effectiveConsoleErrorCount > 0 || effectiveConsoleWarningCount > 0) && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setActiveTab("console")}>
+                  Review console
+                </Button>
+              )}
+              {effectiveNetworkErrorCount > 0 && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setActiveTab("network")}>
+                  Review network
+                </Button>
+              )}
+              {screenshots.length > 0 && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setActiveTab("captures")}>
+                  Open captures
+                </Button>
+              )}
+              {recordings.length > 0 && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setActiveTab("replay")}>
+                  Open replay
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Primary evidence</CardTitle>
@@ -327,56 +408,119 @@ export default function RunDetailTabs({
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Run summary</CardTitle>
-              <CardDescription>Operational metadata, diagnostics, and evidence tied back to this session.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">Captures</span>
-                <span className="font-medium">{screenshots.length}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">Replay videos</span>
-                <span className="font-medium">{recordings.length}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">Final URL</span>
-                <span className="font-medium text-right break-all">{effectiveFinalUrl ?? "—"}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">Page title</span>
-                <span className="font-medium text-right">{effectivePageTitle ?? "—"}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">Started</span>
-                <span className="font-medium text-right">{formatDate(effectiveStartedAt)}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">Duration</span>
-                <span className="font-medium text-right">{formatDuration(effectiveStartedAt, effectiveEndedAt)}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">Network health</span>
-                <span className="font-medium text-right">{effectiveNetworkRequestCount} requests / {effectiveNetworkErrorCount} failed</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">Console health</span>
-                <span className="font-medium text-right">{effectiveConsoleErrorCount} errors / {effectiveConsoleWarningCount} warnings</span>
-              </div>
-              <div className="pt-2">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Executive summary</CardTitle>
+                <CardDescription>Outcome, highest-signal findings, and what to do next.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <div className="space-y-2 rounded-lg border p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" className={cn("capitalize", outcomeClassName)}>{outcomeLabel}</Badge>
+                    {run.recordingEnabled && <Badge variant="outline">Recording enabled</Badge>}
+                    {run.shareToken && <Badge variant="outline" className="border-emerald-200 text-emerald-700">Shared</Badge>}
+                  </div>
+                  <p className="font-medium">{outcomeMessage}</p>
+                  <p className="text-xs text-muted-foreground break-all">{effectiveFinalUrl ?? run.startUrl ?? "Managed browser session"}</p>
+                  {run.shareToken && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Globe className="h-3.5 w-3.5" />
+                        Public review enabled{run.sharedAt ? ` · updated ${formatDate(run.sharedAt)}` : ""}
+                      </span>
+                      <a
+                        href={`/shared/runs/${encodeURIComponent(run.shareToken)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                      >
+                        <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                        Open shared page
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button type="button" onClick={() => setActiveTab("console")} className="rounded-lg border p-4 text-left transition-colors hover:bg-accent/40">
+                    <p className="text-xs text-muted-foreground">Console findings</p>
+                    <p className="mt-1 text-xl font-semibold">{effectiveConsoleErrorCount}</p>
+                    <p className="text-xs text-muted-foreground">errors · {effectiveConsoleWarningCount} warnings</p>
+                  </button>
+                  <button type="button" onClick={() => setActiveTab("network")} className="rounded-lg border p-4 text-left transition-colors hover:bg-accent/40">
+                    <p className="text-xs text-muted-foreground">Network findings</p>
+                    <p className="mt-1 text-xl font-semibold">{effectiveNetworkErrorCount}</p>
+                    <p className="text-xs text-muted-foreground">failed of {effectiveNetworkRequestCount} requests</p>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Started</span>
+                    <span className="font-medium text-right">{formatDate(effectiveStartedAt)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Duration</span>
+                    <span className="font-medium text-right">{formatDuration(effectiveStartedAt, effectiveEndedAt)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Page title</span>
+                    <span className="font-medium text-right">{effectivePageTitle ?? "—"}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Evidence coverage</CardTitle>
+                <CardDescription>How much proof and diagnostic coverage this run produced.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button type="button" onClick={() => setActiveTab("captures")} className="rounded-lg border p-4 text-left transition-colors hover:bg-accent/40">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <ImageIcon className="h-4 w-4" /> Captures
+                    </div>
+                    <p className="mt-2 text-xl font-semibold">{screenshots.length}</p>
+                    <p className="text-xs text-muted-foreground">Persisted screenshots for this run</p>
+                  </button>
+                  <button type="button" onClick={() => setActiveTab("replay")} className="rounded-lg border p-4 text-left transition-colors hover:bg-accent/40">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Video className="h-4 w-4" /> Replays
+                    </div>
+                    <p className="mt-2 text-xl font-semibold">{recordings.length}</p>
+                    <p className="text-xs text-muted-foreground">Saved recording outputs</p>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Viewport</span>
+                    <span className="font-medium text-right">{effectiveViewportWidth ?? "—"}×{effectiveViewportHeight ?? "—"}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Diagnostics</span>
+                    <span className="font-medium text-right">{effectiveConsoleLogCount} console events · {effectiveNetworkRequestCount} requests</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Evidence readiness</span>
+                    <span className="font-medium text-right">{hasPersistedEvidence ? `${evidenceItemCount} items saved` : pollingEnabled ? "Awaiting persisted evidence" : "No evidence saved"}</span>
+                  </div>
+                </div>
+
                 <div className="flex flex-wrap gap-2">
-                  <Link href="/dashboard/screenshots" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-                    Open capture library
+                  <Link href="/dashboard/artifacts" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                    Open artifact library
                   </Link>
-                  <Link href="/dashboard/recordings" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-                    Open replay library
+                  <Link href="/dashboard/runs" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                    Back to runs
                   </Link>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

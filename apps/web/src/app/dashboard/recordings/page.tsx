@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Video, Trash2, ExternalLink, Clock, Globe, Monitor, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Video, Trash2, ExternalLink, Clock, Globe, Monitor, Loader2, Search, HardDrive, Link2, ScanSearch } from "lucide-react";
 
 interface Recording {
   id: string;
@@ -50,12 +51,19 @@ export default function RecordingsPage() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     fetch("/api/recordings")
       .then((r) => r.json())
-      .then((data) => setRecordings(data.recordings ?? []))
-      .catch(console.error)
+      .then((data) => {
+        setRecordings(data.recordings ?? []);
+        setError(null);
+      })
+      .catch(() => {
+        setError("We couldn’t load your replays right now.");
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -72,8 +80,39 @@ export default function RecordingsPage() {
     }
   }
 
+  const summary = useMemo(() => {
+    const last24Hours = Date.now() - 24 * 60 * 60 * 1000;
+    const totalDurationMs = recordings.reduce((sum, recording) => sum + (recording.durationMs ?? 0), 0);
+    const totalBytes = recordings.reduce((sum, recording) => sum + (recording.fileSize ?? 0), 0);
+
+    return {
+      total: recordings.length,
+      recent: recordings.filter((recording) => new Date(recording.createdAt).getTime() >= last24Hours).length,
+      withPageUrl: recordings.filter((recording) => !!recording.pageUrl).length,
+      totalDurationMs,
+      totalBytes,
+    };
+  }, [recordings]);
+
+  const filteredRecordings = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) return recordings;
+
+    return recordings.filter((recording) => [
+      recording.id,
+      recording.sessionId,
+      recording.pageUrl,
+      recording.videoUrl,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedQuery));
+  }, [query, recordings]);
+
   return (
-    <div className="p-8 max-w-6xl">
+    <div className="p-8 space-y-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Video className="h-6 w-6" />
@@ -95,10 +134,68 @@ export default function RecordingsPage() {
         </CardContent>
       </Card>
 
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4 space-y-1">
+            <p className="text-xs text-muted-foreground">Total replays</p>
+            <p className="text-2xl font-semibold">{summary.total}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 space-y-1">
+            <p className="text-xs text-muted-foreground">Created in 24h</p>
+            <p className="text-2xl font-semibold">{summary.recent}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 space-y-1">
+            <p className="text-xs text-muted-foreground">Known page URL</p>
+            <p className="text-2xl font-semibold">{summary.withPageUrl}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 space-y-1">
+            <p className="text-xs text-muted-foreground">Library size</p>
+            <p className="text-2xl font-semibold">{formatFileSize(summary.totalBytes)}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Filter replays</CardTitle>
+          <CardDescription>
+            Search for a replay by session, URL, or recording ID, then open the run when you need the full diagnostic context.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="relative w-full xl:max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by URL, run ID, or replay ID"
+              className="pl-9"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Showing {filteredRecordings.length} of {recordings.length} replays · {formatDuration(summary.totalDurationMs)} total duration.
+          </p>
+        </CardContent>
+      </Card>
+
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
+      ) : error ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <ScanSearch className="h-10 w-10 text-muted-foreground/40" />
+            <p className="font-medium">Unable to load replays</p>
+            <p className="text-sm text-muted-foreground max-w-sm">{error}</p>
+          </CardContent>
+        </Card>
       ) : recordings.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
@@ -110,12 +207,21 @@ export default function RecordingsPage() {
             </p>
           </CardContent>
         </Card>
+      ) : filteredRecordings.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <Search className="h-10 w-10 text-muted-foreground/40" />
+            <p className="font-medium">No replays match this filter</p>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Try a broader URL, session ID, or replay ID search to find the evidence you need.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-4">
-          {recordings.map((rec) => (
+          {filteredRecordings.map((rec) => (
             <Card key={rec.id} className="overflow-hidden">
               <div className="flex flex-col lg:flex-row">
-                {/* Video player */}
                 <div className="lg:w-[480px] bg-black flex items-center justify-center min-h-[270px]">
                   {playingId === rec.id ? (
                     <video
@@ -137,16 +243,16 @@ export default function RecordingsPage() {
                   )}
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h3 className="font-medium text-sm mb-1 truncate max-w-[300px]">
                         {rec.pageUrl || "Unknown page"}
                       </h3>
-                      <p className="text-xs text-muted-foreground">
-                        Session: <code className="font-mono">{rec.sessionId.slice(0, 12)}...</code>
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span>Session: <code className="font-mono">{rec.sessionId.slice(0, 12)}...</code></span>
+                        <span className="inline-flex items-center gap-1"><Link2 className="h-3 w-3" />Run linked</span>
+                      </div>
                     </div>
                     <Badge variant="secondary" className="text-xs">
                       <Clock className="h-3 w-3 mr-1" />
@@ -166,6 +272,10 @@ export default function RecordingsPage() {
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Video className="h-3.5 w-3.5" />
                       <span>Size: <span className="text-foreground">{formatFileSize(rec.fileSize)}</span></span>
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <HardDrive className="h-3.5 w-3.5" />
+                      <span>Replay ID: <span className="text-foreground font-mono">{rec.id.slice(0, 12)}...</span></span>
                     </div>
                     {rec.pageUrl && (
                       <div className="flex items-center gap-2 text-muted-foreground">

@@ -4,9 +4,10 @@ import Link from "next/link";
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Camera, Key, Zap, Download, ArrowRight, Video, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Camera, Download, ArrowRight, Video, ExternalLink, Globe, Image as ImageIcon, AlertTriangle, Activity, Clock3, Monitor, Network, SquareTerminal } from "lucide-react";
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
 import { InstallDialog } from "@/components/install-dialog";
 
@@ -15,10 +16,34 @@ interface DashboardData {
   limit: number;
   keyCount: number;
   recordingCount: number;
+  activeRunCount: number;
+  failedRunCount: number;
+  issueRunCount: number;
+  sharedRunCount: number;
   plan: "free" | "starter" | "pro";
   apiUrl: string;
+  recentRuns: {
+    id: string;
+    status: string;
+    executionMode: string;
+    startUrl: string | null;
+    finalUrl: string | null;
+    pageTitle: string | null;
+    shareToken: string | null;
+    sharedAt: string | null;
+    viewportWidth: number | null;
+    viewportHeight: number | null;
+    consoleErrorCount: number;
+    consoleWarningCount: number;
+    networkErrorCount: number;
+    captureCount: number;
+    replayCount: number;
+    startedAt: string;
+    endedAt: string | null;
+  }[];
   recentScreenshots: {
     id: string;
+    sessionId: string | null;
     url: string;
     status: string;
     publicUrl: string | null;
@@ -30,6 +55,7 @@ interface DashboardData {
   }[];
   recentRecordings: {
     id: string;
+    sessionId: string;
     pageUrl: string | null;
     durationMs: number | null;
     viewportWidth: number | null;
@@ -57,10 +83,26 @@ function formatDuration(ms: number | null) {
   return `${mins}m ${remainSecs}s`;
 }
 
+function formatRunDuration(startedAt: string, endedAt: string | null) {
+  if (!endedAt) return "In progress";
+  const ms = new Date(endedAt).getTime() - new Date(startedAt).getTime();
+  if (ms <= 0) return "—";
+  return formatDuration(ms);
+}
+
+function hostname(input?: string | null) {
+  if (!input) return "Managed browser run";
+  try {
+    return new URL(input).hostname;
+  } catch {
+    return input;
+  }
+}
+
 export function DashboardClient({ data }: { data: DashboardData }) {
   const [showInstallDialog, setShowInstallDialog] = useState(false);
   
-  const { usage, limit, keyCount, recordingCount, plan, apiUrl, recentScreenshots, recentRecordings } = data;
+  const { usage, limit, keyCount, recordingCount, activeRunCount, failedRunCount, issueRunCount, sharedRunCount, plan, apiUrl, recentRuns, recentScreenshots, recentRecordings } = data;
   const isUnlimited = limit >= 999999;
   const pct = isUnlimited ? 0 : Math.min(100, Math.round((usage / limit) * 100));
 
@@ -70,7 +112,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Overview</h1>
-            <p className="text-muted-foreground">Recent browser evidence, recording activity, and install status.</p>
+            <p className="text-muted-foreground">Recent runs, issues that need attention, and the evidence your browser workflows produced.</p>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/dashboard/runs">
@@ -104,7 +146,29 @@ export function DashboardClient({ data }: { data: DashboardData }) {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Runs with issues</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{issueRunCount.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">Runs with console or network failures surfaced in reporting</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Active runs</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{activeRunCount.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">Runs currently in progress or awaiting completion</p>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Screenshots this month</CardTitle>
@@ -134,36 +198,148 @@ export function DashboardClient({ data }: { data: DashboardData }) {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active API keys</CardTitle>
-              <Key className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Shared runs</CardTitle>
+              <Globe className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{keyCount}</div>
-              <p className="text-xs text-muted-foreground">
-                {keyCount === 0 ? (
-                  <button 
-                    onClick={() => setShowInstallDialog(true)}
-                    className="text-primary hover:underline"
-                  >
-                    Create your first key →
-                  </button>
-                ) : "keys in use"}
-              </p>
+              <div className="text-2xl font-bold">{sharedRunCount.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">Runs currently exposed through a public review link</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)] gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div>
+                <CardTitle>Recent runs</CardTitle>
+                <CardDescription>The main review path: what ran recently, what evidence exists, and which sessions need attention.</CardDescription>
+              </div>
+              <Link href="/dashboard/runs">
+                <Button variant="outline" size="sm">Open all</Button>
+              </Link>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {recentRuns.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                  No runs yet. Start a browser workflow and your recent sessions will show up here with their evidence and issues.
+                </div>
+              ) : (
+                recentRuns.map((item) => {
+                  const issueCount = item.consoleErrorCount + item.networkErrorCount;
+                  const targetUrl = item.finalUrl ?? item.startUrl ?? "Managed browser session";
+                  const title = item.pageTitle ?? hostname(targetUrl);
+                  const sharedHref = item.shareToken ? `/shared/runs/${encodeURIComponent(item.shareToken)}` : null;
+
+                  return (
+                    <div key={item.id} className="rounded-lg border p-4 space-y-3 transition-colors hover:border-primary/40 hover:bg-accent/30">
+                      <Link href={`/dashboard/runs/${item.id}`} className="block">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-medium truncate" title={title}>{title}</p>
+                              <Badge variant={item.status === "completed" ? "secondary" : item.status === "failed" ? "destructive" : "outline"} className="capitalize">{item.status}</Badge>
+                              <Badge variant="outline" className="capitalize">{item.executionMode}</Badge>
+                              {item.shareToken && <Badge variant="outline" className="border-emerald-200 text-emerald-700">Shared</Badge>}
+                              {issueCount > 0 && <Badge variant="destructive">{issueCount} issues</Badge>}
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate" title={targetUrl}>{targetUrl}</p>
+                            {item.shareToken && (
+                              <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+                                <Globe className="h-3.5 w-3.5" />
+                                Public review enabled{item.sharedAt ? ` · updated ${timeAgo(item.sharedAt)}` : ""}
+                              </p>
+                            )}
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                          <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5" />{timeAgo(item.startedAt)}</span>
+                          <span>{formatRunDuration(item.startedAt, item.endedAt)}</span>
+                          <span className="inline-flex items-center gap-1.5"><Monitor className="h-3.5 w-3.5" />{item.viewportWidth ?? "—"}×{item.viewportHeight ?? "—"}</span>
+                          <span className="inline-flex items-center gap-1.5"><ImageIcon className="h-3.5 w-3.5" />{item.captureCount} captures</span>
+                          <span className="inline-flex items-center gap-1.5"><Video className="h-3.5 w-3.5" />{item.replayCount} replays</span>
+                          <span className="inline-flex items-center gap-1.5"><Network className="h-3.5 w-3.5" />{item.networkErrorCount} network failures</span>
+                          <span className="inline-flex items-center gap-1.5"><SquareTerminal className="h-3.5 w-3.5" />{item.consoleErrorCount} console errors</span>
+                        </div>
+                      </Link>
+                      <div className="flex flex-wrap gap-2">
+                        <Link href={`/dashboard/runs/${item.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                          Open run
+                        </Link>
+                        {sharedHref && (
+                          <a href={sharedHref} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                            Open shared
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Plan</CardTitle>
-              <Zap className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold capitalize">{plan}</div>
-              <p className="text-xs text-muted-foreground">
-                {PLAN_LIMITS[plan].price === 0 ? "Free forever" : `$${PLAN_LIMITS[plan].price}/mo`}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Needs attention</CardTitle>
+                <CardDescription>Bring failures and noisy runs to the top so you know what to review next.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-lg border p-4">
+                    <p className="text-xs text-muted-foreground">Failed runs</p>
+                    <p className="mt-1 text-2xl font-semibold">{failedRunCount}</p>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <p className="text-xs text-muted-foreground">Issue-marked runs</p>
+                    <p className="mt-1 text-2xl font-semibold">{issueRunCount}</p>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                  {failedRunCount > 0 || issueRunCount > 0
+                    ? "Open Runs to review failures, console errors, and network problems in one workflow."
+                    : "Your recent runs are not showing failed or issue-marked sessions right now."}
+                </div>
+                <Link href="/dashboard/runs">
+                  <Button variant="outline" className="w-full">Review runs</Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Next actions</CardTitle>
+                <CardDescription>Keep the most useful next steps visible instead of burying them behind artifact pages.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="rounded-lg border p-4 space-y-1">
+                  <p className="font-medium">{keyCount === 0 ? "Finish install" : "Run and review a session"}</p>
+                  <p className="text-muted-foreground">
+                    {keyCount === 0
+                      ? "Create your first API key and connect ScreenshotsMCP inside your IDE."
+                      : "Open the Runs view to review recent sessions before diving into raw artifacts."}
+                  </p>
+                </div>
+                <div className="rounded-lg border p-4 space-y-1">
+                  <p className="font-medium">Plan status</p>
+                  <p className="text-muted-foreground capitalize">
+                    {plan} plan · {PLAN_LIMITS[plan].price === 0 ? "Free forever" : `$${PLAN_LIMITS[plan].price}/mo`}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Button onClick={() => setShowInstallDialog(true)} className="gap-2">
+                    Open install guide <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Link href="/dashboard/runs">
+                    <Button variant="outline" className="w-full">Open unified runs workspace</Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -171,10 +347,10 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div>
                 <CardTitle>Recent screenshots</CardTitle>
-                <CardDescription>The latest captures and exports produced by your workflows.</CardDescription>
+                <CardDescription>Artifact library view for recent captures, with direct links back to the parent run when available.</CardDescription>
               </div>
               <Link href="/dashboard/screenshots">
-                <Button variant="outline" size="sm">Open all</Button>
+                <Button variant="outline" size="sm">Open captures</Button>
               </Link>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -198,11 +374,18 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                         <span>{timeAgo(item.createdAt)}</span>
                       </div>
                     </div>
-                    {item.publicUrl && (
-                      <a href={item.publicUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground shrink-0">
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    )}
+                    <div className="flex items-center gap-3 shrink-0">
+                      {item.sessionId && (
+                        <Link href={`/dashboard/runs/${item.sessionId}`} className="text-xs text-primary hover:underline">
+                          View run
+                        </Link>
+                      )}
+                      {item.publicUrl && (
+                        <a href={item.publicUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
@@ -213,10 +396,10 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div>
                 <CardTitle>Recent recordings</CardTitle>
-                <CardDescription>Session replays generated from managed browser workflows.</CardDescription>
+                <CardDescription>Replay library view for recent recordings, with the run detail page as the main review destination.</CardDescription>
               </div>
               <Link href="/dashboard/recordings">
-                <Button variant="outline" size="sm">Open all</Button>
+                <Button variant="outline" size="sm">Open replays</Button>
               </Link>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -226,15 +409,22 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 </div>
               ) : (
                 recentRecordings.map((item) => (
-                  <div key={item.id} className="rounded-lg border p-3 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Video className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm font-medium truncate" title={item.pageUrl ?? "Managed browser session"}>{item.pageUrl ?? "Managed browser session"}</p>
+                  <div key={item.id} className="flex items-start justify-between gap-4 rounded-lg border p-3">
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Video className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-medium truncate" title={item.pageUrl ?? "Managed browser session"}>{item.pageUrl ?? "Managed browser session"}</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span>{formatDuration(item.durationMs)}</span>
+                        <span>{item.viewportWidth ?? "—"}×{item.viewportHeight ?? "—"}</span>
+                        <span>{timeAgo(item.createdAt)}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span>{formatDuration(item.durationMs)}</span>
-                      <span>{item.viewportWidth ?? "—"}×{item.viewportHeight ?? "—"}</span>
-                      <span>{timeAgo(item.createdAt)}</span>
+                    <div className="shrink-0">
+                      <Link href={`/dashboard/runs/${item.sessionId}`} className="text-xs text-primary hover:underline">
+                        View run
+                      </Link>
                     </div>
                   </div>
                 ))
