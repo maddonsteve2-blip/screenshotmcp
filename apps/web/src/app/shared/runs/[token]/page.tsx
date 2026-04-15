@@ -140,7 +140,7 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">
+      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-10">
         <div className="flex flex-col gap-4 border-b pb-8 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -150,8 +150,8 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
             </div>
             <div className="space-y-1">
               <h1 className="text-3xl font-semibold tracking-tight">{run.pageTitle || prettyHost(run.startUrl)}</h1>
-              <p className="text-sm text-muted-foreground break-all">{run.finalUrl ?? run.startUrl ?? "Shared browser run"}</p>
-              <p className="text-xs text-muted-foreground font-mono">Run ID: {run.id}</p>
+              <p className="text-base text-muted-foreground break-all">{run.finalUrl ?? run.startUrl ?? "Shared browser run"}</p>
+              <p className="text-sm text-muted-foreground font-mono">Run ID: {run.id}</p>
             </div>
           </div>
           <div className="flex flex-col gap-3 text-sm text-muted-foreground lg:items-end">
@@ -182,7 +182,7 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                     : "This run completed with no persisted high-priority console or network failures."}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
               <span>{screenshots.length} captures</span>
               <span>{recordings.length} replays</span>
               <span>{run.networkRequestCount} requests</span>
@@ -247,7 +247,7 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.8fr)]">
           <Card>
             <CardHeader>
               <CardTitle>Primary evidence</CardTitle>
@@ -256,8 +256,8 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
             <CardContent>
               {primaryRecording ? (
                 <div className="space-y-4">
-                  <video src={primaryRecording.videoUrl} controls className="w-full rounded-lg border bg-black" />
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                  <video src={primaryRecording.videoUrl} controls className="aspect-video w-full rounded-lg border bg-black shadow-sm" />
+                  <div className="flex flex-wrap gap-4 text-base text-muted-foreground">
                     <span>{primaryRecording.durationMs ? `${Math.floor(primaryRecording.durationMs / 1000)}s` : "—"}</span>
                     <span>{primaryRecording.viewportWidth ?? "—"}×{primaryRecording.viewportHeight ?? "—"}</span>
                     <span>{formatBytes(primaryRecording.fileSize)}</span>
@@ -265,9 +265,10 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                 </div>
               ) : primaryScreenshot?.publicUrl ? (
                 <div className="space-y-4">
-                  <div
-                    className="h-[360px] w-full rounded-lg border bg-muted bg-cover bg-top bg-no-repeat"
-                    style={{ backgroundImage: `url(${primaryScreenshot.publicUrl})` }}
+                  <img
+                    src={primaryScreenshot.publicUrl}
+                    alt={primaryScreenshot.url}
+                    className="max-h-[72vh] w-full rounded-lg border bg-muted object-contain"
                   />
                   <a href={primaryScreenshot.publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-foreground hover:text-primary">
                     Open screenshot
@@ -288,7 +289,7 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                 <CardTitle>Run context</CardTitle>
                 <CardDescription>Core metadata preserved with the shared review.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
+              <CardContent className="space-y-3 text-base">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-muted-foreground">Start URL</span>
                   <span className="max-w-[60%] break-all text-right font-medium">{run.startUrl ?? "—"}</span>
@@ -313,7 +314,7 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                 <CardTitle>Evidence coverage</CardTitle>
                 <CardDescription>Persisted proof assets included in this shared URL.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
+              <CardContent className="space-y-3 text-base">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-muted-foreground">Captures</span>
                   <span className="font-medium">{screenshots.length}</span>
@@ -345,10 +346,10 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                       <PlayCircle className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">Replay</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">{formatDate(recording.createdAt)}</span>
+                    <span className="text-sm text-muted-foreground">{formatDate(recording.createdAt)}</span>
                   </div>
-                  <video src={recording.videoUrl} controls className="w-full rounded-lg border bg-black" />
-                  <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                  <video src={recording.videoUrl} controls className="aspect-video w-full rounded-lg border bg-black shadow-sm" />
+                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                     <span>{recording.durationMs ? `${Math.floor(recording.durationMs / 1000)}s` : "—"}</span>
                     <span>{recording.viewportWidth ?? "—"}×{recording.viewportHeight ?? "—"}</span>
                     <span>{formatBytes(recording.fileSize)}</span>
@@ -367,21 +368,22 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
               <CardDescription>Persisted capture evidence included in the shared run.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
                 {screenshots.map((shot) => (
                   <div key={shot.id} className="overflow-hidden rounded-lg border">
-                    <div
-                      className="h-44 w-full bg-muted bg-cover bg-top bg-no-repeat"
-                      style={shot.publicUrl ? { backgroundImage: `url(${shot.publicUrl})` } : undefined}
-                    />
+                    {shot.publicUrl ? (
+                      <img src={shot.publicUrl} alt={shot.url} className="h-56 w-full object-cover object-top md:h-64" />
+                    ) : (
+                      <div className="h-56 w-full bg-muted md:h-64" />
+                    )}
                     <div className="space-y-2 p-4">
-                      <p className="truncate text-sm font-medium" title={shot.url}>{shot.url}</p>
-                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                      <p className="truncate text-base font-medium" title={shot.url}>{shot.url}</p>
+                      <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                         <span>{shot.width}×{shot.height ?? "—"}</span>
                         <span>{shot.format.toUpperCase()}</span>
                         <span>{shot.fullPage ? "Full page" : "Viewport"}</span>
                       </div>
-                      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
                         <span>{formatDate(shot.createdAt)}</span>
                         {shot.publicUrl && (
                           <a href={shot.publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-foreground">
@@ -419,9 +421,9 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                         >
                           {entry.level}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">{formatDate(new Date(entry.ts).toISOString())}</span>
+                        <span className="text-sm text-muted-foreground">{formatDate(new Date(entry.ts).toISOString())}</span>
                       </div>
-                      <pre className="whitespace-pre-wrap break-words text-xs font-mono">{entry.text}</pre>
+                      <pre className="whitespace-pre-wrap break-words text-sm font-mono">{entry.text}</pre>
                     </div>
                   ))}
                 </div>
@@ -448,9 +450,9 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                           <Badge variant="outline" className="border-red-200 text-red-700">{entry.status}</Badge>
                           <span className="font-medium">{entry.statusText}</span>
                         </div>
-                        <span className="text-xs text-muted-foreground">{formatDate(new Date(entry.ts).toISOString())}</span>
+                        <span className="text-sm text-muted-foreground">{formatDate(new Date(entry.ts).toISOString())}</span>
                       </div>
-                      <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-start gap-2 text-sm text-muted-foreground">
                         <Globe className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         <span className="break-all">{entry.url}</span>
                       </div>

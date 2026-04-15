@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ExternalLink, Copy, Check, ImageOff, FileText, Search, Clock3, Link2, ScanSearch } from "lucide-react";
+import { useDashboardWs } from "@/lib/use-dashboard-ws";
 
 type Screenshot = {
   id: string;
@@ -41,18 +42,24 @@ export default function ScreenshotsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "done" | "processing">("all");
   const [artifactFilter, setArtifactFilter] = useState<"all" | "linked" | "pdf" | "full-page">("all");
 
-  useEffect(() => {
-    fetch("/api/screenshots")
-      .then((r) => r.json())
-      .then((d) => {
-        setScreenshots(d.screenshots ?? []);
-        setError(null);
-      })
-      .catch(() => {
-        setError("We couldn’t load your captures right now.");
-      })
-      .finally(() => setLoading(false));
+  const handleSocketMessage = useCallback((message: { type: string; data?: { screenshots?: Screenshot[] }; message?: string }) => {
+    if (message.type === "screenshots") {
+      setScreenshots(message.data?.screenshots ?? []);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    if (message.type === "error") {
+      setError(message.message ?? "We couldn’t load your captures right now.");
+      setLoading(false);
+    }
   }, []);
+
+  useDashboardWs({
+    subscription: { channel: "screenshots" },
+    onMessage: handleSocketMessage,
+  });
 
   async function copy(text: string, id: string) {
     await navigator.clipboard.writeText(text);
@@ -98,7 +105,7 @@ export default function ScreenshotsPage() {
   const pending = filteredScreenshots.filter((s) => s.status !== "done");
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-8 px-4 py-6 sm:px-6 lg:p-8">
       <div>
         <h1 className="text-2xl font-bold">Captures</h1>
         <p className="text-muted-foreground mt-1">Artifact library for screenshot, PDF, and export outputs. Use Runs when you want the full story of a session.</p>
@@ -113,28 +120,28 @@ export default function ScreenshotsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">Total captures</p>
+            <p className="text-sm text-muted-foreground">Total captures</p>
             <p className="text-2xl font-semibold">{counts.total}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">In progress</p>
+            <p className="text-sm text-muted-foreground">In progress</p>
             <p className="text-2xl font-semibold">{counts.inProgress}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">Linked to runs</p>
+            <p className="text-sm text-muted-foreground">Linked to runs</p>
             <p className="text-2xl font-semibold">{counts.linked}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">PDF exports</p>
+            <p className="text-sm text-muted-foreground">PDF exports</p>
             <p className="text-2xl font-semibold">{counts.pdfs}</p>
           </CardContent>
         </Card>
@@ -194,7 +201,7 @@ export default function ScreenshotsPage() {
               ))}
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Showing {filteredScreenshots.length} of {screenshots.length} captures.
           </p>
         </CardContent>
@@ -229,25 +236,25 @@ export default function ScreenshotsPage() {
           {pending.length > 0 && (
             <div className="space-y-2">
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">In Progress</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                 {pending.map((s) => (
                   <Card key={s.id} className="overflow-hidden">
-                    <div className="h-36 bg-muted flex items-center justify-center">
-                      <div className="text-xs text-muted-foreground animate-pulse">
+                    <div className="h-48 bg-muted flex items-center justify-center md:h-56">
+                      <div className="text-sm text-muted-foreground animate-pulse">
                         {s.status === "processing" ? "Processing…" : "Pending…"}
                       </div>
                     </div>
-                    <CardContent className="p-3 space-y-1">
-                      <p className="text-xs text-muted-foreground truncate">{s.url}</p>
+                    <CardContent className="space-y-2 p-4">
+                      <p className="truncate text-sm text-muted-foreground">{s.url}</p>
                       <div className="flex items-center justify-between">
-                        <Badge variant="secondary" className="text-xs capitalize">{s.status}</Badge>
+                        <Badge variant="secondary" className="capitalize">{s.status}</Badge>
                         <div className="flex items-center gap-3">
                           {s.sessionId && (
-                            <Link href={`/dashboard/runs/${s.sessionId}`} className="text-xs text-primary hover:underline">
+                            <Link href={`/dashboard/runs/${s.sessionId}`} className="text-sm text-primary hover:underline">
                               View run
                             </Link>
                           )}
-                          <span className="text-xs text-muted-foreground">{timeAgo(s.createdAt)}</span>
+                          <span className="text-sm text-muted-foreground">{timeAgo(s.createdAt)}</span>
                         </div>
                       </div>
                     </CardContent>
@@ -262,20 +269,20 @@ export default function ScreenshotsPage() {
               {pending.length > 0 && (
                 <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Completed</h2>
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                 {done.map((s) => (
                   <Card key={s.id} className="overflow-hidden group">
-                    <div className="h-36 bg-muted overflow-hidden relative">
+                    <div className="h-56 bg-muted overflow-hidden relative md:h-64">
                       {s.publicUrl ? (
                         s.publicUrl.endsWith(".pdf") ? (
                           <>
                             <div className="flex flex-col items-center justify-center h-full gap-2">
                               <FileText className="h-10 w-10 text-muted-foreground/50" />
-                              <span className="text-xs text-muted-foreground">PDF Document</span>
+                              <span className="text-sm text-muted-foreground">PDF Document</span>
                             </div>
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                               <a href={s.publicUrl} target="_blank" rel="noopener noreferrer">
-                                <Button size="sm" variant="secondary" className="h-7 text-xs gap-1">
+                                <Button size="sm" variant="secondary" className="gap-1">
                                   <ExternalLink className="h-3 w-3" />
                                   Open PDF
                                 </Button>
@@ -283,7 +290,7 @@ export default function ScreenshotsPage() {
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                className="h-7 text-xs gap-1"
+                                className="gap-1"
                                 onClick={() => copy(s.publicUrl!, `url-${s.id}`)}
                               >
                                 {copiedId === `url-${s.id}`
@@ -303,7 +310,7 @@ export default function ScreenshotsPage() {
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                               <a href={s.publicUrl} target="_blank" rel="noopener noreferrer">
-                                <Button size="sm" variant="secondary" className="h-7 text-xs gap-1">
+                                <Button size="sm" variant="secondary" className="gap-1">
                                   <ExternalLink className="h-3 w-3" />
                                   View
                                 </Button>
@@ -311,7 +318,7 @@ export default function ScreenshotsPage() {
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                className="h-7 text-xs gap-1"
+                                className="gap-1"
                                 onClick={() => copy(s.publicUrl!, `url-${s.id}`)}
                               >
                                 {copiedId === `url-${s.id}`
@@ -328,10 +335,10 @@ export default function ScreenshotsPage() {
                         </div>
                       )}
                     </div>
-                    <CardContent className="p-3 space-y-1">
-                      <p className="text-xs text-muted-foreground truncate" title={s.url}>{s.url}</p>
+                    <CardContent className="space-y-2 p-4">
+                      <p className="truncate text-sm text-muted-foreground" title={s.url}>{s.url}</p>
                       <div className="flex items-center justify-between">
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                           <span>
                             {s.publicUrl?.endsWith(".pdf") ? "PDF document" : `${s.width}×${s.height} · ${s.format.toUpperCase()}`}
                             {s.fullPage && !s.publicUrl?.endsWith(".pdf") ? " · Full page" : ""}
@@ -341,7 +348,7 @@ export default function ScreenshotsPage() {
                         </div>
                         <div className="flex items-center gap-3">
                           {s.sessionId && (
-                            <Link href={`/dashboard/runs/${s.sessionId}`} className="text-xs text-primary hover:underline">
+                            <Link href={`/dashboard/runs/${s.sessionId}`} className="text-sm text-primary hover:underline">
                               View run
                             </Link>
                           )}

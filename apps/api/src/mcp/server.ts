@@ -688,7 +688,16 @@ Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core 
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const result = await closeSession(args.sessionId);
       if (result.videoUrl) {
+        if (result.finalizationError) {
+          return { content: [{ type: "text", text: `Session ${args.sessionId} closed.\n\n🎬 **Session Recording:** ${result.videoUrl}\n\n⚠️ Recording completed, but replay persistence reported an issue: ${result.finalizationError}` }] };
+        }
+        if (!result.recordingId) {
+          return { content: [{ type: "text", text: `Session ${args.sessionId} closed.\n\n🎬 **Session Recording:** ${result.videoUrl}\n\n⚠️ Recording uploaded, but no replay record was created.` }] };
+        }
         return { content: [{ type: "text", text: `Session ${args.sessionId} closed.\n\n🎬 **Session Recording:** ${result.videoUrl}\n\nThis .webm video shows everything that happened during the browser session. Share it with users or use it for debugging.` }] };
+      }
+      if (result.finalizationError) {
+        return { content: [{ type: "text", text: `Session ${args.sessionId} closed, but recording finalization failed: ${result.finalizationError}` }] };
       }
       return { content: [{ type: "text", text: `Session ${args.sessionId} closed.` }] };
     }

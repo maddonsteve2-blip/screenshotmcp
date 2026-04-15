@@ -7,6 +7,7 @@ import { getSession } from "../lib/sessions.js";
 import { getPresignedUrl } from "../lib/r2.js";
 
 export const runsRouter = Router();
+const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET || "").trim();
 
 function parseJson<T>(value: string | null | undefined, fallback: T): T {
   if (!value) return fallback;
@@ -19,6 +20,18 @@ function parseJson<T>(value: string | null | undefined, fallback: T): T {
 
 async function resolveUser(req: any): Promise<{ userId: string } | null> {
   const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Internal ") && INTERNAL_SECRET) {
+    const token = authHeader.slice(9);
+    const [secret, userId] = token.split(":");
+    if (secret === INTERNAL_SECRET && userId) {
+      const [user] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, userId));
+      if (user) return { userId: user.id };
+    }
+  }
+
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
     if (token.startsWith("user_")) {

@@ -262,13 +262,14 @@ export async function getSession(sessionId: string, userId: string): Promise<Ses
   return session;
 }
 
-export async function closeSession(sessionId: string): Promise<{ videoUrl?: string; r2Key?: string; recordingId?: string }> {
+export async function closeSession(sessionId: string): Promise<{ videoUrl?: string; r2Key?: string; recordingId?: string; finalizationError?: string }> {
   const session = sessions.get(sessionId);
   if (!session) return {};
 
   let videoUrl: string | undefined;
   let r2Key: string | undefined;
   let recordingId: string | undefined;
+  let finalizationError: string | undefined;
   const endedAt = new Date();
   const pageSnapshot = {
     finalUrl: (() => {
@@ -283,20 +284,28 @@ export async function closeSession(sessionId: string): Promise<{ videoUrl?: stri
 
   // If recording, extract the video before closing context
   if (session.recording) {
+    let recordingStage = "capture video";
     try {
       // Get the video path from the page (must be done before context.close)
       const video = session.page.video();
       const vpSize = session.page.viewportSize();
       if (video) {
-        const videoPath = await video.path();
+        const finalizedVideoPath = join(session.videoDir ?? tmpdir(), `${sessionId}-final.webm`);
+        recordingStage = "close browser context";
+
         // Close context first — this finalizes the video file
         await session.context.close().catch(() => {});
 
-        // Wait briefly for file to be fully written
-        await new Promise(r => setTimeout(r, 500));
+        recordingStage = "save finalized video";
+        await video.saveAs(finalizedVideoPath);
 
-        if (videoPath && existsSync(videoPath)) {
-          const videoBuffer = await readFile(videoPath);
+        if (finalizedVideoPath && existsSync(finalizedVideoPath)) {
+          const videoBuffer = await readFile(finalizedVideoPath);
+          if (videoBuffer.length === 0) {
+            throw new Error("Recording finalized with an empty video file.");
+          }
+
+          recordingStage = "upload video";
           r2Key = `recordings/${sessionId}.webm`;
           videoUrl = await uploadScreenshot(r2Key, videoBuffer, "video/webm");
           session.videoUrl = videoUrl;
@@ -304,9 +313,10 @@ export async function closeSession(sessionId: string): Promise<{ videoUrl?: stri
           console.log(`[Sessions] Video uploaded: ${r2Key} (${(videoBuffer.length / 1024 / 1024).toFixed(1)}MB, ${(durationMs / 1000).toFixed(0)}s)`);
 
           // Save recording metadata to DB
-          recordingId = nanoid();
+          recordingStage = "persist recording metadata";
+          const nextRecordingId = nanoid();
           await db.insert(recordings).values({
-            id: recordingId,
+            id: nextRecordingId,
             userId: session.userId,
             sessionId,
             r2Key,
@@ -315,16 +325,20 @@ export async function closeSession(sessionId: string): Promise<{ videoUrl?: stri
             durationMs,
             viewportWidth: vpSize?.width || 1280,
             viewportHeight: vpSize?.height || 800,
-          }).catch(err => console.error(`[Sessions] Failed to save recording metadata:`, err));
+          });
+          recordingId = nextRecordingId;
 
           // Cleanup temp files
           await rm(session.videoDir!, { recursive: true, force: true }).catch(() => {});
+        } else {
+          throw new Error("Recording file was not available after browser context closed.");
         }
       } else {
         await session.context.close().catch(() => {});
       }
     } catch (err) {
-      console.error(`[Sessions] Video upload failed for ${sessionId}:`, err);
+      console.error(`[Sessions] Recording finalization failed for ${sessionId} during ${recordingStage}:`, err);
+      finalizationError = err instanceof Error ? err.message : String(err);
       await session.context.close().catch(() => {});
     }
   } else {
@@ -335,7 +349,7 @@ export async function closeSession(sessionId: string): Promise<{ videoUrl?: stri
 
   await session.release().catch(() => {});
   sessions.delete(sessionId);
-  return { videoUrl, r2Key, recordingId };
+  return { videoUrl, r2Key, recordingId, finalizationError };
 }
 
 export async function pageScreenshot(page: Page): Promise<{ type: "image"; data: string; mimeType: string }> {

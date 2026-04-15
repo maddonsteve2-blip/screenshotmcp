@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Clock3, ExternalLink, FileImage, FileText, FolderSearch, Globe, Link2, Search, Video } from "lucide-react";
+import { useDashboardWs } from "@/lib/use-dashboard-ws";
 
 type Screenshot = {
   id: string;
@@ -114,45 +115,25 @@ export default function ArtifactsPage() {
   const [linkFilter, setLinkFilter] = useState<"all" | "linked" | "unlinked">("all");
   const [shareFilter, setShareFilter] = useState<"all" | "shared" | "private">("all");
 
-  useEffect(() => {
-    let cancelled = false;
+  const handleSocketMessage = useCallback((message: { type: string; data?: { screenshots?: Screenshot[]; recordings?: Recording[] }; message?: string }) => {
+    if (message.type === "artifacts") {
+      setScreenshots(message.data?.screenshots ?? []);
+      setRecordings(message.data?.recordings ?? []);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
-    Promise.allSettled([
-      fetch("/api/screenshots").then((response) => response.json()),
-      fetch("/api/recordings").then((response) => response.json()),
-    ])
-      .then(([screenshotsResult, recordingsResult]) => {
-        if (cancelled) return;
-
-        const screenshotOk = screenshotsResult.status === "fulfilled";
-        const recordingOk = recordingsResult.status === "fulfilled";
-
-        setScreenshots(screenshotOk ? (screenshotsResult.value.screenshots ?? []) : []);
-        setRecordings(recordingOk ? (recordingsResult.value.recordings ?? []) : []);
-
-        if (!screenshotOk && !recordingOk) {
-          setError("We couldn’t load artifacts right now.");
-          return;
-        }
-
-        if (!screenshotOk || !recordingOk) {
-          setError("Some artifacts could not be loaded. You may be seeing a partial library.");
-          return;
-        }
-
-        setError(null);
-      })
-      .catch(() => {
-        if (!cancelled) setError("We couldn’t load artifacts right now.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    if (message.type === "error") {
+      setError(message.message ?? "We couldn’t load artifacts right now.");
+      setLoading(false);
+    }
   }, []);
+
+  useDashboardWs({
+    subscription: { channel: "artifacts" },
+    onMessage: handleSocketMessage,
+  });
 
   const artifacts = useMemo<Artifact[]>(() => {
     const captureArtifacts: Artifact[] = screenshots.map((screenshot) => ({
@@ -235,7 +216,7 @@ export default function ArtifactsPage() {
   }), [artifacts]);
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-8 px-4 py-6 sm:px-6 lg:p-8">
       <div>
         <h1 className="text-2xl font-bold">Artifacts</h1>
         <p className="mt-1 text-muted-foreground">
@@ -262,34 +243,34 @@ export default function ArtifactsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">All artifacts</p>
+            <p className="text-sm text-muted-foreground">All artifacts</p>
             <p className="text-2xl font-semibold">{summary.total}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">Captures</p>
+            <p className="text-sm text-muted-foreground">Captures</p>
             <p className="text-2xl font-semibold">{summary.captures}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">Replays</p>
+            <p className="text-sm text-muted-foreground">Replays</p>
             <p className="text-2xl font-semibold">{summary.replays}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">Linked to runs</p>
+            <p className="text-sm text-muted-foreground">Linked to runs</p>
             <p className="text-2xl font-semibold">{summary.linked}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">From shared runs</p>
+            <p className="text-sm text-muted-foreground">From shared runs</p>
             <p className="text-2xl font-semibold">{summary.shared}</p>
           </CardContent>
         </Card>
@@ -363,7 +344,7 @@ export default function ArtifactsPage() {
               </Button>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Showing {filteredArtifacts.length} of {artifacts.length} artifacts.
           </p>
         </CardContent>
@@ -386,42 +367,42 @@ export default function ArtifactsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
           {filteredArtifacts.map((artifact) => {
             const sharedHref = artifact.shareToken ? `/shared/runs/${encodeURIComponent(artifact.shareToken)}` : null;
 
             return (
               <Card key={`${artifact.kind}-${artifact.id}`} className="overflow-hidden">
-                <div className="flex min-h-40 flex-col md:flex-row">
-                <div className="flex h-40 w-full items-center justify-center border-b bg-muted md:h-auto md:w-56 md:border-b-0 md:border-r">
+                <div className="flex min-h-56 flex-col md:flex-row">
+                <div className="flex h-56 w-full items-center justify-center border-b bg-muted md:h-auto md:w-72 lg:w-80 md:border-b-0 md:border-r">
                   {artifact.kind === "capture" ? (
                     artifact.previewUrl ? (
                       <img src={artifact.previewUrl} alt={artifact.title} className="h-full w-full object-cover object-top" loading="lazy" />
                     ) : artifact.flags.pdf ? (
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <FileText className="h-8 w-8" />
-                        <span className="text-xs">PDF</span>
+                        <span className="text-sm">PDF</span>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <FileImage className="h-8 w-8" />
-                        <span className="text-xs capitalize">{artifact.status}</span>
+                        <span className="text-sm capitalize">{artifact.status}</span>
                       </div>
                     )
                   ) : (
                     <div className="flex flex-col items-center gap-2 bg-black/95 px-6 py-8 text-white/75">
                       <Video className="h-8 w-8" />
-                      <span className="text-xs">Replay evidence</span>
+                      <span className="text-sm">Replay evidence</span>
                     </div>
                   )}
                 </div>
 
-                <CardContent className="flex flex-1 flex-col justify-between p-4">
+                <CardContent className="flex flex-1 flex-col justify-between p-5">
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-1">
-                        <p className="truncate text-sm font-medium" title={artifact.title}>{artifact.title}</p>
-                        <p className="truncate text-xs text-muted-foreground" title={artifact.title}>{hostname(artifact.title)}</p>
+                        <p className="truncate text-base font-medium" title={artifact.title}>{artifact.title}</p>
+                        <p className="truncate text-sm text-muted-foreground" title={artifact.title}>{hostname(artifact.title)}</p>
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center gap-2">
                         <Badge variant="outline">{artifact.kind === "capture" ? "Capture" : "Replay"}</Badge>
@@ -434,13 +415,13 @@ export default function ArtifactsPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                       <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{timeAgo(artifact.createdAt)}</span>
                       {artifact.sessionId ? <span className="inline-flex items-center gap-1"><Link2 className="h-3 w-3" />Run linked</span> : <span>Standalone artifact</span>}
                       {artifact.shareToken && <span className="inline-flex items-center gap-1"><Globe className="h-3 w-3" />Public review enabled{artifact.sharedAt ? ` · ${timeAgo(artifact.sharedAt)}` : ""}</span>}
                     </div>
 
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                       {artifact.meta.map((entry) => (
                         <span key={entry} className="rounded-full border px-2 py-1">{entry}</span>
                       ))}

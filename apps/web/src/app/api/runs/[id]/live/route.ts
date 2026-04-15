@@ -1,8 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
+import { getInternalApiBase, getInternalApiHeaders } from "@/lib/internal-api";
 
 export async function GET(
   _req: Request,
@@ -15,11 +14,18 @@ export async function GET(
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const { id } = await params;
-  const res = await fetch(`${API_URL}/v1/runs/${encodeURIComponent(id)}/live`, {
-    headers: { Authorization: `Bearer ${clerkId}` },
-    cache: "no-store",
-  });
+  try {
+    const res = await fetch(`${getInternalApiBase()}/v1/runs/${encodeURIComponent(id)}/live`, {
+      headers: getInternalApiHeaders(user.id),
+      cache: "no-store",
+    });
 
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Server configuration error" },
+      { status: 500 },
+    );
+  }
 }

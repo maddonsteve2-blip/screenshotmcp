@@ -12,6 +12,7 @@ import { errorHandler } from "./middleware/error.js";
 import { startWorker } from "./lib/queue.js";
 import { browserPool } from "./lib/browser-pool.js";
 import { attachAnalyticsWs } from "./routes/analytics-ws.js";
+import { attachDashboardWs } from "./routes/dashboard-ws.js";
 import { createServer } from "http";
 
 const app = express();
@@ -150,6 +151,7 @@ app.use(errorHandler);
 
 const server = createServer(app);
 attachAnalyticsWs(server);
+attachDashboardWs(server);
 
 server.listen(PORT, async () => {
   console.log(`API server running on port ${PORT}`);

@@ -87,7 +87,7 @@ export default async function RunsPage() {
   }));
 
   return (
-    <div className="p-8 space-y-8 max-w-6xl">
+    <div className="max-w-6xl space-y-8 px-4 py-6 sm:px-6 lg:p-8">
       <div>
         <h1 className="text-2xl font-bold">Runs</h1>
         <p className="text-muted-foreground mt-1">

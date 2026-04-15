@@ -12,6 +12,24 @@ export async function getOrCreateDbUser(clerkId: string) {
   const clerk = await currentUser();
   const email = clerk?.emailAddresses[0]?.emailAddress ?? "";
 
+  if (email) {
+    const [existingByEmail] = await db.select().from(users).where(eq(users.email, email));
+
+    if (existingByEmail) {
+      await db
+        .update(users)
+        .set({
+          clerkId,
+          email,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, existingByEmail.id));
+
+      const [reconciled] = await db.select().from(users).where(eq(users.id, existingByEmail.id));
+      return reconciled ?? existingByEmail;
+    }
+  }
+
   await db.insert(users).values({
     id: nanoid(),
     clerkId,

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, CreditCard, Download, FileText, FolderSearch, type LucideIcon, Image, Key, LayoutDashboard, ListVideo, Play, ScrollText, Settings, Video } from "lucide-react";
+import { DialogClose } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 type NavChild = {
@@ -82,7 +83,7 @@ function childMatchesPath(pathname: string, child: NavChild) {
   return pathname === child.href || pathname.startsWith(`${child.href}/`);
 }
 
-export default function DashboardSidebar() {
+export default function DashboardSidebar({ closeOnNavigate = false }: { closeOnNavigate?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -95,29 +96,31 @@ export default function DashboardSidebar() {
           <div className="space-y-1">
             {group.items.map((item) => {
               const active = matchesPath(pathname, item);
+              const itemLink = (
+                <Link
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    active
+                      ? "border border-primary/20 bg-primary/10 text-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className="flex-1">{item.label}</span>
+                </Link>
+              );
 
               return (
                 <div key={item.href} className="space-y-1">
-                  <Link
-                    href={item.href}
-                    aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                      active
-                        ? "border border-primary/20 bg-primary/10 text-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span className="flex-1">{item.label}</span>
-                  </Link>
+                  {closeOnNavigate ? <DialogClose render={itemLink} /> : itemLink}
                   {item.children && (
                     <div className="ml-7 space-y-1">
                       {item.children.map((child) => {
                         const childActive = childMatchesPath(pathname, child);
                         const ChildIcon = child.label === "Captures" ? Image : Video;
-
-                        return (
+                        const childLink = (
                           <Link
                             key={child.href}
                             href={child.href}
@@ -132,6 +135,10 @@ export default function DashboardSidebar() {
                             <ChildIcon className="h-3.5 w-3.5" />
                             <span>{child.label}</span>
                           </Link>
+                        );
+
+                        return (
+                          closeOnNavigate ? <DialogClose key={child.href} render={childLink} /> : childLink
                         );
                       })}
                     </div>

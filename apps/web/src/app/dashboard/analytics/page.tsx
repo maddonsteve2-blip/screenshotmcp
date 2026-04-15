@@ -179,13 +179,13 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="p-8 flex flex-col gap-6 max-w-5xl">
+      <div className="flex max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:p-8">
         <div>
           <div className="h-7 w-32 bg-muted animate-pulse rounded mb-2" />
           <div className="h-4 w-56 bg-muted animate-pulse rounded" />
         </div>
         <div className="h-24 bg-muted animate-pulse rounded-lg" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-28 bg-muted animate-pulse rounded-lg" />)}
         </div>
         <div className="h-[300px] bg-muted animate-pulse rounded-lg" />
@@ -200,13 +200,13 @@ export default function AnalyticsPage() {
   const totalDaily = dailyChartData.reduce((a, b) => a + b.screenshots, 0);
 
   return (
-    <div className="p-8 flex flex-col gap-6 max-w-5xl">
-      <div className="flex items-center justify-between">
+    <div className="flex max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Usage</h1>
           <p className="text-muted-foreground mt-1">Secondary analytics surface for volume, throughput, and output mix. Use Overview and Runs for operational review.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             {connected ? <Wifi className="size-3.5 text-green-500" /> : <WifiOff className="size-3.5 text-muted-foreground" />}
             <span>{connected ? "Live" : "Offline"}</span>
@@ -279,7 +279,7 @@ export default function AnalyticsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">

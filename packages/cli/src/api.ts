@@ -9,7 +9,8 @@ interface McpResponse {
 }
 
 export async function callTool(toolName: string, args: Record<string, unknown> = {}): Promise<McpResponse> {
-  const apiKey = getApiKey();
+  const storedApiKey = getApiKey();
+  const apiKey = syncApiKeyFromEditorConfigs(storedApiKey);
   if (!apiKey) {
     throw new Error("Not logged in. Run `screenshotsmcp login` first.");
   }

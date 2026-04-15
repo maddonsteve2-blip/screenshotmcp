@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
+import { getInternalApiBase, getInternalApiHeaders } from "@/lib/internal-api";
 import { runs, screenshots } from "@screenshotsmcp/db";
 import RunDetailTabs from "./run-detail-tabs";
 import RunShareDialog from "./run-share-dialog";
@@ -140,14 +141,17 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
     .where(and(eq(screenshots.userId, user.id), eq(screenshots.sessionId, id)))
     .orderBy(asc(screenshots.createdAt));
 
-  const recordingRes = clerkId
-    ? await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app"}/v1/recordings?sessionId=${encodeURIComponent(id)}`,
-        {
-          headers: { Authorization: `Bearer ${clerkId}` },
-          cache: "no-store",
-        },
-      ).catch(() => null)
+  const recordingRes = user
+    ? await (async () => {
+        try {
+          return await fetch(`${getInternalApiBase()}/v1/recordings?sessionId=${encodeURIComponent(id)}`, {
+            headers: getInternalApiHeaders(user.id),
+            cache: "no-store",
+          });
+        } catch {
+          return null;
+        }
+      })()
     : null;
 
   const recordingData = recordingRes && recordingRes.ok
@@ -189,7 +193,7 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
   };
 
   return (
-    <div className="p-8 space-y-8 max-w-6xl">
+    <div className="max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:p-8">
       <div className="space-y-4">
         <Link href="/dashboard/runs" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back to runs
@@ -206,20 +210,20 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
               {run.recordingEnabled && <Badge variant="outline">Recording enabled</Badge>}
               {run.shareToken && <Badge variant="outline" className="border-emerald-200 text-emerald-700">Shared</Badge>}
             </div>
-            <p className="text-muted-foreground break-all">{run.finalUrl ?? run.startUrl ?? "Managed browser session"}</p>
+            <p className="text-base text-muted-foreground break-all">{run.finalUrl ?? run.startUrl ?? "Managed browser session"}</p>
             {run.shareToken && (
-              <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Globe className="h-3.5 w-3.5" />
                 Public review enabled{run.sharedAt ? ` · updated ${formatDate(run.sharedAt.toISOString())}` : ""}
               </p>
             )}
-            <p className="text-xs text-muted-foreground font-mono">Session ID: {run.id}</p>
+            <p className="text-sm text-muted-foreground font-mono">Session ID: {run.id}</p>
           </div>
           <RunShareDialog runId={run.id} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-7 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Started</CardTitle>

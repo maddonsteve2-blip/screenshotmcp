@@ -704,6 +704,8 @@ export default function HomePage() {
               <Link href="#pricing" className="hover:text-gray-300 transition-colors">Pricing</Link>
               <Link href="/docs/quickstart" className="hover:text-gray-300 transition-colors">Quick Start</Link>
               <Link href="/dashboard" className="hover:text-gray-300 transition-colors">Dashboard</Link>
+              <Link href="/privacy-policy" className="hover:text-gray-300 transition-colors">Privacy</Link>
+              <Link href="/terms-of-service" className="hover:text-gray-300 transition-colors">Terms</Link>
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-white/[0.06] text-xs text-gray-600">

@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Video, Trash2, ExternalLink, Clock, Globe, Monitor, Loader2, Search, HardDrive, Link2, ScanSearch } from "lucide-react";
+import { useDashboardWs } from "@/lib/use-dashboard-ws";
 
 interface Recording {
   id: string;
@@ -35,6 +36,11 @@ function formatFileSize(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatIdentifier(value: string, start = 12, end = 6): string {
+  if (value.length <= start + end + 3) return value;
+  return `${value.slice(0, start)}...${value.slice(-end)}`;
+}
+
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -54,18 +60,24 @@ export default function RecordingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
-  useEffect(() => {
-    fetch("/api/recordings")
-      .then((r) => r.json())
-      .then((data) => {
-        setRecordings(data.recordings ?? []);
-        setError(null);
-      })
-      .catch(() => {
-        setError("We couldn’t load your replays right now.");
-      })
-      .finally(() => setLoading(false));
+  const handleSocketMessage = useCallback((message: { type: string; data?: { recordings?: Recording[] }; message?: string }) => {
+    if (message.type === "recordings") {
+      setRecordings(message.data?.recordings ?? []);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    if (message.type === "error") {
+      setError(message.message ?? "We couldn’t load your replays right now.");
+      setLoading(false);
+    }
   }, []);
+
+  useDashboardWs({
+    subscription: { channel: "recordings" },
+    onMessage: handleSocketMessage,
+  });
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this recording? This cannot be undone.")) return;
@@ -112,7 +124,7 @@ export default function RecordingsPage() {
   }, [query, recordings]);
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-8 px-4 py-6 sm:px-6 lg:p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Video className="h-6 w-6" />
@@ -120,8 +132,8 @@ export default function RecordingsPage() {
         </h1>
         <p className="text-muted-foreground mt-1">
           Artifact library for replayable video evidence. Use Runs when you want the full session review with captures and replay together. Start recording by passing{" "}
-          <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">record_video: true</code>{" "}
-          to <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">browser_navigate</code>.
+          <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">record_video: true</code>{" "}
+          to <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">browser_navigate</code>.
         </p>
       </div>
 
@@ -134,28 +146,28 @@ export default function RecordingsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">Total replays</p>
+            <p className="text-sm text-muted-foreground">Total replays</p>
             <p className="text-2xl font-semibold">{summary.total}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">Created in 24h</p>
+            <p className="text-sm text-muted-foreground">Created in 24h</p>
             <p className="text-2xl font-semibold">{summary.recent}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">Known page URL</p>
+            <p className="text-sm text-muted-foreground">Known page URL</p>
             <p className="text-2xl font-semibold">{summary.withPageUrl}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">Library size</p>
+            <p className="text-sm text-muted-foreground">Library size</p>
             <p className="text-2xl font-semibold">{formatFileSize(summary.totalBytes)}</p>
           </CardContent>
         </Card>
@@ -178,7 +190,7 @@ export default function RecordingsPage() {
               className="pl-9"
             />
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Showing {filteredRecordings.length} of {recordings.length} replays · {formatDuration(summary.totalDurationMs)} total duration.
           </p>
         </CardContent>
@@ -202,7 +214,7 @@ export default function RecordingsPage() {
             <Video className="h-12 w-12 text-muted-foreground/30 mb-4" />
             <h3 className="text-lg font-medium mb-2">No recordings yet</h3>
             <p className="text-muted-foreground text-sm max-w-md">
-              Start a browser session with <code className="bg-muted px-1 py-0.5 rounded text-xs">record_video: true</code>{" "}
+              Start a browser session with <code className="bg-muted px-1 py-0.5 rounded text-sm">record_video: true</code>{" "}
               to capture a video of the entire session. The recording will appear here when the session is closed.
             </p>
           </CardContent>
@@ -222,13 +234,13 @@ export default function RecordingsPage() {
           {filteredRecordings.map((rec) => (
             <Card key={rec.id} className="overflow-hidden">
               <div className="flex flex-col lg:flex-row">
-                <div className="lg:w-[480px] bg-black flex items-center justify-center min-h-[270px]">
+                <div className="bg-black flex items-center justify-center min-h-[320px] lg:w-[560px] xl:w-[640px]">
                   {playingId === rec.id ? (
                     <video
                       src={rec.videoUrl}
                       controls
                       autoPlay
-                      className="w-full h-full max-h-[360px]"
+                      className="h-full w-full max-h-[420px]"
                     />
                   ) : (
                     <button
@@ -243,24 +255,30 @@ export default function RecordingsPage() {
                   )}
                 </div>
 
-                <div className="flex-1 p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="font-medium text-sm mb-1 truncate max-w-[300px]">
+                <div className="min-w-0 flex-1 p-6">
+                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h3
+                        className="mb-1 text-base font-medium leading-snug break-all lg:text-lg"
+                        title={rec.pageUrl || "Unknown page"}
+                      >
                         {rec.pageUrl || "Unknown page"}
                       </h3>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <span>Session: <code className="font-mono">{rec.sessionId.slice(0, 12)}...</code></span>
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <span>
+                          Session:{" "}
+                          <code className="font-mono" title={rec.sessionId}>{formatIdentifier(rec.sessionId)}</code>
+                        </span>
                         <span className="inline-flex items-center gap-1"><Link2 className="h-3 w-3" />Run linked</span>
                       </div>
                     </div>
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="self-start text-sm">
                       <Clock className="h-3 w-3 mr-1" />
                       {timeAgo(rec.createdAt)}
                     </Badge>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
+                  <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-base">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Clock className="h-3.5 w-3.5" />
                       <span>Duration: <span className="text-foreground">{formatDuration(rec.durationMs)}</span></span>
@@ -275,7 +293,10 @@ export default function RecordingsPage() {
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <HardDrive className="h-3.5 w-3.5" />
-                      <span>Replay ID: <span className="text-foreground font-mono">{rec.id.slice(0, 12)}...</span></span>
+                      <span>
+                        Replay ID:{" "}
+                        <span className="text-foreground font-mono" title={rec.id}>{formatIdentifier(rec.id)}</span>
+                      </span>
                     </div>
                     {rec.pageUrl && (
                       <div className="flex items-center gap-2 text-muted-foreground">
@@ -284,7 +305,8 @@ export default function RecordingsPage() {
                           href={rec.pageUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline truncate text-xs"
+                          className="break-all text-sm text-primary hover:underline"
+                          title={rec.pageUrl}
                         >
                           {new URL(rec.pageUrl).hostname}
                         </a>

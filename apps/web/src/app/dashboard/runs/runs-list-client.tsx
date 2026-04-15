@@ -128,7 +128,7 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4 space-y-1">
             <p className="text-xs text-muted-foreground">Active runs</p>

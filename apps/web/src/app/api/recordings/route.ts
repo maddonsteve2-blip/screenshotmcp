@@ -1,8 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
+import { getInternalApiBase, getInternalApiHeaders } from "@/lib/internal-api";
 
 export async function GET(req: NextRequest) {
   const { userId: clerkId } = await auth();
@@ -14,10 +13,16 @@ export async function GET(req: NextRequest) {
   const sessionId = req.nextUrl.searchParams.get("sessionId");
   const qs = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
 
-  // Proxy to Railway API
-  const res = await fetch(`${API_URL}/v1/recordings${qs}`, {
-    headers: { Authorization: `Bearer ${clerkId}` },
-  });
-  const data = await res.json();
-  return NextResponse.json(data);
+  try {
+    const res = await fetch(`${getInternalApiBase()}/v1/recordings${qs}`, {
+      headers: getInternalApiHeaders(user.id),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Server configuration error" },
+      { status: 500 },
+    );
+  }
 }

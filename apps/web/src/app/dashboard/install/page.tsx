@@ -114,9 +114,9 @@ export default function InstallPage() {
   const mcpKeyUrl = `${MCP_URL}/${key}`;
 
   return (
-    <div className="p-6 md:p-8 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Install browser truth</h1>
           <p className="text-muted-foreground text-sm mt-1">Connect ScreenshotsMCP so your AI can inspect, test, and verify with real browser evidence.</p>
@@ -136,7 +136,7 @@ export default function InstallPage() {
               {CATEGORIES.map((cat) => (
                 <div key={cat.label}>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{cat.label}</p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {cat.tools.map((tool) => (
                       <button
                         key={tool.id}

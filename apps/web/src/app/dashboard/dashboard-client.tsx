@@ -108,13 +108,13 @@ export function DashboardClient({ data }: { data: DashboardData }) {
 
   return (
     <>
-      <div className="p-8 space-y-8">
-        <div className="flex items-center justify-between">
+      <div className="space-y-8 px-4 py-6 sm:px-6 lg:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">Overview</h1>
             <p className="text-muted-foreground">Recent runs, issues that need attention, and the evidence your browser workflows produced.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Link href="/dashboard/runs">
               <Button variant="outline" size="sm">Open runs</Button>
             </Link>
@@ -125,8 +125,8 @@ export function DashboardClient({ data }: { data: DashboardData }) {
         {keyCount === 0 && (
           <Card className="border-primary/40 bg-primary/5">
             <CardContent className="pt-5 pb-5">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <Download className="h-5 w-5 text-primary" />
                   </div>
@@ -136,7 +136,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                   </div>
                 </div>
                 <Button 
-                  className="gap-2 shrink-0"
+                  className="gap-2 sm:self-start lg:self-auto"
                   onClick={() => setShowInstallDialog(true)}
                 >
                   Install now <ArrowRight className="h-4 w-4" />
@@ -146,7 +146,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Runs with issues</CardTitle>
@@ -288,7 +288,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <CardDescription>Bring failures and noisy runs to the top so you know what to review next.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="rounded-lg border p-4">
                     <p className="text-xs text-muted-foreground">Failed runs</p>
                     <p className="mt-1 text-2xl font-semibold">{failedRunCount}</p>
@@ -451,7 +451,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               <p className="text-sm font-medium mb-2">Sync REST API (returns capture output directly)</p>
               <pre className="rounded-md bg-muted p-4 text-sm overflow-x-auto">
                 <code>{`curl -X POST "${apiUrl}/v1/screenshot?sync=true" \
-  -H "x-api-key: YOUR_API_KEY" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com"}'`}</code>
               </pre>

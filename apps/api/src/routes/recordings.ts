@@ -7,11 +7,24 @@ import { createHash } from "crypto";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 export const recordingsRouter = Router();
+const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET || "").trim();
 
 // Auth middleware — accepts Bearer token or x-api-key header
 async function resolveUser(req: any): Promise<{ userId: string } | null> {
-  // Option 1: Bearer token (from dashboard via Clerk)
   const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Internal ") && INTERNAL_SECRET) {
+    const token = authHeader.slice(9);
+    const [secret, userId] = token.split(":");
+    if (secret === INTERNAL_SECRET && userId) {
+      const [user] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, userId));
+      if (user) return { userId: user.id };
+    }
+  }
+
+  // Option 1: Bearer token (from dashboard via Clerk)
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
     // Clerk user ID passed directly from dashboard
