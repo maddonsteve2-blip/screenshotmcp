@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Copy, Globe, Loader2, RefreshCcw, Share2, Trash2 } from "lucide-react";
 
@@ -112,8 +113,8 @@ export default function RunShareDialog({ runId }: { runId: string }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="rounded-lg border p-4 space-y-3">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 rounded-lg border p-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline" className={share.shareUrl ? "border-emerald-200 text-emerald-700" : "border-slate-200 text-slate-700"}>
                 {share.shareUrl ? "Shared" : "Not shared"}
@@ -131,9 +132,9 @@ export default function RunShareDialog({ runId }: { runId: string }) {
               Loading share settings…
             </div>
           ) : share.shareUrl ? (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Shareable URL</label>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
+                <Label>Shareable URL</Label>
                 <Input value={share.shareUrl} readOnly />
               </div>
               <div className="flex flex-wrap gap-2">
@@ -141,15 +142,14 @@ export default function RunShareDialog({ runId }: { runId: string }) {
                   <Copy className="mr-2 h-4 w-4" />
                   {copyState === "copied" ? "Copied" : "Copy link"}
                 </Button>
-                <a
-                  href={share.shareUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-9 items-center justify-center gap-1 rounded-4xl border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => window.open(share.shareUrl ?? "", "_blank", "noopener,noreferrer")}
                 >
-                  <Globe className="h-4 w-4" />
+                  <Globe className="mr-2 h-4 w-4" />
                   Open shared page
-                </a>
+                </Button>
                 <Button type="button" variant="outline" disabled={submitting} onClick={() => void createShare(true)}>
                   <RefreshCcw className="mr-2 h-4 w-4" />
                   Regenerate
@@ -162,7 +162,7 @@ export default function RunShareDialog({ runId }: { runId: string }) {
               {copyState === "error" && <p className="text-xs text-red-600">Could not copy the URL automatically.</p>}
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed p-6 space-y-3">
+            <div className="flex flex-col gap-3 rounded-lg border border-dashed p-6">
               <p className="text-sm text-muted-foreground">
                 This run does not have a public share URL yet.
               </p>

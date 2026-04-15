@@ -108,7 +108,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
 
   return (
     <>
-      <div className="space-y-8 px-4 py-6 sm:px-6 lg:p-8">
+      <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">Overview</h1>
@@ -127,7 +127,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             <CardContent className="pt-5 pb-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
                     <Download className="h-5 w-5 text-primary" />
                   </div>
                   <div>
@@ -219,7 +219,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <Button variant="outline" size="sm">Open all</Button>
               </Link>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="flex flex-col gap-3">
               {recentRuns.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                   No runs yet. Start a browser workflow and your recent sessions will show up here with their evidence and issues.
@@ -232,10 +232,10 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                   const sharedHref = item.shareToken ? `/shared/runs/${encodeURIComponent(item.shareToken)}` : null;
 
                   return (
-                    <div key={item.id} className="rounded-lg border p-4 space-y-3 transition-colors hover:border-primary/40 hover:bg-accent/30">
+                    <div key={item.id} className="flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:border-primary/40 hover:bg-accent/30">
                       <Link href={`/dashboard/runs/${item.id}`} className="block">
                         <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0 space-y-1">
+                          <div className="min-w-0 flex flex-col gap-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="text-sm font-medium truncate" title={title}>{title}</p>
                               <Badge variant={item.status === "completed" ? "secondary" : item.status === "failed" ? "destructive" : "outline"} className="capitalize">{item.status}</Badge>
@@ -268,10 +268,10 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                           Open run
                         </Link>
                         {sharedHref && (
-                          <a href={sharedHref} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                          <Link href={sharedHref} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
                             <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                             Open shared
-                          </a>
+                          </Link>
                         )}
                       </div>
                     </div>
@@ -281,13 +281,13 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             </CardContent>
           </Card>
 
-          <div className="space-y-6">
+          <div className="flex flex-col gap-6">
             <Card>
               <CardHeader>
                 <CardTitle>Needs attention</CardTitle>
                 <CardDescription>Bring failures and noisy runs to the top so you know what to review next.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="flex flex-col gap-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="rounded-lg border p-4">
                     <p className="text-xs text-muted-foreground">Failed runs</p>
@@ -314,8 +314,8 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <CardTitle>Next actions</CardTitle>
                 <CardDescription>Keep the most useful next steps visible instead of burying them behind artifact pages.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="rounded-lg border p-4 space-y-1">
+              <CardContent className="flex flex-col gap-3 text-sm">
+                <div className="flex flex-col gap-1 rounded-lg border p-4">
                   <p className="font-medium">{keyCount === 0 ? "Finish install" : "Run and review a session"}</p>
                   <p className="text-muted-foreground">
                     {keyCount === 0
@@ -323,7 +323,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                       : "Open the Runs view to review recent sessions before diving into raw artifacts."}
                   </p>
                 </div>
-                <div className="rounded-lg border p-4 space-y-1">
+                <div className="flex flex-col gap-1 rounded-lg border p-4">
                   <p className="font-medium">Plan status</p>
                   <p className="text-muted-foreground capitalize">
                     {plan} plan · {PLAN_LIMITS[plan].price === 0 ? "Free forever" : `$${PLAN_LIMITS[plan].price}/mo`}
@@ -353,7 +353,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <Button variant="outline" size="sm">Open captures</Button>
               </Link>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="flex flex-col gap-3">
               {recentScreenshots.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                   No screenshots yet. Run a browser task and your recent evidence will show up here.
@@ -361,7 +361,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               ) : (
                 recentScreenshots.map((item) => (
                   <div key={item.id} className="flex items-start justify-between gap-4 rounded-lg border p-3">
-                    <div className="min-w-0 space-y-1">
+                    <div className="min-w-0 flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <ImageIcon className="h-4 w-4 text-muted-foreground" />
                         <p className="text-sm font-medium truncate" title={item.url}>{item.url}</p>
@@ -376,14 +376,14 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       {item.sessionId && (
-                        <Link href={`/dashboard/runs/${item.sessionId}`} className="text-xs text-primary hover:underline">
+                        <Link href={`/dashboard/runs/${item.sessionId}`} className={cn(buttonVariants({ variant: "ghost", size: "xs" }))}>
                           View run
                         </Link>
                       )}
                       {item.publicUrl && (
-                        <a href={item.publicUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                        <Link href={item.publicUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: "ghost", size: "icon-xs" }))}>
                           <ExternalLink className="h-4 w-4" />
-                        </a>
+                        </Link>
                       )}
                     </div>
                   </div>
@@ -402,7 +402,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <Button variant="outline" size="sm">Open replays</Button>
               </Link>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="flex flex-col gap-3">
               {recentRecordings.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                   No recordings yet. Start a managed browser run with recording enabled to build replayable evidence.
@@ -410,7 +410,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               ) : (
                 recentRecordings.map((item) => (
                   <div key={item.id} className="flex items-start justify-between gap-4 rounded-lg border p-3">
-                    <div className="min-w-0 space-y-1">
+                    <div className="min-w-0 flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <Video className="h-4 w-4 text-muted-foreground" />
                         <p className="text-sm font-medium truncate" title={item.pageUrl ?? "Managed browser session"}>{item.pageUrl ?? "Managed browser session"}</p>
@@ -422,7 +422,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                       </div>
                     </div>
                     <div className="shrink-0">
-                      <Link href={`/dashboard/runs/${item.sessionId}`} className="text-xs text-primary hover:underline">
+                      <Link href={`/dashboard/runs/${item.sessionId}`} className={cn(buttonVariants({ variant: "ghost", size: "xs" }))}>
                         View run
                       </Link>
                     </div>
@@ -438,15 +438,12 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             <CardTitle>How to get better proof</CardTitle>
             <CardDescription>
               Use your API key through REST or MCP, then escalate from captures to richer evidence when needed.{" "}
-              <button 
-                onClick={() => setShowInstallDialog(true)}
-                className="text-primary hover:underline"
-              >
+              <Button type="button" variant="link" size="sm" className="h-auto px-0 py-0 align-baseline" onClick={() => setShowInstallDialog(true)}>
                 Need help installing? →
-              </button>
+              </Button>
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="flex flex-col gap-4">
             <div>
               <p className="text-sm font-medium mb-2">Sync REST API (returns capture output directly)</p>
               <pre className="rounded-md bg-muted p-4 text-sm overflow-x-auto">

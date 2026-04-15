@@ -80,8 +80,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
-      <div>
+    <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
+      <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Manage your integrations and preferences</p>
       </div>
@@ -91,22 +91,22 @@ export default function SettingsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
                 <Mail className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <CardTitle className="flex items-center gap-2">
                   AgentMail
-                  {hasKey && <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">Connected</Badge>}
+                  {hasKey && <Badge variant="secondary" className="text-xs">Connected</Badge>}
                 </CardTitle>
                 <CardDescription>Disposable email inboxes for automated testing</CardDescription>
               </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="flex flex-col gap-6">
           {/* What is AgentMail */}
-          <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
+          <div className="flex flex-col gap-3 rounded-lg border bg-muted/40 p-4">
             <p className="text-sm font-medium">What is AgentMail?</p>
             <p className="text-sm text-muted-foreground">
               AgentMail is an API platform that gives AI agents their own email inboxes to send, receive, and act upon emails.
@@ -130,9 +130,9 @@ export default function SettingsPage() {
           </div>
 
           {/* How to get a key */}
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <p className="text-sm font-medium">How to get your API key</p>
-            <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+            <ol className="list-inside list-decimal text-sm text-muted-foreground flex flex-col gap-2">
               <li>
                 Create a free account at{" "}
                 <a href="https://console.agentmail.to" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
@@ -146,26 +146,28 @@ export default function SettingsPage() {
 
           {/* Current key status */}
           {hasKey && maskedKey && (
-            <div className="flex items-center gap-3 p-3 rounded-lg border bg-green-50 dark:bg-green-950/20">
-              <Check className="h-4 w-4 text-green-600 shrink-0" />
+            <div className="flex items-center gap-3 rounded-lg border bg-muted/40 p-3">
+              <Check className="h-4 w-4 shrink-0 text-primary" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-green-800 dark:text-green-200">API key configured</p>
-                <p className="text-xs text-green-600 dark:text-green-400 font-mono">{maskedKey}</p>
+                <p className="text-sm font-medium">API key configured</p>
+                <p className="text-xs font-mono text-muted-foreground">{maskedKey}</p>
               </div>
               <Button
-                size="sm"
-                variant="ghost"
+                type="button"
+                size="icon-sm"
+                variant="destructive"
                 onClick={removeKey}
                 disabled={saving}
-                className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                className="shrink-0"
+                aria-label="Remove API key"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 />
               </Button>
             </div>
           )}
 
           {/* Input */}
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="agentmail-key">{hasKey ? "Replace API key" : "API key"}</Label>
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -177,13 +179,16 @@ export default function SettingsPage() {
                   onChange={(e) => setAgentmailKey(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && agentmailKey.trim() && saveKey()}
                 />
-                <button
+                <Button
                   type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setShowKey((current) => !current)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2"
+                  aria-label={showKey ? "Hide API key" : "Show API key"}
                 >
-                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+                  {showKey ? <EyeOff /> : <Eye />}
+                </Button>
               </div>
               <Button onClick={saveKey} disabled={saving || !agentmailKey.trim()}>
                 {saving ? "Saving..." : "Save"}
@@ -193,31 +198,31 @@ export default function SettingsPage() {
 
           {/* Status message */}
           {message && (
-            <div className={`flex items-center gap-2 text-sm ${message.type === "success" ? "text-green-600" : "text-red-600"}`}>
+            <div className={`flex items-center gap-2 text-sm ${message.type === "success" ? "text-primary" : "text-destructive"}`}>
               {message.type === "success" ? <Check className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
               {message.text}
             </div>
           )}
 
           {/* Pricing info */}
-          <div className="rounded-lg border p-4 space-y-3">
+          <div className="flex flex-col gap-3 rounded-lg border p-4">
             <p className="text-sm font-medium">AgentMail Plans</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="rounded-md border p-3 space-y-1">
+              <div className="flex flex-col gap-1 rounded-md border p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">Free</span>
                   <span className="text-sm font-bold">$0</span>
                 </div>
                 <p className="text-xs text-muted-foreground">3 inboxes, 3K emails/mo</p>
               </div>
-              <div className="rounded-md border p-3 space-y-1">
+              <div className="flex flex-col gap-1 rounded-md border p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">Developer</span>
                   <span className="text-sm font-bold">$20<span className="text-xs font-normal text-muted-foreground">/mo</span></span>
                 </div>
                 <p className="text-xs text-muted-foreground">10 inboxes, 10K emails/mo</p>
               </div>
-              <div className="rounded-md border p-3 space-y-1 border-primary/30">
+              <div className="flex flex-col gap-1 rounded-md border border-primary/30 p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">Startup</span>
                   <span className="text-sm font-bold">$200<span className="text-xs font-normal text-muted-foreground">/mo</span></span>
@@ -241,7 +246,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
               <Inbox className="h-5 w-5 text-primary" />
             </div>
             <div>
@@ -263,65 +268,75 @@ export default function SettingsPage() {
           </div>
 
           {inboxes.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="flex flex-col items-center gap-2 py-8 text-center text-muted-foreground">
               <Inbox className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No test inboxes yet</p>
               <p className="text-xs mt-1">Your AI assistant will create them when testing sign-up flows</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
               {inboxes.map((inbox) => (
-                <div key={inbox.id} className="rounded-lg border p-4 space-y-3">
+                <div key={inbox.id} className="flex flex-col gap-3 rounded-lg border p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-mono font-medium truncate">{inbox.email}</p>
-                        <button
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
                           onClick={() => {
                             navigator.clipboard.writeText(inbox.email);
                             setCopiedId(inbox.id + "-email");
                             setTimeout(() => setCopiedId(null), 2000);
                           }}
-                          className="text-muted-foreground hover:text-foreground shrink-0"
-                          title="Copy email"
+                          className="shrink-0"
+                          aria-label="Copy email"
                         >
-                          {copiedId === inbox.id + "-email" ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-                        </button>
+                          {copiedId === inbox.id + "-email" ? <Check /> : <Copy />}
+                        </Button>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-muted-foreground">Password:</span>
                         <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
                           {showPasswords[inbox.id] ? inbox.password : "••••••••••••"}
                         </code>
-                        <button
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
                           onClick={() => setShowPasswords((p) => ({ ...p, [inbox.id]: !p[inbox.id] }))}
-                          className="text-muted-foreground hover:text-foreground"
+                          aria-label={showPasswords[inbox.id] ? "Hide password" : "Show password"}
                         >
-                          {showPasswords[inbox.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                        </button>
-                        <button
+                          {showPasswords[inbox.id] ? <EyeOff /> : <Eye />}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
                           onClick={() => {
                             navigator.clipboard.writeText(inbox.password);
                             setCopiedId(inbox.id + "-pw");
                             setTimeout(() => setCopiedId(null), 2000);
                           }}
-                          className="text-muted-foreground hover:text-foreground"
-                          title="Copy password"
+                          aria-label="Copy password"
                         >
-                          {copiedId === inbox.id + "-pw" ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-                        </button>
+                          {copiedId === inbox.id + "-pw" ? <Check /> : <Copy />}
+                        </Button>
                       </div>
                     </div>
                     <Button
-                      size="sm"
-                      variant="ghost"
+                      type="button"
+                      size="icon-sm"
+                      variant="destructive"
                       onClick={async () => {
                         await fetch(`/api/test-inboxes?id=${inbox.id}`, { method: "DELETE" });
                         setInboxes((prev) => prev.filter((i) => i.id !== inbox.id));
                       }}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                      className="shrink-0"
+                      aria-label="Delete inbox"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 />
                     </Button>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">

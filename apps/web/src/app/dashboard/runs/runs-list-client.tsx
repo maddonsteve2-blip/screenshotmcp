@@ -127,34 +127,34 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-xs text-muted-foreground">Active runs</p>
             <p className="text-2xl font-semibold">{counts.active}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-xs text-muted-foreground">Failed runs</p>
             <p className="text-2xl font-semibold">{counts.failed}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-xs text-muted-foreground">Runs with evidence</p>
             <p className="text-2xl font-semibold">{counts.withEvidence}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-xs text-muted-foreground">Runs with issues</p>
             <p className="text-2xl font-semibold">{counts.withIssues}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-xs text-muted-foreground">Shared runs</p>
             <p className="text-2xl font-semibold">{counts.shared}</p>
           </CardContent>
@@ -168,7 +168,7 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
             Scan by status, execution mode, and evidence coverage without opening every session.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="flex flex-col gap-4">
           <div className="relative w-full xl:max-w-md">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -179,7 +179,7 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
             />
           </div>
 
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <div className="flex flex-wrap gap-2">
               {(["all", "active", "completed", "failed"] as const).map((status) => (
                 <Button
@@ -255,7 +255,7 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         {filteredRuns.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center text-sm text-muted-foreground">
@@ -273,7 +273,7 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
               <Card key={run.id} className="transition-colors hover:border-primary/40 hover:bg-accent/20">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-2 min-w-0">
+                    <div className="min-w-0 flex flex-col gap-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <CardTitle className="text-base">{title}</CardTitle>
                         <Badge
@@ -303,15 +303,10 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
                       {sharedHref && (
-                        <a
-                          href={sharedHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                        >
+                        <Link href={sharedHref} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
                           Open shared
                           <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
+                        </Link>
                       )}
                       <Link href={`/dashboard/runs/${run.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
                         Open run
@@ -320,7 +315,7 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0 space-y-3">
+                <CardContent className="flex flex-col gap-3 pt-0">
                   <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                     <span className="font-mono text-xs">{run.id}</span>
                     <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />{timeAgo(run.startedAt)}</span>
