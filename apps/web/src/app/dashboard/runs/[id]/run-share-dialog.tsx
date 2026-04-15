@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -31,7 +33,7 @@ export default function RunShareDialog({ runId }: { runId: string }) {
     sharedAt: null,
   });
 
-  async function loadShareState() {
+  const loadShareState = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -44,12 +46,12 @@ export default function RunShareDialog({ runId }: { runId: string }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [runId]);
 
   useEffect(() => {
     if (!open) return;
     void loadShareState();
-  }, [open]);
+  }, [loadShareState, open]);
 
   async function createShare(regenerate = false) {
     setSubmitting(true);
@@ -116,7 +118,7 @@ export default function RunShareDialog({ runId }: { runId: string }) {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-3 rounded-lg border p-4">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className={share.shareUrl ? "border-emerald-200 text-emerald-700" : "border-slate-200 text-slate-700"}>
+              <Badge variant={share.shareUrl ? "secondary" : "outline"}>
                 {share.shareUrl ? "Shared" : "Not shared"}
               </Badge>
               {share.sharedAt && <span className="text-xs text-muted-foreground">Last updated {formatDate(share.sharedAt)}</span>}
@@ -142,14 +144,15 @@ export default function RunShareDialog({ runId }: { runId: string }) {
                   <Copy className="mr-2 h-4 w-4" />
                   {copyState === "copied" ? "Copied" : "Copy link"}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => window.open(share.shareUrl ?? "", "_blank", "noopener,noreferrer")}
+                <Link
+                  href={share.shareUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(buttonVariants({ variant: "outline" }))}
                 >
                   <Globe className="mr-2 h-4 w-4" />
                   Open shared page
-                </Button>
+                </Link>
                 <Button type="button" variant="outline" disabled={submitting} onClick={() => void createShare(true)}>
                   <RefreshCcw className="mr-2 h-4 w-4" />
                   Regenerate
@@ -159,7 +162,7 @@ export default function RunShareDialog({ runId }: { runId: string }) {
                   Revoke
                 </Button>
               </div>
-              {copyState === "error" && <p className="text-xs text-red-600">Could not copy the URL automatically.</p>}
+              {copyState === "error" && <p className="text-xs text-destructive">Could not copy the URL automatically.</p>}
             </div>
           ) : (
             <div className="flex flex-col gap-3 rounded-lg border border-dashed p-6">
@@ -173,7 +176,7 @@ export default function RunShareDialog({ runId }: { runId: string }) {
             </div>
           )}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <DialogFooter showCloseButton />
