@@ -69,17 +69,17 @@ export default function PricingPage() {
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Camera className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-lg">ScreenshotsMCP</span>
+            <span className="text-[1.35rem] font-semibold">ScreenshotsMCP</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/docs">
-              <Button variant="ghost">Docs</Button>
+              <Button variant="ghost" className="text-[1.02rem] sm:text-lg">Docs</Button>
             </Link>
             <Link href="/sign-in">
-              <Button variant="ghost">Sign in</Button>
+              <Button variant="ghost" className="text-[1.02rem] sm:text-lg">Sign in</Button>
             </Link>
             <Link href="/sign-up">
-              <Button>Get started</Button>
+              <Button className="text-[1.02rem] sm:text-lg">Get started</Button>
             </Link>
           </div>
         </div>
@@ -87,8 +87,8 @@ export default function PricingPage() {
 
       <section className="mx-auto max-w-6xl px-6 py-24">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold tracking-tight mb-4">Simple, transparent pricing</h1>
-          <p className="text-xl text-muted-foreground">
+          <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">Simple, transparent pricing</h1>
+          <p className="mx-auto max-w-2xl text-[1.1rem] leading-relaxed text-muted-foreground sm:text-[1.28rem]">
             Start free. No credit card required. Upgrade when you need more.
           </p>
         </div>
@@ -101,16 +101,16 @@ export default function PricingPage() {
             >
               {plan.highlight && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary text-primary-foreground px-4 py-1">Most popular</Badge>
+                  <Badge className="bg-primary px-4 py-1 text-sm text-primary-foreground">Most popular</Badge>
                 </div>
               )}
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl">{plan.name}</CardTitle>
+                <CardTitle className="text-2xl">{plan.name}</CardTitle>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className="text-muted-foreground">{plan.period}</span>
+                  <span className="text-5xl font-bold">{plan.price}</span>
+                  <span className="text-base text-muted-foreground">{plan.period}</span>
                 </div>
-                <CardDescription className="text-sm font-medium text-foreground/70">
+                <CardDescription className="text-base font-medium leading-relaxed text-foreground/70">
                   {plan.screenshots}
                 </CardDescription>
               </CardHeader>
@@ -127,7 +127,7 @@ export default function PricingPage() {
                 <Separator />
                 <ul className="space-y-2">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <li key={feature} className="flex items-center gap-2 text-base leading-relaxed text-muted-foreground">
                       <span className="text-primary font-bold">✓</span>
                       {feature}
                     </li>
@@ -139,20 +139,20 @@ export default function PricingPage() {
         </div>
 
         <div className="mt-16 text-center">
-          <p className="text-muted-foreground mb-4">
+          <p className="mb-4 text-[1.05rem] text-muted-foreground sm:text-lg">
             Need a higher volume plan?{" "}
             <a href="mailto:hello@screenshotsmcp.com" className="text-primary underline underline-offset-4">
               Contact us
             </a>
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base leading-relaxed text-muted-foreground">
             All plans include Cloudflare R2 CDN delivery, API key management, and MCP server access.
           </p>
         </div>
       </section>
 
       <footer className="border-t mt-16 py-8">
-        <div className="mx-auto max-w-6xl px-6 flex items-center justify-between text-sm text-muted-foreground">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 text-base text-muted-foreground">
           <span>© 2025 ScreenshotsMCP</span>
           <div className="flex gap-4">
             <Link href="/docs" className="hover:text-foreground">Docs</Link>

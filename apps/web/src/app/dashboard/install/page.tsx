@@ -17,9 +17,9 @@ function CopyBlock({ code, id, label, copiedId, onCopy }: {
 }) {
   return (
     <div>
-      {label && <p className="text-sm font-medium mb-2 text-foreground/80">{label}</p>}
+      {label && <p className="mb-2 text-base font-medium text-foreground/80">{label}</p>}
       <div className="relative">
-        <pre className="rounded-lg bg-muted/60 border p-4 text-xs overflow-x-auto pr-12 leading-relaxed"><code>{code}</code></pre>
+        <pre className="overflow-x-auto rounded-lg border bg-muted/60 p-4 pr-12 text-[0.95rem] leading-7 sm:text-base"><code>{code}</code></pre>
         <Button size="icon" variant="ghost" className="absolute top-2 right-2 h-8 w-8 hover:bg-background" onClick={() => onCopy(code, id)}>
           {copiedId === id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
         </Button>
@@ -30,7 +30,7 @@ function CopyBlock({ code, id, label, copiedId, onCopy }: {
 
 function StepNumber({ n }: { n: number }) {
   return (
-    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary text-sm font-semibold shrink-0">{n}</span>
+    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-base font-semibold text-primary">{n}</span>
   );
 }
 
@@ -118,10 +118,10 @@ export default function InstallPage() {
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Install browser truth</h1>
-          <p className="text-muted-foreground text-sm mt-1">Connect ScreenshotsMCP so your AI can inspect, test, and verify with real browser evidence.</p>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Install browser truth</h1>
+          <p className="mt-2 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">Connect ScreenshotsMCP so your AI can inspect, test, and verify with real browser evidence.</p>
         </div>
-        <Button variant="outline" size="sm" className="gap-2 font-medium" onClick={() => document.getElementById("api-key-section")?.scrollIntoView({ behavior: "smooth" })}>
+        <Button variant="outline" size="sm" className="gap-2 text-base font-medium" onClick={() => document.getElementById("api-key-section")?.scrollIntoView({ behavior: "smooth" })}>
           <Key className="h-3.5 w-3.5" />
           Get API Key
         </Button>
@@ -135,7 +135,7 @@ export default function InstallPage() {
             <CardContent className="p-6 space-y-6">
               {CATEGORIES.map((cat) => (
                 <div key={cat.label}>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{cat.label}</p>
+                  <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{cat.label}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {cat.tools.map((tool) => (
                       <button
@@ -148,10 +148,10 @@ export default function InstallPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{tool.name}</span>
-                            {tool.badge && <span className="text-[10px] bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 px-1.5 py-0.5 rounded-full font-medium">{tool.badge}</span>}
+                            <span className="text-base font-medium">{tool.name}</span>
+                            {tool.badge && <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[0.72rem] font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">{tool.badge}</span>}
                           </div>
-                          <p className="text-xs text-muted-foreground">{tool.subtitle}</p>
+                          <p className="text-sm text-muted-foreground">{tool.subtitle}</p>
                         </div>
                         <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
                       </button>
@@ -166,19 +166,19 @@ export default function InstallPage() {
           <div id="api-key-section" className="mt-8 space-y-4">
             <div className="flex items-center gap-3">
               <StepNumber n={1} />
-              <h2 className="font-semibold text-base">Get your API key</h2>
+              <h2 className="text-lg font-semibold">Get your API key</h2>
             </div>
             <Card>
               <CardContent className="pt-4 space-y-3">
                 <div className="flex gap-2">
                   <Input placeholder="sk_live_... (paste your key or create one)" value={apiKey}
-                    onChange={(e) => { setApiKey(e.target.value); setNewKeyCreated(false); }} className="font-mono text-sm" />
+                    onChange={(e) => { setApiKey(e.target.value); setNewKeyCreated(false); }} className="font-mono text-base" />
                   <Button variant="outline" onClick={createAndUseKey} disabled={creating} className="shrink-0">
                     {creating ? "Creating..." : "Create new"}
                   </Button>
                 </div>
                 {newKeyCreated && (
-                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm text-amber-800 dark:text-amber-200">
+                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-base text-amber-800 dark:bg-amber-950/20 dark:text-amber-200">
                     <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                     <span>Key created! Save it now — it won&apos;t be shown again after you leave.</span>
                   </div>
@@ -191,13 +191,13 @@ export default function InstallPage() {
           <div className="mt-8 space-y-4">
             <div className="flex items-center gap-3">
               <StepNumber n={2} />
-              <h2 className="font-semibold text-base">Try these prompts</h2>
+              <h2 className="text-lg font-semibold">Try these prompts</h2>
             </div>
             <div className="space-y-2">
               {TEST_PROMPTS.map((prompt, i) => (
                 <div key={i} className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3 hover:bg-muted/50 transition-colors">
                   <Terminal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span className="text-sm flex-1 font-mono text-foreground/80">{prompt}</span>
+                  <span className="flex-1 font-mono text-[0.95rem] leading-7 text-foreground/80 sm:text-base">{prompt}</span>
                   <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => copy(prompt, `p${i}`)}>
                     {copiedId === `p${i}` ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
                   </Button>
@@ -262,7 +262,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
           </button>
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">{t.icon}</span>
-            <h2 className="font-semibold">Install in {t.name}</h2>
+            <h2 className="text-xl font-semibold">Install in {t.name}</h2>
           </div>
         </div>
 
@@ -270,7 +270,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
         <div className="p-6 space-y-6">
           {toolId === "cursor" && (
             <>
-              <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 p-4 text-sm text-green-800 dark:text-green-200">
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-base leading-relaxed text-green-800 dark:bg-green-950/20 dark:text-green-200">
                 <strong>✨ OAuth — No API key needed!</strong> Cursor supports OAuth. Just use the base URL and you&apos;ll be prompted to sign in automatically.
               </div>
               <Step n={1} title="Option A: OAuth (recommended)">
@@ -281,7 +281,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
     }
   }
 }`} id="cursor-oauth" copiedId={copiedId} onCopy={onCopy} />
-                <p className="text-xs text-muted-foreground mt-2">Add to <code className="bg-muted px-1 rounded">~/.cursor/mcp.json</code>. Cursor will open a browser to authorize on first use.</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Add to <code className="bg-muted px-1 rounded">~/.cursor/mcp.json</code>. Cursor will open a browser to authorize on first use.</p>
               </Step>
               <Separator />
               <Step n={2} title="Option B: API key in URL (no browser popup)">
@@ -291,20 +291,20 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
                     <Download className="h-4 w-4" /> One-click Install in Cursor
                   </Button>
                 </a>
-                {!isKeySet && <p className="text-xs text-muted-foreground mt-2">Enter an API key first (go back and scroll down).</p>}
+                {!isKeySet && <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Enter an API key first (go back and scroll down).</p>}
               </Step>
             </>
           )}
 
           {toolId === "vscode" && (
             <>
-              <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/20 p-4 text-sm text-blue-800 dark:text-blue-200">
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-base leading-relaxed text-blue-800 dark:bg-blue-950/20 dark:text-blue-200">
                 <strong>Extension preview:</strong> A native ScreenshotsMCP VS Code extension is now being developed in the monorepo with a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, API key fallback, native MCP registration, screenshot commands, output logs, and a live timeline panel.
               </div>
-              <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
+              <div className="rounded-lg border bg-muted/40 p-4 text-base leading-relaxed text-muted-foreground">
                 Preview commands include <code className="bg-muted px-1 rounded">ScreenshotsMCP: Sign In</code>, <code className="bg-muted px-1 rounded">ScreenshotsMCP: Check Status</code>, <code className="bg-muted px-1 rounded">ScreenshotsMCP: Take Screenshot</code>, <code className="bg-muted px-1 rounded">ScreenshotsMCP: Open Timeline</code>, <code className="bg-muted px-1 rounded">ScreenshotsMCP: Configure Editor Integration</code>, and <code className="bg-muted px-1 rounded">ScreenshotsMCP: Sync Core Skill</code>. The sidebar also exposes quick actions and recent activity directly in VS Code, and the extension configures the editor and repairs the managed core skill automatically after sign-in when needed.
               </div>
-              <div className="rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 p-4 text-sm text-green-800 dark:text-green-200">
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-base leading-relaxed text-green-800 dark:bg-green-950/20 dark:text-green-200">
                 <strong>✨ OAuth — No API key needed!</strong> VS Code supports OAuth. Just use the base URL and you&apos;ll be prompted to sign in.
               </div>
               <Step n={1} title="Option A: OAuth (recommended)">
@@ -318,7 +318,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
     }
   }
 }`} id="vscode-oauth" copiedId={copiedId} onCopy={onCopy} />
-                <p className="text-xs text-muted-foreground mt-2">Add to <code className="bg-muted px-1 rounded">.vscode/mcp.json</code>. Enable <code className="bg-muted px-1 rounded">chat.mcp.enabled</code> in settings.</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Add to <code className="bg-muted px-1 rounded">.vscode/mcp.json</code>. Enable <code className="bg-muted px-1 rounded">chat.mcp.enabled</code> in settings.</p>
               </Step>
               <Separator />
               <Step n={2} title="Option B: API key in URL">
@@ -548,7 +548,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <StepNumber n={n} />
-        <h3 className="font-medium text-sm">{title}</h3>
+        <h3 className="text-[1.02rem] font-medium sm:text-lg">{title}</h3>
       </div>
       <div className="ml-10">{children}</div>
     </div>

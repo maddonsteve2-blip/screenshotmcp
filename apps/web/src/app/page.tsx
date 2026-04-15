@@ -197,6 +197,7 @@ function CopyButton({ text }: { text: string }) {
     <button
       onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
       className="ml-2 p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0"
+      aria-label="Copy command"
       title="Copy to clipboard"
     >
       {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5 text-gray-500" />}
@@ -212,7 +213,7 @@ function QuickStartSection() {
   return (
     <section className="relative text-white">
       <div className="mx-auto max-w-3xl px-6 py-20">
-        <h2 className="font-[var(--font-heading)] text-3xl sm:text-4xl font-bold mb-8 flex items-center gap-3 tracking-[-0.02em]">
+        <h2 className="mb-8 flex items-center gap-3 font-[var(--font-heading)] text-3xl font-bold tracking-[-0.02em] sm:text-4xl md:text-[2.7rem]">
           <Terminal className="h-6 w-6 text-green-400" />
           Up and running in 30 seconds
         </h2>
@@ -229,7 +230,7 @@ function QuickStartSection() {
                 <button
                   key={t.id}
                   onClick={() => setActiveTab(t.id)}
-                  className={`px-3 py-2 text-xs font-medium rounded-t-md transition-colors whitespace-nowrap ${
+                  className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === t.id
                       ? "bg-white/10 text-green-400 border border-white/10 border-b-0"
                       : "text-gray-400 hover:text-gray-200"
@@ -241,8 +242,8 @@ function QuickStartSection() {
             </div>
           </div>
 
-          <div className="p-5 font-mono text-sm space-y-2">
-            {tab.comment && <div className="text-gray-500 text-xs">{tab.comment}</div>}
+          <div className="space-y-2 p-5 font-mono text-[0.95rem] leading-7 sm:text-base">
+            {tab.comment && <div className="text-sm text-gray-500">{tab.comment}</div>}
             {tab.commands.map((cmd, i) => (
               <div key={i} className="flex items-center justify-between group">
                 <div>
@@ -259,7 +260,7 @@ function QuickStartSection() {
                     <button
                       key={st.id}
                       onClick={() => setActiveSubTab(st.id)}
-                      className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                      className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
                         activeSubTab === st.id
                           ? "bg-green-400/10 text-green-400 ring-1 ring-green-400/30"
                           : "text-gray-400 hover:text-gray-200"
@@ -270,7 +271,7 @@ function QuickStartSection() {
                   ))}
                 </div>
                 {(tab.subCommands as Record<string, { text: string; comment?: boolean; copyable?: boolean }[]> | undefined)?.[activeSubTab]?.map((cmd, i) => (
-                  <div key={i} className={`flex items-center justify-between group ${cmd.comment ? "text-gray-500 text-xs" : ""}`}>
+                  <div key={i} className={`flex items-center justify-between group ${cmd.comment ? "text-sm text-gray-500" : ""}`}>
                     <div>
                       {!cmd.comment && <span className="text-green-400 mr-2">$</span>}
                       <span className={cmd.comment ? "" : "text-white font-semibold"}>{cmd.text}</span>
@@ -283,7 +284,7 @@ function QuickStartSection() {
           </div>
         </div>
 
-        <p className="text-center text-gray-500 text-sm mt-4">
+        <p className="mt-4 text-center text-base text-gray-500">
           Works on macOS, Linux, and Windows. Requires Node.js 18+.
         </p>
       </div>
@@ -329,7 +330,7 @@ export default function HomePage() {
       {/* Urgency Banner */}
       <div className="bg-gradient-to-r from-green-500/10 via-green-500/20 to-green-500/10 border-b border-green-500/20">
         <div className="mx-auto max-w-6xl px-6 py-2.5 text-center">
-          <p className="text-base text-green-300 font-medium">
+          <p className="text-[1.02rem] font-medium text-green-300 sm:text-lg">
             <Sparkles className="h-4 w-4 inline mr-1.5 -mt-0.5" />
             Remote when public. Local when realism matters. Proof included.
             <Sparkles className="h-4 w-4 inline ml-1.5 -mt-0.5" />
@@ -342,28 +343,28 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
             <Camera className="h-5 w-5 text-green-400" />
-            <span className="font-[var(--font-heading)] font-bold text-xl tracking-tight">ScreenshotsMCP</span>
+            <span className="font-[var(--font-heading)] text-[1.35rem] font-bold tracking-tight">ScreenshotsMCP</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/docs">
-              <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-white/5 text-base">Docs</Button>
+              <Button variant="ghost" className="text-[1.02rem] text-gray-400 hover:bg-white/5 hover:text-white sm:text-lg">Docs</Button>
             </Link>
             <Link href="#pricing">
-              <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-white/5 text-base">Pricing</Button>
+              <Button variant="ghost" className="text-[1.02rem] text-gray-400 hover:bg-white/5 hover:text-white sm:text-lg">Pricing</Button>
             </Link>
             <Show when="signed-out">
               <Link href="/sign-in">
-                <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-white/5 text-base">Sign in</Button>
+                <Button variant="ghost" className="text-[1.02rem] text-gray-400 hover:bg-white/5 hover:text-white sm:text-lg">Sign in</Button>
               </Link>
               <Link href="/sign-up">
-                <Button className="bg-green-500 hover:bg-green-400 text-black font-semibold text-base px-5">
+                <Button className="bg-green-500 px-5 text-[1.02rem] font-semibold text-black hover:bg-green-400 sm:text-lg">
                   Start free
                 </Button>
               </Link>
             </Show>
             <Show when="signed-in">
               <Link href="/dashboard">
-                <Button className="bg-green-500 hover:bg-green-400 text-black font-semibold text-base px-5">Dashboard</Button>
+                <Button className="bg-green-500 px-5 text-[1.02rem] font-semibold text-black hover:bg-green-400 sm:text-lg">Dashboard</Button>
               </Link>
             </Show>
           </div>
@@ -374,7 +375,7 @@ export default function HomePage() {
       <section className="relative bg-radial-hero bg-grid-subtle overflow-hidden">
         <div className="mx-auto max-w-5xl px-6 pt-24 pb-20 text-center relative z-10">
           <div className="animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/5 px-4 py-1.5 text-sm text-green-400 mb-8">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/5 px-4 py-1.5 text-[0.96rem] text-green-400 sm:text-base">
               <Zap className="h-3.5 w-3.5" />
               Browser truth for AI agents and developers
             </div>
@@ -386,10 +387,10 @@ export default function HomePage() {
             <span className="text-gradient">a real browser — and proof.</span>
           </h1>
 
-          <p className="animate-fade-in-up delay-200 text-xl sm:text-2xl text-gray-400 max-w-2xl mx-auto mb-4 leading-relaxed">
+          <p className="animate-fade-in-up delay-200 mx-auto mb-4 max-w-2xl text-[1.15rem] leading-relaxed text-gray-400 sm:text-[1.35rem]">
             Inspect, test, and verify websites with screenshots, recordings, browser actions, and evidence-rich results inside your existing workflow.
           </p>
-          <p className="animate-fade-in-up delay-200 text-xl sm:text-2xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="animate-fade-in-up delay-200 mx-auto mb-10 max-w-2xl text-[1.15rem] leading-relaxed text-gray-400 sm:text-[1.35rem]">
             Start with remote sessions for public sites, escalate to a managed local browser for localhost, private apps, and authenticated flows, and keep the proof either way.
             <br />
             <span className="text-white font-medium">Your AI should not have to guess.</span>
@@ -409,7 +410,7 @@ export default function HomePage() {
               </Button>
             </Link>
           </div>
-          <p className="animate-fade-in-up delay-300 text-xs text-gray-600 mt-4">No credit card required. Start with the free plan.</p>
+          <p className="animate-fade-in-up delay-300 mt-4 text-sm text-gray-500 sm:text-base">No credit card required. Start with the free plan.</p>
 
           {/* Hero video */}
           <div className="animate-fade-in-up delay-400 mt-14 mx-auto max-w-4xl rounded-xl overflow-hidden border border-white/10 shadow-2xl shadow-green-500/5">
@@ -420,9 +421,9 @@ export default function HomePage() {
 
           {/* Works with */}
           <div className="animate-fade-in delay-500 mt-14 flex items-center justify-center gap-3 flex-wrap">
-            <span className="text-xs text-gray-500 uppercase tracking-widest font-medium mr-2">Works with</span>
+            <span className="mr-2 text-sm font-medium tracking-widest text-gray-500 uppercase">Works with</span>
             {["Cursor", "Windsurf", "VS Code", "Claude Desktop", "Claude Code", "n8n"].map((ide) => (
-              <span key={ide} className="text-sm text-gray-400 border border-white/8 rounded-full px-3.5 py-1 bg-white/[0.02]">
+              <span key={ide} className="rounded-full border border-white/8 bg-white/[0.02] px-3.5 py-1 text-[0.96rem] text-gray-400 sm:text-base">
                 {ide}
               </span>
             ))}
@@ -434,7 +435,7 @@ export default function HomePage() {
       <section className="border-t border-white/[0.06] overflow-hidden py-5">
         <div className="animate-ticker flex gap-8 whitespace-nowrap">
           {[...proofPoints, ...proofPoints].map((point, i) => (
-            <span key={i} className="flex items-center gap-2 text-sm text-gray-500 shrink-0">
+            <span key={i} className="flex shrink-0 items-center gap-2 text-[0.96rem] text-gray-500 sm:text-base">
               <span className="h-1 w-1 rounded-full bg-green-400/50" />
               {point}
             </span>
@@ -512,14 +513,14 @@ export default function HomePage() {
         <div className="mx-auto max-w-5xl px-6 py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <span className="text-green-400 font-mono text-sm font-medium">How it feels</span>
+              <span className="font-mono text-[0.96rem] font-medium text-green-400 sm:text-base">How it feels</span>
               <h2 className="font-[var(--font-heading)] text-3xl sm:text-4xl font-bold mt-3 mb-5 tracking-[-0.02em]">
                 Ask for a run. Review the proof.
               </h2>
-              <p className="text-gray-400 text-lg mb-4 leading-relaxed">
+              <p className="mb-4 text-[1.1rem] leading-relaxed text-gray-400 sm:text-xl">
                 No SDKs to learn. No Playwright scripts. No blind handoff between AI output and human verification.
               </p>
-              <p className="text-gray-400 text-lg mb-8 leading-relaxed">
+              <p className="mb-8 text-[1.1rem] leading-relaxed text-gray-400 sm:text-xl">
                 Once installed, your AI can inspect pages, run browser actions, and return the evidence you need to decide what happens next.
               </p>
               <Link href="/sign-up">
@@ -529,7 +530,7 @@ export default function HomePage() {
                 </Button>
               </Link>
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6 space-y-5 font-mono text-[15px]">
+            <div className="space-y-5 rounded-xl border border-white/10 bg-white/[0.02] p-6 font-mono text-[0.96rem] leading-7 sm:text-base">
               <div className="flex gap-3">
                 <span className="text-gray-500 shrink-0">You:</span>
                 <span className="text-gray-200">Open my staging app, test checkout, and capture proof if anything fails</span>
@@ -695,11 +696,11 @@ export default function HomePage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Camera className="h-4 w-4 text-green-400/50" />
-                <span className="font-[var(--font-heading)] font-bold text-sm">ScreenshotsMCP</span>
+                <span className="font-[var(--font-heading)] text-base font-bold">ScreenshotsMCP</span>
               </div>
-              <p className="text-xs text-gray-600">Give your AI a real browser — and proof.</p>
+              <p className="text-sm text-gray-500 sm:text-base">Give your AI a real browser — and proof.</p>
             </div>
-            <div className="flex gap-8 text-sm text-gray-500">
+            <div className="flex gap-8 text-[0.96rem] text-gray-500 sm:text-base">
               <Link href="/docs" className="hover:text-gray-300 transition-colors">Docs</Link>
               <Link href="#pricing" className="hover:text-gray-300 transition-colors">Pricing</Link>
               <Link href="/docs/quickstart" className="hover:text-gray-300 transition-colors">Quick Start</Link>
@@ -708,7 +709,7 @@ export default function HomePage() {
               <Link href="/terms-of-service" className="hover:text-gray-300 transition-colors">Terms</Link>
             </div>
           </div>
-          <div className="mt-8 pt-6 border-t border-white/[0.06] text-xs text-gray-600">
+          <div className="mt-8 border-t border-white/[0.06] pt-6 text-sm text-gray-500">
             &copy; 2026 ScreenshotsMCP. All rights reserved.
           </div>
         </div>

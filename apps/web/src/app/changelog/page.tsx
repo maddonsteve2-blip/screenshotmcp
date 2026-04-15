@@ -98,11 +98,11 @@ export default function ChangelogPage() {
     <div className="min-h-screen bg-background">
       <nav className="border-b">
         <div className="mx-auto max-w-4xl px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
+          <Link href="/" className="flex items-center gap-2 text-[1.2rem] font-semibold">
             <Camera className="h-5 w-5 text-primary" />
             ScreenshotsMCP
           </Link>
-          <div className="flex gap-4 text-sm text-muted-foreground">
+          <div className="flex gap-4 text-[1.02rem] text-muted-foreground sm:text-lg">
             <Link href="/docs" className="hover:text-foreground">Docs</Link>
             <Link href="/dashboard" className="hover:text-foreground">Dashboard</Link>
           </div>
@@ -111,8 +111,8 @@ export default function ChangelogPage() {
 
       <main className="mx-auto max-w-4xl px-6 py-16">
         <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-3">Changelog</h1>
-          <p className="text-muted-foreground text-lg">Every update, fix, and new feature — in one place.</p>
+          <h1 className="mb-3 text-4xl font-bold sm:text-5xl">Changelog</h1>
+          <p className="text-[1.08rem] leading-relaxed text-muted-foreground sm:text-[1.25rem]">Every update, fix, and new feature — in one place.</p>
         </div>
 
         <div className="space-y-12">
@@ -120,8 +120,8 @@ export default function ChangelogPage() {
             <div key={entry.version} className="flex gap-8">
               {/* Date column */}
               <div className="w-36 shrink-0 pt-1 text-right">
-                <p className="text-sm font-medium">{entry.date}</p>
-                <p className="text-xs text-muted-foreground font-mono">{entry.version}</p>
+                <p className="text-base font-medium">{entry.date}</p>
+                <p className="font-mono text-sm text-muted-foreground">{entry.version}</p>
               </div>
 
               {/* Timeline dot */}
@@ -132,12 +132,12 @@ export default function ChangelogPage() {
 
               {/* Content */}
               <div className="flex-1 pb-8">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mb-3 capitalize ${tagColors[entry.tag]}`}>
+                <span className={`mb-3 inline-flex items-center rounded-full px-3 py-1 text-sm font-medium capitalize ${tagColors[entry.tag]}`}>
                   {entry.tag}
                 </span>
                 <ul className="space-y-2">
                   {entry.items.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
+                    <li key={i} className="flex items-start gap-2 text-[1.02rem] leading-relaxed sm:text-lg">
                       <span className="text-muted-foreground mt-1 shrink-0">•</span>
                       <span>{item}</span>
                     </li>
@@ -150,7 +150,7 @@ export default function ChangelogPage() {
       </main>
 
       <footer className="border-t py-8 mt-16">
-        <div className="mx-auto max-w-4xl px-6 flex items-center justify-between text-sm text-muted-foreground">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 text-base text-muted-foreground">
           <div className="flex items-center gap-2">
             <Camera className="h-4 w-4" />
             <span>© 2026 ScreenshotsMCP</span>

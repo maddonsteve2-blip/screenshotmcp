@@ -168,8 +168,8 @@
   --radius: 0.625rem;
   --font-sans: var(--dashboard-font-sans), Inter, sans-serif;
   font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: 17px;
+  line-height: 1.6;
   --font-weight-normal: 400;
   --font-weight-bold: 700;
 }
@@ -294,8 +294,22 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
   }
   html {
     @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+  p,
+  li,
+  blockquote {
+    text-wrap: pretty;
   }
 }

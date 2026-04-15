@@ -73,16 +73,16 @@ export default function PrivacyPolicyPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2.5">
             <Camera className="h-5 w-5 text-green-400" />
-            <span className="font-[var(--font-heading)] text-xl font-bold tracking-tight">ScreenshotsMCP</span>
+            <span className="font-[var(--font-heading)] text-[1.35rem] font-bold tracking-tight">ScreenshotsMCP</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/terms-of-service">
-              <Button variant="ghost" className="text-gray-400 hover:bg-white/5 hover:text-white">
+              <Button variant="ghost" className="text-[1.02rem] text-gray-400 hover:bg-white/5 hover:text-white sm:text-lg">
                 Terms
               </Button>
             </Link>
             <Link href="/sign-in">
-              <Button className="bg-green-500 font-semibold text-black hover:bg-green-400">Sign in</Button>
+              <Button className="bg-green-500 text-[1.02rem] font-semibold text-black hover:bg-green-400 sm:text-lg">Sign in</Button>
             </Link>
           </div>
         </div>
@@ -90,24 +90,24 @@ export default function PrivacyPolicyPage() {
 
       <main className="mx-auto max-w-4xl px-6 py-16 sm:py-20">
         <div className="mb-12 space-y-4">
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-green-400">Legal</p>
-          <h1 className="font-[var(--font-heading)] text-4xl font-bold tracking-[-0.03em] sm:text-5xl">
+          <p className="text-base font-medium uppercase tracking-[0.24em] text-green-400">Legal</p>
+          <h1 className="font-[var(--font-heading)] text-4xl font-bold tracking-[-0.03em] sm:text-5xl md:text-[3.5rem]">
             Privacy Policy
           </h1>
-          <p className="max-w-3xl text-lg leading-relaxed text-gray-400">
+          <p className="max-w-3xl text-[1.1rem] leading-relaxed text-gray-400 sm:text-[1.28rem]">
             This Privacy Policy explains how ScreenshotsMCP collects, uses, shares, and protects information when you use our website,
             dashboard, API, MCP tools, CLI, and related services, including when you sign in with Google.
           </p>
-          <p className="text-sm text-gray-500">Last updated: April 15, 2026</p>
+          <p className="text-base text-gray-500">Last updated: April 15, 2026</p>
         </div>
 
         <div className="space-y-8">
           {sections.map((section) => (
             <section key={section.title} className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 sm:p-8">
-              <h2 className="mb-4 font-[var(--font-heading)] text-2xl font-semibold tracking-[-0.02em]">
+              <h2 className="mb-4 font-[var(--font-heading)] text-[1.75rem] font-semibold tracking-[-0.02em] sm:text-[2rem]">
                 {section.title}
               </h2>
-              <div className="space-y-4 text-base leading-7 text-gray-300">
+              <div className="space-y-4 text-[1.05rem] leading-8 text-gray-300 sm:text-[1.1rem]">
                 {section.body.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}

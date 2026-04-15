@@ -90,7 +90,7 @@ export default function DashboardSidebar({ closeOnNavigate = false }: { closeOnN
     <nav className="flex-1 overflow-y-auto p-4 space-y-6">
       {navGroups.map((group) => (
         <div key={group.label} className="space-y-2">
-          <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <p className="px-3 text-[0.82rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             {group.label}
           </p>
           <div className="space-y-1">
@@ -101,7 +101,7 @@ export default function DashboardSidebar({ closeOnNavigate = false }: { closeOnN
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-base font-medium transition-colors",
                     active
                       ? "border border-primary/20 bg-primary/10 text-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
@@ -126,7 +126,7 @@ export default function DashboardSidebar({ closeOnNavigate = false }: { closeOnN
                             href={child.href}
                             aria-current={childActive ? "page" : undefined}
                             className={cn(
-                              "flex items-center gap-2 rounded-md px-3 py-1.5 text-xs transition-colors",
+                              "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
                               childActive
                                 ? "bg-accent text-accent-foreground"
                                 : "text-muted-foreground hover:bg-accent/60 hover:text-accent-foreground",

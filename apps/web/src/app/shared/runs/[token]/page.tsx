@@ -149,12 +149,12 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
               {run.recordingEnabled && <Badge variant="outline">Recording enabled</Badge>}
             </div>
             <div className="space-y-1">
-              <h1 className="text-3xl font-semibold tracking-tight">{run.pageTitle || prettyHost(run.startUrl)}</h1>
-              <p className="text-base text-muted-foreground break-all">{run.finalUrl ?? run.startUrl ?? "Shared browser run"}</p>
-              <p className="text-sm text-muted-foreground font-mono">Run ID: {run.id}</p>
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{run.pageTitle || prettyHost(run.startUrl)}</h1>
+              <p className="break-all text-[1.05rem] text-muted-foreground sm:text-[1.12rem]">{run.finalUrl ?? run.startUrl ?? "Shared browser run"}</p>
+              <p className="font-mono text-base text-muted-foreground">Run ID: {run.id}</p>
             </div>
           </div>
-          <div className="flex flex-col gap-3 text-sm text-muted-foreground lg:items-end">
+          <div className="flex flex-col gap-3 text-base text-muted-foreground lg:items-end">
             <p>Shared {formatDate(run.sharedAt)}</p>
             <Link href="/" className="inline-flex items-center gap-2 text-foreground hover:text-primary">
               Open ScreenshotsMCP
@@ -172,9 +172,9 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                 ) : (
                   <CheckCircle2 className="h-4 w-4 text-emerald-700" />
                 )}
-                <p className="text-sm font-medium">Shared review summary</p>
+                <p className="text-base font-medium">Shared review summary</p>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-[1.02rem] leading-relaxed text-muted-foreground">
                 {run.status === "failed"
                   ? "This run failed before completion and should be treated as an unsuccessful proof run."
                   : issueCount > 0
@@ -182,7 +182,7 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                     : "This run completed with no persisted high-priority console or network failures."}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+            <div className="flex flex-wrap gap-2 text-base text-muted-foreground">
               <span>{screenshots.length} captures</span>
               <span>{recordings.length} replays</span>
               <span>{run.networkRequestCount} requests</span>
@@ -193,56 +193,56 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Started</CardTitle>
+              <CardTitle className="text-base font-medium">Started</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-sm font-medium">{formatDate(run.startedAt)}</div>
+              <div className="text-base font-medium leading-relaxed">{formatDate(run.startedAt)}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Duration</CardTitle>
+              <CardTitle className="text-base font-medium">Duration</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-sm font-medium">{formatDuration(run.startedAt, run.endedAt)}</div>
+              <div className="text-base font-medium leading-relaxed">{formatDuration(run.startedAt, run.endedAt)}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Viewport</CardTitle>
+              <CardTitle className="text-base font-medium">Viewport</CardTitle>
               <Monitor className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-sm font-medium">{run.viewportWidth ?? "—"}×{run.viewportHeight ?? "—"}</div>
+              <div className="text-base font-medium leading-relaxed">{run.viewportWidth ?? "—"}×{run.viewportHeight ?? "—"}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Evidence</CardTitle>
+              <CardTitle className="text-base font-medium">Evidence</CardTitle>
               <Camera className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-sm font-medium">{screenshots.length} captures · {recordings.length} replays</div>
+              <div className="text-base font-medium leading-relaxed">{screenshots.length} captures · {recordings.length} replays</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Network</CardTitle>
+              <CardTitle className="text-base font-medium">Network</CardTitle>
               <Network className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-sm font-medium">{run.networkErrorCount} failed of {run.networkRequestCount}</div>
+              <div className="text-base font-medium leading-relaxed">{run.networkErrorCount} failed of {run.networkRequestCount}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Console</CardTitle>
+              <CardTitle className="text-base font-medium">Console</CardTitle>
               <SquareTerminal className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-sm font-medium">{run.consoleErrorCount} errors · {run.consoleWarningCount} warnings</div>
+              <div className="text-base font-medium leading-relaxed">{run.consoleErrorCount} errors · {run.consoleWarningCount} warnings</div>
             </CardContent>
           </Card>
         </div>
@@ -270,13 +270,13 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                     alt={primaryScreenshot.url}
                     className="max-h-[72vh] w-full rounded-lg border bg-muted object-contain"
                   />
-                  <a href={primaryScreenshot.publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-foreground hover:text-primary">
+                  <a href={primaryScreenshot.publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-base text-foreground hover:text-primary">
                     Open screenshot
                     <ExternalLink className="h-4 w-4" />
                   </a>
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed p-8 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-dashed p-8 text-base text-muted-foreground">
                   No persisted evidence is available on this shared run.
                 </div>
               )}
@@ -344,12 +344,12 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <PlayCircle className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Replay</span>
+                      <span className="text-base font-medium">Replay</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">{formatDate(recording.createdAt)}</span>
+                    <span className="text-base text-muted-foreground">{formatDate(recording.createdAt)}</span>
                   </div>
                   <video src={recording.videoUrl} controls className="aspect-video w-full rounded-lg border bg-black shadow-sm" />
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                  <div className="flex flex-wrap gap-4 text-base text-muted-foreground">
                     <span>{recording.durationMs ? `${Math.floor(recording.durationMs / 1000)}s` : "—"}</span>
                     <span>{recording.viewportWidth ?? "—"}×{recording.viewportHeight ?? "—"}</span>
                     <span>{formatBytes(recording.fileSize)}</span>
@@ -378,12 +378,12 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                     )}
                     <div className="space-y-2 p-4">
                       <p className="truncate text-base font-medium" title={shot.url}>{shot.url}</p>
-                      <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap gap-3 text-base text-muted-foreground">
                         <span>{shot.width}×{shot.height ?? "—"}</span>
                         <span>{shot.format.toUpperCase()}</span>
                         <span>{shot.fullPage ? "Full page" : "Viewport"}</span>
                       </div>
-                      <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+                      <div className="flex items-center justify-between gap-3 text-base text-muted-foreground">
                         <span>{formatDate(shot.createdAt)}</span>
                         {shot.publicUrl && (
                           <a href={shot.publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-foreground">
@@ -407,7 +407,7 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
             </CardHeader>
             <CardContent>
               {consoleLogs.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-dashed p-6 text-base text-muted-foreground">
                   No console signals were persisted for this run.
                 </div>
               ) : (
@@ -421,9 +421,9 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                         >
                           {entry.level}
                         </Badge>
-                        <span className="text-sm text-muted-foreground">{formatDate(new Date(entry.ts).toISOString())}</span>
+                        <span className="text-base text-muted-foreground">{formatDate(new Date(entry.ts).toISOString())}</span>
                       </div>
-                      <pre className="whitespace-pre-wrap break-words text-sm font-mono">{entry.text}</pre>
+                      <pre className="whitespace-pre-wrap break-words text-[0.96rem] leading-7 font-mono sm:text-base">{entry.text}</pre>
                     </div>
                   ))}
                 </div>
@@ -438,7 +438,7 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
             </CardHeader>
             <CardContent>
               {networkErrors.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-dashed p-6 text-base text-muted-foreground">
                   No failed requests were persisted for this run.
                 </div>
               ) : (
@@ -448,11 +448,11 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="border-red-200 text-red-700">{entry.status}</Badge>
-                          <span className="font-medium">{entry.statusText}</span>
+                          <span className="text-base font-medium">{entry.statusText}</span>
                         </div>
-                        <span className="text-sm text-muted-foreground">{formatDate(new Date(entry.ts).toISOString())}</span>
+                        <span className="text-base text-muted-foreground">{formatDate(new Date(entry.ts).toISOString())}</span>
                       </div>
-                      <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-start gap-2 text-base text-muted-foreground">
                         <Globe className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         <span className="break-all">{entry.url}</span>
                       </div>

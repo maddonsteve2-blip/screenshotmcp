@@ -15,7 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className="sticky top-0 hidden h-screen w-60 border-r lg:flex lg:flex-col">
         <div className="p-6 flex items-center gap-2">
           <Camera className="h-5 w-5 text-primary" />
-          <span className="font-semibold">ScreenshotsMCP</span>
+          <span className="text-[1.08rem] font-semibold">ScreenshotsMCP</span>
         </div>
         <Separator />
         <DashboardSidebar />
@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="mt-auto flex flex-col gap-3 p-4">
           <div className="flex items-center gap-3">
             <UserButton />
-            <span className="text-sm text-muted-foreground">Account</span>
+            <span className="text-base text-muted-foreground">Account</span>
           </div>
           <SignOutButton>
             <Button variant="outline" className="w-full">Sign Out</Button>
@@ -35,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur lg:hidden">
           <Link href="/dashboard" className="flex items-center gap-2">
             <Camera className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">ScreenshotsMCP</span>
+            <span className="text-base font-semibold">ScreenshotsMCP</span>
           </Link>
 
           <Dialog>
@@ -45,8 +45,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </DialogTrigger>
             <DialogContent className={`dashboard-theme ${inter.variable} left-0 top-0 h-dvh w-[min(320px,85vw)] max-w-[85vw] translate-x-0 translate-y-0 gap-0 rounded-none border-r p-0 sm:max-w-[320px]`} showCloseButton={false}>
               <DialogHeader className="border-b p-4">
-                <DialogTitle>Dashboard navigation</DialogTitle>
-                <DialogDescription>Open the main review, analysis, and account sections.</DialogDescription>
+                <DialogTitle className="text-xl">Dashboard navigation</DialogTitle>
+                <DialogDescription className="text-base leading-relaxed">Open the main review, analysis, and account sections.</DialogDescription>
               </DialogHeader>
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <DashboardSidebar closeOnNavigate />
@@ -54,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="p-4">
                   <div className="flex items-center gap-3">
                     <UserButton />
-                    <span className="text-sm text-muted-foreground">Account</span>
+                    <span className="text-base text-muted-foreground">Account</span>
                   </div>
                   <SignOutButton>
                     <Button variant="outline" className="mt-3 w-full">Sign Out</Button>
