@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -142,6 +142,31 @@ type Props = {
 
 type TabValue = "summary" | "captures" | "replay" | "console" | "network" | "session";
 
+function MetricActionButton({
+  header,
+  value,
+  description,
+  onClick,
+}: {
+  header: ReactNode;
+  value: ReactNode;
+  description: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      className="h-auto w-full flex-col items-start gap-2 rounded-lg px-4 py-4 text-left"
+      onClick={onClick}
+    >
+      <span className="text-sm font-normal text-muted-foreground">{header}</span>
+      <span className="text-2xl font-semibold text-foreground">{value}</span>
+      <span className="text-sm font-normal text-muted-foreground">{description}</span>
+    </Button>
+  );
+}
+
 export default function RunDetailTabs({
   run,
   screenshots,
@@ -233,12 +258,12 @@ export default function RunDetailTabs({
         ? "Needs review"
         : "Healthy";
   const outcomeClassName = run.status === "failed"
-    ? "border-red-200 text-red-700"
+    ? "border-destructive/30 text-destructive"
     : pollingEnabled
-      ? "border-blue-200 text-blue-700"
+      ? "border-primary/30 text-primary"
       : totalIssueCount > 0
-        ? "border-amber-200 text-amber-700"
-        : "border-emerald-200 text-emerald-700";
+        ? "border-border text-foreground"
+        : "border-primary/20 text-primary";
   const outcomeMessage = run.status === "failed"
     ? "The run ended in a failed state and should be reviewed before retrying or sharing outcomes."
     : pollingEnabled
@@ -296,15 +321,15 @@ export default function RunDetailTabs({
   }, [networkQuery, networkScope, networkType, recentRequests]);
 
   const liveBadge = liveState.state === "live"
-    ? { label: "Live", className: "border-emerald-200 text-emerald-700" }
+    ? { label: "Live", className: "border-primary/20 text-primary" }
     : liveState.state === "refreshing"
-      ? { label: "Refreshing", className: "border-blue-200 text-blue-700" }
+      ? { label: "Refreshing", className: "border-primary/30 text-primary" }
       : liveState.state === "error"
-        ? { label: "Refresh issue", className: "border-red-200 text-red-700" }
-        : { label: "Persisted", className: "border-slate-200 text-slate-700" };
+        ? { label: "Refresh issue", className: "border-destructive/30 text-destructive" }
+        : { label: "Persisted", className: "border-border text-muted-foreground" };
 
   return (
-    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)} className="space-y-6">
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)} className="flex flex-col gap-6">
       <TabsList>
         <TabsTrigger value="summary">Summary</TabsTrigger>
         <TabsTrigger value="captures">Captures</TabsTrigger>
@@ -314,10 +339,10 @@ export default function RunDetailTabs({
         <TabsTrigger value="session">Session</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="summary" className="space-y-6">
+      <TabsContent value="summary" className="flex flex-col gap-6">
         <Card>
           <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className={cn("capitalize", liveBadge.className)}>{liveBadge.label}</Badge>
                 {pollingEnabled && <Badge variant="outline">Auto-refresh every 5s</Badge>}
@@ -331,10 +356,10 @@ export default function RunDetailTabs({
                 Last snapshot: {formatDate(liveState.snapshotAt ?? run.createdAt)}
                 {liveSnapshot?.lastUsedAt ? ` · last browser activity ${formatDate(liveSnapshot.lastUsedAt)}` : ""}
               </p>
-              {liveState.error && <p className="text-sm text-red-600">{liveState.error}</p>}
+              {liveState.error && <p className="text-sm text-destructive">{liveState.error}</p>}
             </div>
             <Button variant="outline" size="sm" onClick={() => void refreshLiveSnapshot()}>
-              <RefreshCw className={cn("mr-2 h-4 w-4", liveState.state === "refreshing" && "animate-spin")} />
+              <RefreshCw data-icon="inline-start" className={cn(liveState.state === "refreshing" && "animate-spin")} />
               Refresh now
             </Button>
           </CardContent>
@@ -343,16 +368,16 @@ export default function RunDetailTabs({
         <Card className={cn(
           "border",
           (run.status === "failed" || totalIssueCount > 0 || (!hasPersistedEvidence && !pollingEnabled) || (run.recordingEnabled && !primaryRecording && !pollingEnabled))
-            ? "border-amber-200 bg-amber-50/50"
-            : "border-emerald-200 bg-emerald-50/40",
+            ? "border-destructive/20 bg-destructive/5"
+            : "border-border bg-muted/30",
         )}>
           <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 {run.status === "failed" || totalIssueCount > 0 || (!hasPersistedEvidence && !pollingEnabled) ? (
-                  <AlertTriangle className="h-4 w-4 text-amber-700" />
+                  <AlertTriangle className="size-4 text-destructive" />
                 ) : (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+                  <CheckCircle2 className="size-4 text-primary" />
                 )}
                 <p className="text-sm font-medium">Review priority</p>
               </div>
@@ -391,7 +416,7 @@ export default function RunDetailTabs({
                 One place to review the main output from this browser session.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex flex-col gap-4">
               {primaryRecording ? (
                 <video src={primaryRecording.videoUrl} controls className="aspect-video w-full rounded-lg border bg-black shadow-sm" />
               ) : latestScreenshot?.publicUrl ? (
@@ -408,18 +433,18 @@ export default function RunDetailTabs({
             </CardContent>
           </Card>
 
-          <div className="space-y-6">
+          <div className="flex flex-col gap-6">
             <Card>
               <CardHeader>
                 <CardTitle>Executive summary</CardTitle>
                 <CardDescription>Outcome, highest-signal findings, and what to do next.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5 text-base">
-                <div className="space-y-2 rounded-lg border p-4">
+              <CardContent className="flex flex-col gap-5 text-base">
+                <div className="flex flex-col gap-2 rounded-lg border p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline" className={cn("capitalize", outcomeClassName)}>{outcomeLabel}</Badge>
                     {run.recordingEnabled && <Badge variant="outline">Recording enabled</Badge>}
-                    {run.shareToken && <Badge variant="outline" className="border-emerald-200 text-emerald-700">Shared</Badge>}
+                    {run.shareToken && <Badge variant="secondary">Shared</Badge>}
                   </div>
                   <p className="font-medium">{outcomeMessage}</p>
                   <p className="text-sm text-muted-foreground break-all">{effectiveFinalUrl ?? run.startUrl ?? "Managed browser session"}</p>
@@ -429,7 +454,7 @@ export default function RunDetailTabs({
                         <Globe className="h-3.5 w-3.5" />
                         Public review enabled{run.sharedAt ? ` · updated ${formatDate(run.sharedAt)}` : ""}
                       </span>
-                      <a
+                      <Link
                         href={`/shared/runs/${encodeURIComponent(run.shareToken)}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -437,25 +462,27 @@ export default function RunDetailTabs({
                       >
                         <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                         Open shared page
-                      </a>
+                      </Link>
                     </div>
                   )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button type="button" onClick={() => setActiveTab("console")} className="rounded-lg border p-4 text-left transition-colors hover:bg-accent/40">
-                    <p className="text-sm text-muted-foreground">Console findings</p>
-                    <p className="mt-1 text-2xl font-semibold">{effectiveConsoleErrorCount}</p>
-                    <p className="text-sm text-muted-foreground">errors · {effectiveConsoleWarningCount} warnings</p>
-                  </button>
-                  <button type="button" onClick={() => setActiveTab("network")} className="rounded-lg border p-4 text-left transition-colors hover:bg-accent/40">
-                    <p className="text-sm text-muted-foreground">Network findings</p>
-                    <p className="mt-1 text-2xl font-semibold">{effectiveNetworkErrorCount}</p>
-                    <p className="text-sm text-muted-foreground">failed of {effectiveNetworkRequestCount} requests</p>
-                  </button>
+                  <MetricActionButton
+                    onClick={() => setActiveTab("console")}
+                    header="Console findings"
+                    value={effectiveConsoleErrorCount}
+                    description={`${effectiveConsoleWarningCount} warnings recorded`}
+                  />
+                  <MetricActionButton
+                    onClick={() => setActiveTab("network")}
+                    header="Network findings"
+                    value={effectiveNetworkErrorCount}
+                    description={`failed of ${effectiveNetworkRequestCount} requests`}
+                  />
                 </div>
 
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-4">
                     <span className="text-muted-foreground">Started</span>
                     <span className="font-medium text-right">{formatDate(effectiveStartedAt)}</span>
@@ -477,25 +504,23 @@ export default function RunDetailTabs({
                 <CardTitle>Evidence coverage</CardTitle>
                 <CardDescription>How much proof and diagnostic coverage this run produced.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5 text-base">
+              <CardContent className="flex flex-col gap-5 text-base">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button type="button" onClick={() => setActiveTab("captures")} className="rounded-lg border p-4 text-left transition-colors hover:bg-accent/40">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <ImageIcon className="h-4 w-4" /> Captures
-                    </div>
-                    <p className="mt-2 text-2xl font-semibold">{screenshots.length}</p>
-                    <p className="text-sm text-muted-foreground">Persisted screenshots for this run</p>
-                  </button>
-                  <button type="button" onClick={() => setActiveTab("replay")} className="rounded-lg border p-4 text-left transition-colors hover:bg-accent/40">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Video className="h-4 w-4" /> Replays
-                    </div>
-                    <p className="mt-2 text-2xl font-semibold">{recordings.length}</p>
-                    <p className="text-sm text-muted-foreground">Saved recording outputs</p>
-                  </button>
+                  <MetricActionButton
+                    onClick={() => setActiveTab("captures")}
+                    header={<span className="inline-flex items-center gap-2"><ImageIcon className="size-4" />Captures</span>}
+                    value={screenshots.length}
+                    description="Persisted screenshots for this run"
+                  />
+                  <MetricActionButton
+                    onClick={() => setActiveTab("replay")}
+                    header={<span className="inline-flex items-center gap-2"><Video className="size-4" />Replays</span>}
+                    value={recordings.length}
+                    description="Saved recording outputs"
+                  />
                 </div>
 
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-4">
                     <span className="text-muted-foreground">Viewport</span>
                     <span className="font-medium text-right">{effectiveViewportWidth ?? "—"}×{effectiveViewportHeight ?? "—"}</span>
@@ -535,16 +560,15 @@ export default function RunDetailTabs({
                   No console output was persisted for this run.
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   {recentConsoleLogs.slice(0, 6).map((entry, index) => (
-                    <div key={`${entry.ts}-${index}`} className="rounded-lg border p-3 space-y-2">
+                    <div key={`${entry.ts}-${index}`} className="flex flex-col gap-2 rounded-lg border p-3">
                       <div className="flex items-center justify-between gap-3">
                         <Badge
                           variant="outline"
                           className={cn(
                             "capitalize",
-                            (entry.level === "error" || entry.level === "exception") && "border-red-200 text-red-700",
-                            entry.level === "warning" && "border-amber-200 text-amber-700",
+                            (entry.level === "error" || entry.level === "exception") && "border-destructive/30 text-destructive",
                           )}
                         >
                           {entry.level}
@@ -570,12 +594,12 @@ export default function RunDetailTabs({
                   No failed network requests were persisted for this run.
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   {recentFailedRequests.slice(0, 6).map((entry, index) => (
-                    <div key={`${entry.url}-${entry.ts}-${index}`} className="rounded-lg border p-3 space-y-2">
+                    <div key={`${entry.url}-${entry.ts}-${index}`} className="flex flex-col gap-2 rounded-lg border p-3">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="border-red-200 text-red-700">{entry.status}</Badge>
+                          <Badge variant="outline" className="border-destructive/30 text-destructive">{entry.status}</Badge>
                           <span className="text-sm font-medium">{entry.method}</span>
                           <span className="text-sm text-muted-foreground uppercase">{entry.resourceType}</span>
                         </div>
@@ -596,7 +620,7 @@ export default function RunDetailTabs({
         </div>
       </TabsContent>
 
-      <TabsContent value="captures" className="space-y-6">
+      <TabsContent value="captures" className="flex flex-col gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Session captures</CardTitle>
@@ -618,14 +642,14 @@ export default function RunDetailTabs({
                         <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Pending</div>
                       )}
                     </div>
-                    <CardContent className="space-y-3 p-4">
+                    <CardContent className="flex flex-col gap-3 p-4">
                       <p className="truncate text-sm text-muted-foreground" title={shot.url}>{shot.url}</p>
                       <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
                         <span>{shot.width}×{shot.height ?? "—"} · {shot.format.toUpperCase()}</span>
                         {shot.publicUrl && (
-                          <a href={shot.publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-foreground">
+                          <Link href={shot.publicUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: "ghost", size: "xs" }))}>
                             Open <ExternalLink className="h-3 w-3" />
-                          </a>
+                          </Link>
                         )}
                       </div>
                     </CardContent>
@@ -637,7 +661,7 @@ export default function RunDetailTabs({
         </Card>
       </TabsContent>
 
-      <TabsContent value="replay" className="space-y-6">
+      <TabsContent value="replay" className="flex flex-col gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Replay</CardTitle>
@@ -645,14 +669,14 @@ export default function RunDetailTabs({
           </CardHeader>
           <CardContent>
             {primaryRecording ? (
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4">
                 <video src={primaryRecording.videoUrl} controls className="aspect-video w-full rounded-lg border bg-black shadow-sm" />
                 <div className="flex flex-wrap items-center gap-4 text-base text-muted-foreground">
                   <span>{primaryRecording.durationMs ? `${Math.floor(primaryRecording.durationMs / 1000)}s` : "—"}</span>
                   <span>{primaryRecording.viewportWidth ?? "—"}×{primaryRecording.viewportHeight ?? "—"}</span>
-                  <a href={primaryRecording.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-foreground">
+                  <Link href={primaryRecording.videoUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: "ghost", size: "xs" }))}>
                     Open video <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
+                  </Link>
                 </div>
               </div>
             ) : (
@@ -664,13 +688,13 @@ export default function RunDetailTabs({
         </Card>
       </TabsContent>
 
-      <TabsContent value="console" className="space-y-6">
+      <TabsContent value="console" className="flex flex-col gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Console activity</CardTitle>
             <CardDescription>Search, filter, and review persisted or live console output for this run.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="relative w-full lg:max-w-sm">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -722,8 +746,7 @@ export default function RunDetailTabs({
                           variant="outline"
                           className={cn(
                             "capitalize",
-                            (entry.level === "error" || entry.level === "exception") && "border-red-200 text-red-700",
-                            entry.level === "warning" && "border-amber-200 text-amber-700",
+                            (entry.level === "error" || entry.level === "exception") && "border-destructive/30 text-destructive",
                           )}
                         >
                           {entry.level}
@@ -740,13 +763,13 @@ export default function RunDetailTabs({
         </Card>
       </TabsContent>
 
-      <TabsContent value="network" className="space-y-6">
+      <TabsContent value="network" className="flex flex-col gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Network activity</CardTitle>
             <CardDescription>Search and filter request traffic for failed calls, resource classes, and URLs.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="relative w-full lg:max-w-sm">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -799,14 +822,14 @@ export default function RunDetailTabs({
                       No failed requests were persisted for this run.
                     </div>
                   ) : (
-                    <div className="space-y-3 max-h-[640px] overflow-auto">
+                    <div className="flex max-h-[640px] flex-col gap-3 overflow-auto">
                       {effectiveNetworkErrors
                         .slice()
                         .sort((a, b) => b.ts - a.ts)
                         .map((entry, index) => (
-                          <div key={`${entry.url}-${entry.ts}-${index}`} className="rounded-lg border p-3 space-y-2">
+                          <div key={`${entry.url}-${entry.ts}-${index}`} className="flex flex-col gap-2 rounded-lg border p-3">
                             <div className="flex items-center justify-between gap-3">
-                              <Badge variant="outline" className="border-red-200 text-red-700">{entry.status}</Badge>
+                              <Badge variant="outline" className="border-destructive/30 text-destructive">{entry.status}</Badge>
                               <span className="text-sm text-muted-foreground">{formatEventTime(entry.ts)}</span>
                             </div>
                             <p className="text-sm font-medium">{entry.statusText}</p>
@@ -842,7 +865,7 @@ export default function RunDetailTabs({
                         {filteredRequests.map((entry, index) => (
                           <div key={`${entry.url}-${entry.ts}-${index}`} className="grid grid-cols-[90px_90px_90px_90px_90px_1fr] gap-3 px-4 py-3 text-sm">
                             <span className="font-medium">{entry.method}</span>
-                            <span className={cn(entry.status >= 400 ? "text-red-600" : "text-foreground")}>{entry.status}</span>
+                            <span className={cn(entry.status >= 400 ? "text-destructive" : "text-foreground")}>{entry.status}</span>
                             <span className="uppercase text-muted-foreground">{entry.resourceType}</span>
                             <span>{entry.duration}ms</span>
                             <span>{formatBytes(entry.size)}</span>
@@ -859,14 +882,14 @@ export default function RunDetailTabs({
         </Card>
       </TabsContent>
 
-      <TabsContent value="session" className="space-y-6">
+      <TabsContent value="session" className="flex flex-col gap-6">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Session metadata</CardTitle>
               <CardDescription>Core run metadata captured for audit, debugging, and replay.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-base">
+            <CardContent className="flex flex-col gap-3 text-base">
               <div className="flex items-center justify-between gap-4">
                 <span className="text-muted-foreground">Session ID</span>
                 <span className="font-mono text-right break-all">{run.id}</span>
@@ -903,7 +926,7 @@ export default function RunDetailTabs({
               <CardTitle>Observed page state</CardTitle>
               <CardDescription>Resolved page metadata and persisted diagnostic counts.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
+            <CardContent className="flex flex-col gap-3 text-sm">
               <div className="flex items-center justify-between gap-4">
                 <span className="text-muted-foreground">Start URL</span>
                 <span className="font-medium text-right break-all">{run.startUrl ?? "—"}</span>
