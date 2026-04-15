@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { ExternalLink, Copy, Check, ImageOff, FileText, Search, Clock3, Link2, ScanSearch } from "lucide-react";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";
 
@@ -81,12 +82,10 @@ function CapturePreview({
               <span className="text-sm">PDF Document</span>
             </div>
             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition-[background-color,opacity] group-hover:bg-black/20 group-hover:opacity-100">
-              <a href={screenshot.publicUrl} target="_blank" rel="noopener noreferrer">
-                <Button size="sm" variant="secondary" className="gap-1">
-                  <ExternalLink data-icon="inline-start" />
-                  Open PDF
-                </Button>
-              </a>
+              <Link href={screenshot.publicUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ size: "sm", variant: "secondary" }), "gap-1")}>
+                <ExternalLink data-icon="inline-start" />
+                Open PDF
+              </Link>
               <Button
                 size="sm"
                 variant="secondary"
@@ -109,12 +108,10 @@ function CapturePreview({
               loading="lazy"
             />
             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition-[background-color,opacity] group-hover:bg-black/20 group-hover:opacity-100">
-              <a href={screenshot.publicUrl} target="_blank" rel="noopener noreferrer">
-                <Button size="sm" variant="secondary" className="gap-1">
-                  <ExternalLink data-icon="inline-start" />
-                  View
-                </Button>
-              </a>
+              <Link href={screenshot.publicUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ size: "sm", variant: "secondary" }), "gap-1")}>
+                <ExternalLink data-icon="inline-start" />
+                View
+              </Link>
               <Button
                 size="sm"
                 variant="secondary"
@@ -239,7 +236,7 @@ export default function ScreenshotsPage() {
     <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-pretty">Captures</h1>
-        <p className="mt-1 text-muted-foreground">
+        <p className="text-muted-foreground">
           Artifact library for screenshot, PDF, and export outputs. Use Runs when you want the full story of a session.
         </p>
       </div>
@@ -453,8 +450,8 @@ export default function ScreenshotsPage() {
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                               {screenshot.sessionId && (
-                                <Link href={`/dashboard/runs/${screenshot.sessionId}`}>
-                                  <Button size="sm" variant="outline">Open run</Button>
+                                <Link href={`/dashboard/runs/${screenshot.sessionId}`} className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+                                  Open run
                                 </Link>
                               )}
                             </div>
@@ -491,8 +488,8 @@ export default function ScreenshotsPage() {
                               </div>
                               {screenshot.sessionId && (
                                 <div>
-                                  <Link href={`/dashboard/runs/${screenshot.sessionId}`}>
-                                    <Button size="sm" variant="outline">View run</Button>
+                                  <Link href={`/dashboard/runs/${screenshot.sessionId}`} className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+                                    View run
                                   </Link>
                                 </div>
                               )}
