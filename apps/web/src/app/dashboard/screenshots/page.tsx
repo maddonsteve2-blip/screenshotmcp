@@ -83,7 +83,7 @@ function CapturePreview({
             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition-[background-color,opacity] group-hover:bg-black/20 group-hover:opacity-100">
               <a href={screenshot.publicUrl} target="_blank" rel="noopener noreferrer">
                 <Button size="sm" variant="secondary" className="gap-1">
-                  <ExternalLink className="h-3 w-3" />
+                  <ExternalLink data-icon="inline-start" />
                   Open PDF
                 </Button>
               </a>
@@ -93,7 +93,7 @@ function CapturePreview({
                 className="gap-1"
                 onClick={() => void onCopy(screenshot.publicUrl!, `url-${screenshot.id}`)}
               >
-                {copiedId === `url-${screenshot.id}` ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                {copiedId === `url-${screenshot.id}` ? <Check data-icon="inline-start" className="text-green-500" /> : <Copy data-icon="inline-start" />}
                 Copy URL
               </Button>
             </div>
@@ -111,7 +111,7 @@ function CapturePreview({
             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition-[background-color,opacity] group-hover:bg-black/20 group-hover:opacity-100">
               <a href={screenshot.publicUrl} target="_blank" rel="noopener noreferrer">
                 <Button size="sm" variant="secondary" className="gap-1">
-                  <ExternalLink className="h-3 w-3" />
+                  <ExternalLink data-icon="inline-start" />
                   View
                 </Button>
               </a>
@@ -121,7 +121,7 @@ function CapturePreview({
                 className="gap-1"
                 onClick={() => void onCopy(screenshot.publicUrl!, `url-${screenshot.id}`)}
               >
-                {copiedId === `url-${screenshot.id}` ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                {copiedId === `url-${screenshot.id}` ? <Check data-icon="inline-start" className="text-green-500" /> : <Copy data-icon="inline-start" />}
                 Copy URL
               </Button>
             </div>

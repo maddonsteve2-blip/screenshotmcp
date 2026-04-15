@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Separator />
         <DashboardSidebar />
         <Separator />
-        <div className="mt-auto p-4 space-y-3">
+        <div className="mt-auto flex flex-col gap-3 p-4">
           <div className="flex items-center gap-3">
             <UserButton />
             <span className="text-sm text-muted-foreground">Account</span>
