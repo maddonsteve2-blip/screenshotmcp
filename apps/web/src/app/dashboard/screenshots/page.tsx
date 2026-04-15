@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExternalLink, Copy, Check, ImageOff, FileText, Search, Clock3, Link2, ScanSearch } from "lucide-react";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";
 
@@ -23,6 +24,11 @@ type Screenshot = {
   completedAt: string | null;
 };
 
+type StatusFilter = "all" | "done" | "attention" | "failed";
+type LibraryView = "attention" | "completed" | "all";
+
+const PAGE_SIZE = 12;
+
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -33,14 +39,114 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function hostname(input: string) {
+  try {
+    return new URL(input).hostname;
+  } catch {
+    return input;
+  }
+}
+
+function isPdfCapture(screenshot: Screenshot) {
+  return Boolean(screenshot.publicUrl?.endsWith(".pdf"));
+}
+
+function formatStatusLabel(status: string) {
+  if (status === "done") return "Completed";
+  if (status === "failed") return "Failed";
+  if (status === "processing") return "Processing";
+  return "Pending";
+}
+
+function CapturePreview({
+  screenshot,
+  copiedId,
+  onCopy,
+  previewHeightClass,
+}: {
+  screenshot: Screenshot;
+  copiedId: string | null;
+  onCopy: (text: string, id: string) => Promise<void>;
+  previewHeightClass: string;
+}) {
+  const pdf = isPdfCapture(screenshot);
+
+  return (
+    <div className={`group relative overflow-hidden bg-muted ${previewHeightClass}`}>
+      {screenshot.publicUrl ? (
+        pdf ? (
+          <>
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+              <FileText className="h-10 w-10 text-muted-foreground/50" />
+              <span className="text-sm">PDF Document</span>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition-[background-color,opacity] group-hover:bg-black/20 group-hover:opacity-100">
+              <a href={screenshot.publicUrl} target="_blank" rel="noopener noreferrer">
+                <Button size="sm" variant="secondary" className="gap-1">
+                  <ExternalLink className="h-3 w-3" />
+                  Open PDF
+                </Button>
+              </a>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="gap-1"
+                onClick={() => void onCopy(screenshot.publicUrl!, `url-${screenshot.id}`)}
+              >
+                {copiedId === `url-${screenshot.id}` ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                Copy URL
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <img
+              src={screenshot.publicUrl}
+              alt={screenshot.url}
+              width={screenshot.width}
+              height={screenshot.height}
+              className="h-full w-full object-cover object-top transition-transform group-hover:scale-[1.02]"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition-[background-color,opacity] group-hover:bg-black/20 group-hover:opacity-100">
+              <a href={screenshot.publicUrl} target="_blank" rel="noopener noreferrer">
+                <Button size="sm" variant="secondary" className="gap-1">
+                  <ExternalLink className="h-3 w-3" />
+                  View
+                </Button>
+              </a>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="gap-1"
+                onClick={() => void onCopy(screenshot.publicUrl!, `url-${screenshot.id}`)}
+              >
+                {copiedId === `url-${screenshot.id}` ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                Copy URL
+              </Button>
+            </div>
+          </>
+        )
+      ) : (
+        <div className="flex h-full items-center justify-center">
+          <ImageOff className="h-6 w-6 text-muted-foreground/30" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ScreenshotsPage() {
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "done" | "processing">("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [artifactFilter, setArtifactFilter] = useState<"all" | "linked" | "pdf" | "full-page">("all");
+  const [activeView, setActiveView] = useState<LibraryView>("attention");
+  const [visibleCompletedCount, setVisibleCompletedCount] = useState(PAGE_SIZE);
+  const [visibleAllCount, setVisibleAllCount] = useState(PAGE_SIZE);
 
   const handleSocketMessage = useCallback((message: { type: string; data?: { screenshots?: Screenshot[] }; message?: string }) => {
     if (message.type === "screenshots") {
@@ -69,7 +175,8 @@ export default function ScreenshotsPage() {
 
   const counts = useMemo(() => ({
     total: screenshots.length,
-    inProgress: screenshots.filter((s) => s.status !== "done").length,
+    attention: screenshots.filter((s) => s.status !== "done").length,
+    failed: screenshots.filter((s) => s.status === "failed").length,
     linked: screenshots.filter((s) => !!s.sessionId).length,
     pdfs: screenshots.filter((s) => s.publicUrl?.endsWith(".pdf")).length,
   }), [screenshots]);
@@ -82,7 +189,9 @@ export default function ScreenshotsPage() {
         ? true
         : statusFilter === "done"
           ? s.status === "done"
-          : s.status !== "done";
+          : statusFilter === "failed"
+            ? s.status === "failed"
+            : s.status !== "done";
 
       const artifactMatch = (() => {
         if (artifactFilter === "all") return true;
@@ -101,14 +210,26 @@ export default function ScreenshotsPage() {
     });
   }, [artifactFilter, query, screenshots, statusFilter]);
 
-  const done = filteredScreenshots.filter((s) => s.status === "done");
-  const pending = filteredScreenshots.filter((s) => s.status !== "done");
+  const completedScreenshots = filteredScreenshots.filter((s) => s.status === "done");
+  const attentionScreenshots = filteredScreenshots.filter((s) => s.status !== "done");
+  const failedScreenshots = attentionScreenshots.filter((s) => s.status === "failed");
+  const activeScreenshots = attentionScreenshots.filter((s) => s.status !== "failed");
+  const recentCompleted = completedScreenshots.slice(0, 6);
+  const visibleCompletedScreenshots = completedScreenshots.slice(0, visibleCompletedCount);
+  const visibleAllScreenshots = filteredScreenshots.slice(0, visibleAllCount);
+  const resolvedActiveView = activeView === "attention" && attentionScreenshots.length === 0
+    ? completedScreenshots.length > 0
+      ? "completed"
+      : "all"
+    : activeView;
 
   return (
-    <div className="space-y-8 px-4 py-6 sm:px-6 lg:p-8">
-      <div>
-        <h1 className="text-2xl font-bold">Captures</h1>
-        <p className="text-muted-foreground mt-1">Artifact library for screenshot, PDF, and export outputs. Use Runs when you want the full story of a session.</p>
+    <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-pretty">Captures</h1>
+        <p className="mt-1 text-muted-foreground">
+          Artifact library for screenshot, PDF, and export outputs. Use Runs when you want the full story of a session.
+        </p>
       </div>
 
       <Card>
@@ -120,29 +241,35 @@ export default function ScreenshotsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Total captures</p>
-            <p className="text-2xl font-semibold">{counts.total}</p>
+            <p className="text-2xl font-semibold tabular-nums">{counts.total}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
-            <p className="text-sm text-muted-foreground">In progress</p>
-            <p className="text-2xl font-semibold">{counts.inProgress}</p>
+          <CardContent className="flex flex-col gap-1 p-4">
+            <p className="text-sm text-muted-foreground">Needs attention</p>
+            <p className="text-2xl font-semibold tabular-nums">{counts.attention}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
+            <p className="text-sm text-muted-foreground">Failed captures</p>
+            <p className="text-2xl font-semibold tabular-nums">{counts.failed}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Linked to runs</p>
-            <p className="text-2xl font-semibold">{counts.linked}</p>
+            <p className="text-2xl font-semibold tabular-nums">{counts.linked}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">PDF exports</p>
-            <p className="text-2xl font-semibold">{counts.pdfs}</p>
+            <p className="text-2xl font-semibold tabular-nums">{counts.pdfs}</p>
           </CardContent>
         </Card>
       </div>
@@ -154,22 +281,26 @@ export default function ScreenshotsPage() {
             Use this library to find specific exports fast, then jump back to the parent run when you need the full execution context.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="flex flex-col gap-4">
           <div className="relative w-full xl:max-w-md">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              aria-label="Search captures"
+              autoComplete="off"
+              name="captureSearch"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by URL, run ID, status, or capture ID"
+              placeholder="Search by URL, run ID, status, or capture ID…"
               className="pl-9"
             />
           </div>
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <div className="flex flex-wrap gap-2">
               {([
                 ["all", "All statuses"],
                 ["done", "Completed"],
-                ["processing", "In progress"],
+                ["attention", "Needs attention"],
+                ["failed", "Failed"],
               ] as const).map(([value, label]) => (
                 <Button
                   key={value}
@@ -208,7 +339,7 @@ export default function ScreenshotsPage() {
       </Card>
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-48 rounded-lg bg-muted animate-pulse" />
           ))}
@@ -232,135 +363,267 @@ export default function ScreenshotsPage() {
           </CardContent>
         </Card>
       ) : (
-        <>
-          {pending.length > 0 && (
-            <div className="space-y-2">
-              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">In Progress</h2>
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                {pending.map((s) => (
-                  <Card key={s.id} className="overflow-hidden">
-                    <div className="h-48 bg-muted flex items-center justify-center md:h-56">
-                      <div className="text-sm text-muted-foreground animate-pulse">
-                        {s.status === "processing" ? "Processing…" : "Pending…"}
-                      </div>
+        <Tabs value={resolvedActiveView} onValueChange={(value) => setActiveView(value as LibraryView)} className="flex flex-col gap-6">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-lg font-semibold text-pretty">Organize the Library</h2>
+              <p className="text-sm text-muted-foreground">
+                Keep failed and in-flight captures separate from finished proof so you don’t have to scroll halfway down the page to find the completed gallery.
+              </p>
+            </div>
+            <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
+              <TabsTrigger value="attention">Queue & Failed ({attentionScreenshots.length})</TabsTrigger>
+              <TabsTrigger value="completed">Completed Gallery ({completedScreenshots.length})</TabsTrigger>
+              <TabsTrigger value="all">All Captures ({filteredScreenshots.length})</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="attention" className="flex flex-col gap-6">
+            {attentionScreenshots.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col gap-2 py-12 text-center">
+                  <p className="font-medium">Nothing needs attention.</p>
+                  <p className="text-sm text-muted-foreground">All filtered captures are completed, so the queue is clear.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {failedScreenshots.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-1">
+                      <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Failed captures</h3>
+                      <p className="text-sm text-muted-foreground">Keep failures together so triage happens before you review successful proof.</p>
                     </div>
-                    <CardContent className="space-y-2 p-4">
-                      <p className="truncate text-sm text-muted-foreground">{s.url}</p>
-                      <div className="flex items-center justify-between">
-                        <Badge variant="secondary" className="capitalize">{s.status}</Badge>
-                        <div className="flex items-center gap-3">
-                          {s.sessionId && (
-                            <Link href={`/dashboard/runs/${s.sessionId}`} className="text-sm text-primary hover:underline">
-                              View run
-                            </Link>
-                          )}
-                          <span className="text-sm text-muted-foreground">{timeAgo(s.createdAt)}</span>
-                        </div>
+                    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                      {failedScreenshots.map((screenshot) => (
+                        <Card key={screenshot.id} className="border-red-200/80">
+                          <CardContent className="flex flex-col gap-4 p-5">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-base font-medium" title={screenshot.url}>{screenshot.url}</p>
+                                <p className="truncate text-sm text-muted-foreground">{hostname(screenshot.url)}</p>
+                              </div>
+                              <Badge variant="outline" className="border-red-200 text-red-700">Failed</Badge>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                              <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{timeAgo(screenshot.createdAt)}</span>
+                              <span>{screenshot.width}×{screenshot.height}</span>
+                              {screenshot.sessionId && <span className="inline-flex items-center gap-1"><Link2 className="h-3 w-3" />Run linked</span>}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {screenshot.sessionId && (
+                                <Link href={`/dashboard/runs/${screenshot.sessionId}`}>
+                                  <Button size="sm" variant="outline">Open run</Button>
+                                </Link>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeScreenshots.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Processing Queue</CardTitle>
+                      <CardDescription>
+                        Use this horizontal lane like a carousel to check what’s still rendering without pushing the completed gallery further down the page.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2">
+                        {activeScreenshots.map((screenshot) => (
+                          <Card key={screenshot.id} className="min-w-[320px] snap-start border-dashed">
+                            <div className="flex h-44 items-center justify-center bg-muted">
+                              <div className="text-sm text-muted-foreground">{formatStatusLabel(screenshot.status)}…</div>
+                            </div>
+                            <CardContent className="flex flex-col gap-3 p-4">
+                              <div className="min-w-0">
+                                <p className="truncate text-base font-medium" title={screenshot.url}>{screenshot.url}</p>
+                                <p className="truncate text-sm text-muted-foreground">{hostname(screenshot.url)}</p>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                <Badge variant="secondary" className="capitalize">{formatStatusLabel(screenshot.status)}</Badge>
+                                <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{timeAgo(screenshot.createdAt)}</span>
+                              </div>
+                              {screenshot.sessionId && (
+                                <div>
+                                  <Link href={`/dashboard/runs/${screenshot.sessionId}`}>
+                                    <Button size="sm" variant="outline">View run</Button>
+                                  </Link>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-            </div>
-          )}
+                )}
+              </>
+            )}
+          </TabsContent>
 
-          {done.length > 0 && (
-            <div className="space-y-2">
-              {pending.length > 0 && (
-                <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Completed</h2>
-              )}
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                {done.map((s) => (
-                  <Card key={s.id} className="overflow-hidden group">
-                    <div className="h-56 bg-muted overflow-hidden relative md:h-64">
-                      {s.publicUrl ? (
-                        s.publicUrl.endsWith(".pdf") ? (
-                          <>
-                            <div className="flex flex-col items-center justify-center h-full gap-2">
-                              <FileText className="h-10 w-10 text-muted-foreground/50" />
-                              <span className="text-sm text-muted-foreground">PDF Document</span>
-                            </div>
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                              <a href={s.publicUrl} target="_blank" rel="noopener noreferrer">
-                                <Button size="sm" variant="secondary" className="gap-1">
-                                  <ExternalLink className="h-3 w-3" />
-                                  Open PDF
-                                </Button>
-                              </a>
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                className="gap-1"
-                                onClick={() => copy(s.publicUrl!, `url-${s.id}`)}
-                              >
-                                {copiedId === `url-${s.id}`
-                                  ? <Check className="h-3 w-3 text-green-500" />
-                                  : <Copy className="h-3 w-3" />}
-                                Copy URL
-                              </Button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <img
-                              src={s.publicUrl}
-                              alt={s.url}
-                              className="w-full h-full object-cover object-top transition-transform group-hover:scale-105"
-                              loading="lazy"
-                            />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                              <a href={s.publicUrl} target="_blank" rel="noopener noreferrer">
-                                <Button size="sm" variant="secondary" className="gap-1">
-                                  <ExternalLink className="h-3 w-3" />
-                                  View
-                                </Button>
-                              </a>
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                className="gap-1"
-                                onClick={() => copy(s.publicUrl!, `url-${s.id}`)}
-                              >
-                                {copiedId === `url-${s.id}`
-                                  ? <Check className="h-3 w-3 text-green-500" />
-                                  : <Copy className="h-3 w-3" />}
-                                Copy URL
-                              </Button>
-                            </div>
-                          </>
-                        )
+          <TabsContent value="completed" className="flex flex-col gap-6">
+            {completedScreenshots.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col gap-2 py-12 text-center">
+                  <p className="font-medium">No completed captures match this filter.</p>
+                  <p className="text-sm text-muted-foreground">Try broadening the search or switch back to Queue & Failed.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {recentCompleted.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Recent Completed</CardTitle>
+                      <CardDescription>
+                        Start with the newest proof in a horizontal strip, then drop into the full gallery only when you need more history.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2">
+                        {recentCompleted.map((screenshot) => (
+                          <article key={screenshot.id} className="min-w-[320px] max-w-[360px] snap-start">
+                            <Card className="overflow-hidden">
+                              <CapturePreview screenshot={screenshot} copiedId={copiedId} onCopy={copy} previewHeightClass="h-44" />
+                              <CardContent className="flex flex-col gap-3 p-4">
+                                <div className="min-w-0">
+                                  <p className="truncate text-base font-medium" title={screenshot.url}>{screenshot.url}</p>
+                                  <p className="truncate text-sm text-muted-foreground">{hostname(screenshot.url)}</p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                  <span>{isPdfCapture(screenshot) ? "PDF document" : `${screenshot.width}×${screenshot.height} · ${screenshot.format.toUpperCase()}`}</span>
+                                  {screenshot.fullPage && !isPdfCapture(screenshot) && <span>· Full page</span>}
+                                </div>
+                                <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+                                  <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{timeAgo(screenshot.createdAt)}</span>
+                                  {screenshot.sessionId && (
+                                    <Link href={`/dashboard/runs/${screenshot.sessionId}`} className="text-primary hover:underline">
+                                      View run
+                                    </Link>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </article>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-1">
+                    <h3 className="text-base font-semibold">Completed Gallery</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Showing {visibleCompletedScreenshots.length} of {completedScreenshots.length} completed captures in a denser grid.
+                    </p>
+                  </div>
+                  {completedScreenshots.length > visibleCompletedCount && (
+                    <Button variant="outline" onClick={() => setVisibleCompletedCount((current) => current + PAGE_SIZE)}>
+                      Show 12 more
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                  {visibleCompletedScreenshots.map((screenshot) => (
+                    <Card key={screenshot.id} className="overflow-hidden [contain-intrinsic-size:360px] [content-visibility:auto]">
+                      <CapturePreview screenshot={screenshot} copiedId={copiedId} onCopy={copy} previewHeightClass="h-48" />
+                      <CardContent className="flex flex-col gap-3 p-4">
+                        <div className="min-w-0 flex flex-col gap-1">
+                          <p className="truncate text-base font-medium" title={screenshot.url}>{screenshot.url}</p>
+                          <p className="truncate text-sm text-muted-foreground">{hostname(screenshot.url)}</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                          <span>{isPdfCapture(screenshot) ? "PDF document" : `${screenshot.width}×${screenshot.height} · ${screenshot.format.toUpperCase()}`}</span>
+                          {screenshot.fullPage && !isPdfCapture(screenshot) && <span>· Full page</span>}
+                          {screenshot.sessionId && <span className="inline-flex items-center gap-1"><Link2 className="h-3 w-3" />Run linked</span>}
+                        </div>
+                        <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+                          <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{timeAgo(screenshot.createdAt)}</span>
+                          {screenshot.sessionId && (
+                            <Link href={`/dashboard/runs/${screenshot.sessionId}`} className="text-primary hover:underline">
+                              View run
+                            </Link>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="all" className="flex flex-col gap-6">
+            {filteredScreenshots.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col gap-2 py-12 text-center">
+                  <p className="font-medium">No captures match this filter.</p>
+                  <p className="text-sm text-muted-foreground">Try a broader query or change the status and artifact filters.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-1">
+                    <h3 className="text-base font-semibold">Full Capture Archive</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Showing {visibleAllScreenshots.length} of {filteredScreenshots.length} filtered captures.
+                    </p>
+                  </div>
+                  {filteredScreenshots.length > visibleAllCount && (
+                    <Button variant="outline" onClick={() => setVisibleAllCount((current) => current + PAGE_SIZE)}>
+                      Show 12 more
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+                  {visibleAllScreenshots.map((screenshot) => (
+                    <Card key={screenshot.id} className="overflow-hidden [contain-intrinsic-size:340px] [content-visibility:auto]">
+                      {screenshot.status === "done" ? (
+                        <CapturePreview screenshot={screenshot} copiedId={copiedId} onCopy={copy} previewHeightClass="h-40" />
                       ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <ImageOff className="h-6 w-6 text-muted-foreground/30" />
+                        <div className="flex h-40 items-center justify-center bg-muted">
+                          <div className="text-sm text-muted-foreground">{formatStatusLabel(screenshot.status)}…</div>
                         </div>
                       )}
-                    </div>
-                    <CardContent className="space-y-2 p-4">
-                      <p className="truncate text-sm text-muted-foreground" title={s.url}>{s.url}</p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                          <span>
-                            {s.publicUrl?.endsWith(".pdf") ? "PDF document" : `${s.width}×${s.height} · ${s.format.toUpperCase()}`}
-                            {s.fullPage && !s.publicUrl?.endsWith(".pdf") ? " · Full page" : ""}
-                          </span>
-                          {s.sessionId && <span className="inline-flex items-center gap-1"><Link2 className="h-3 w-3" />Run linked</span>}
-                          <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{timeAgo(s.createdAt)}</span>
+                      <CardContent className="flex flex-col gap-3 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-base font-medium" title={screenshot.url}>{screenshot.url}</p>
+                            <p className="truncate text-sm text-muted-foreground">{hostname(screenshot.url)}</p>
+                          </div>
+                          <Badge variant={screenshot.status === "done" ? "secondary" : "outline"} className="capitalize">
+                            {formatStatusLabel(screenshot.status)}
+                          </Badge>
                         </div>
-                        <div className="flex items-center gap-3">
-                          {s.sessionId && (
-                            <Link href={`/dashboard/runs/${s.sessionId}`} className="text-sm text-primary hover:underline">
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                          <span>{isPdfCapture(screenshot) ? "PDF document" : `${screenshot.width}×${screenshot.height}`}</span>
+                          {screenshot.fullPage && !isPdfCapture(screenshot) && <span>· Full page</span>}
+                          <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{timeAgo(screenshot.createdAt)}</span>
+                        </div>
+                        {screenshot.sessionId && (
+                          <div>
+                            <Link href={`/dashboard/runs/${screenshot.sessionId}`} className="text-sm text-primary hover:underline">
                               View run
                             </Link>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
