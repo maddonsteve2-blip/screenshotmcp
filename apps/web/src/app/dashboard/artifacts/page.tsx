@@ -216,10 +216,10 @@ export default function ArtifactsPage() {
   }), [artifacts]);
 
   return (
-    <div className="space-y-8 px-4 py-6 sm:px-6 lg:p-8">
-      <div>
+    <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
+      <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold">Artifacts</h1>
-        <p className="mt-1 text-muted-foreground">
+        <p className="text-muted-foreground">
           Searchable evidence library across captures and replays. Use Runs when you want the full execution story, findings, and next actions.
         </p>
       </div>
@@ -245,31 +245,31 @@ export default function ArtifactsPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">All artifacts</p>
             <p className="text-2xl font-semibold">{summary.total}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Captures</p>
             <p className="text-2xl font-semibold">{summary.captures}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Replays</p>
             <p className="text-2xl font-semibold">{summary.replays}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Linked to runs</p>
             <p className="text-2xl font-semibold">{summary.linked}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">From shared runs</p>
             <p className="text-2xl font-semibold">{summary.shared}</p>
           </CardContent>
@@ -283,7 +283,7 @@ export default function ArtifactsPage() {
             Find a specific piece of evidence fast, then jump back to the run for context, findings, and diagnostics.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="flex flex-col gap-4">
           <div className="relative w-full xl:max-w-md">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -398,9 +398,9 @@ export default function ArtifactsPage() {
                 </div>
 
                 <CardContent className="flex flex-1 flex-col justify-between p-5">
-                  <div className="space-y-3">
+                  <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-1">
+                      <div className="min-w-0 flex flex-col gap-1">
                         <p className="truncate text-base font-medium" title={artifact.title}>{artifact.title}</p>
                         <p className="truncate text-sm text-muted-foreground" title={artifact.title}>{hostname(artifact.title)}</p>
                       </div>
@@ -409,7 +409,7 @@ export default function ArtifactsPage() {
                         <Badge variant={artifact.status === "done" || artifact.status === "available" ? "secondary" : "outline"} className="capitalize">
                           {artifact.status}
                         </Badge>
-                        {artifact.shareToken && <Badge variant="outline" className="border-emerald-200 text-emerald-700">Shared run</Badge>}
+                        {artifact.shareToken && <Badge variant="secondary">Shared run</Badge>}
                         {artifact.flags.pdf && <Badge variant="outline">PDF</Badge>}
                         {artifact.flags.fullPage && <Badge variant="outline">Full page</Badge>}
                       </div>
@@ -435,16 +435,16 @@ export default function ArtifactsPage() {
                       </Link>
                     )}
                     {sharedHref && (
-                      <a href={sharedHref} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+                      <Link href={sharedHref} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
                         <Globe className="mr-1.5 h-3.5 w-3.5" />
                         Open shared run
-                      </a>
+                      </Link>
                     )}
                     {artifact.href && (
-                      <a href={artifact.href} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
+                      <Link href={artifact.href} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
                         <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                         Open artifact
-                      </a>
+                      </Link>
                     )}
                   </div>
                 </CardContent>
