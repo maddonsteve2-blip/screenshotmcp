@@ -217,6 +217,18 @@ export default function ScreenshotsPage() {
   const recentCompleted = completedScreenshots.slice(0, 6);
   const visibleCompletedScreenshots = completedScreenshots.slice(0, visibleCompletedCount);
   const visibleAllScreenshots = filteredScreenshots.slice(0, visibleAllCount);
+  const statusFilterLabel = {
+    all: "All statuses",
+    done: "Completed",
+    attention: "Needs attention",
+    failed: "Failed",
+  } satisfies Record<StatusFilter, string>;
+  const artifactFilterLabel = {
+    all: "All artifacts",
+    linked: "Linked to runs",
+    pdf: "PDF exports",
+    "full-page": "Full page",
+  } satisfies Record<"all" | "linked" | "pdf" | "full-page", string>;
   const resolvedActiveView = activeView === "attention" && attentionScreenshots.length === 0
     ? completedScreenshots.length > 0
       ? "completed"
@@ -281,55 +293,93 @@ export default function ScreenshotsPage() {
             Use this library to find specific exports fast, then jump back to the parent run when you need the full execution context.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="relative w-full xl:max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              aria-label="Search captures"
-              autoComplete="off"
-              name="captureSearch"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by URL, run ID, status, or capture ID…"
-              className="pl-9"
-            />
-          </div>
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap gap-2">
-              {([
-                ["all", "All statuses"],
-                ["done", "Completed"],
-                ["attention", "Needs attention"],
-                ["failed", "Failed"],
-              ] as const).map(([value, label]) => (
-                <Button
-                  key={value}
-                  type="button"
-                  size="sm"
-                  variant={statusFilter === value ? "default" : "outline"}
-                  onClick={() => setStatusFilter(value)}
-                >
-                  {label}
-                </Button>
-              ))}
+        <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
+          <div className="flex flex-col gap-5">
+            <div className="relative w-full">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                aria-label="Search captures"
+                autoComplete="off"
+                spellCheck={false}
+                name="captureSearch"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search by URL, run ID, status, or capture ID…"
+                className="pl-9"
+              />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {([
-                ["all", "All artifacts"],
-                ["linked", "Linked to runs"],
-                ["pdf", "PDF exports"],
-                ["full-page", "Full page"],
-              ] as const).map(([value, label]) => (
-                <Button
-                  key={value}
-                  type="button"
-                  size="sm"
-                  variant={artifactFilter === value ? "default" : "outline"}
-                  onClick={() => setArtifactFilter(value)}
-                >
-                  {label}
-                </Button>
-              ))}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-4">
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Status</p>
+                  <p className="text-sm text-muted-foreground">Choose the review state you want to scan.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    ["all", "All statuses"],
+                    ["done", "Completed"],
+                    ["attention", "Needs attention"],
+                    ["failed", "Failed"],
+                  ] as const).map(([value, label]) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      size="sm"
+                      variant={statusFilter === value ? "default" : "outline"}
+                      onClick={() => setStatusFilter(value)}
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-4">
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Artifact type</p>
+                  <p className="text-sm text-muted-foreground">Narrow to run-linked, PDF, or full-page output.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    ["all", "All artifacts"],
+                    ["linked", "Linked to runs"],
+                    ["pdf", "PDF exports"],
+                    ["full-page", "Full page"],
+                  ] as const).map(([value, label]) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      size="sm"
+                      variant={artifactFilter === value ? "default" : "outline"}
+                      onClick={() => setArtifactFilter(value)}
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-xl border bg-background p-4">
+            <div className="flex h-full flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Current slice</p>
+                <p className="text-3xl font-semibold tabular-nums">{filteredScreenshots.length}</p>
+                <p className="text-sm text-muted-foreground">Matching captures from {screenshots.length} total.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Status scope</p>
+                  <p className="mt-1 text-sm font-medium">{statusFilterLabel[statusFilter]}</p>
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Artifact scope</p>
+                  <p className="mt-1 text-sm font-medium">{artifactFilterLabel[artifactFilter]}</p>
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Library mix</p>
+                  <p className="mt-1 text-sm font-medium">{completedScreenshots.length} completed · {attentionScreenshots.length} active</p>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>

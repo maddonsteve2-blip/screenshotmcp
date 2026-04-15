@@ -20,6 +20,8 @@ interface Recording {
   videoUrl: string;
 }
 
+const PAGE_SIZE = 9;
+
 function formatDuration(ms: number | null): string {
   if (!ms) return "—";
   const secs = Math.floor(ms / 1000);
@@ -37,8 +39,8 @@ function formatFileSize(bytes: number | null): string {
 }
 
 function formatIdentifier(value: string, start = 12, end = 6): string {
-  if (value.length <= start + end + 3) return value;
-  return `${value.slice(0, start)}...${value.slice(-end)}`;
+  if (value.length <= start + end + 1) return value;
+  return `${value.slice(0, start)}…${value.slice(-end)}`;
 }
 
 function timeAgo(dateStr: string): string {
@@ -52,6 +54,16 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
+function hostname(input: string | null) {
+  if (!input) return "Unknown page";
+
+  try {
+    return new URL(input).hostname;
+  } catch {
+    return input;
+  }
+}
+
 export default function RecordingsPage() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +71,7 @@ export default function RecordingsPage() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [visibleRecordingsCount, setVisibleRecordingsCount] = useState(PAGE_SIZE);
 
   const handleSocketMessage = useCallback((message: { type: string; data?: { recordings?: Recording[] }; message?: string }) => {
     if (message.type === "recordings") {
@@ -123,21 +136,37 @@ export default function RecordingsPage() {
       .includes(normalizedQuery));
   }, [query, recordings]);
 
+  const filteredSummary = useMemo(() => {
+    const totalDurationMs = filteredRecordings.reduce((sum, recording) => sum + (recording.durationMs ?? 0), 0);
+    const totalBytes = filteredRecordings.reduce((sum, recording) => sum + (recording.fileSize ?? 0), 0);
+
+    return {
+      total: filteredRecordings.length,
+      totalDurationMs,
+      totalBytes,
+      withPageUrl: filteredRecordings.filter((recording) => !!recording.pageUrl).length,
+    };
+  }, [filteredRecordings]);
+
+  const recentRecordings = filteredRecordings.slice(0, 6);
+  const archiveRecordings = filteredRecordings.slice(6);
+  const visibleArchiveRecordings = archiveRecordings.slice(0, visibleRecordingsCount);
+
   return (
-    <div className="space-y-8 px-4 py-6 sm:px-6 lg:p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+    <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
+      <div className="flex flex-col gap-1">
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-pretty">
           <Video className="h-6 w-6" />
           Replays
         </h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="mt-1 text-muted-foreground">
           Artifact library for replayable video evidence. Use Runs when you want the full session review with captures and replay together. Start recording by passing{" "}
           <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">record_video: true</code>{" "}
           to <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">browser_navigate</code>.
         </p>
       </div>
 
-      <Card className="mb-6">
+      <Card>
         <CardContent className="flex flex-col gap-2 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <span>Runs is the primary review surface. Replays is a library view for individual recordings.</span>
           <Link href="/dashboard/runs" className="text-primary hover:underline">
@@ -146,27 +175,27 @@ export default function RecordingsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Total replays</p>
-            <p className="text-2xl font-semibold">{summary.total}</p>
+            <p className="text-2xl font-semibold tabular-nums">{summary.total}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Created in 24h</p>
-            <p className="text-2xl font-semibold">{summary.recent}</p>
+            <p className="text-2xl font-semibold tabular-nums">{summary.recent}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Known page URL</p>
-            <p className="text-2xl font-semibold">{summary.withPageUrl}</p>
+            <p className="text-2xl font-semibold tabular-nums">{summary.withPageUrl}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 space-y-1">
+          <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Library size</p>
             <p className="text-2xl font-semibold">{formatFileSize(summary.totalBytes)}</p>
           </CardContent>
@@ -180,19 +209,51 @@ export default function RecordingsPage() {
             Search for a replay by session, URL, or recording ID, then open the run when you need the full diagnostic context.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative w-full xl:max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by URL, run ID, or replay ID"
-              className="pl-9"
-            />
+        <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
+          <div className="flex flex-col gap-4">
+            <div className="relative w-full">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                aria-label="Search replays"
+                autoComplete="off"
+                spellCheck={false}
+                name="recordingSearch"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search by URL, run ID, or replay ID…"
+                className="pl-9"
+              />
+            </div>
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Search scope</p>
+                <p className="text-sm text-muted-foreground">Matches session IDs, page URLs, replay IDs, and stored video URLs so you can jump straight to the proof you need.</p>
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Showing {filteredRecordings.length} of {recordings.length} replays · {formatDuration(summary.totalDurationMs)} total duration.
-          </p>
+          <div className="rounded-xl border bg-background p-4">
+            <div className="flex h-full flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Current slice</p>
+                <p className="text-3xl font-semibold tabular-nums">{filteredSummary.total}</p>
+                <p className="text-sm text-muted-foreground">Matching replays from {recordings.length} total.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Duration</p>
+                  <p className="mt-1 text-sm font-medium">{formatDuration(filteredSummary.totalDurationMs)}</p>
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Known URLs</p>
+                  <p className="mt-1 text-sm font-medium">{filteredSummary.withPageUrl} linked pages</p>
+                </div>
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Storage slice</p>
+                  <p className="mt-1 text-sm font-medium">{formatFileSize(filteredSummary.totalBytes)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -230,123 +291,158 @@ export default function RecordingsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {filteredRecordings.map((rec) => (
-            <Card key={rec.id} className="overflow-hidden">
-              <div className="flex flex-col lg:flex-row">
-                <div className="bg-black flex items-center justify-center min-h-[320px] lg:w-[560px] xl:w-[640px]">
-                  {playingId === rec.id ? (
-                    <video
-                      src={rec.videoUrl}
-                      controls
-                      autoPlay
-                      className="h-full w-full max-h-[420px]"
-                    />
-                  ) : (
-                    <button
-                      onClick={() => setPlayingId(rec.id)}
-                      className="flex flex-col items-center gap-3 text-white/70 hover:text-white transition-colors p-8"
-                    >
-                      <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center backdrop-blur">
-                        <Video className="h-7 w-7" />
-                      </div>
-                      <span className="text-sm">Click to play</span>
-                    </button>
-                  )}
+        <div className="flex flex-col gap-6">
+          {recentRecordings.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Replays</CardTitle>
+                <CardDescription>
+                  Start with the newest recordings in a horizontal strip, then use the archive grid when you need deeper history.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2">
+                  {recentRecordings.map((rec) => (
+                    <article key={rec.id} className="min-w-[320px] max-w-[360px] snap-start">
+                      <Card className="overflow-hidden">
+                        <div className="flex h-44 items-center justify-center bg-black">
+                          {playingId === rec.id ? (
+                            <video src={rec.videoUrl} controls autoPlay className="h-full w-full" />
+                          ) : (
+                            <button
+                              type="button"
+                              aria-label={`Play replay for ${hostname(rec.pageUrl)}`}
+                              onClick={() => setPlayingId(rec.id)}
+                              className="flex h-full w-full flex-col items-center justify-center gap-3 p-8 text-white/70 transition-colors hover:text-white"
+                            >
+                              <div className="flex size-16 items-center justify-center rounded-full bg-white/10 backdrop-blur">
+                                <Video className="h-7 w-7" />
+                              </div>
+                              <span className="text-sm">Click to play</span>
+                            </button>
+                          )}
+                        </div>
+                        <CardContent className="flex flex-col gap-3 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-base font-medium" title={rec.pageUrl || "Unknown page"}>{rec.pageUrl || "Unknown page"}</p>
+                              <p className="truncate text-sm text-muted-foreground">{hostname(rec.pageUrl)}</p>
+                            </div>
+                            <Badge variant="secondary">{timeAgo(rec.createdAt)}</Badge>
+                          </div>
+                          <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                            <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{formatDuration(rec.durationMs)}</span>
+                            <span className="inline-flex items-center gap-1"><Monitor className="h-3.5 w-3.5" />{rec.viewportWidth}×{rec.viewportHeight}</span>
+                            <span className="inline-flex items-center gap-1"><HardDrive className="h-3.5 w-3.5" />{formatFileSize(rec.fileSize)}</span>
+                            <span className="inline-flex items-center gap-1"><Link2 className="h-3.5 w-3.5" />{formatIdentifier(rec.id, 8, 4)}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Link href={`/dashboard/runs/${rec.sessionId}`} className="inline-flex">
+                              <Button size="sm" variant="outline">View run</Button>
+                            </Link>
+                            <Button size="sm" variant="outline" render={<a href={rec.videoUrl} target="_blank" rel="noopener noreferrer" />}>
+                              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                              Open
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </article>
+                  ))}
                 </div>
-
-                <div className="min-w-0 flex-1 p-6">
-                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <h3
-                        className="mb-1 text-base font-medium leading-snug break-all lg:text-lg"
-                        title={rec.pageUrl || "Unknown page"}
-                      >
-                        {rec.pageUrl || "Unknown page"}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                        <span>
-                          Session:{" "}
-                          <code className="font-mono" title={rec.sessionId}>{formatIdentifier(rec.sessionId)}</code>
-                        </span>
-                        <span className="inline-flex items-center gap-1"><Link2 className="h-3 w-3" />Run linked</span>
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="self-start text-sm">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {timeAgo(rec.createdAt)}
-                    </Badge>
-                  </div>
-
-                  <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-base">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="h-3.5 w-3.5" />
-                      <span>Duration: <span className="text-foreground">{formatDuration(rec.durationMs)}</span></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Monitor className="h-3.5 w-3.5" />
-                      <span>Viewport: <span className="text-foreground">{rec.viewportWidth}×{rec.viewportHeight}</span></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Video className="h-3.5 w-3.5" />
-                      <span>Size: <span className="text-foreground">{formatFileSize(rec.fileSize)}</span></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <HardDrive className="h-3.5 w-3.5" />
-                      <span>
-                        Replay ID:{" "}
-                        <span className="text-foreground font-mono" title={rec.id}>{formatIdentifier(rec.id)}</span>
-                      </span>
-                    </div>
-                    {rec.pageUrl && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Globe className="h-3.5 w-3.5" />
-                        <a
-                          href={rec.pageUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="break-all text-sm text-primary hover:underline"
-                          title={rec.pageUrl}
-                        >
-                          {new URL(rec.pageUrl).hostname}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Link href={`/dashboard/runs/${rec.sessionId}`} className="inline-flex">
-                      <Button size="sm" variant="outline">
-                        View run
-                      </Button>
-                    </Link>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      render={<a href={rec.videoUrl} target="_blank" rel="noopener noreferrer" />}
-                    >
-                      <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                      Open
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(rec.id)}
-                      disabled={deleting === rec.id}
-                    >
-                      {deleting === rec.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                      )}
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              </CardContent>
             </Card>
-          ))}
+          )}
+
+          <div className="flex flex-col gap-1">
+            <h3 className="text-base font-semibold">Replay Library</h3>
+            <p className="text-sm text-muted-foreground">
+              {archiveRecordings.length > 0
+                ? `Showing ${visibleArchiveRecordings.length} of ${archiveRecordings.length} archived replays in a denser grid.`
+                : "All matching replays are already surfaced in the recent strip above."}
+            </p>
+          </div>
+
+          {archiveRecordings.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                {visibleArchiveRecordings.map((rec) => (
+                  <Card key={rec.id} className="overflow-hidden [contain-intrinsic-size:360px] [content-visibility:auto]">
+                    <div className="flex h-48 items-center justify-center bg-black">
+                      {playingId === rec.id ? (
+                        <video src={rec.videoUrl} controls autoPlay className="h-full w-full" />
+                      ) : (
+                        <button
+                          type="button"
+                          aria-label={`Play replay for ${hostname(rec.pageUrl)}`}
+                          onClick={() => setPlayingId(rec.id)}
+                          className="flex h-full w-full flex-col items-center justify-center gap-3 p-8 text-white/70 transition-colors hover:text-white"
+                        >
+                          <div className="flex size-16 items-center justify-center rounded-full bg-white/10 backdrop-blur">
+                            <Video className="h-7 w-7" />
+                          </div>
+                          <span className="text-sm">Click to play</span>
+                        </button>
+                      )}
+                    </div>
+                    <CardContent className="flex flex-col gap-3 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-base font-medium" title={rec.pageUrl || "Unknown page"}>{rec.pageUrl || "Unknown page"}</p>
+                          <p className="truncate text-sm text-muted-foreground">{hostname(rec.pageUrl)}</p>
+                        </div>
+                        <Badge variant="secondary">{timeAgo(rec.createdAt)}</Badge>
+                      </div>
+                      <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                        <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{formatDuration(rec.durationMs)}</span>
+                        <span className="inline-flex items-center gap-1"><Monitor className="h-3.5 w-3.5" />{rec.viewportWidth}×{rec.viewportHeight}</span>
+                        <span className="inline-flex items-center gap-1"><HardDrive className="h-3.5 w-3.5" />{formatFileSize(rec.fileSize)}</span>
+                        <span className="inline-flex items-center gap-1"><Globe className="h-3.5 w-3.5" />{hostname(rec.pageUrl)}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Link href={`/dashboard/runs/${rec.sessionId}`} className="inline-flex">
+                          <Button size="sm" variant="outline">View run</Button>
+                        </Link>
+                        <Button size="sm" variant="outline" render={<a href={rec.videoUrl} target="_blank" rel="noopener noreferrer" />}>
+                          <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                          Open
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(rec.id)}
+                          disabled={deleting === rec.id}
+                        >
+                          {deleting === rec.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                          )}
+                          Delete
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {archiveRecordings.length > visibleRecordingsCount && (
+                <div className="flex justify-center">
+                  <Button variant="outline" onClick={() => setVisibleRecordingsCount((current) => current + PAGE_SIZE)}>
+                    Show 9 more
+                  </Button>
+                </div>
+              )}
+            </>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col gap-2 py-10 text-center">
+                <p className="font-medium">No older replays match this filter.</p>
+                <p className="text-sm text-muted-foreground">Use the recent strip above or broaden your search for a wider archive view.</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>

@@ -1,3 +1,4 @@
+import { Inter } from "next/font/google";
 import Link from "next/link";
 import { SignOutButton, UserButton } from "@clerk/nextjs";
 import { Camera, Menu } from "lucide-react";
@@ -6,9 +7,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Separator } from "@/components/ui/separator";
 import DashboardSidebar from "./dashboard-sidebar";
 
+const inter = Inter({ subsets: ["latin"], variable: "--dashboard-font-sans" });
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className={`dashboard-theme ${inter.variable} flex min-h-screen bg-background`}>
       <aside className="sticky top-0 hidden h-screen w-60 border-r lg:flex lg:flex-col">
         <div className="p-6 flex items-center gap-2">
           <Camera className="h-5 w-5 text-primary" />
@@ -40,7 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Menu data-icon="inline-start" />
               Menu
             </DialogTrigger>
-            <DialogContent className="left-0 top-0 h-dvh w-[min(320px,85vw)] max-w-[85vw] translate-x-0 translate-y-0 gap-0 rounded-none border-r p-0 sm:max-w-[320px]" showCloseButton={false}>
+            <DialogContent className={`dashboard-theme ${inter.variable} left-0 top-0 h-dvh w-[min(320px,85vw)] max-w-[85vw] translate-x-0 translate-y-0 gap-0 rounded-none border-r p-0 sm:max-w-[320px]`} showCloseButton={false}>
               <DialogHeader className="border-b p-4">
                 <DialogTitle>Dashboard navigation</DialogTitle>
                 <DialogDescription>Open the main review, analysis, and account sections.</DialogDescription>
