@@ -118,7 +118,7 @@ export default async function DashboardPage() {
   const sharedRunCount = sharedRunRows[0]?.count ?? 0;
 
   return (
-    <DashboardClient 
+    <DashboardClient
       data={{
         usage: used,
         limit,

@@ -3,6 +3,7 @@ import { Outfit, Sora } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import "./globals.css";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-sans" });
@@ -60,9 +61,11 @@ export default function RootLayout({
           signInFallbackRedirectUrl={signInFallbackRedirectUrl}
           signUpFallbackRedirectUrl={signUpFallbackRedirectUrl}
         >
-          <RootProvider>
-            {children}
-          </RootProvider>
+          <TooltipProvider>
+            <RootProvider>
+              {children}
+            </RootProvider>
+          </TooltipProvider>
         </ClerkProvider>
       </body>
     </html>
