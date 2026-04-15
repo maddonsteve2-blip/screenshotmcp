@@ -115,8 +115,8 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             <p className="text-muted-foreground">Recent runs, issues that need attention, and the evidence your browser workflows produced.</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Link href="/dashboard/runs">
-              <Button variant="outline" size="sm">Open runs</Button>
+            <Link href="/dashboard/runs" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+              Open runs
             </Link>
             <Badge variant="secondary" className="capitalize">{plan} plan</Badge>
           </div>
@@ -215,8 +215,8 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <CardTitle>Recent runs</CardTitle>
                 <CardDescription>The main review path: what ran recently, what evidence exists, and which sessions need attention.</CardDescription>
               </div>
-              <Link href="/dashboard/runs">
-                <Button variant="outline" size="sm">Open all</Button>
+              <Link href="/dashboard/runs" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                Open all
               </Link>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
@@ -240,7 +240,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                               <p className="text-sm font-medium truncate" title={title}>{title}</p>
                               <Badge variant={item.status === "completed" ? "secondary" : item.status === "failed" ? "destructive" : "outline"} className="capitalize">{item.status}</Badge>
                               <Badge variant="outline" className="capitalize">{item.executionMode}</Badge>
-                              {item.shareToken && <Badge variant="outline" className="border-emerald-200 text-emerald-700">Shared</Badge>}
+                              {item.shareToken && <Badge variant="secondary">Shared</Badge>}
                               {issueCount > 0 && <Badge variant="destructive">{issueCount} issues</Badge>}
                             </div>
                             <p className="text-xs text-muted-foreground truncate" title={targetUrl}>{targetUrl}</p>
@@ -303,8 +303,8 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                     ? "Open Runs to review failures, console errors, and network problems in one workflow."
                     : "Your recent runs are not showing failed or issue-marked sessions right now."}
                 </div>
-                <Link href="/dashboard/runs">
-                  <Button variant="outline" className="w-full">Review runs</Button>
+                <Link href="/dashboard/runs" className={cn(buttonVariants({ variant: "outline" }), "w-full")}>
+                  Review runs
                 </Link>
               </CardContent>
             </Card>
@@ -333,8 +333,8 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                   <Button onClick={() => setShowInstallDialog(true)} className="gap-2">
                     Open install guide <ArrowRight className="h-4 w-4" />
                   </Button>
-                  <Link href="/dashboard/runs">
-                    <Button variant="outline" className="w-full">Open unified runs workspace</Button>
+                  <Link href="/dashboard/runs" className={cn(buttonVariants({ variant: "outline" }), "w-full")}>
+                    Open unified runs workspace
                   </Link>
                 </div>
               </CardContent>
@@ -349,8 +349,8 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <CardTitle>Recent screenshots</CardTitle>
                 <CardDescription>Artifact library view for recent captures, with direct links back to the parent run when available.</CardDescription>
               </div>
-              <Link href="/dashboard/screenshots">
-                <Button variant="outline" size="sm">Open captures</Button>
+              <Link href="/dashboard/screenshots" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                Open captures
               </Link>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
@@ -398,8 +398,8 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <CardTitle>Recent recordings</CardTitle>
                 <CardDescription>Replay library view for recent recordings, with the run detail page as the main review destination.</CardDescription>
               </div>
-              <Link href="/dashboard/recordings">
-                <Button variant="outline" size="sm">Open replays</Button>
+              <Link href="/dashboard/recordings" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                Open replays
               </Link>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
