@@ -332,9 +332,6 @@ export default function ScreenshotsPage() {
               ))}
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Showing {filteredScreenshots.length} of {screenshots.length} captures.
-          </p>
         </CardContent>
       </Card>
 
@@ -364,13 +361,7 @@ export default function ScreenshotsPage() {
         </Card>
       ) : (
         <Tabs value={resolvedActiveView} onValueChange={(value) => setActiveView(value as LibraryView)} className="flex flex-col gap-6">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex flex-col gap-1">
-              <h2 className="text-lg font-semibold text-pretty">Organize the Library</h2>
-              <p className="text-sm text-muted-foreground">
-                Keep failed and in-flight captures separate from finished proof so you don’t have to scroll halfway down the page to find the completed gallery.
-              </p>
-            </div>
+          <div className="flex justify-start">
             <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
               <TabsTrigger value="attention">Queue & Failed ({attentionScreenshots.length})</TabsTrigger>
               <TabsTrigger value="completed">Completed Gallery ({completedScreenshots.length})</TabsTrigger>
@@ -516,18 +507,13 @@ export default function ScreenshotsPage() {
                   </Card>
                 )}
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1">
                   <div className="flex flex-col gap-1">
                     <h3 className="text-base font-semibold">Completed Gallery</h3>
                     <p className="text-sm text-muted-foreground">
                       Showing {visibleCompletedScreenshots.length} of {completedScreenshots.length} completed captures in a denser grid.
                     </p>
                   </div>
-                  {completedScreenshots.length > visibleCompletedCount && (
-                    <Button variant="outline" onClick={() => setVisibleCompletedCount((current) => current + PAGE_SIZE)}>
-                      Show 12 more
-                    </Button>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
@@ -556,6 +542,14 @@ export default function ScreenshotsPage() {
                     </Card>
                   ))}
                 </div>
+
+                {completedScreenshots.length > visibleCompletedCount && (
+                  <div className="flex justify-center">
+                    <Button variant="outline" onClick={() => setVisibleCompletedCount((current) => current + PAGE_SIZE)}>
+                      Show 12 more
+                    </Button>
+                  </div>
+                )}
               </>
             )}
           </TabsContent>
@@ -570,18 +564,13 @@ export default function ScreenshotsPage() {
               </Card>
             ) : (
               <>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1">
                   <div className="flex flex-col gap-1">
                     <h3 className="text-base font-semibold">Full Capture Archive</h3>
                     <p className="text-sm text-muted-foreground">
                       Showing {visibleAllScreenshots.length} of {filteredScreenshots.length} filtered captures.
                     </p>
                   </div>
-                  {filteredScreenshots.length > visibleAllCount && (
-                    <Button variant="outline" onClick={() => setVisibleAllCount((current) => current + PAGE_SIZE)}>
-                      Show 12 more
-                    </Button>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
@@ -620,6 +609,14 @@ export default function ScreenshotsPage() {
                     </Card>
                   ))}
                 </div>
+
+                {filteredScreenshots.length > visibleAllCount && (
+                  <div className="flex justify-center">
+                    <Button variant="outline" onClick={() => setVisibleAllCount((current) => current + PAGE_SIZE)}>
+                      Show 12 more
+                    </Button>
+                  </div>
+                )}
               </>
             )}
           </TabsContent>
