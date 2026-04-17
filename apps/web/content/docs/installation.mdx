@@ -5,19 +5,29 @@ description: Configure ScreenshotsMCP so your AI can inspect, test, and verify w
 
 ## CLI Install (Fastest)
 
-The quickest way to set up ScreenshotsMCP is with the CLI. Run these two commands in your terminal:
+The quickest way to set up ScreenshotsMCP for a new agent is with the CLI. Use the one-command onboarding flow:
+
+```bash
+npx screenshotsmcp setup --client cursor    # or: vscode, windsurf, claude, claude-code
+```
+
+This will:
+1. Open your browser to authenticate via OAuth if needed
+2. Configure the MCP server in your chosen client
+3. Install or repair the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`
+
+Use this path when you want the fastest way to get browser truth into a fresh IDE, CLI, or MCP workflow.
+
+If you prefer to do onboarding in two steps, you can still run:
 
 ```bash
 npx screenshotsmcp login
 npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
-This will:
-1. Open your browser to authenticate via OAuth
-2. Auto-configure the MCP server in your chosen client
-3. Install or repair the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp`
+That two-step path reaches the same result as `setup --client <client>` for most clients. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
 
-Use this path when you want the fastest way to get browser truth into your IDE, CLI, or MCP workflow.
+The first packaged workflow is `~/.agents/skills/screenshotsmcp/workflows/sitewide-performance-audit/WORKFLOW.md` for repeatable multi-page performance audits.
 
 `screenshotsmcp skills ...` only manages that local core ScreenshotsMCP skill. To discover or install community skills from the wider agent ecosystem, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...`.
 
@@ -26,6 +36,22 @@ You can also install it globally for ongoing use:
 ```bash
 npm install -g screenshotsmcp
 screenshotsmcp --help
+```
+
+For public sites, the CLI now mirrors the MCP remote browser workflow directly. Start a remote session, keep the returned `sessionId`, and continue with `browse:*` commands:
+
+```bash
+screenshotsmcp browse https://example.com
+screenshotsmcp browse:click <sessionId> "Sign in"
+screenshotsmcp browse:console <sessionId> --level error
+screenshotsmcp browse:network-errors <sessionId>
+screenshotsmcp browse:a11y <sessionId>
+screenshotsmcp browse:perf <sessionId>
+screenshotsmcp browse:seo <sessionId>
+screenshotsmcp browse:close <sessionId>
+screenshotsmcp auth:test https://example.com
+screenshotsmcp auth:find-login https://example.com
+screenshotsmcp auth:smart-login https://example.com/sign-in --username user@example.com --password secret
 ```
 
 For extension-free local browser workflows, you can also launch an installed browser in a dedicated ScreenshotsMCP profile:
@@ -86,6 +112,8 @@ Until the Marketplace release is ready, install the preview VSIX and sign in onc
 
 ScreenshotsMCP works with any client that supports the **Model Context Protocol (MCP)**. Here's how to configure each one manually.
 
+If you are setting up a new agent and want the managed core skill plus packaged workflows installed automatically, prefer `npx screenshotsmcp setup --client <client>` before falling back to the manual snippets below.
+
 ## Cursor
 
 Open Cursor Settings → MCP Servers, or edit `~/.cursor/mcp.json` directly:
@@ -142,6 +170,8 @@ Add to your VS Code settings (`.vscode/mcp.json`):
 }
 ```
 
+This file is workspace-local, so repeat this step for each workspace that should have ScreenshotsMCP enabled.
+
 ## Any MCP Client
 
 The server endpoint is:
@@ -175,8 +205,9 @@ Once connected, your AI assistant has access to **46+ tools**:
 | Category | Tools |
 | --- | --- |
 | **Screenshots** | `take_screenshot`, `screenshot_mobile`, `screenshot_tablet`, `screenshot_responsive`, `screenshot_fullpage`, `screenshot_dark`, `screenshot_element`, `screenshot_pdf`, `list_recent_screenshots`, `get_screenshot_status` |
-| **Browser** | `browser_navigate`, `browser_click`, `browser_fill`, `browser_hover`, `browser_select_option`, `browser_press_key`, `browser_scroll`, `browser_wait_for`, `browser_go_back`, `browser_go_forward`, `browser_close` |
+| **Browser** | `browser_navigate`, `browser_click`, `browser_click_at`, `browser_fill`, `browser_hover`, `browser_select_option`, `browser_press_key`, `browser_scroll`, `browser_wait_for`, `browser_go_back`, `browser_go_forward`, `browser_set_viewport`, `browser_close`, `solve_captcha` |
 | **Inspection** | `browser_screenshot`, `browser_get_text`, `browser_get_html`, `browser_get_accessibility_tree`, `browser_evaluate` |
 | **Performance** | `browser_perf_metrics`, `browser_network_requests` |
 | **SEO** | `browser_seo_audit` |
 | **Debugging** | `browser_console_logs`, `browser_network_errors`, `browser_cookies`, `browser_storage` |
+| **Auth & Email** | `auth_test_assist`, `find_login_page`, `smart_login`, `authorize_email_access`, `read_verification_email`, `create_test_inbox`, `check_inbox`, `send_test_email` |

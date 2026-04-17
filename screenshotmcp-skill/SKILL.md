@@ -38,18 +38,34 @@ Give your AI assistant eyes and hands for the web. This skill covers all 46+ too
 
 ## Quick Start (Choose One)
 
-### Option A: MCP Server (Recommended for AI Agents)
+### Option A: Managed onboarding (Recommended for AI Agents)
 
 **Best for:** Claude, Cursor, Windsurf, VS Code, Claude Code
 
 ```bash
-# Get API key first
-npx screenshotsmcp login
+# One-command onboarding for a new agent or fresh IDE setup
+npx screenshotsmcp setup --client cursor    # or: vscode, windsurf, claude, claude-code
 
-# Or get key manually at https://www.screenshotmcp.com/dashboard/keys
+# Or do it in two steps
+npx screenshotsmcp login
+npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
-Add to your MCP config:
+This path authenticates if needed, configures the MCP client, and installs or repairs the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`.
+
+For most clients, the two-step `login` + `install` path reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
+
+### Option B: Manual MCP setup
+
+**Best for:** Clients that you want to configure by hand, or environments where you only want the raw MCP connection
+
+Get an API key first:
+
+```bash
+npx screenshotsmcp login --key sk_live_...
+```
+
+Then add ScreenshotsMCP to your MCP config:
 
 **Cursor:** `~/.cursor/mcp.json`
 **Windsurf:** `~/.codeium/windsurf/mcp_config.json`
@@ -66,7 +82,7 @@ Add to your MCP config:
 }
 ```
 
-### Option B: CLI (Fastest for Terminal Use)
+### Option C: CLI (Fastest for Terminal Use)
 
 **Best for:** Direct terminal commands, CI/CD, scripts
 

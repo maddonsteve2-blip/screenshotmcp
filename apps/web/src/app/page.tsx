@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Show } from "@clerk/nextjs";
+import { getNpxSetupCommand } from "@screenshotsmcp/types";
 import { Button } from "@/components/ui/button";
 import Script from "next/script";
 import { Camera, Eye, MonitorSmartphone, Search, Lock, Diff, Layers, Terminal, Copy, Check, ArrowRight, Zap, Shield, X, Sparkles } from "lucide-react";
@@ -175,19 +176,19 @@ const quickStartTabs = [
     id: "cursor",
     label: "Cursor",
     comment: "# AI agents: run this directly",
-    commands: [{ text: "npx screenshotsmcp setup --client cursor", copyable: true }],
+    commands: [{ text: getNpxSetupCommand("cursor"), copyable: true }],
   },
   {
     id: "windsurf",
     label: "Windsurf",
     comment: "# AI agents: run this directly",
-    commands: [{ text: "npx screenshotsmcp setup --client windsurf", copyable: true }],
+    commands: [{ text: getNpxSetupCommand("windsurf"), copyable: true }],
   },
   {
     id: "claude-code",
     label: "Claude Code",
     comment: "# AI agents: run this directly",
-    commands: [{ text: "npx screenshotsmcp setup --client claude-code", copyable: true }],
+    commands: [{ text: getNpxSetupCommand("claude-code"), copyable: true }],
   },
 ];
 
@@ -307,7 +308,7 @@ function MidPageCTA() {
             </Button>
           </Link>
           <Link href="/docs">
-            <Button size="lg" variant="outline" className="border-white/10 text-gray-300 hover:bg-white/5 hover:text-white h-12 text-base gap-2">
+            <Button size="lg" variant="outline" className="h-12 gap-2 border-white/15 bg-white/[0.03] text-gray-100 hover:border-white/25 hover:bg-white/[0.08] hover:text-white text-base">
               See the docs
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -404,7 +405,7 @@ export default function HomePage() {
               </Button>
             </Link>
             <Link href="/docs">
-              <Button size="lg" variant="outline" className="border-white/10 text-gray-300 hover:bg-white/5 hover:text-white h-12 text-base gap-2">
+              <Button size="lg" variant="outline" className="h-12 gap-2 border-white/15 bg-white/[0.03] text-gray-100 hover:border-white/25 hover:bg-white/[0.08] hover:text-white text-base">
                 See docs
                 <ArrowRight className="h-4 w-4" />
               </Button>

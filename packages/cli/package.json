@@ -18,6 +18,7 @@
   "homepage": "https://www.screenshotmcp.com",
   "scripts": {
     "build": "node build.mjs",
+    "lint:auth": "node --max-old-space-size=4096 ../../node_modules/typescript/bin/tsc -p tsconfig.auth.json",
     "prepublishOnly": "node build.mjs"
   },
   "keywords": [

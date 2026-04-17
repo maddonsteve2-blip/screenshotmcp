@@ -18,6 +18,7 @@ export const loginCommand = new Command("login")
       console.log(chalk.green("✓ API key saved."));
       console.log(chalk.dim(`  Config: ${getConfigPath()}`));
       printSkillSyncResult(syncCoreSkillForCli());
+      console.log(chalk.dim("  Tip: use `screenshotsmcp auth:test https://example.com` before login or sign-up testing."));
       return;
     }
 
@@ -34,6 +35,7 @@ export const loginCommand = new Command("login")
       console.log(chalk.dim(`  Key: ${result.apiKey.slice(0, 12)}...${result.apiKey.slice(-4)}`));
       console.log(chalk.dim(`  Config: ${getConfigPath()}`));
       printSkillSyncResult(syncCoreSkillForCli());
+      console.log(chalk.dim("  Tip: use `screenshotsmcp auth:test https://example.com` before login or sign-up testing."));
     } catch (err) {
       spinner.fail(chalk.red("Login failed"));
       console.error(chalk.red(err instanceof Error ? err.message : String(err)));

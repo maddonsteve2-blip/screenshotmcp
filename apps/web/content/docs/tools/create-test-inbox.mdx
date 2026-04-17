@@ -1,0 +1,33 @@
+---
+title: create_test_inbox
+description: Standalone helper for creating or reusing the saved primary test inbox.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `username` | string | No | — | Optional username prefix for the inbox |
+| `display_name` | string | No | — | Optional display name |
+| `force_new` | boolean | No | `false` | Force creation of a new inbox even if an existing inbox can be reused |
+
+## Example
+
+```
+Create or reuse the primary test inbox for website testing.
+```
+
+## What It Returns
+
+- Reusable inbox email
+- Reusable password
+- Inbox ID
+- Known-site history for that inbox
+
+## Notes
+
+- For website auth testing, start with `auth_test_assist` first
+- `auth_test_assist` gives reusable cross-site strategy plus remembered per-site guidance, while this tool only manages inbox identity
+- Use this tool directly when you explicitly need a fresh registration identity or a standalone inbox workflow
+- Always use the returned password instead of inventing one
+- Use `check_inbox` to read OTP codes or verification links that arrive in the inbox

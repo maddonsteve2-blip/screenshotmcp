@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { CORE_SITEWIDE_PERFORMANCE_WORKFLOW_PATH, CORE_SKILL_INSTALL_PATH, DEFAULT_ONBOARDING_CLIENT, ONBOARDING_CLIENTS, TWO_STEP_ONBOARDING_NUANCE, getNpxInstallCommand, getNpxSetupCommand, getTwoStepOnboardingCommand } from "@screenshotsmcp/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,10 @@ import { Check, Copy, ArrowLeft, ArrowRight, Key, Terminal, AlertCircle, Downloa
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
 const MCP_URL = `${API_BASE}/mcp`;
+const CLI_ONBOARDING_CLIENT = DEFAULT_ONBOARDING_CLIENT;
+const CLI_SETUP_COMMAND = getNpxSetupCommand(CLI_ONBOARDING_CLIENT);
+const CLI_TWO_STEP_COMMAND = getTwoStepOnboardingCommand(CLI_ONBOARDING_CLIENT);
+const CLI_INSTALL_COMMAND = getNpxInstallCommand(CLI_ONBOARDING_CLIENT);
 
 /* ───── helpers ───── */
 function CopyBlock({ code, id, label, copiedId, onCopy }: {
@@ -83,7 +88,8 @@ const CATEGORIES: Category[] = [
 const TEST_PROMPTS = [
   "Open https://example.com, inspect the page, and tell me what you see",
   "Use screenshot_responsive to capture https://github.com at all device sizes and summarize the differences",
-  "Test my sign-in flow and capture proof if anything fails",
+  "Start with auth_test_assist for https://example.com, follow its recommended auth path, reuse the saved inbox credentials, test the auth flow end-to-end, and summarize reusable auth heuristics first with site-specific evidence second",
+  "Start a remote browser session for https://example.com, inspect console and network failures with the session tools, and summarize the evidence",
   "Open my local app, inspect the page, and export evidence for anything suspicious",
 ];
 
@@ -432,20 +438,36 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
           {toolId === "cli" && (
             <>
               <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/20 p-4 text-sm text-blue-800 dark:text-blue-200">
-                <strong>Terminal + browser workflow tool</strong> — Use ScreenshotsMCP directly from the command line, auto-configure any MCP client, and escalate to a managed local browser when public cloud execution is not enough.
+                <strong>Terminal + browser workflow tool</strong> — Use ScreenshotsMCP directly from the command line, mirror the same remote MCP browser/auth flows for public sites, and escalate to a managed local browser when public cloud execution is not enough.
               </div>
-              <Step n={1} title="Install and login">
-                <CopyBlock code={`npx screenshotsmcp login`} id="cli-login" copiedId={copiedId} onCopy={onCopy} />
-                <p className="text-xs text-muted-foreground mt-2">Opens your browser to authenticate via OAuth and syncs the managed core skill. No API key needed. This is the fastest path into Cursor, Windsurf, VS Code, Claude, or terminal-first workflows.</p>
+              <Step n={1} title="Recommended: one-command onboarding for a new agent">
+                <CopyBlock code={CLI_SETUP_COMMAND} id="cli-setup" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Use {ONBOARDING_CLIENTS.map((client, index) => (<span key={client}>{index > 0 && (index === ONBOARDING_CLIENTS.length - 1 ? " or " : ", ")}<code className="bg-muted px-1 rounded">{client}</code></span>))}. This authenticates if needed, configures the MCP client, and installs or repairs the managed core skill plus packaged workflows in <code className="bg-muted px-1 rounded">{CORE_SKILL_INSTALL_PATH}</code>, including <code className="bg-muted px-1 rounded">{CORE_SITEWIDE_PERFORMANCE_WORKFLOW_PATH}</code>.</p>
               </Step>
-              <Step n={2} title="Auto-configure your MCP client">
-                <CopyBlock code={`npx screenshotsmcp install cursor`} id="cli-install" copiedId={copiedId} onCopy={onCopy} />
-                <p className="text-xs text-muted-foreground mt-2">Supported: <code className="bg-muted px-1 rounded">cursor</code>, <code className="bg-muted px-1 rounded">vscode</code>, <code className="bg-muted px-1 rounded">windsurf</code>, <code className="bg-muted px-1 rounded">claude</code>, <code className="bg-muted px-1 rounded">claude-code</code>. This also installs or repairs the managed core skill in <code className="bg-muted px-1 rounded">~/.agents/skills/screenshotsmcp</code> so your local setup and MCP config stay aligned.</p>
+              <Step n={2} title="Or do it in two steps">
+                <CopyBlock code={CLI_TWO_STEP_COMMAND} id="cli-login-install" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Use this when you already know the client you want to configure or only need to repair one client. {TWO_STEP_ONBOARDING_NUANCE}</p>
+              </Step>
+              <Step n={3} title="Client-specific install nuances">
+                <CopyBlock code={CLI_INSTALL_COMMAND} id="cli-install" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Supported: {ONBOARDING_CLIENTS.map((client, index) => (<span key={client}>{index > 0 && (index === ONBOARDING_CLIENTS.length - 1 ? " or " : ", ")}<code className="bg-muted px-1 rounded">{client}</code></span>))}. <code className="bg-muted px-1 rounded">install vscode</code> writes a workspace-local <code className="bg-muted px-1 rounded">.vscode/mcp.json</code>, while <code className="bg-muted px-1 rounded">install claude-code</code> prints the <code className="bg-muted px-1 rounded">claude mcp add ...</code> command for you to run manually.</p>
               </Step>
               <Separator />
-              <Step n={3} title="Repair or use it standalone from the terminal">
+              <Step n={4} title="Repair or use it standalone from the terminal">
                 <CopyBlock code={`screenshotsmcp screenshot https://example.com
+screenshotsmcp fullpage https://example.com
 screenshotsmcp responsive https://example.com
+screenshotsmcp auth:test https://example.com
+screenshotsmcp auth:find-login https://example.com
+screenshotsmcp auth:authorize-email
+screenshotsmcp browse https://example.com
+screenshotsmcp browse:console <sessionId> --level error
+screenshotsmcp browse:network-errors <sessionId>
+screenshotsmcp browse:a11y <sessionId>
+screenshotsmcp browse:perf <sessionId>
+screenshotsmcp browse:seo <sessionId>
+screenshotsmcp browse:captcha <sessionId>
+screenshotsmcp browse:close <sessionId>
 screenshotsmcp mobile https://example.com
 screenshotsmcp dark https://example.com
 screenshotsmcp review https://example.com
@@ -477,7 +499,7 @@ screenshotsmcp browser close
 screenshotsmcp perf https://example.com
 screenshotsmcp skills sync
 screenshotsmcp --help`} id="cli-commands" copiedId={copiedId} onCopy={onCopy} />
-                <p className="text-xs text-muted-foreground mt-2">Install globally with <code className="bg-muted px-1 rounded">npm install -g screenshotsmcp</code> for ongoing use. Use <code className="bg-muted px-1 rounded">screenshotsmcp browser open ...</code> to launch an extension-free local browser in a fresh dedicated ScreenshotsMCP profile after an approval prompt. While that browser stays open, ScreenshotsMCP continuously captures console logs and network activity, and you can control it with commands such as <code className="bg-muted px-1 rounded">browser status</code>, <code className="bg-muted px-1 rounded">browser goto</code>, <code className="bg-muted px-1 rounded">browser back</code>, <code className="bg-muted px-1 rounded">browser forward</code>, <code className="bg-muted px-1 rounded">browser click-at</code>, <code className="bg-muted px-1 rounded">browser hover</code>, <code className="bg-muted px-1 rounded">browser wait-for</code>, <code className="bg-muted px-1 rounded">browser select</code>, <code className="bg-muted px-1 rounded">browser viewport</code>, <code className="bg-muted px-1 rounded">browser console</code>, <code className="bg-muted px-1 rounded">browser network-errors</code>, <code className="bg-muted px-1 rounded">browser network-requests</code>, <code className="bg-muted px-1 rounded">browser evidence</code>, <code className="bg-muted px-1 rounded">browser cookies</code>, <code className="bg-muted px-1 rounded">browser storage</code>, <code className="bg-muted px-1 rounded">browser eval</code>, <code className="bg-muted px-1 rounded">browser a11y</code>, <code className="bg-muted px-1 rounded">browser perf</code>, <code className="bg-muted px-1 rounded">browser seo</code>, <code className="bg-muted px-1 rounded">browser screenshot</code>, and <code className="bg-muted px-1 rounded">browser close</code>. Add <code className="bg-muted px-1 rounded">--record-video</code> if you want <code className="bg-muted px-1 rounded">browser close</code> to return a local <code className="bg-muted px-1 rounded">.webm</code> recording path for the full managed session, run <code className="bg-muted px-1 rounded">browser evidence</code> for a live bundle snapshot, or use <code className="bg-muted px-1 rounded">browser close --evidence</code> to export a timestamped evidence bundle that also includes the finalized recording.</p>
+                <p className="text-xs text-muted-foreground mt-2">Install globally with <code className="bg-muted px-1 rounded">npm install -g screenshotsmcp</code> for ongoing use. For public sites, the CLI now mirrors the remote MCP workflow directly: start auth with <code className="bg-muted px-1 rounded">screenshotsmcp auth:test &lt;url&gt;</code>, use <code className="bg-muted px-1 rounded">screenshotsmcp browse &lt;url&gt;</code> to get a remote session, and continue with <code className="bg-muted px-1 rounded">browse:console</code>, <code className="bg-muted px-1 rounded">browse:network-errors</code>, <code className="bg-muted px-1 rounded">browse:a11y</code>, <code className="bg-muted px-1 rounded">browse:perf</code>, <code className="bg-muted px-1 rounded">browse:seo</code>, <code className="bg-muted px-1 rounded">browse:cookies</code>, <code className="bg-muted px-1 rounded">browse:storage</code>, or <code className="bg-muted px-1 rounded">browse:captcha</code> without reopening the page. Use <code className="bg-muted px-1 rounded">screenshotsmcp browser open ...</code> only when you need the separate extension-free managed local browser for localhost, VPN-only, or approval-gated workflows. While that local browser stays open, ScreenshotsMCP continuously captures console logs and network activity, and you can control it with commands such as <code className="bg-muted px-1 rounded">browser status</code>, <code className="bg-muted px-1 rounded">browser goto</code>, <code className="bg-muted px-1 rounded">browser back</code>, <code className="bg-muted px-1 rounded">browser forward</code>, <code className="bg-muted px-1 rounded">browser click-at</code>, <code className="bg-muted px-1 rounded">browser hover</code>, <code className="bg-muted px-1 rounded">browser wait-for</code>, <code className="bg-muted px-1 rounded">browser select</code>, <code className="bg-muted px-1 rounded">browser viewport</code>, <code className="bg-muted px-1 rounded">browser console</code>, <code className="bg-muted px-1 rounded">browser network-errors</code>, <code className="bg-muted px-1 rounded">browser network-requests</code>, <code className="bg-muted px-1 rounded">browser evidence</code>, <code className="bg-muted px-1 rounded">browser cookies</code>, <code className="bg-muted px-1 rounded">browser storage</code>, <code className="bg-muted px-1 rounded">browser eval</code>, <code className="bg-muted px-1 rounded">browser a11y</code>, <code className="bg-muted px-1 rounded">browser perf</code>, <code className="bg-muted px-1 rounded">browser seo</code>, and <code className="bg-muted px-1 rounded">browser close</code> to gather reviewable proof locally.</p>
               </Step>
             </>
           )}

@@ -3,10 +3,12 @@ import chalk from "chalk";
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
+import { DEFAULT_ONBOARDING_CLIENT, ONBOARDING_CLIENTS, getSetupCommand } from "@screenshotsmcp/types";
 import { getApiKey, getApiUrl } from "../config.js";
 import { printSkillSyncResult, syncCoreSkillForCli } from "../skills.js";
 
 const API_URL_DEFAULT = "https://screenshotsmcp-api-production.up.railway.app";
+const SUPPORTED_CLIENTS = ONBOARDING_CLIENTS.join(", ");
 
 function getMcpUrl(): string {
   const apiUrl = getApiUrl();
@@ -51,13 +53,13 @@ function mergeJsonConfig(filePath: string, newConfig: Record<string, unknown>): 
 }
 
 export const installCommand = new Command("install")
-  .description("Auto-configure ScreenshotsMCP in an MCP client")
-  .argument("<client>", "Client to configure: cursor, vscode, windsurf, claude, claude-code")
+  .description(`Configure one MCP client. For first-time onboarding, prefer \`${getSetupCommand()}\`.`)
+  .argument("<client>", `Client to configure: ${SUPPORTED_CLIENTS}`)
   .action(async (client: string) => {
     const key = getApiKey();
     if (!key) {
-      console.log(chalk.yellow("Not logged in. Run `screenshotsmcp login` first to get the best experience."));
-      console.log(chalk.dim("Or use `screenshotsmcp login --key sk_live_...` to set a key manually.\n"));
+      console.log(chalk.yellow(`Not logged in. For the smoothest first-time setup, run \`${getSetupCommand(DEFAULT_ONBOARDING_CLIENT)}\` instead.`));
+      console.log(chalk.dim("Or use `screenshotsmcp login --key sk_live_...` to set a key manually before running install.\n"));
     }
 
     const mcpUrl = getMcpUrl();
@@ -89,6 +91,7 @@ export const installCommand = new Command("install")
         });
         console.log(chalk.green(`✓ Configured VS Code`));
         console.log(chalk.dim(`  ${configPath}`));
+        console.log(chalk.dim("  This is a workspace-local config written relative to your current directory."));
         console.log(chalk.dim("  Enable chat.mcp.enabled in VS Code settings."));
         printSkillSyncResult(syncCoreSkillForCli());
         break;
@@ -143,7 +146,7 @@ export const installCommand = new Command("install")
       }
 
       case "claude-code": {
-        console.log(chalk.cyan("Run this command to configure Claude Code:\n"));
+        console.log(chalk.cyan("Claude Code is configured by running this command manually:\n"));
         console.log(`  claude mcp add --transport http screenshotsmcp -s user ${mcpUrl}\n`);
         printSkillSyncResult(syncCoreSkillForCli());
         break;
@@ -151,7 +154,7 @@ export const installCommand = new Command("install")
 
       default:
         console.error(chalk.red(`Unknown client: ${client}`));
-        console.log(chalk.dim("Supported: cursor, vscode, windsurf, claude, claude-code"));
+        console.log(chalk.dim(`Supported: ${SUPPORTED_CLIENTS}`));
         process.exit(1);
     }
   });

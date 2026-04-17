@@ -1,13 +1,12 @@
 ---
 name: screenshotsmcp
 description: >
-  Inspect, test, and verify websites with screenshots, browser workflows, audits, evidence capture, CAPTCHA solving, disposable email inboxes, and login tooling — all via ScreenshotsMCP tools.
-  Use this skill when the user asks you to take screenshots, test websites, check responsive layouts, audit SEO or performance, solve CAPTCHAs, create test email inboxes, automate sign-ups, or interact with web pages.
+  Use this skill whenever the user needs to see, interact with, or verify a website from an AI workflow. Trigger it for screenshots, responsive checks, browser automation, login and sign-up testing, CAPTCHA solving, OTP or email verification, SEO or performance audits, accessibility inspection, or website debugging even if the user does not explicitly mention ScreenshotsMCP.
 license: MIT
-compatibility: Requires ScreenshotsMCP MCP server connected. Works with any MCP-compatible agent.
+compatibility: Requires the ScreenshotsMCP MCP server connected and authenticated, or the ScreenshotsMCP CLI when terminal access is available.
 metadata:
   author: screenshotsmcp
-  version: "2.1.0"
+  version: "2.3.1"
   website: https://www.screenshotmcp.com
   api: https://screenshotsmcp-api-production.up.railway.app
 ---
@@ -16,16 +15,31 @@ metadata:
 
 Give your AI assistant browser truth. This skill covers all 46+ tools in the ScreenshotsMCP MCP server.
 
+## Discovery Model
+
+- Treat ScreenshotsMCP tools as atomic actions.
+- Treat this skill as broad guidance for choosing the right path.
+- Treat packaged workflows as targeted procedures for repeatable multi-step jobs.
+- When the task is an audit, verification flow, or another repeatable multi-step procedure, check the available workflows before improvising.
+- Do not read every workflow up front. Read only the workflow that matches the task.
+- If terminal access exists and repeated tool calls are likely, prefer the CLI when it is clearly faster than repeated MCP round-trips. If terminal access is not available, stay in MCP.
+- For multi-page performance audits in MCP, avoid opening many new browser sessions in parallel. Measure sequentially unless there is a proven reason to increase concurrency.
+
+## Available Workflows
+
+- `workflows/sitewide-performance-audit/WORKFLOW.md` — use when the user asks why a site is slow, wants the slowest pages identified, or wants a repeatable multi-page performance review.
+
 ## Setup
 
 ### Option A: CLI (fastest)
 
 ```bash
-npx screenshotsmcp login
-npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
+npx screenshotsmcp setup --client cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
- The CLI handles authentication via OAuth (opens browser), auto-configures your MCP client, and installs or repairs the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp`.
+ The CLI handles authentication via OAuth when needed, configures your MCP client, and installs or repairs the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`.
+
+ If you prefer to do onboarding in two steps, run `npx screenshotsmcp login` followed by `npx screenshotsmcp install <client>`. For most clients, that reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
 
  Prefer remote workflows first for public pages. Escalate to the managed local browser when you need localhost access, private or VPN-only environments, authenticated realism, or explicit local approval.
 
@@ -68,6 +82,8 @@ ScreenshotsMCP has a CLI (`npm install -g screenshotsmcp` or `npx screenshotsmcp
 
 Install: `npm install -g screenshotsmcp` or use `npx screenshotsmcp` without installing.
 
+For repeatable public-page performance audits, use the CLI only when the command path is already available or can be approved up front. If command approval would stall the run and MCP is already available, begin with MCP and collect metrics sequentially.
+
 ### Authentication
 ```bash
 screenshotsmcp login                    # OAuth login (opens browser, saves key)
@@ -81,6 +97,7 @@ screenshotsmcp logout                   # Clear saved credentials
 screenshotsmcp screenshot <url>                    # Default 1280×800 viewport
 screenshotsmcp screenshot <url> --width 1920 --height 1080 --full-page
 screenshotsmcp screenshot <url> --format jpeg --delay 2000
+screenshotsmcp fullpage <url>                      # Dedicated full-page capture command
 screenshotsmcp responsive <url>                    # Desktop + tablet + mobile in one call
 screenshotsmcp mobile <url>                        # iPhone 14 Pro (393×852)
 screenshotsmcp tablet <url>                        # iPad (820×1180)
@@ -96,10 +113,27 @@ screenshotsmcp pdf <url>                           # Export as PDF
 ```bash
 screenshotsmcp browse <url>                                    # Start session, returns sessionId
 screenshotsmcp browse:click <sessionId> <selector>             # Click element
+screenshotsmcp browse:click-at <sessionId> 320 480             # Coordinate click for CAPTCHA/canvas
 screenshotsmcp browse:fill <sessionId> <selector> <value>      # Type into input
+screenshotsmcp browse:hover <sessionId> ".menu-trigger"       # Trigger hover states
+screenshotsmcp browse:select <sessionId> "select[name=country]" "Australia"
+screenshotsmcp browse:wait-for <sessionId> ".results-loaded"  # Wait for selector
+screenshotsmcp browse:back <sessionId>                         # Back in history
+screenshotsmcp browse:forward <sessionId>                      # Forward in history
+screenshotsmcp browse:viewport <sessionId> 393 852             # Resize existing session
 screenshotsmcp browse:screenshot <sessionId>                   # Capture current state
 screenshotsmcp browse:text <sessionId>                         # Get visible text
 screenshotsmcp browse:html <sessionId>                         # Get page HTML
+screenshotsmcp browse:a11y <sessionId>                         # Accessibility tree
+screenshotsmcp browse:eval <sessionId> "document.title"       # Evaluate JavaScript
+screenshotsmcp browse:console <sessionId> --level error        # Console logs
+screenshotsmcp browse:network-errors <sessionId>               # Failed requests
+screenshotsmcp browse:network-requests <sessionId>             # Request waterfall
+screenshotsmcp browse:cookies <sessionId> get                  # Inspect cookies
+screenshotsmcp browse:storage <sessionId> getAll               # Inspect storage
+screenshotsmcp browse:perf <sessionId>                         # Session performance metrics
+screenshotsmcp browse:seo <sessionId>                          # Session SEO audit
+screenshotsmcp browse:captcha <sessionId>                      # Solve CAPTCHA in-session
 screenshotsmcp browse:scroll <sessionId> --y 500               # Scroll down
 screenshotsmcp browse:key <sessionId> Enter                    # Press key
 screenshotsmcp browse:goto <sessionId> <newUrl>                # Navigate
@@ -117,10 +151,25 @@ screenshotsmcp breakpoints <url>         # Detect responsive breakpoints
 
 ### Disposable Email
 ```bash
-screenshotsmcp inbox:create              # Create test inbox → email@agentmail.to
+screenshotsmcp auth:test https://example.com  # Reuse auth memory + primary inbox
+screenshotsmcp auth:find-login https://example.com
+screenshotsmcp auth:smart-login https://example.com/sign-in --username user@example.com --password secret
+screenshotsmcp auth:authorize-email           # Connect Gmail once for OTP reads
+screenshotsmcp auth:read-email                # Read latest Gmail OTP
+screenshotsmcp inbox:create              # Create or reuse the primary test inbox
 screenshotsmcp inbox:check <inboxId>     # Read messages, extract OTP codes
 screenshotsmcp inbox:send <inboxId> --to user@example.com --subject "Test" --text "Hello"
 ```
+
+### Reusable website auth workflow
+- Start with `auth_test_assist` or `screenshotsmcp auth:test <url>` for login, sign-up, or verification flows.
+- Read the helper's recommended auth path, account-exists confidence, likely auth method, and expected follow-up before choosing sign-in or sign-up.
+- Treat the helper's reusable strategy as the default cross-site guidance, and treat per-site hints as evidence rather than universal rules.
+- Reuse the saved primary inbox and password unless you explicitly need a fresh registration.
+- If sign-in fails because the account does not exist, switch to sign-up with the same saved credentials.
+- If `smart_login` is uncertain on Clerk or other multi-step auth UIs, fall back to browser tools and inspect network or console evidence before concluding the login failed.
+- Use `check_inbox` for verification codes and email links.
+- After the attempt, record the outcome with `auth_test_assist` so future runs remember what worked.
 
 ### Setup & Install
 ```bash
@@ -180,8 +229,9 @@ npx screenshotsmcp setup
 ### Agent Tips
 - **AI agents: use `npx screenshotsmcp setup --client <ide>` to install non-interactively.**
 - **Use the CLI when you have terminal access** — it returns structured text output, no JSON-RPC overhead.
-- Every screenshot command returns a public CDN URL you can share or embed.
-- Browser sessions work the same as MCP: start with `browse`, get a sessionId, pass it to subsequent commands.
+- **For auth testing, start with `npx screenshotsmcp auth:test https://example.com`** so you reuse inbox credentials, remembered auth history, and the helper's site-specific confidence signals.
+- **When reporting auth results, summarize reusable auth-system heuristics first** and present the site-specific path as supporting evidence.
+- Browser sessions work the same as MCP: start with `browse`, get a sessionId, pass it to subsequent commands, and use `browse:console`, `browse:network-errors`, `browse:a11y`, `browse:perf`, or `browse:seo` without reopening the page.
 - Managed local browser commands under `screenshotsmcp browser ...` now support continuous console/network capture while the browser stays open, plus history navigation, coordinate clicks, hover states, wait conditions, dropdown selection, viewport resizing, screenshots, text, HTML, cookies/storage inspection, script evaluation, accessibility trees, performance metrics, SEO audits, timestamped evidence bundle export via `browser evidence`, finalized video-inclusive export via `browser close --evidence`, and optional local `.webm` session recording against the tracked local browser.
 - Prefer evidence-rich workflows when debugging or verifying changes: screenshots alone are helpful, but screenshots plus logs, recordings, and bundle exports are much more trustworthy.
 - The CLI reads credentials from `~/.config/screenshotsmcp/config.json`. If the user has logged in once, all subsequent commands are authenticated.
@@ -211,7 +261,7 @@ Quick one-shot captures that return a public CDN URL.
 | `get_screenshot_status` | Check job status | id |
 
 **Tips:**
-- For long pages (product grids, feeds), set `fullPage: false` or use `maxHeight` to cap height.
+- For long pages (product grids, feeds), set `fullPage: false` or `maxHeight` to cap height.
 - `screenshot_responsive` is faster than 3 separate calls.
 - All screenshots return public CDN URLs with image dimensions.
 
@@ -331,6 +381,7 @@ User: "Check how example.com looks on all devices"
 ### Full site audit
 ```
 User: "Audit this site"
+→ First read workflows/sitewide-performance-audit/WORKFLOW.md if the user wants a repeatable multi-page audit
 → browser_navigate → browser_get_accessibility_tree → browser_perf_metrics → browser_seo_audit → og_preview → browser_console_logs → browser_network_errors
 ```
 

@@ -4,12 +4,12 @@ import ora from "ora";
 import { callTool, extractText } from "../api.js";
 
 export const inboxCreateCommand = new Command("inbox:create")
-  .description("Create a disposable test email inbox")
+  .description("Create or reuse the primary disposable test inbox for website auth testing")
   .option("-u, --username <prefix>", "Email username prefix")
   .option("-n, --name <name>", "Display name")
   .option("--force-new", "Force new inbox even if one exists")
   .action(async (opts: Record<string, string | boolean>) => {
-    const spinner = ora("Creating test inbox...").start();
+    const spinner = ora("Preparing primary test inbox...").start();
     try {
       const res = await callTool("create_test_inbox", {
         username: opts.username,
@@ -17,7 +17,7 @@ export const inboxCreateCommand = new Command("inbox:create")
         force_new: !!opts.forceNew,
       });
       spinner.stop();
-      console.log(chalk.green("✓ Inbox created"));
+      console.log(chalk.green("✓ Primary inbox ready"));
       console.log(extractText(res));
     } catch (err) {
       spinner.fail(chalk.red("Failed to create inbox"));

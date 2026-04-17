@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -265,11 +266,16 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                 </div>
               ) : primaryScreenshot?.publicUrl ? (
                 <div className="space-y-4">
-                  <img
-                    src={primaryScreenshot.publicUrl}
-                    alt={primaryScreenshot.url}
-                    className="max-h-[72vh] w-full rounded-lg border bg-muted object-contain"
-                  />
+                  <div className="relative h-[72vh] max-h-[72vh] w-full overflow-hidden rounded-lg border bg-muted">
+                    <Image
+                      src={primaryScreenshot.publicUrl}
+                      alt={primaryScreenshot.url}
+                      fill
+                      unoptimized
+                      sizes="(min-width: 1536px) 50rem, (min-width: 1024px) 60vw, 100vw"
+                      className="object-contain"
+                    />
+                  </div>
                   <a href={primaryScreenshot.publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-base text-foreground hover:text-primary">
                     Open screenshot
                     <ExternalLink className="h-4 w-4" />
@@ -372,7 +378,9 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                 {screenshots.map((shot) => (
                   <div key={shot.id} className="overflow-hidden rounded-lg border">
                     {shot.publicUrl ? (
-                      <img src={shot.publicUrl} alt={shot.url} className="h-56 w-full object-cover object-top md:h-64" />
+                      <div className="relative h-56 w-full md:h-64">
+                        <Image src={shot.publicUrl} alt={shot.url} fill unoptimized sizes="(min-width: 1280px) 50vw, 100vw" className="object-cover object-top" />
+                      </div>
                     ) : (
                       <div className="h-56 w-full bg-muted md:h-64" />
                     )}

@@ -318,7 +318,7 @@ async function promptForApiKey(
     ],
     {
       title: "Connect ScreenshotsMCP",
-      placeHolder: "Choose how to connect",
+      placeHolder: "Choose how to connect and unlock screenshots, browser workflows, and reusable auth testing",
     },
   );
 
@@ -374,10 +374,10 @@ async function promptForApiKey(
   logLine("ScreenshotsMCP API key stored in SecretStorage.");
   timelineStore.add({
     title: "Signed in with API key",
-    detail: `Connected to ${getApiUrl()}`,
+    detail: `Connected to ${getApiUrl()} · reusable auth workflow available via auth_test_assist`,
     status: "success",
   });
-  vscode.window.showInformationMessage("ScreenshotsMCP connected.");
+  vscode.window.showInformationMessage("ScreenshotsMCP connected. For login or sign-up testing, start with auth_test_assist.");
   return apiKey;
 }
 

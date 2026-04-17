@@ -3,28 +3,42 @@ import { homedir } from "os";
 import { dirname, join } from "path";
 
 export const CORE_SKILL_NAME = "screenshotsmcp";
-export const CORE_SKILL_VERSION = "2.1.0";
+export const CORE_SKILL_VERSION = "2.3.1";
 const MANIFEST_SCHEMA_VERSION = 1;
 const INLINE_CODE_TOKEN = "__INLINE_CODE__";
 
 export const CORE_SKILL_CONTENT = `---
 name: screenshotsmcp
 description: >
-  Use this skill whenever the user needs to see, interact with, or verify a website from an AI workflow. Trigger it for screenshots, responsive checks, browser automation, login and sign-up testing, CAPTCHA solving, OTP or email verification, SEO or performance audits, accessibility inspection, or website debugging even if the user does not explicitly mention ScreenshotsMCP.
+  This skill should be used when the user asks to inspect, test, or verify a website, take screenshots, debug browser behavior, audit SEO or performance, test sign-in or sign-up flows, solve CAPTCHAs, create test inboxes, or otherwise needs browser truth from ScreenshotsMCP.
 license: MIT
-compatibility: Requires the ScreenshotsMCP MCP server connected and authenticated.
+compatibility: Requires the ScreenshotsMCP MCP server connected and authenticated, or the ScreenshotsMCP CLI when terminal access is available.
 metadata:
   author: screenshotsmcp
-  version: "2.1.0"
+  version: "2.3.1"
   website: https://www.screenshotmcp.com
   api: https://screenshotsmcp-api-production.up.railway.app
 ---
 
 # ScreenshotsMCP
 
-Use this skill to give the assistant eyes and hands for the web. First identify which workflow fits the request, then pick the smallest set of tools needed.
+Use this skill to give the assistant eyes and hands for the web. Use it to choose the right tool path, then read only the relevant workflow or reference for the task.
 
-## Choose the right workflow
+## Discovery model
+
+- Treat ScreenshotsMCP tools as atomic actions.
+- Treat this skill as broad guidance for choosing the right path.
+- Treat packaged workflows as targeted procedures for repeatable multi-step jobs.
+- When the task is an audit, verification flow, or another repeatable multi-step procedure, check the available workflows before improvising.
+- Do not read every workflow up front. Read only the workflow that matches the task.
+- If terminal access exists and repeated tool calls are likely, prefer the CLI when it is clearly faster than repeated MCP round-trips. If terminal access is not available, stay in MCP.
+- For multi-page performance audits in MCP, avoid opening many new browser sessions in parallel. Measure sequentially unless there is a proven reason to increase concurrency.
+
+## Available workflows
+
+- ${INLINE_CODE_TOKEN}workflows/sitewide-performance-audit/WORKFLOW.md${INLINE_CODE_TOKEN} — use when the user asks why a site is slow, wants the slowest pages identified, or wants a repeatable multi-page performance review.
+
+## Choose the right tool path
 
 ### 1. One-shot capture
 Use screenshot tools when the user only needs an image, diff, PDF, or responsive set.
@@ -43,16 +57,24 @@ Use browser session tools when the user needs clicks, typing, hover states, navi
 ### 3. Auth, sign-up, and verification
 Use the auth workflow when the user needs to test protected or multi-step flows.
 
+- Start with ${INLINE_CODE_TOKEN}auth_test_assist${INLINE_CODE_TOKEN} for website auth work. It is the primary auth entrypoint: it reuses the saved inbox/password, checks remembered auth history for the site's origin, and returns recommended auth path, account-exists confidence, likely auth method, and expected follow-up.
+- Treat the helper's reusable strategy as the default cross-site guidance, and treat per-site hints as evidence rather than universal rules.
 - Find the login page with ${INLINE_CODE_TOKEN}find_login_page${INLINE_CODE_TOKEN} when the URL is not known.
 - Ask the user for credentials before using ${INLINE_CODE_TOKEN}smart_login${INLINE_CODE_TOKEN}. Never guess passwords.
-- Use ${INLINE_CODE_TOKEN}create_test_inbox${INLINE_CODE_TOKEN} and ${INLINE_CODE_TOKEN}check_inbox${INLINE_CODE_TOKEN} for disposable email flows.
+- If ${INLINE_CODE_TOKEN}smart_login${INLINE_CODE_TOKEN} is uncertain on Clerk or multi-step auth UIs, fall back to ${INLINE_CODE_TOKEN}browser_fill${INLINE_CODE_TOKEN}, ${INLINE_CODE_TOKEN}browser_press_key${INLINE_CODE_TOKEN}, ${INLINE_CODE_TOKEN}browser_evaluate${INLINE_CODE_TOKEN}, and inspect ${INLINE_CODE_TOKEN}browser_network_requests${INLINE_CODE_TOKEN} or ${INLINE_CODE_TOKEN}browser_console_logs${INLINE_CODE_TOKEN} before concluding the login failed.
+- Use ${INLINE_CODE_TOKEN}create_test_inbox${INLINE_CODE_TOKEN} only when you explicitly need a fresh inbox or a standalone inbox workflow.
+- Use ${INLINE_CODE_TOKEN}check_inbox${INLINE_CODE_TOKEN} for OTP and verification flows.
 - Use ${INLINE_CODE_TOKEN}read_verification_email${INLINE_CODE_TOKEN} only after the user has authorized Gmail access.
 - Use ${INLINE_CODE_TOKEN}solve_captcha${INLINE_CODE_TOKEN} when a CAPTCHA blocks progress.
+- After a successful or failed auth attempt, call ${INLINE_CODE_TOKEN}auth_test_assist${INLINE_CODE_TOKEN} with ${INLINE_CODE_TOKEN}action: "record"${INLINE_CODE_TOKEN} to save what happened for future runs.
 
 ### 4. Audit and debugging
 Use audit and debug tools when the user wants findings, not just screenshots.
 
+- If the task is a repeatable multi-page performance audit, read ${INLINE_CODE_TOKEN}workflows/sitewide-performance-audit/WORKFLOW.md${INLINE_CODE_TOKEN} first.
 - Use ${INLINE_CODE_TOKEN}browser_perf_metrics${INLINE_CODE_TOKEN} for Core Web Vitals and network weight.
+- For repeatable public-page performance audits in MCP, run ${INLINE_CODE_TOKEN}browser_navigate${INLINE_CODE_TOKEN} and ${INLINE_CODE_TOKEN}browser_perf_metrics${INLINE_CODE_TOKEN} sequentially page by page instead of fanning out multiple new sessions at once.
+- If the CLI path would need approval and MCP is already available, begin with MCP instead of stalling mid-audit.
 - Use ${INLINE_CODE_TOKEN}browser_seo_audit${INLINE_CODE_TOKEN} for metadata, heading structure, and structured data.
 - Use ${INLINE_CODE_TOKEN}browser_console_logs${INLINE_CODE_TOKEN} and ${INLINE_CODE_TOKEN}browser_network_errors${INLINE_CODE_TOKEN} to investigate failures.
 - Use ${INLINE_CODE_TOKEN}ux_review${INLINE_CODE_TOKEN} when the user wants a broader product or UX assessment.
@@ -77,10 +99,14 @@ Use audit and debug tools when the user wants findings, not just screenshots.
 - Summarize the highest-impact issues first.
 
 ### Login or sign-up test
+- Start with ${INLINE_CODE_TOKEN}auth_test_assist${INLINE_CODE_TOKEN} for the site URL.
+- Reuse the saved primary inbox and password unless you have a reason to force a fresh inbox.
+- Read the helper's account-exists confidence, likely auth method, and expected follow-up before deciding whether to sign in or sign up first.
 - Discover the login page if needed.
-- Collect credentials or create a test inbox.
 - Solve CAPTCHA only if it appears.
-- Verify the final authenticated or post-sign-up state before finishing.
+- Use ${INLINE_CODE_TOKEN}check_inbox${INLINE_CODE_TOKEN} for verification steps.
+- When reporting results, summarize reusable auth-system heuristics first, then cite the site-specific evidence that supported them.
+- Record the outcome with ${INLINE_CODE_TOKEN}auth_test_assist${INLINE_CODE_TOKEN} before finishing.
 
 ## Guardrails
 
@@ -88,6 +114,63 @@ Use audit and debug tools when the user wants findings, not just screenshots.
 - Close sessions when finished.
 - Prefer accessibility and DOM inspection over visual guessing when structure matters.
 - Use the CLI workflow if terminal access is clearly faster than repeated MCP round-trips.
+`.replaceAll(INLINE_CODE_TOKEN, "`");
+
+export const CORE_SITEWIDE_PERFORMANCE_WORKFLOW_CONTENT = `---
+name: sitewide-performance-audit
+description: >
+  This workflow should be used when the user asks to "run a sitewide performance audit", "check why a site is slow", "find the slowest pages", "measure Core Web Vitals across key pages", or otherwise wants a repeatable multi-page performance review.
+---
+# Sitewide Performance Audit
+Use this workflow for repeatable performance investigations across multiple pages. Confirm scope first, gather comparable evidence page by page, and summarize the highest-impact patterns before listing isolated issues.
+## Inputs to confirm
+- Confirm the base URL.
+- Confirm the page set. If the user does not provide one, ask permission to infer a representative set such as homepage, pricing, docs, dashboard entry, and a heavy content page.
+- Confirm whether authenticated pages are in scope.
+- Confirm whether terminal access exists. If it does and repeated page checks are likely, the CLI may be faster than repeated MCP round-trips.
+- Confirm whether command approval is likely to interrupt progress. If approval would stall the run, prefer MCP first.
+## Tool path selection
+- Use MCP directly when terminal access is unavailable.
+- Use the CLI when repeated page checks make it clearly faster and the command path is already available or can be approved up front.
+- If the CLI path would block on approval and MCP is already available, begin with MCP instead of stalling.
+- Use remote ${INLINE_CODE_TOKEN}browse:*${INLINE_CODE_TOKEN} / browser session tools for public pages.
+- Use the managed local browser only for localhost, VPN-only, or explicitly approval-gated environments.
+## Evidence to capture for each page
+- URL tested
+- LCP
+- FCP
+- CLS
+- TTFB
+- DOM size and resource count when available
+- The slowest requests or heaviest assets when they materially affect the page
+- Console or network failures if they appear related
+## Execution sequence
+1. Define the page list before starting measurements.
+2. Start with the most business-critical page so early findings are useful even if scope changes.
+3. For each page, capture performance metrics first.
+4. In MCP, open and measure pages sequentially. Do not fan out multiple new ${INLINE_CODE_TOKEN}browser_navigate${INLINE_CODE_TOKEN} sessions at once for a public performance audit.
+5. If a page looks slow, inspect the network waterfall or failed requests before moving on.
+6. If an MCP transport call fails mid-run, reuse the sessions that succeeded and continue sequentially instead of restarting the audit.
+7. Keep the evidence format consistent across pages so rankings are comparable.
+8. Reuse an active session when that reduces overhead without changing the measurement goal.
+9. Close active sessions when the audit is complete.
+## Preferred tools
+- MCP path: for each page, run ${INLINE_CODE_TOKEN}browser_navigate${INLINE_CODE_TOKEN} → ${INLINE_CODE_TOKEN}browser_perf_metrics${INLINE_CODE_TOKEN} → ${INLINE_CODE_TOKEN}browser_network_requests${INLINE_CODE_TOKEN} / ${INLINE_CODE_TOKEN}browser_network_errors${INLINE_CODE_TOKEN} as needed. Keep the MCP path sequential unless there is a proven reason to increase concurrency.
+- CLI path for repeated checks: ${INLINE_CODE_TOKEN}screenshotsmcp perf <url>${INLINE_CODE_TOKEN} for quick page-level metrics, or ${INLINE_CODE_TOKEN}screenshotsmcp browse <url>${INLINE_CODE_TOKEN} followed by ${INLINE_CODE_TOKEN}browse:perf${INLINE_CODE_TOKEN}, ${INLINE_CODE_TOKEN}browse:network-requests${INLINE_CODE_TOKEN}, and ${INLINE_CODE_TOKEN}browse:network-errors${INLINE_CODE_TOKEN} when deeper evidence is needed. If this path needs approval, ask once up front instead of switching mid-audit.
+## Output shape
+Always structure the result like this:
+# Sitewide Performance Audit
+## Executive summary
+## Slowest pages
+## Cross-site patterns
+## Page-by-page evidence
+## Recommended fixes
+## Reporting rules
+- Rank the worst pages first.
+- Highlight cross-site patterns before one-off issues.
+- Separate measured evidence from hypotheses.
+- Keep recommendations concrete and tied to the captured evidence.
+- If the audit was partial, say which pages were included and which were not.
 `.replaceAll(INLINE_CODE_TOKEN, "`");
 
 // ---------------------------------------------------------------------------
@@ -177,6 +260,11 @@ export interface SkillSyncResult {
   version: string;
 }
 
+export interface ManagedSkillFile {
+  content: string;
+  relativePath: string;
+}
+
 export function getManagedStateDir(): string {
   return join(homedir(), ".screenshotsmcp");
 }
@@ -218,24 +306,28 @@ export function listInstalledSkills(): InstalledSkillSummary[] {
 export function syncCoreSkill(): SkillSyncResult {
   return syncManagedSkill({
     content: CORE_SKILL_CONTENT,
+    files: [{
+      content: CORE_SITEWIDE_PERFORMANCE_WORKFLOW_CONTENT,
+      relativePath: join("workflows", "sitewide-performance-audit", "WORKFLOW.md"),
+    }],
     name: CORE_SKILL_NAME,
     version: CORE_SKILL_VERSION,
   });
 }
 
-export function syncManagedSkill(input: { content: string; name: string; version: string }): SkillSyncResult {
+export function syncManagedSkill(input: { content: string; files?: ManagedSkillFile[]; name: string; version: string }): SkillSyncResult {
   const manifest = readManagedSkillsManifest();
   const installPath = getSkillInstallPath(input.name);
-  const skillFilePath = join(installPath, "SKILL.md");
-  const existingContent = readTextFile(skillFilePath);
+  const files = [{ content: input.content, relativePath: "SKILL.md" }, ...(input.files ?? [])];
+  const allFilesPresent = files.every((file) => readTextFile(join(installPath, file.relativePath)) !== "");
+  const hasExactContent = files.every((file) => readTextFile(join(installPath, file.relativePath)) === ensureTrailingNewline(file.content));
   const existingRecord = manifest.skills[input.name];
-  const hasExactContent = existingContent === input.content;
   const hasCurrentVersion = existingRecord?.version === input.version;
 
   let status: SkillSyncStatus = "unchanged";
 
-  if (!existingContent) {
-    status = existingRecord ? "repaired" : "installed";
+  if (!allFilesPresent) {
+    status = existingRecord ? (hasCurrentVersion ? "repaired" : "updated") : "installed";
   } else if (!hasExactContent && hasCurrentVersion) {
     status = "repaired";
   } else if (!hasExactContent || !hasCurrentVersion) {
@@ -243,8 +335,11 @@ export function syncManagedSkill(input: { content: string; name: string; version
   }
 
   if (status !== "unchanged") {
-    mkdirSync(installPath, { recursive: true });
-    writeFileSync(skillFilePath, ensureTrailingNewline(input.content), "utf8");
+    for (const file of files) {
+      const filePath = join(installPath, file.relativePath);
+      mkdirSync(dirname(filePath), { recursive: true });
+      writeFileSync(filePath, ensureTrailingNewline(file.content), "utf8");
+    }
   }
 
   manifest.skills[input.name] = {

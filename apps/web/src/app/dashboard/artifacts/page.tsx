@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -374,10 +375,10 @@ export default function ArtifactsPage() {
             return (
               <Card key={`${artifact.kind}-${artifact.id}`} className="overflow-hidden">
                 <div className="flex min-h-56 flex-col md:flex-row">
-                <div className="flex h-56 w-full items-center justify-center border-b bg-muted md:h-auto md:w-72 lg:w-80 md:border-b-0 md:border-r">
+                <div className="relative flex h-56 w-full items-center justify-center border-b bg-muted md:h-auto md:w-72 lg:w-80 md:border-b-0 md:border-r">
                   {artifact.kind === "capture" ? (
                     artifact.previewUrl ? (
-                      <img src={artifact.previewUrl} alt={artifact.title} className="h-full w-full object-cover object-top" loading="lazy" />
+                      <Image src={artifact.previewUrl} alt={artifact.title} fill unoptimized sizes="(min-width: 1280px) 20rem, (min-width: 768px) 18rem, 100vw" className="h-full w-full object-cover object-top" />
                     ) : artifact.flags.pdf ? (
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <FileText className="h-8 w-8" />

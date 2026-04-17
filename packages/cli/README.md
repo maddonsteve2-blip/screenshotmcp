@@ -23,8 +23,12 @@ npx screenshotsmcp screenshot https://example.com
 ## Quick Start
 
 ```bash
-# Login (opens browser for OAuth)
+# One-command onboarding for a new agent or fresh IDE setup
+screenshotsmcp setup --client cursor    # or: vscode, windsurf, claude, claude-code
+
+# Or do it in two steps
 screenshotsmcp login
+screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
 
 # Or use an API key directly
 screenshotsmcp login --key sk_live_your_key_here
@@ -58,7 +62,9 @@ screenshotsmcp diff https://staging.example.com https://example.com
 screenshotsmcp pdf https://example.com
 ```
 
-Every successful `login`, `install`, and `setup` flow now also installs or repairs the managed core ScreenshotsMCP skill under `~/.agents/skills/screenshotsmcp` so your MCP connection and local skill stay aligned.
+Every successful `login`, `install`, and `setup` flow now also installs or repairs the managed core ScreenshotsMCP skill under `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`, so your MCP connection and local skill stay aligned.
+
+For most clients, `login` + `install` reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
 
 Start with remote execution for public sites. Escalate to the managed local browser when the work requires local reachability, private auth flows, or a more realistic browser environment.
 
@@ -163,7 +169,20 @@ screenshotsmcp breakpoints https://example.com
 ## Test Email Inboxes
 
 ```bash
-# Create a disposable inbox
+# Plan auth with the saved primary inbox and site memory
+screenshotsmcp auth:test https://example.com
+
+# Discover likely login URLs
+screenshotsmcp auth:find-login https://example.com
+
+# Try the smart login flow when you already know the credentials
+screenshotsmcp auth:smart-login https://example.com/sign-in --username user@example.com --password secret
+
+# Connect Gmail once for OTP reads, then read the latest code
+screenshotsmcp auth:authorize-email
+screenshotsmcp auth:read-email
+
+# Create or reuse the primary test inbox
 screenshotsmcp inbox:create
 
 # Check for messages
@@ -173,7 +192,20 @@ screenshotsmcp inbox:check <inboxId>
 screenshotsmcp inbox:send <inboxId> -t recipient@example.com -s "Test" -b "Hello!"
 ```
 
+For website login, sign-up, and verification flows:
+
+- Start with `screenshotsmcp auth:test <url>` to reuse the saved primary inbox and remembered auth history for that origin.
+- Read the helper's recommended auth path, account-exists confidence, likely auth method, and expected follow-up before deciding whether to sign in or sign up first.
+- Treat the helper's reusable strategy as the default cross-site guidance, and treat per-site hints as supporting evidence rather than universal rules.
+- If sign-in fails because the account does not exist, switch to sign-up with the same saved credentials.
+- If `smart_login` is uncertain on Clerk or multi-step auth UIs, fall back to browser tools and inspect network or console evidence before concluding the login failed.
+- Use `screenshotsmcp inbox:check <inboxId>` for OTP codes and verification links.
+- When reporting auth results, summarize reusable auth-system heuristics first and site-specific evidence second.
+- After the auth attempt, record the result with `screenshotsmcp auth:test <url> --record --outcome <...>` so future runs remember what worked.
+
 ## Auto-Install MCP Server
+
+For first-time onboarding, prefer `screenshotsmcp setup --client <client>`. Use `install <client>` when you are already authenticated or only need to configure one client.
 
 ```bash
 # Configure your IDE automatically
@@ -212,6 +244,7 @@ npx skills add anthropics/skills@frontend-design -g -y
 | `logout` | Clear stored credentials |
 | `whoami` | Show auth status |
 | `screenshot <url>` | Take a screenshot |
+| `fullpage <url>` | Dedicated full-page screenshot command |
 | `responsive <url>` | Desktop + tablet + mobile |
 | `mobile <url>` | Mobile viewport (393×852) |
 | `tablet <url>` | Tablet viewport (820×1180) |
@@ -221,6 +254,8 @@ npx skills add anthropics/skills@frontend-design -g -y
 | `pdf <url>` | Export as PDF |
 | `cross-browser <url>` | Chromium + Firefox + WebKit |
 | `batch <urls...>` | Screenshot up to 10 URLs |
+| `screenshots` | List recent screenshot jobs |
+| `screenshot:status <id>` | Check screenshot job status |
 | `browser open [url]` | Launch a managed local browser (supports `--record-video`) |
 | `browser back` | Navigate backward in managed local browser history |
 | `browser forward` | Navigate forward in managed local browser history |
@@ -250,15 +285,37 @@ npx skills add anthropics/skills@frontend-design -g -y
 | `browser close` | Close the tracked managed local browser |
 | `browse <url>` | Start browser session |
 | `browse:click` | Click element |
+| `browse:click-at` | Click session coordinates |
 | `browse:fill` | Type into input |
+| `browse:hover` | Hover element in session |
+| `browse:select` | Select dropdown option in session |
+| `browse:wait-for` | Wait for selector in session |
 | `browse:screenshot` | Capture current page |
 | `browse:close` | Close session |
 | `browse:goto` | Navigate to URL |
+| `browse:back` | Navigate backward in session history |
+| `browse:forward` | Navigate forward in session history |
+| `browse:viewport` | Resize an existing remote session |
 | `browse:scroll` | Scroll page |
 | `browse:key` | Press keyboard key |
 | `browse:text` | Get visible text |
 | `browse:html` | Get HTML |
-| `inbox:create` | Create test inbox |
+| `browse:a11y` | Inspect session accessibility tree |
+| `browse:eval` | Evaluate JavaScript in session |
+| `browse:console` | Read session console logs |
+| `browse:network-errors` | Read failed session network requests |
+| `browse:network-requests` | Read session network waterfall |
+| `browse:cookies` | Get, set, or clear session cookies |
+| `browse:storage` | Read or write session storage |
+| `browse:seo` | Run SEO audit against active session |
+| `browse:perf` | Read performance metrics from active session |
+| `browse:captcha` | Solve CAPTCHA in active session |
+| `auth:test <url>` | Start-here helper to plan or record reusable website auth workflow with broad strategy plus per-site evidence |
+| `auth:find-login <url>` | Discover likely login URLs |
+| `auth:smart-login <loginUrl>` | Attempt smart login with known credentials |
+| `auth:authorize-email` | Connect Gmail for verification code reads |
+| `auth:read-email` | Read latest Gmail verification code |
+| `inbox:create` | Create or reuse primary test inbox |
 | `inbox:check` | Check inbox |
 | `inbox:send` | Send email |
 | `review <url>` | AI UX review |

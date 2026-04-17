@@ -8,18 +8,34 @@ ScreenshotsMCP is a Model Context Protocol (MCP) server with 46+ tools that give
 
 Download the complete Agent Skill for all tools: https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md
 
+## Discovery Model
+
+- Treat ScreenshotsMCP tools as atomic actions.
+- Treat the ScreenshotsMCP skill as broad guidance for choosing the right path.
+- Treat packaged workflows as targeted procedures for repeatable multi-step jobs.
+- When the task is an audit, verification flow, or another repeatable multi-step procedure, check the available workflows before improvising.
+- Do not load every workflow up front. Read only the workflow that matches the task.
+- If terminal access exists and repeated tool calls are likely, prefer the CLI when it is clearly faster than repeated MCP round-trips. If terminal access is not available, stay in MCP.
+- For multi-page performance audits in MCP, avoid opening many new browser sessions in parallel. Measure sequentially unless there is a proven reason to increase concurrency.
+
+Available workflow:
+- `workflows/sitewide-performance-audit/WORKFLOW.md` — use when the user asks why a site is slow, wants the slowest pages identified, or wants a repeatable multi-page performance review.
+
 ## Quick Start
 
 ### Option A: CLI (fastest)
 
 ```bash
-npx screenshotsmcp login
-npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
+npx screenshotsmcp setup --client cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
-The CLI now also installs or repairs the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp` during successful `login`, `install`, and `setup` flows.
+The CLI now also installs or repairs the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`, during successful `login`, `install`, and `setup` flows.
+
+If you prefer to do onboarding in two steps, run `npx screenshotsmcp login` followed by `npx screenshotsmcp install <client>`. For most clients that reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
 
 Use remote workflows first for public sites. Escalate to the managed local browser when you need localhost access, intranet or VPN reachability, authenticated realism, or explicit user-approved local execution.
+
+For repeatable public-page performance audits, use the CLI only when the command path is already available or can be approved up front. If command approval would stall the run and MCP is already available, begin with MCP and collect metrics sequentially.
 
 Important: `screenshotsmcp skills ...` only manages the local core ScreenshotsMCP skill. For community skill discovery or installation, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...` instead.
 
@@ -81,6 +97,7 @@ screenshotsmcp logout                   # Clear credentials
 screenshotsmcp screenshot <url>                    # 1280×800 viewport
 screenshotsmcp screenshot <url> --width 1920 --height 1080 --full-page
 screenshotsmcp screenshot <url> --format jpeg --delay 2000
+screenshotsmcp fullpage <url>                      # Dedicated full-page capture
 screenshotsmcp responsive <url>                    # Desktop + tablet + mobile
 screenshotsmcp mobile <url>                        # iPhone 14 Pro (393×852)
 screenshotsmcp tablet <url>                        # iPad (820×1180)
@@ -90,16 +107,35 @@ screenshotsmcp diff <urlA> <urlB>                  # Pixel-diff two URLs
 screenshotsmcp cross-browser <url>                 # Chromium + Firefox + WebKit
 screenshotsmcp batch <url1> <url2> <url3>          # Multiple URLs (max 10)
 screenshotsmcp pdf <url>                           # Export as PDF
+screenshotsmcp screenshots                         # List recent screenshot jobs
+screenshotsmcp screenshot:status <id>              # Check screenshot job status
 ```
 
 ### Browser Sessions
 ```
 screenshotsmcp browse <url>                                    # Start session → sessionId
 screenshotsmcp browse:click <sessionId> <selector>             # Click element
+screenshotsmcp browse:click-at <sessionId> 320 480             # Coordinate click
 screenshotsmcp browse:fill <sessionId> <selector> <value>      # Type into input
+screenshotsmcp browse:hover <sessionId> ".menu-trigger"       # Hover state
+screenshotsmcp browse:select <sessionId> "select[name=country]" "Australia"
+screenshotsmcp browse:wait-for <sessionId> ".results-loaded"  # Wait for selector
 screenshotsmcp browse:screenshot <sessionId>                   # Capture current state
 screenshotsmcp browse:text <sessionId>                         # Get visible text
 screenshotsmcp browse:html <sessionId>                         # Get page HTML
+screenshotsmcp browse:a11y <sessionId>                         # Accessibility tree
+screenshotsmcp browse:eval <sessionId> "document.title"       # Evaluate JavaScript
+screenshotsmcp browse:console <sessionId> --level error        # Console logs
+screenshotsmcp browse:network-errors <sessionId>               # Failed requests
+screenshotsmcp browse:network-requests <sessionId>             # Request waterfall
+screenshotsmcp browse:cookies <sessionId> get                  # Inspect cookies
+screenshotsmcp browse:storage <sessionId> getAll               # Inspect storage
+screenshotsmcp browse:back <sessionId>                         # Back in history
+screenshotsmcp browse:forward <sessionId>                      # Forward in history
+screenshotsmcp browse:viewport <sessionId> 393 852             # Resize existing session
+screenshotsmcp browse:seo <sessionId>                          # Session SEO audit
+screenshotsmcp browse:perf <sessionId>                         # Session performance metrics
+screenshotsmcp browse:captcha <sessionId>                      # Solve CAPTCHA in-session
 screenshotsmcp browse:scroll <sessionId> --y 500               # Scroll down
 screenshotsmcp browse:key <sessionId> Enter                    # Press key
 screenshotsmcp browse:goto <sessionId> <newUrl>                # Navigate
@@ -117,10 +153,25 @@ screenshotsmcp breakpoints <url>         # Responsive breakpoints
 
 ### Disposable Email
 ```
-screenshotsmcp inbox:create              # Create inbox → email@agentmail.to
+screenshotsmcp auth:test <url>           # Reuse auth memory + primary inbox
+screenshotsmcp auth:find-login <url>     # Discover likely login pages
+screenshotsmcp auth:smart-login <url> --username user@example.com --password secret
+screenshotsmcp auth:authorize-email      # Connect Gmail once for OTP reads
+screenshotsmcp auth:read-email           # Read latest Gmail OTP
+screenshotsmcp inbox:create              # Create or reuse the primary test inbox
 screenshotsmcp inbox:check <inboxId>     # Read messages, extract OTP codes
 screenshotsmcp inbox:send <inboxId> --to user@example.com --subject "Test" --text "Hello"
 ```
+
+### Reusable Website Auth
+- Start with `auth_test_assist` or `screenshotsmcp auth:test <url>` for login, sign-up, or verification flows.
+- Read the helper's recommended auth path, account-exists confidence, likely auth method, and expected follow-up before choosing sign-in or sign-up.
+- Treat the helper's reusable strategy as the default cross-site guidance, and treat per-site hints as evidence rather than universal rules.
+- Reuse the saved primary inbox and password unless you explicitly need a fresh registration.
+- If sign-in fails because the account does not exist, switch to sign-up with the same saved credentials.
+- If `smart_login` is uncertain on Clerk or other multi-step auth UIs, fall back to browser tools and inspect network or console evidence before concluding the login failed.
+- Use `check_inbox` for verification codes or email links.
+- After the attempt, call `auth_test_assist` again with `action: "record"` to save the outcome for future runs.
 
 ### Setup & Install
 ```
@@ -180,8 +231,10 @@ npx screenshotsmcp setup
 ### Agent Tips
 - **AI agents: use `npx screenshotsmcp setup --client <ide>` to install non-interactively.**
 - **Use CLI when you have terminal access** — structured text output, no JSON-RPC overhead.
+- **For auth testing, start with `npx screenshotsmcp auth:test https://example.com`** so you reuse saved inbox credentials, remembered auth history, and the helper's site-specific confidence signals.
 - Every screenshot command returns a public CDN URL.
-- Browser sessions: start with `browse`, get sessionId, pass to subsequent commands, always `browse:close` when done.
+- Browser sessions: start with `browse`, get sessionId, pass it to subsequent `browse:*` commands, and always `browse:close` when done.
+- Use remote `browse:*` commands for public-site MCP-parity workflows. Use `screenshotsmcp browser ...` only for the separate managed local browser used for localhost, VPN-only, or approval-gated work.
 - Managed local browser commands under `screenshotsmcp browser ...` now support continuous console/network capture while the browser stays open, plus history navigation, coordinate clicks, hover states, wait conditions, dropdown selection, viewport resizing, screenshots, text, HTML, cookies/storage inspection, script evaluation, accessibility trees, performance metrics, SEO audits, timestamped evidence bundle export via `browser evidence`, finalized video-inclusive export via `browser close --evidence`, and optional local `.webm` session recording against the tracked local browser.
 - Prefer evidence-rich workflows when debugging: capture screenshots, logs, recordings, and bundle exports so the result is reviewable by both humans and agents.
 - Credentials stored in `~/.config/screenshotsmcp/config.json`. Once logged in, all commands are authenticated.
@@ -398,12 +451,16 @@ Params: sessionId, storageType, action, key, value
 
 ### Smart Login
 
+#### auth_test_assist
+Start here for website login, sign-up, and verification testing. Reuses the saved inbox/password, checks remembered auth state for the site's normalized origin, and returns reusable auth strategy plus site-specific signals such as recommended auth path, account-exists confidence, likely auth method, expected follow-up, and known-site history.
+Params: url, action, intent, loginUrl, outcome, verification_required, username, display_name, force_new_inbox, notes
+
 #### find_login_page
 Discover login pages via sitemap.xml + common paths.
 Params: url
 
 #### smart_login
-Auto-detect form fields, fill credentials, submit, report result.
+Auto-detect form fields, fill credentials, submit with click, Enter, and form-submit fallbacks, then report result.
 Params: loginUrl, username, password, usernameSelector, passwordSelector, submitSelector
 
 Returns: screenshot + status (SUCCESS/FAILED/UNCERTAIN) + sessionId.
@@ -424,8 +481,8 @@ Params: sessionId, type (auto), sitekey (auto), pageUrl (auto), autoSubmit (defa
 Each user needs their own AgentMail API key (free at https://console.agentmail.to). Configure in Dashboard → Settings.
 
 #### create_test_inbox
-Create a disposable email inbox → returns email@agentmail.to.
-Params: username (optional), display_name (optional)
+Standalone inbox helper. Create or reuse the saved primary inbox and return its email, password, inbox ID, and known-site history. For website auth work, start with auth_test_assist first so you also get reusable cross-site strategy and remembered per-site guidance.
+Params: username (optional), display_name (optional), force_new (optional)
 
 #### check_inbox
 Read messages, auto-extracts OTP codes and verification links.
@@ -465,13 +522,13 @@ Params: url, width, height
 → `browser_navigate` → `browser_get_accessibility_tree` → `browser_perf_metrics` → `browser_seo_audit` → `og_preview` → `browser_console_logs` → `browser_network_errors`
 
 ### Sign-Up Testing with Disposable Email
-1. `create_test_inbox` → email@agentmail.to
-2. `browser_navigate` to sign-up page
-3. `browser_fill` email + password
-4. `solve_captcha` if CAPTCHA present
-5. `browser_click` submit
-6. `check_inbox` → extract OTP
-7. Enter code → done
+1. `auth_test_assist` → decide whether sign-in or sign-up should be attempted first
+2. `find_login_page` if needed
+3. Reuse the saved primary inbox and password from the helper unless you explicitly need a fresh registration
+4. `smart_login` for the first auth attempt or `browser_fill` / `browser_click` for manual multi-step flows
+5. `check_inbox` → extract OTP or verification link
+6. Record the outcome with `auth_test_assist`
+7. Report reusable auth-system heuristics first, then the site-specific evidence that supported them
 
 ### Before/After Comparison
 → `screenshot_diff` with urlA and urlB → pixel diff + match score

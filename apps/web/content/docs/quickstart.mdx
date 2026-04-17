@@ -5,14 +5,24 @@ description: Get ScreenshotsMCP running fast so your AI can inspect, test, and v
 
 ## Option A: CLI (Fastest)
 
-Run two commands in your terminal:
+For a new agent or fresh IDE setup, start with the one-command onboarding flow:
+
+```bash
+npx screenshotsmcp setup --client cursor    # or: vscode, windsurf, claude, claude-code
+```
+
+That flow authenticates if needed, configures the MCP client, and installs or repairs the managed core ScreenshotsMCP skill into `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`.
+
+If you prefer to do onboarding in two steps, run:
 
 ```bash
 npx screenshotsmcp login
 npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
-Done. Your AI assistant now has access to 46+ tools for screenshots, browser automation, audits, and evidence capture, and the CLI also syncs the managed core ScreenshotsMCP skill into `~/.agents/skills/screenshotsmcp`.
+That reaches the same result as `setup --client <client>` for most clients. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
+
+The first packaged workflow is `~/.agents/skills/screenshotsmcp/workflows/sitewide-performance-audit/WORKFLOW.md` for repeatable multi-page performance audits.
 
 Note: `screenshotsmcp skills ...` only manages the local core ScreenshotsMCP skill. To discover or install community skills such as Anthropic's `frontend-design`, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...`.
 
@@ -20,14 +30,23 @@ The CLI also works standalone from the terminal:
 
 ```bash
 npx screenshotsmcp screenshot https://example.com
+npx screenshotsmcp fullpage https://example.com
 npx screenshotsmcp responsive https://example.com
+npx screenshotsmcp auth:test https://example.com
+npx screenshotsmcp auth:find-login https://example.com
+npx screenshotsmcp auth:authorize-email
 npx screenshotsmcp review https://example.com
+npx screenshotsmcp browse https://example.com
+npx screenshotsmcp browse:console <sessionId> --level error
+npx screenshotsmcp browse:network-errors <sessionId>
+npx screenshotsmcp browse:a11y <sessionId>
+npx screenshotsmcp browse:perf <sessionId>
 npx screenshotsmcp browser evidence --label homepage-check
 npx screenshotsmcp browser open https://example.com
 npx screenshotsmcp skills sync
 ```
 
-Use remote execution first for public websites. When you need localhost access, private apps, VPN-only environments, or more realistic manual-browser behavior, switch to the managed local browser without installing an extension:
+Use remote execution first for public websites. The CLI now mirrors the MCP remote workflow directly: start a remote session with `browse`, keep the `sessionId`, and then use `browse:*` commands for interaction, debugging, SEO, performance, accessibility, cookies, storage, and CAPTCHA solving. When you need localhost access, private apps, VPN-only environments, or more realistic manual-browser behavior, switch to the managed local browser without installing an extension:
 
 ```bash
 npx screenshotsmcp browser open https://example.com
@@ -125,6 +144,12 @@ Or ask for a more evidence-heavy workflow:
 
 ```
 Test my checkout flow and capture proof if anything fails
+```
+
+For login or sign-up testing, prefer a prompt like:
+
+```
+Start with auth_test_assist for https://example.com, follow its recommended auth path, reuse the saved inbox credentials, test the auth flow end-to-end, and summarize reusable auth heuristics first with site-specific evidence second.
 ```
 
 That's it. Your AI can now see websites, run browser workflows, and return evidence instead of guesses.

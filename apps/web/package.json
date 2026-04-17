@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "lint:auth": "eslint src/app/dashboard/install/page.tsx src/app/dashboard/settings/page.tsx",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

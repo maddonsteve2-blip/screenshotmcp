@@ -79,6 +79,26 @@ export default function SettingsPage() {
     setSaving(false);
   }
 
+  function copyWithFeedback(value: string, id: string) {
+    navigator.clipboard.writeText(value);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
+
+  function buildAgentPrompt(inbox: { email: string; password: string }) {
+    return [
+      `Start with auth_test_assist for this site so you reuse the saved auth memory and inbox.`,
+      `Read its recommended auth path, account-exists confidence, likely auth method, and expected follow-up before choosing sign-in or sign-up.`,
+      `Primary reusable inbox: ${inbox.email}`,
+      `Primary reusable password: ${inbox.password}`,
+      `If sign-in fails because the account does not exist, try sign-up with the same email and password.`,
+      `If smart_login is uncertain on a Clerk or multi-step auth form, fall back to browser tools and inspect network or console evidence before deciding it failed.`,
+      `If the site sends a verification email or OTP, use check_inbox with ${inbox.email}.`,
+      `When you report the result, summarize reusable auth heuristics first and present any site-specific path as supporting evidence.`,
+      `After the auth attempt, call auth_test_assist again with action "record" and the outcome.`,
+    ].join("\n");
+  }
+
   return (
     <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
       <div className="flex flex-col gap-1">
@@ -261,9 +281,13 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="rounded-lg border bg-muted/40 p-4">
             <p className="text-sm text-muted-foreground">
-              When your AI assistant uses the <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">create_test_inbox</code> tool,
-              the inbox email and generated password are saved here so they can be reused across sessions.
-              Your assistant will automatically reuse existing inboxes when possible.
+              Your AI assistant saves reusable inbox credentials here. The first inbox is treated as your primary auth identity,
+              and agents should start website auth work with <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">auth_test_assist</code>
+              so they reuse this inbox plus the remembered sign-in or sign-up history for each site.
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Use <strong>Copy prompt for agent</strong> to copy a ready-to-paste prompt into chat when you want your AI to log into a website using this reusable test account.
+              Agents should report reusable auth-system findings first and site-specific evidence second.
             </p>
           </div>
 
@@ -275,55 +299,74 @@ export default function SettingsPage() {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {inboxes.map((inbox) => (
-                <div key={inbox.id} className="flex flex-col gap-3 rounded-lg border p-4">
+              {inboxes.map((inbox, index) => {
+                const isPrimary = index === 0;
+                const passwordVisible = isPrimary ? true : !!showPasswords[inbox.id];
+                const agentPrompt = buildAgentPrompt(inbox);
+
+                return (
+                <div key={inbox.id} className={`flex flex-col gap-3 rounded-lg border p-4 ${isPrimary ? "border-primary/40 bg-primary/5" : ""}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {isPrimary && <Badge className="text-xs">Primary reusable inbox</Badge>}
+                        {inbox.displayName && <Badge variant="secondary" className="text-xs">{inbox.displayName}</Badge>}
+                      </div>
+                      <div className="mt-2 flex items-center gap-2">
                         <p className="text-sm font-mono font-medium truncate">{inbox.email}</p>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon-sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(inbox.email);
-                            setCopiedId(inbox.id + "-email");
-                            setTimeout(() => setCopiedId(null), 2000);
-                          }}
+                          onClick={() => copyWithFeedback(inbox.email, inbox.id + "-email")}
                           className="shrink-0"
                           aria-label="Copy email"
                         >
                           {copiedId === inbox.id + "-email" ? <Check /> : <Copy />}
                         </Button>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground">Password:</span>
-                        <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
-                          {showPasswords[inbox.id] ? inbox.password : "••••••••••••"}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">Password:</span>
+                        <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded break-all">
+                          {passwordVisible ? inbox.password : "••••••••••••"}
                         </code>
+                        {!isPrimary && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setShowPasswords((p) => ({ ...p, [inbox.id]: !p[inbox.id] }))}
+                            aria-label={passwordVisible ? "Hide password" : "Show password"}
+                          >
+                            {passwordVisible ? <EyeOff /> : <Eye />}
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon-sm"
-                          onClick={() => setShowPasswords((p) => ({ ...p, [inbox.id]: !p[inbox.id] }))}
-                          aria-label={showPasswords[inbox.id] ? "Hide password" : "Show password"}
-                        >
-                          {showPasswords[inbox.id] ? <EyeOff /> : <Eye />}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(inbox.password);
-                            setCopiedId(inbox.id + "-pw");
-                            setTimeout(() => setCopiedId(null), 2000);
-                          }}
+                          onClick={() => copyWithFeedback(inbox.password, inbox.id + "-pw")}
                           aria-label="Copy password"
                         >
                           {copiedId === inbox.id + "-pw" ? <Check /> : <Copy />}
                         </Button>
                       </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => copyWithFeedback(agentPrompt, inbox.id + "-agent")}
+                        >
+                          {copiedId === inbox.id + "-agent" ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                          Copy prompt for agent
+                        </Button>
+                      </div>
+                      {isPrimary && (
+                        <p className="text-xs text-muted-foreground">
+                          This copies a prompt containing the email, password, sign-in-first guidance, and verification instructions so you can paste it directly into your AI chat.
+                        </p>
+                      )}
                     </div>
                     <Button
                       type="button"
@@ -349,7 +392,7 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </CardContent>

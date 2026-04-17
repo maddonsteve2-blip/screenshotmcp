@@ -294,13 +294,13 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                     <p className="mt-1 text-2xl font-semibold">{failedRunCount}</p>
                   </div>
                   <div className="rounded-lg border p-4">
-                    <p className="text-xs text-muted-foreground">Issue-marked runs</p>
+                    <p className="text-xs text-muted-foreground">Runs with issues</p>
                     <p className="mt-1 text-2xl font-semibold">{issueRunCount}</p>
                   </div>
                 </div>
                 <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                   {failedRunCount > 0 || issueRunCount > 0
-                    ? "Open Runs to review failures, console errors, and network problems in one workflow."
+                    ? "Open the Runs view to review failures, console errors, and network problems in one workflow."
                     : "Your recent runs are not showing failed or issue-marked sessions right now."}
                 </div>
                 <Link href="/dashboard/runs" className={cn(buttonVariants({ variant: "outline" }), "w-full")}>

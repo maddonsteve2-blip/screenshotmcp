@@ -1,12 +1,15 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
+import { ONBOARDING_CLIENTS, getNpxSetupCommand, type OnboardingClient } from "@screenshotsmcp/types";
 import { oauthLogin } from "../auth.js";
-import { getApiKey, getConfigPath } from "../config.js";
+import { getApiKey } from "../config.js";
 import { installCommand } from "./install.js";
 import { createInterface } from "readline";
 
-const CLIENTS = ["cursor", "vscode", "windsurf", "claude", "claude-code"] as const;
+const CLIENTS: readonly OnboardingClient[] = ONBOARDING_CLIENTS;
+const CLIENT_LIST = CLIENTS.join(", ");
+const CLIENT_EXAMPLES = CLIENTS.map((client: OnboardingClient) => `  ${getNpxSetupCommand(client)}`).join("\n");
 
 function detectClient(): string | null {
   const env = process.env;
@@ -45,13 +48,9 @@ export const setupCommand = new Command("setup")
     "Interactive setup: login + configure your MCP client in one step.\n" +
     "Always prompts the user to choose their IDE client.\n\n" +
     "AI agents: use --client to skip the interactive prompt:\n" +
-    "  npx screenshotsmcp setup --client cursor\n" +
-    "  npx screenshotsmcp setup --client windsurf\n" +
-    "  npx screenshotsmcp setup --client vscode\n" +
-    "  npx screenshotsmcp setup --client claude\n" +
-    "  npx screenshotsmcp setup --client claude-code"
+    CLIENT_EXAMPLES
   )
-  .option("--client <client>", "Skip interactive prompt (for AI agents): cursor, vscode, windsurf, claude, claude-code")
+  .option("--client <client>", `Skip interactive prompt (for AI agents): ${CLIENT_LIST}`)
   .action(async (opts) => {
     console.log(chalk.bold("\n  ScreenshotsMCP Setup\n"));
 
@@ -83,7 +82,7 @@ export const setupCommand = new Command("setup")
     if (client) {
       if (!CLIENTS.includes(client as typeof CLIENTS[number])) {
         console.error(chalk.red(`Unknown client: ${client}`));
-        console.log(chalk.dim("Valid: cursor, vscode, windsurf, claude, claude-code"));
+        console.log(chalk.dim(`Valid: ${CLIENT_LIST}`));
         process.exit(1);
       }
     } else {
@@ -91,7 +90,7 @@ export const setupCommand = new Command("setup")
       const detected = detectClient();
 
       console.log("  Which client would you like to configure?\n");
-      CLIENTS.forEach((c, i) => {
+      CLIENTS.forEach((c: OnboardingClient, i: number) => {
         const marker = c === detected ? chalk.cyan(" (detected)") : "";
         const num = c === detected ? chalk.cyan(chalk.bold(String(i + 1))) : chalk.bold(String(i + 1));
         console.log(`    ${num}. ${c}${marker}`);
@@ -121,5 +120,6 @@ export const setupCommand = new Command("setup")
 
     console.log(chalk.bold(chalk.green("\n  Setup complete! ✓\n")));
     console.log(chalk.dim("  Try asking your AI: \"Take a screenshot of https://example.com\""));
+    console.log(chalk.dim("  For login or sign-up testing, start with: `screenshotsmcp auth:test https://example.com`"));
     console.log();
   });

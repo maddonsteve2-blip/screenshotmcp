@@ -43,6 +43,13 @@
       "when": 1776049200003,
       "tag": "0005_run_sharing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776261000000,
+      "tag": "0006_website_auth_memories",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,7 @@ import {
   boolean,
   integer,
   pgEnum,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const planEnum = pgEnum("plan", ["free", "starter", "pro"]);
@@ -108,6 +109,34 @@ export const testInboxes = pgTable("test_inboxes", {
   lastUsedAt: timestamp("last_used_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+export const websiteAuthMemories = pgTable(
+  "website_auth_memories",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    origin: text("origin").notNull(),
+    inboxId: text("inbox_id").references(() => testInboxes.id, { onDelete: "set null" }),
+    inboxEmail: text("inbox_email"),
+    loginUrl: text("login_url"),
+    preferredAuthAction: text("preferred_auth_action").notNull().default("unknown"),
+    signupStatus: text("signup_status").notNull().default("unknown"),
+    loginStatus: text("login_status").notNull().default("unknown"),
+    verificationRequired: boolean("verification_required").notNull().default(false),
+    lastSuccessfulAuthPath: text("last_successful_auth_path"),
+    lastError: text("last_error"),
+    notes: text("notes"),
+    lastUsedAt: timestamp("last_used_at"),
+    lastSuccessAt: timestamp("last_success_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    userOriginIdx: uniqueIndex("website_auth_memories_user_origin_idx").on(table.userId, table.origin),
+  }),
+);
 
 export const recordings = pgTable("recordings", {
   id: text("id").primaryKey(),

@@ -12,7 +12,7 @@ compatibility: >
   Works with Claude, Cursor, Windsurf, VS Code, and any MCP-compatible agent.
 metadata:
   author: stevejford
-  version: "2.1"
+  version: "2.2.1"
   website: https://screenshotsmcp.com
   api: https://screenshotsmcp-api-production.up.railway.app
   github: https://github.com/stevejford/screenshotmcp
@@ -36,20 +36,50 @@ metadata:
 
 Give your AI assistant eyes and hands for the web. This skill covers all 46+ tools in the ScreenshotsMCP suite.
 
+## Discovery Model
+
+- Treat ScreenshotsMCP tools as atomic actions.
+- Treat this skill as broad guidance for choosing the right path.
+- Treat packaged workflows as targeted procedures for repeatable multi-step jobs.
+- When the task is an audit, verification flow, or another repeatable multi-step procedure, check the available workflows before improvising.
+- Do not read every workflow up front. Read only the workflow that matches the task.
+- If terminal access exists and repeated tool calls are likely, prefer the CLI when it is clearly faster than repeated MCP round-trips. If terminal access is not available, stay in MCP.
+- For multi-page performance audits in MCP, avoid opening many new browser sessions in parallel. Measure sequentially unless there is a proven reason to increase concurrency.
+
+## Available Workflows
+
+- `workflows/sitewide-performance-audit/WORKFLOW.md` — use when the user asks why a site is slow, wants the slowest pages identified, or wants a repeatable multi-page performance review.
+
 ## Quick Start (Choose One)
 
-### Option A: MCP Server (Recommended for AI Agents)
+### Option A: Managed onboarding (Recommended for AI Agents)
 
 **Best for:** Claude, Cursor, Windsurf, VS Code, Claude Code
 
 ```bash
-# Get API key first
-npx screenshotsmcp login
+# One-command onboarding for a new agent or fresh IDE setup
+npx screenshotsmcp setup --client cursor    # or: vscode, windsurf, claude, claude-code
 
-# Or get key manually at https://screenshotsmcp.com/dashboard/keys
+# Or do it in two steps
+npx screenshotsmcp login
+npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
-Add to your MCP config:
+This path authenticates if needed, configures the MCP client, and installs or repairs the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`.
+
+For most clients, the two-step `login` + `install` path reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
+
+### Option B: Manual MCP setup
+
+**Best for:** Clients that you want to configure by hand, or environments where you only want the raw MCP connection
+
+Get an API key first:
+
+```bash
+npx screenshotsmcp login --key sk_live_...
+```
+
+Then add ScreenshotsMCP to your MCP config:
 
 **Cursor:** `~/.cursor/mcp.json`
 **Windsurf:** `~/.codeium/windsurf/mcp_config.json`
@@ -66,7 +96,7 @@ Add to your MCP config:
 }
 ```
 
-### Option B: CLI (Fastest for Terminal Use)
+### Option C: CLI (Fastest for Terminal Use)
 
 **Best for:** Direct terminal commands, CI/CD, scripts
 
@@ -79,6 +109,8 @@ npm install -g screenshotsmcp
 ```
 
 **AI agents:** Use CLI via `run_command` — structured text output, no JSON-RPC overhead.
+
+For repeatable public-page performance audits, use the CLI only when the command path is already available or can be approved up front. If command approval would stall the run and MCP is already available, begin with MCP and collect metrics sequentially.
 
 ---
 
@@ -120,36 +152,36 @@ Multi-step workflows: log in, fill forms, navigate, inspect.
 |----------|-------------|---------|
 | `browser_navigate` | `screenshotsmcp browse <url>` | Open URL, returns sessionId |
 | `browser_click` | `screenshotsmcp browse:click <sessionId> <selector>` | Click element |
-| `browser_click_at` | N/A | Click at x,y coordinates (CAPTCHAs, canvas) |
+| `browser_click_at` | `screenshotsmcp browse:click-at <sessionId> <x> <y>` | Click at x,y coordinates (CAPTCHAs, canvas) |
 | `browser_fill` | `screenshotsmcp browse:fill <sessionId> <selector> <value>` | Type into input |
-| `browser_hover` | N/A | Hover for tooltips/dropdowns |
-| `browser_select_option` | N/A | Select from dropdown |
+| `browser_hover` | `screenshotsmcp browse:hover <sessionId> <selector>` | Hover for tooltips/dropdowns |
+| `browser_select_option` | `screenshotsmcp browse:select <sessionId> <selector> <value>` | Select from dropdown |
 | `browser_scroll` | `screenshotsmcp browse:scroll <sessionId> --y 500` | Scroll page |
 | `browser_press_key` | `screenshotsmcp browse:key <sessionId> Enter` | Press key |
-| `browser_wait_for` | N/A | Wait for element |
-| `browser_go_back` | N/A | Browser back |
-| `browser_go_forward` | N/A | Browser forward |
-| `browser_set_viewport` | N/A | Resize viewport mid-session |
+| `browser_wait_for` | `screenshotsmcp browse:wait-for <sessionId> <selector>` | Wait for element |
+| `browser_go_back` | `screenshotsmcp browse:back <sessionId>` | Browser back |
+| `browser_go_forward` | `screenshotsmcp browse:forward <sessionId>` | Browser forward |
+| `browser_set_viewport` | `screenshotsmcp browse:viewport <sessionId> <width> <height>` | Resize viewport mid-session |
 | `browser_close` | `screenshotsmcp browse:close <sessionId>` | End session |
 
 **Inspection:**
 | `browser_screenshot` | `screenshotsmcp browse:screenshot <sessionId>` | Capture current state |
 | `browser_get_text` | `screenshotsmcp browse:text <sessionId>` | All visible text |
 | `browser_get_html` | `screenshotsmcp browse:html <sessionId>` | DOM source |
-| `browser_get_accessibility_tree` | N/A | Full a11y tree |
-| `browser_evaluate` | N/A | Run JavaScript |
+| `browser_get_accessibility_tree` | `screenshotsmcp browse:a11y <sessionId>` | Full a11y tree |
+| `browser_evaluate` | `screenshotsmcp browse:eval <sessionId> <script>` | Run JavaScript |
 | `accessibility_snapshot` | N/A | A11y tree without session |
 
 **Debugging:**
-| `browser_console_logs` | N/A | Console errors, warnings |
-| `browser_network_errors` | N/A | Failed requests (4xx, 5xx) |
-| `browser_network_requests` | N/A | Full network waterfall |
-| `browser_cookies` | N/A | Get/set cookies |
-| `browser_storage` | N/A | localStorage/sessionStorage |
+| `browser_console_logs` | `screenshotsmcp browse:console <sessionId>` | Console errors, warnings |
+| `browser_network_errors` | `screenshotsmcp browse:network-errors <sessionId>` | Failed requests (4xx, 5xx) |
+| `browser_network_requests` | `screenshotsmcp browse:network-requests <sessionId>` | Full network waterfall |
+| `browser_cookies` | `screenshotsmcp browse:cookies <sessionId> <action>` | Get/set cookies |
+| `browser_storage` | `screenshotsmcp browse:storage <sessionId> <action>` | localStorage/sessionStorage |
 
 **Performance & SEO:**
-| `browser_perf_metrics` | `screenshotsmcp perf <url>` | Core Web Vitals |
-| `browser_seo_audit` | `screenshotsmcp seo <url>` | Meta, OG, headings, JSON-LD |
+| `browser_perf_metrics` | `screenshotsmcp browse:perf <sessionId>` | Core Web Vitals for an active session |
+| `browser_seo_audit` | `screenshotsmcp browse:seo <sessionId>` | Meta, OG, headings, JSON-LD |
 
 ---
 
@@ -168,16 +200,21 @@ For Clerk-powered sites, it automatically:
 
 **Parameters:** `sessionId` (required), `type` (auto-detected), `sitekey` (auto-detected), `autoSubmit` (default: true)
 
+CLI parity: `screenshotsmcp browse:captcha <sessionId>`
+
 ---
 
 ### 4. Smart Login Flow
 
 When testing authenticated pages:
 
-1. `find_login_page` — discovers login pages via sitemap.xml + common paths
-2. **Ask user for credentials** — NEVER guess passwords
-3. `smart_login` — auto-detects fields, fills, submits, returns result + sessionId
-4. Continue testing with the returned sessionId
+1. `auth_test_assist` — or `screenshotsmcp auth:test <url>` — plans the reusable auth path first
+2. `find_login_page` — or `screenshotsmcp auth:find-login <url>` — discovers login pages via sitemap.xml + common paths
+3. **Ask user for credentials** — NEVER guess passwords
+4. `smart_login` — or `screenshotsmcp auth:smart-login <loginUrl> --username ... --password ...` — auto-detects fields, fills, submits, returns result + sessionId
+5. Continue testing with the returned sessionId
+
+For Gmail-backed OTP retrieval, use `screenshotsmcp auth:authorize-email` once, then `screenshotsmcp auth:read-email`.
 
 ---
 
@@ -228,6 +265,7 @@ User: "Check how example.com looks"
 ### Full site audit
 ```
 User: "Audit this site"
+→ First read workflows/sitewide-performance-audit/WORKFLOW.md if the user wants a repeatable multi-page audit
 → MCP: browser_navigate → browser_get_accessibility_tree → browser_perf_metrics → browser_seo_audit → browser_console_logs → browser_network_errors
 → CLI: screenshotsmcp seo <url> && screenshotsmcp perf <url> && screenshotsmcp a11y <url>
 ```

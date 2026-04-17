@@ -4,7 +4,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "../lib/db.js";
-import { screenshots, apiKeys, users, usageEvents, testInboxes } from "@screenshotsmcp/db";
+import { screenshots, apiKeys, users, usageEvents, testInboxes, websiteAuthMemories } from "@screenshotsmcp/db";
 import { screenshotQueue } from "../lib/queue.js";
 import { createHash } from "crypto";
 import { eq, and, count, gte, desc } from "drizzle-orm";
@@ -22,6 +22,9 @@ export const mcpRouter = Router();
 type AuthResult =
   | { ok: true; userId: string; plan: "free" | "starter" | "pro"; agentmailApiKey?: string | null }
   | { ok: false; error: string };
+
+type SuccessfulAuth = Extract<AuthResult, { ok: true }>;
+type AuthAssistOutcome = "login_success" | "login_failed" | "signup_success" | "signup_failed" | "verification_required" | "verification_success";
 
 async function validateKey(apiKey: string | undefined): Promise<AuthResult> {
   if (!apiKey) return { ok: false, error: "API key required. Pass sk_live_... as x-api-key header." };
@@ -100,23 +103,419 @@ async function pollScreenshot(id: string) {
   return { content: [{ type: "text" as const, text: `Screenshot timed out after 60s. Job ID: ${id}` }] };
 }
 
+function normalizeOrigin(rawUrl: string): string {
+  return new URL(rawUrl).origin.toLowerCase();
+}
+
+async function getPrimaryInbox(userId: string) {
+  const rows = await db
+    .select()
+    .from(testInboxes)
+    .where(and(eq(testInboxes.userId, userId), eq(testInboxes.isActive, true)))
+    .orderBy(desc(testInboxes.lastUsedAt), desc(testInboxes.createdAt))
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+async function touchInboxUsage(inboxId: string) {
+  await db.update(testInboxes).set({ lastUsedAt: new Date() }).where(eq(testInboxes.id, inboxId));
+}
+
+async function getWebsiteAuthMemory(userId: string, origin: string) {
+  const rows = await db
+    .select()
+    .from(websiteAuthMemories)
+    .where(and(eq(websiteAuthMemories.userId, userId), eq(websiteAuthMemories.origin, origin)))
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+async function getKnownSitesForInbox(userId: string, inboxId?: string | null) {
+  if (!inboxId) {
+    return [];
+  }
+
+  const rows = await db
+    .select()
+    .from(websiteAuthMemories)
+    .where(eq(websiteAuthMemories.userId, userId))
+    .orderBy(desc(websiteAuthMemories.lastSuccessAt), desc(websiteAuthMemories.updatedAt));
+
+  return rows.filter((row) => row.inboxId === inboxId && !!row.origin).slice(0, 5);
+}
+
+function getRecommendedAuthAction(memory: any, intent: "auto" | "sign_in" | "sign_up") {
+  if (intent !== "auto") {
+    return intent;
+  }
+
+  if (!memory) {
+    return "sign_in_then_sign_up";
+  }
+
+  if (memory.preferredAuthAction && memory.preferredAuthAction !== "unknown") {
+    return memory.preferredAuthAction;
+  }
+
+  if (memory.loginStatus === "success" || memory.signupStatus === "success") {
+    return "sign_in";
+  }
+
+  if (memory.loginStatus === "failed" && memory.signupStatus !== "success") {
+    return "sign_up";
+  }
+
+  return "sign_in_then_sign_up";
+}
+
+function getAccountExistsConfidence(memory: any) {
+  if (!memory) {
+    return "unknown";
+  }
+
+  if (memory.loginStatus === "success" || memory.signupStatus === "success" || memory.verificationRequired || memory.lastSuccessAt) {
+    return "high";
+  }
+
+  if (memory.loginStatus === "failed" && memory.signupStatus !== "success") {
+    return "low";
+  }
+
+  return "medium";
+}
+
+function getKnownAuthMethod(memory: any) {
+  if (!memory) {
+    return "unknown";
+  }
+
+  if (memory.verificationRequired || memory.lastSuccessfulAuthPath === "otp_verify") {
+    return "password_then_email_code";
+  }
+
+  if (memory.loginStatus === "success") {
+    return "password_only";
+  }
+
+  if (memory.signupStatus === "success") {
+    return memory.verificationRequired ? "sign_up_then_email_code" : "sign_up_then_sign_in";
+  }
+
+  return "unknown";
+}
+
+function getExpectedFollowup(memory: any) {
+  if (!memory) {
+    return "unknown";
+  }
+
+  if (memory.verificationRequired) {
+    return "email_code";
+  }
+
+  if (memory.lastSuccessAt || memory.lastSuccessfulAuthPath) {
+    return "none";
+  }
+
+  return "unknown";
+}
+
+function getAuthEvidence(memory: any) {
+  if (!memory) {
+    return [];
+  }
+
+  const evidence: string[] = [];
+
+  if (memory.loginStatus && memory.loginStatus !== "unknown") {
+    evidence.push(`login status is ${memory.loginStatus}`);
+  }
+
+  if (memory.signupStatus && memory.signupStatus !== "unknown") {
+    evidence.push(`signup status is ${memory.signupStatus}`);
+  }
+
+  if (memory.lastSuccessAt) {
+    evidence.push(`last successful auth was at ${new Date(memory.lastSuccessAt).toISOString()}`);
+  }
+
+  if (memory.verificationRequired) {
+    evidence.push("email verification is expected on new-device or OTP flows");
+  }
+
+  if (memory.loginUrl) {
+    evidence.push(`saved login URL is ${memory.loginUrl}`);
+  }
+
+  if (memory.lastError) {
+    evidence.push(`last recorded error was: ${memory.lastError}`);
+  }
+
+  return evidence;
+}
+
+function getReusableAuthGuidance(memory: any, recommendedAction: string) {
+  const guidance: string[] = [
+    "Reuse the saved primary inbox unless you explicitly need a fresh registration identity.",
+  ];
+
+  if (recommendedAction === "sign_in") {
+    guidance.push("Start with sign-in because prior evidence suggests this identity likely already exists for this origin.");
+  } else if (recommendedAction === "sign_up") {
+    guidance.push("Start with sign-up because prior evidence suggests sign-in is unlikely to work for this origin.");
+  } else {
+    guidance.push("Prefer sign-in first, then switch to sign-up only if the site clearly says the account does not exist.");
+  }
+
+  if (getExpectedFollowup(memory) === "email_code") {
+    guidance.push("Treat verification, email-code, or OTP steps as normal auth paths for this origin rather than as immediate failures.");
+  } else {
+    guidance.push("If the site asks for verification, magic-link, or OTP completion, continue that flow before deciding the auth attempt failed.");
+  }
+
+  guidance.push("If the auth UI is brittle or multi-step, fall back to browser tools and inspect console or network evidence before concluding the flow is blocked.");
+  guidance.push("Record the outcome after the attempt so future runs can reuse what worked for this origin.");
+
+  return guidance;
+}
+
+function getSiteSpecificHints(memory: any) {
+  if (!memory) {
+    return [];
+  }
+
+  const hints: string[] = [];
+
+  if (memory.loginUrl) {
+    hints.push(`known login URL: ${memory.loginUrl}`);
+  }
+
+  if (memory.lastSuccessfulAuthPath) {
+    hints.push(`last successful path: ${memory.lastSuccessfulAuthPath}`);
+  }
+
+  if (memory.notes) {
+    hints.push(`saved site note: ${memory.notes}`);
+  }
+
+  if (memory.lastError) {
+    hints.push(`last recorded friction: ${memory.lastError}`);
+  }
+
+  return hints;
+}
+
+function formatKnownSites(rows: any[], currentOrigin?: string) {
+  const filtered = rows.filter((row) => row.origin !== currentOrigin);
+  if (filtered.length === 0) {
+    return "None recorded yet.";
+  }
+
+  return filtered
+    .map((row) => {
+      const status = row.loginStatus === "success"
+        ? "login success"
+        : row.signupStatus === "success"
+          ? "signup success"
+          : row.lastSuccessfulAuthPath || "seen";
+      return `${row.origin} (${status})`;
+    })
+    .join(", ");
+}
+
+function describeWebsiteAuthMemory(memory: any) {
+  if (!memory) {
+    return "No saved auth history for this origin yet.";
+  }
+
+  const parts: string[] = [];
+
+  if (memory.loginStatus && memory.loginStatus !== "unknown") {
+    parts.push(`login status: ${memory.loginStatus}`);
+  }
+
+  if (memory.signupStatus && memory.signupStatus !== "unknown") {
+    parts.push(`signup status: ${memory.signupStatus}`);
+  }
+
+  const confidence = getAccountExistsConfidence(memory);
+  if (confidence !== "unknown") {
+    parts.push(`account exists confidence: ${confidence}`);
+  }
+
+  const authMethod = getKnownAuthMethod(memory);
+  if (authMethod !== "unknown") {
+    parts.push(`known auth method: ${authMethod}`);
+  }
+
+  const followup = getExpectedFollowup(memory);
+  if (followup !== "unknown") {
+    parts.push(`expected follow-up: ${followup}`);
+  }
+
+  if (memory.lastSuccessfulAuthPath) {
+    parts.push(`last successful path: ${memory.lastSuccessfulAuthPath}`);
+  }
+
+  if (memory.verificationRequired) {
+    parts.push("email verification is usually required");
+  }
+
+  if (memory.loginUrl) {
+    parts.push(`saved login URL: ${memory.loginUrl}`);
+  }
+
+  if (memory.lastError) {
+    parts.push(`last error: ${memory.lastError}`);
+  }
+
+  if (parts.length === 0) {
+    return "Saved auth memory exists, but there is no confirmed success or failure yet.";
+  }
+
+  return parts.join("; ");
+}
+
+async function upsertWebsiteAuthMemory(input: {
+  userId: string;
+  origin: string;
+  inboxId?: string | null;
+  inboxEmail?: string | null;
+  loginUrl?: string | null;
+  preferredAuthAction?: string;
+  outcome?: AuthAssistOutcome;
+  verificationRequired?: boolean;
+  notes?: string;
+}) {
+  const now = new Date();
+  const existing = await getWebsiteAuthMemory(input.userId, input.origin);
+  const values: any = {
+    updatedAt: now,
+    lastUsedAt: now,
+  };
+
+  if (input.inboxId !== undefined) {
+    values.inboxId = input.inboxId;
+  }
+
+  if (input.inboxEmail !== undefined) {
+    values.inboxEmail = input.inboxEmail;
+  }
+
+  if (input.loginUrl !== undefined) {
+    values.loginUrl = input.loginUrl;
+  }
+
+  if (input.notes !== undefined) {
+    values.notes = input.notes;
+  }
+
+  if (input.verificationRequired !== undefined) {
+    values.verificationRequired = input.verificationRequired;
+  }
+
+  if (input.preferredAuthAction && input.preferredAuthAction !== "unknown") {
+    values.preferredAuthAction = input.preferredAuthAction;
+  }
+
+  switch (input.outcome) {
+    case "login_success":
+      values.loginStatus = "success";
+      values.preferredAuthAction = "sign_in";
+      values.lastSuccessfulAuthPath = "sign_in";
+      values.lastError = null;
+      values.lastSuccessAt = now;
+      break;
+    case "login_failed":
+      values.loginStatus = "failed";
+      values.preferredAuthAction = values.preferredAuthAction ?? "sign_up";
+      values.lastError = input.notes ?? "Login failed";
+      break;
+    case "signup_success":
+      values.signupStatus = "success";
+      values.preferredAuthAction = "sign_in";
+      values.lastSuccessfulAuthPath = "sign_up";
+      values.lastError = null;
+      values.lastSuccessAt = now;
+      break;
+    case "signup_failed":
+      values.signupStatus = "failed";
+      values.lastError = input.notes ?? "Sign-up failed";
+      break;
+    case "verification_required":
+      values.verificationRequired = true;
+      break;
+    case "verification_success":
+      values.verificationRequired = true;
+      values.lastSuccessfulAuthPath = "otp_verify";
+      values.lastError = null;
+      values.lastSuccessAt = now;
+      break;
+    default:
+      break;
+  }
+
+  if (existing) {
+    await db
+      .update(websiteAuthMemories)
+      .set(values)
+      .where(eq(websiteAuthMemories.id, existing.id));
+
+    return getWebsiteAuthMemory(input.userId, input.origin);
+  }
+
+  await db.insert(websiteAuthMemories).values({
+    id: nanoid(),
+    userId: input.userId,
+    origin: input.origin,
+    inboxId: input.inboxId ?? null,
+    inboxEmail: input.inboxEmail ?? null,
+    loginUrl: input.loginUrl ?? null,
+    preferredAuthAction: values.preferredAuthAction ?? "unknown",
+    signupStatus: values.signupStatus ?? "unknown",
+    loginStatus: values.loginStatus ?? "unknown",
+    verificationRequired: values.verificationRequired ?? false,
+    lastSuccessfulAuthPath: values.lastSuccessfulAuthPath ?? null,
+    lastError: values.lastError ?? null,
+    notes: values.notes ?? null,
+    lastUsedAt: now,
+    lastSuccessAt: values.lastSuccessAt ?? null,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return getWebsiteAuthMemory(input.userId, input.origin);
+}
+
 function createMcpServer(apiKey: string | undefined) {
   const server = new McpServer({
     name: "screenshotsmcp",
     version: "1.0.0",
     description: `You have access to screenshotsmcp — a tool suite for capturing screenshots and automating browsers.
 
+## Discovery Model
+- Treat ScreenshotsMCP tools as atomic actions.
+- Treat the ScreenshotsMCP skill as broad guidance for choosing the right path.
+- Treat packaged workflows as targeted procedures for repeatable multi-step jobs.
+- When the task is an audit, verification flow, or another repeatable multi-step procedure, check the available workflows before improvising.
+- Do not load every workflow up front. Read only the workflow that matches the task.
+- If terminal access exists and repeated tool calls are likely, prefer the CLI when it is clearly faster than repeated MCP round-trips. If terminal access is not available, stay in MCP.
+- For multi-page performance audits in MCP, avoid opening many new browser sessions in parallel. Measure sequentially unless there is a proven reason to increase concurrency.
+- Available workflow: **workflows/sitewide-performance-audit/WORKFLOW.md** — use when the user asks why a site is slow, wants the slowest pages identified, or wants a repeatable multi-page performance review.
+
 ## Screenshot Tools (quick captures, no session needed)
 - **take_screenshot** — capture any URL at a custom viewport size. Supports fullPage (default) or viewport-only mode. Returns a public image URL with dimensions.
 - **screenshot_mobile** — iPhone 14 Pro viewport (393×852). Supports viewport-only or full-page.
 - **screenshot_tablet** — iPad viewport (820×1180). Supports viewport-only or full-page.
-- **screenshot_fullpage** — capture the entire scrollable page (always full-page). Use max_height to cap long pages.
-- **screenshot_responsive** — capture desktop + tablet + mobile in ONE call. Supports viewport-only mode. Best for responsive design checks.
-- **screenshot_dark** — capture with dark mode emulated (prefers-color-scheme: dark).
-- **screenshot_element** — capture a specific element by CSS selector. Waits for the element to appear (SPA-friendly). Supports delay param.
-- **screenshot_pdf** — export a webpage as a PDF document (A4, with backgrounds).
-- **list_recent_screenshots** — view recent screenshot URLs and metadata.
-- **get_screenshot_status** — check if a screenshot job is done.
+- **screenshot_responsive** — capture screenshots at desktop (1280×800), tablet (820×1180), and mobile (393×852) viewports in one call. By default captures viewport-only (recommended). Set fullPage to true for full-page captures. Returns all three URLs for responsive comparison.
+- **screenshot_fullpage** — capture the entire scrollable page (always full-page). Use max_height to cap extremely long pages and prevent unreadable strips.
+- **screenshot_dark** — capture a full-page screenshot with dark mode (prefers-color-scheme: dark) emulated. Works on sites that support dark mode via CSS media queries.
+- **screenshot_element** — capture a screenshot of a specific element on the page by CSS selector. Only the matched element is captured, not the full page. Automatically waits for the element to appear (SPA-friendly). Use delay for pages that need extra hydration time.
+- **screenshot_pdf** — export a webpage as a PDF document (A4 format with background graphics). Returns a public URL to the PDF file.
+- **list_recent_screenshots** — list the most recent screenshots taken with this API key. Returns URLs and metadata.
+- **get_screenshot_status** — check the status of a screenshot job by ID. Returns done/pending/failed and the public URL if ready.
 
 ## Browser Automation Tools (interactive sessions)
 Use these for multi-step workflows like logging in, filling forms, or navigating through a site:
@@ -151,16 +550,14 @@ The video URL is permanent and shareable. Recording adds minimal overhead to the
 **Debugging:** browser_console_logs, browser_network_errors, browser_cookies, browser_storage
 
 ## Smart Login Flow
-When the user asks you to test a flow that requires authentication (login, sign-in, etc.):
-1. Call **find_login_page** with the site's base URL. It checks the sitemap.xml and common login paths automatically.
-2. It returns a list of candidate login URLs found. Pick the best one (or ask the user if ambiguous).
-3. Call **browser_navigate** to go to the login page.
-4. **Ask the user** for their username/email and password. NEVER guess credentials.
-5. Use **browser_fill** and **browser_click** to fill in the form and submit.
-6. Take a **browser_screenshot** and check if login succeeded (look for dashboard, profile, or redirect away from login).
-7. Report back: "Login successful" or "Login failed — [reason]".
-8. If login fails, ask the user for the exact login URL and try again.
-9. Once logged in, proceed with the requested testing flow.
+When the user asks you to test a flow that requires authentication (login, sign-in, sign-up, verification, etc.):
+1. Start with **auth_test_assist** for the site URL — this is the primary auth entrypoint. It reuses the saved inbox/password, checks remembered auth state for that origin, and recommends sign-in vs sign-up.
+2. If you need the login page, call **find_login_page** with the site's base URL.
+3. Use **smart_login** when you already know the credentials you want to try and want an automated first pass.
+4. If **smart_login** is uncertain on Clerk or multi-step auth UIs, immediately fall back to **browser_fill** + **browser_press_key** or **browser_evaluate** with form.requestSubmit().
+5. If the UI appears stuck after submit, inspect **browser_network_requests**, **browser_console_logs**, and **browser_cookies** before assuming login failed.
+6. For sign-up or verification flows, use **browser_fill**, **browser_click**, **solve_captcha**, and **check_inbox** as needed.
+7. After a successful or failed auth attempt, call **auth_test_assist** with action: "record" so future runs remember what worked.
 
 ## Tips
 - Screenshot tools return a public CDN URL (not inline images) **with dimensions**. Check dimensions to judge if the image will be useful.
@@ -178,7 +575,8 @@ When the user asks you to test a flow that requires authentication (login, sign-
 
 ## Disposable Email Tools (AgentMail)
 For testing sign-up flows, reading verification codes, etc:
-- **create_test_inbox** — creates or **reuses** a saved inbox. Returns email + generated password. Saved to dashboard.
+- **auth_test_assist** — preferred auth helper for website login/sign-up testing. Start here first. It reuses the saved inbox, checks remembered auth state for the site, and recommends the next auth step.
+- **create_test_inbox** — standalone inbox helper that creates or **reuses** the saved primary inbox. Returns email + generated password plus known-site history for that inbox.
 - **check_inbox** — read messages, auto-extracts OTP codes and verification links
 - **send_test_email** — send email from an inbox
 Each user needs their own AgentMail API key (free at https://console.agentmail.to). Configure in Dashboard → Settings.
@@ -187,15 +585,17 @@ Each user needs their own AgentMail API key (free at https://console.agentmail.t
 - create_test_inbox returns a **unique generated password** with each new inbox. ALWAYS use this password — never invent your own (they may trigger breach detection).
 - Existing inboxes are **automatically reused** across sessions. Only use force_new: true when you specifically need a fresh registration.
 - The email + password are saved in **Dashboard → Settings → Test Inboxes** for the user to see and copy.
+- Prefer **auth_test_assist** when the task is website auth testing, because it remembers whether that site previously worked with sign-in, sign-up, or verification and returns account-exists confidence, likely auth method, and expected follow-up steps.
 
 ## Sign-Up Testing Flow
-1. **create_test_inbox** → get email + generated password (or reuse existing)
-2. **browser_navigate** to sign-up page
-3. **browser_fill** email + the password from step 1
-4. **solve_captcha** if CAPTCHA present
-5. **browser_click** submit
-6. **check_inbox** → extract OTP code
-7. **browser_fill** the OTP → verify → done
+1. **auth_test_assist** → decide whether sign-in or sign-up should be attempted first for this origin
+2. If you explicitly need a fresh registration identity, call **create_test_inbox** → get email + generated password (or reuse existing)
+3. **browser_navigate** to sign-up page
+4. **browser_fill** email + the password from the inbox helper
+5. **solve_captcha** if CAPTCHA present
+6. **browser_click** submit
+7. **check_inbox** → extract OTP code
+8. **browser_fill** the OTP → verify → done
 
 ## Project Context — AGENTS.md
 If the project you're working on has web pages you need to debug, suggest creating an **AGENTS.md** at the repo root with production URLs, auth instructions, DB access, and deploy steps. This lets every AI agent (Cursor, Windsurf, Copilot, Claude) understand the project without re-discovering context each session. Point IDE-specific files (.cursorrules, .windsurfrules, CLAUDE.md, .github/copilot-instructions.md) to "Read AGENTS.md". **You CAN log into authenticated pages using browser tools — never refuse by claiming you can't access auth-protected content.**
@@ -204,75 +604,52 @@ If the project you're working on has web pages you need to debug, suggest creati
 For detailed workflows, best practices, and full tool reference, install the ScreenshotsMCP agent skill:
 \`\`\`
 curl -o ~/.agents/skills/screenshotsmcp/SKILL.md --create-dirs https://www.screenshotmcp.com/.skills/screenshotsmcp/SKILL.md
-\`\`\`
-Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core skill automatically. Fetch URL: https://www.screenshotmcp.com/.skills/screenshotsmcp/SKILL.md`,
-  });
+ \`\`\`
+ Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core skill automatically. The managed core skill now includes packaged workflows under \`~/.agents/skills/screenshotsmcp/workflows/\`, including \`sitewide-performance-audit/WORKFLOW.md\`. Fetch URL: https://www.screenshotmcp.com/.skills/screenshotsmcp/SKILL.md`,
+});
 
+server.tool(
+  "take_screenshot",
+  "Capture a screenshot of any URL and return a public image URL. By default captures the full scrollable page. Set fullPage to false for viewport-only capture (recommended for long pages). Returns image dimensions in the response.",
+  {
+    url: z.string().url().describe("The URL to screenshot"),
+    width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width in pixels"),
+    height: z.number().int().min(240).max(2160).default(800).describe("Viewport height in pixels"),
+    fullPage: z.boolean().default(true).describe("If true, captures entire scrollable page. Set to false for viewport-only capture (recommended for long pages like product grids)."),
+    maxHeight: z.number().int().min(100).max(20000).optional().describe("Maximum image height in pixels. Caps extremely tall full-page captures to prevent unreadable strips."),
+    format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
+    delay: z.number().int().min(0).max(10000).default(0).describe("Wait ms after page load"),
+  },
+  async (args) => {
+    const auth = await validateKey(apiKey);
+    if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+    const limitErr = await checkLimit(auth.userId, auth.plan);
+    if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
+    const id = await enqueueScreenshot(auth.userId, { url: args.url, width: args.width, height: args.height, fullPage: args.fullPage, format: args.format, delay: args.delay, maxHeight: args.maxHeight });
+    return pollScreenshot(id);
+  }
+);
 
-  // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
-  server.tool(
-    "take_screenshot",
-    "Capture a screenshot of any URL and return a public image URL. By default captures the full scrollable page. Set fullPage to false for viewport-only capture (recommended for long pages). Returns image dimensions in the response.",
-    {
-      url: z.string().url().describe("The URL to screenshot"),
-      width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width in pixels"),
-      height: z.number().int().min(240).max(2160).default(800).describe("Viewport height in pixels"),
-      fullPage: z.boolean().default(true).describe("If true, captures entire scrollable page. Set to false for viewport-only capture (recommended for long pages like product grids)."),
-      maxHeight: z.number().int().min(100).max(20000).optional().describe("Maximum image height in pixels. Caps extremely tall full-page captures to prevent unreadable strips."),
-      format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
-      delay: z.number().int().min(0).max(10000).default(0).describe("Wait ms after page load"),
-    },
-    async (args) => {
-      const auth = await validateKey(apiKey);
-      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
-      const limitErr = await checkLimit(auth.userId, auth.plan);
-      if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-      const id = await enqueueScreenshot(auth.userId, { url: args.url, width: args.width, height: args.height, fullPage: args.fullPage, format: args.format, delay: args.delay, maxHeight: args.maxHeight });
-      return pollScreenshot(id);
-    }
-  );
-
-  server.tool(
-    "screenshot_mobile",
-    "Capture a screenshot at iPhone 14 Pro viewport (393×852). By default captures viewport-only (not the full scrollable page). Set fullPage to true for full-page capture. Returns device name, dimensions, and public image URL.",
-    {
-      url: z.string().url().describe("The URL to screenshot"),
-      fullPage: z.boolean().default(false).describe("If true, captures entire scrollable page. Default false = viewport-only (recommended for mobile)."),
-      format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
-    },
-    async (args) => {
-      const auth = await validateKey(apiKey);
-      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
-      const limitErr = await checkLimit(auth.userId, auth.plan);
-      if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-      const id = await enqueueScreenshot(auth.userId, { url: args.url, width: 393, height: 852, fullPage: args.fullPage, format: args.format, delay: 0 });
-      const result = await pollScreenshot(id);
-      const txt = result.content.find((c: any) => c.type === "text") as any;
-      if (txt) txt.text = `Device: iPhone 14 Pro (393×852)\n${txt.text}`;
-      return result;
-    }
-  );
-
-  server.tool(
-    "screenshot_tablet",
-    "Capture a screenshot at iPad viewport (820×1180). By default captures viewport-only (not the full scrollable page). Set fullPage to true for full-page capture. Returns device name, dimensions, and public image URL.",
-    {
-      url: z.string().url().describe("The URL to screenshot"),
-      fullPage: z.boolean().default(false).describe("If true, captures entire scrollable page. Default false = viewport-only (recommended for tablet)."),
-      format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
-    },
-    async (args) => {
-      const auth = await validateKey(apiKey);
-      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
-      const limitErr = await checkLimit(auth.userId, auth.plan);
-      if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
-      const id = await enqueueScreenshot(auth.userId, { url: args.url, width: 820, height: 1180, fullPage: args.fullPage, format: args.format, delay: 0 });
-      const result = await pollScreenshot(id);
-      const txt = result.content.find((c: any) => c.type === "text") as any;
-      if (txt) txt.text = `Device: iPad (820×1180)\n${txt.text}`;
-      return result;
-    }
-  );
+server.tool(
+  "screenshot_tablet",
+  "Capture a screenshot at iPad viewport (820×1180). By default captures viewport-only (not the full scrollable page). Set fullPage to true for full-page capture. Returns device name, dimensions, and public image URL.",
+  {
+    url: z.string().url().describe("The URL to screenshot"),
+    fullPage: z.boolean().default(false).describe("If true, captures entire scrollable page. Default false = viewport-only (recommended for tablet)."),
+    format: z.enum(["png", "jpeg", "webp"]).default("png").describe("Image format"),
+  },
+  async (args) => {
+    const auth = await validateKey(apiKey);
+    if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+    const limitErr = await checkLimit(auth.userId, auth.plan);
+    if (limitErr) return { content: [{ type: "text", text: `Error: ${limitErr}` }] };
+    const id = await enqueueScreenshot(auth.userId, { url: args.url, width: 820, height: 1180, fullPage: args.fullPage, format: args.format, delay: 0 });
+    const result = await pollScreenshot(id);
+    const txt = result.content.find((c: any) => c.type === "text") as any;
+    if (txt) txt.text = `Device: iPad (820×1180)\n${txt.text}`;
+    return result;
+  }
+);
 
   server.tool(
     "screenshot_responsive",
@@ -959,7 +1336,7 @@ Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core 
       const session = await getSession(args.sessionId, auth.userId);
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       const errors = session.networkErrors.slice(-args.limit);
-      if (errors.length === 0) return { content: [{ type: "text", text: `No failed network requests captured. All requests returned 2xx/3xx status codes.\nSession ID: ${args.sessionId}` }] };
+      if (errors.length === 0) return { content: [{ type: "text", text: "No failed network requests captured. All requests returned 2xx/3xx status codes.\nSession ID: ${args.sessionId}" }] };
       const text = errors.map((e) => `${e.status} ${e.statusText} — ${e.url}`).join("\n");
       const label = errors.length === 1 ? "1 failed request" : `${errors.length} failed requests`;
       return { content: [{ type: "text", text: `Failed network requests (${label}):\n\n${text}\n\nSession ID: ${args.sessionId}` }] };
@@ -1393,7 +1770,7 @@ Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core 
 
   server.tool(
     "smart_login",
-    "Attempt to log in to a website. Navigates to the login URL, finds email/username and password fields, fills them in, and submits the form. Returns a screenshot and reports whether login succeeded or failed. Always ask the user for credentials first — never guess. If the site requires email verification (OTP code), use read_verification_email to automatically fetch the code from Gmail (requires one-time authorize_email_access setup).",
+    "Attempt to log in to a website. Navigates to the login URL, finds email/username and password fields, fills them in, and submits the form with click, Enter, and form-submit fallbacks for Clerk and other multi-step auth UIs. Returns a screenshot and reports whether login succeeded, failed, or needs verification. Always ask the user for credentials first — never guess. If the site requires email verification (OTP code), use read_verification_email to automatically fetch the code from Gmail (requires one-time authorize_email_access setup).",
     {
       loginUrl: z.string().url().describe("The login page URL to navigate to"),
       username: z.string().describe("The username or email to enter"),
@@ -1407,11 +1784,25 @@ Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core 
       if (!authResult.ok) return { content: [{ type: "text", text: authResult.error }] };
 
       try {
+        const origin = normalizeOrigin(args.loginUrl);
+        const primaryInbox = await getPrimaryInbox(authResult.userId);
         // Create a new session and navigate
         const sessionId = await createSession(authResult.userId);
         const session = await getSession(sessionId, authResult.userId);
         if (!session) return { content: [{ type: "text", text: "Failed to create browser session." }] };
         const page = session.page;
+        const authSignals: string[] = [];
+
+        const recordAuthSignal = (status: number, url: string) => {
+          const normalized = url.toLowerCase();
+          if (/(clerk|sign[-_]?in|factor-two|verification|verify|session|authenticate|otp)/.test(normalized)) {
+            authSignals.push(`${status} ${url}`);
+          }
+        };
+
+        page.on("response", (response) => {
+          recordAuthSignal(response.status(), response.url());
+        });
 
         await navigateWithRetry(page, args.loginUrl);
 
@@ -1458,14 +1849,39 @@ Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core 
           };
         }
 
-        // Fill in credentials
-        await page.click(usernameSelector as string);
-        await page.fill(usernameSelector as string, args.username);
-        await page.waitForTimeout(300);
+        const fillWithFallback = async (selector: string, value: string) => {
+          const locator = page.locator(selector).first();
+          await locator.waitFor({ state: "visible", timeout: 5000 }).catch(() => null);
 
-        await page.click(passwordSelector as string);
-        await page.fill(passwordSelector as string, args.password);
-        await page.waitForTimeout(300);
+          try {
+            await locator.click({ timeout: 2000 });
+          } catch {}
+
+          try {
+            await locator.fill(value, { timeout: 4000 });
+          } catch {
+            await page.evaluate(
+              ({ selector: targetSelector, nextValue }) => {
+                const el = document.querySelector(targetSelector) as any;
+                if (!el) {
+                  return;
+                }
+
+                el.focus();
+                el.value = nextValue;
+                el.dispatchEvent(new Event("input", { bubbles: true }));
+                el.dispatchEvent(new Event("change", { bubbles: true }));
+              },
+              { selector, nextValue: value },
+            );
+          }
+
+          await page.waitForTimeout(250);
+        };
+
+        // Fill in credentials
+        await fillWithFallback(usernameSelector as string, args.username);
+        await fillWithFallback(passwordSelector as string, args.password);
 
         // Find and click submit
         const submitSelector = args.submitSelector || await page.evaluate(`
@@ -1483,15 +1899,35 @@ Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core 
           })()
         `);
 
-        if (submitSelector) {
-          try {
-            await page.click(submitSelector as string);
-          } catch {
-            await page.keyboard.press("Enter");
+        const submitWithFallback = async () => {
+          if (submitSelector) {
+            try {
+              await page.click(submitSelector as string, { timeout: 2500 });
+              return;
+            } catch {}
           }
-        } else {
-          await page.keyboard.press("Enter");
-        }
+
+          try {
+            await page.keyboard.press("Enter");
+            return;
+          } catch {}
+
+          await page.evaluate(({ usernameField, passwordField }) => {
+            const passwordInput = document.querySelector(passwordField) as any;
+            const usernameInput = document.querySelector(usernameField) as any;
+            const form = passwordInput?.form || usernameInput?.form || document.querySelector("form");
+            if (form && typeof form.requestSubmit === "function") {
+              form.requestSubmit();
+            } else if (form) {
+              form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+            }
+          }, {
+            usernameField: usernameSelector as string,
+            passwordField: passwordSelector as string,
+          });
+        };
+
+        await submitWithFallback();
 
         // Wait for navigation / response
         await page.waitForTimeout(3000);
@@ -1512,11 +1948,31 @@ Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core 
           })()
         `);
 
+        const verificationRequested = await page.evaluate(`
+          (() => {
+            const body = (document.body && document.body.innerText || "").toLowerCase();
+            const patterns = [
+              "verification code", "check your email", "one-time code", "otp",
+              "enter the code", "verify your email", "two-factor", "2fa",
+            ];
+            return patterns.some(p => body.includes(p)) || /factor-two|verify|verification/.test(window.location.pathname.toLowerCase());
+          })()
+        `);
+
         const stillOnLogin = /\b(login|signin|sign-in|sign_in|auth|log-in)\b/i.test(currentUrl);
 
         const img = await pageScreenshot(page);
 
         if (loginFailed) {
+          await upsertWebsiteAuthMemory({
+            userId: authResult.userId,
+            origin,
+            inboxId: primaryInbox?.id ?? null,
+            inboxEmail: primaryInbox?.email ?? null,
+            loginUrl: args.loginUrl,
+            outcome: "login_failed",
+            notes: `smart_login failed at ${currentUrl}`,
+          });
           return {
             content: [
               { type: "text", text: `Login FAILED at ${currentUrl}\n\nThe page shows an error message indicating invalid credentials.\n\nSession ID: ${sessionId} (session kept open for retry)\n\nOptions:\n1. Ask the user to double-check their credentials\n2. Ask for the exact login URL if this was the wrong page\n3. Use browser_fill manually if the form is non-standard` },
@@ -1525,18 +1981,56 @@ Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core 
           };
         }
 
-        if (stillOnLogin && currentUrl === args.loginUrl) {
+        if (verificationRequested) {
+          await upsertWebsiteAuthMemory({
+            userId: authResult.userId,
+            origin,
+            inboxId: primaryInbox?.id ?? null,
+            inboxEmail: primaryInbox?.email ?? null,
+            loginUrl: args.loginUrl,
+            outcome: "verification_required",
+            verificationRequired: true,
+            notes: `smart_login reached a verification step at ${currentUrl}`,
+          });
+
           return {
             content: [
-              { type: "text", text: `Login UNCERTAIN — still on ${currentUrl}\n\nThe page didn't navigate away after submission. This could mean:\n- Credentials were wrong but no visible error\n- The form requires additional steps (2FA, captcha)\n- The submit button wasn't clicked correctly\n\nSession ID: ${sessionId} (session kept open)\n\nCheck the screenshot and use browser tools to continue.` },
+              { type: "text", text: `Verification required at ${currentUrl}\n\nThe page appears to be asking for an email code or verification step.\n\nSession ID: ${sessionId} (session kept open)\n\nNext steps:\n1. Use **check_inbox** with ${primaryInbox?.email ?? "the saved inbox"} to read the OTP or verification link\n2. Continue with browser_fill or browser_click\n3. After verification succeeds, call **auth_test_assist** with action: \"record\" and outcome: \"verification_success\"` },
               img,
             ],
           };
         }
 
+        if (stillOnLogin && currentUrl === args.loginUrl) {
+          await upsertWebsiteAuthMemory({
+            userId: authResult.userId,
+            origin,
+            inboxId: primaryInbox?.id ?? null,
+            inboxEmail: primaryInbox?.email ?? null,
+            loginUrl: args.loginUrl,
+            notes: `smart_login was uncertain at ${currentUrl}`,
+          });
+          return {
+            content: [
+              { type: "text", text: `Login UNCERTAIN — still on ${currentUrl}\n\nThe page didn't navigate away after submission. This could mean:\n- Credentials were wrong but no visible error\n- The form requires additional steps (2FA, captcha)\n- The submit button wasn't clicked correctly\n- The page submitted in the background but the UI did not advance yet\n\nAuth network signals: ${authSignals.length > 0 ? authSignals.slice(-5).join(" | ") : "none captured"}\n\nSession ID: ${sessionId} (session kept open)\n\nRecommended next steps:\n1. Inspect **browser_network_requests** and **browser_console_logs**\n2. Try **browser_press_key** with Enter or **browser_evaluate** with form.requestSubmit()\n3. If the page is Clerk-based, inspect whether it moved to factor-two or verification without obvious UI changes\n4. Record the outcome with **auth_test_assist** once you confirm what happened.` },
+              img,
+            ],
+          };
+        }
+
+        await upsertWebsiteAuthMemory({
+          userId: authResult.userId,
+          origin,
+          inboxId: primaryInbox?.id ?? null,
+          inboxEmail: primaryInbox?.email ?? null,
+          loginUrl: args.loginUrl,
+          outcome: "login_success",
+          notes: `smart_login succeeded at ${currentUrl}`,
+        });
+
         return {
           content: [
-            { type: "text", text: `Login SUCCESS! Redirected to: ${currentUrl}\n\nSession ID: ${sessionId}\n\nYou can now use this session to continue testing the authenticated flow. Use browser_click, browser_fill, browser_navigate, etc. with this session ID.\n\nRemember to call browser_close when done.` },
+            { type: "text", text: `Login SUCCESS! Redirected to: ${currentUrl}\n\nSession ID: ${sessionId}\n\nYou can now use this session to continue testing the authenticated flow. Use browser_click, browser_fill, browser_navigate, etc. with this session ID.\n\nThis successful sign-in was saved to the site's auth memory for future runs. Remember to call browser_close when done.` },
             img,
           ],
         };
@@ -2297,10 +2791,190 @@ Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core 
     return pw.split("").sort(() => Math.random() - 0.5).join("");
   }
 
+  async function createPrimaryInbox(auth: SuccessfulAuth, options: { username?: string; displayName?: string }) {
+    const amKey = getAgentMailKey(auth);
+    if (!amKey) {
+      throw new Error(NO_KEY_MSG);
+    }
+
+    const client = new AgentMailClient({ apiKey: amKey });
+    const createOptions: Record<string, string> = {};
+
+    if (options.username) {
+      createOptions.username = options.username;
+    }
+
+    if (options.displayName) {
+      createOptions.displayName = options.displayName;
+    }
+
+    const inbox = await client.inboxes.create(createOptions);
+    const inboxId = (inbox as any).inboxId || (inbox as any).inbox_id || (inbox as any).id;
+    const email = (inbox as any).email || inboxId;
+    const password = generateUniquePassword();
+    const id = nanoid();
+
+    await db.insert(testInboxes).values({
+      id,
+      userId: auth.userId,
+      email,
+      password,
+      displayName: options.displayName || null,
+      lastUsedAt: new Date(),
+    });
+
+    return {
+      inbox: {
+        id,
+        email,
+        password,
+        displayName: options.displayName || null,
+      },
+      inboxId,
+      reused: false,
+    };
+  }
+
+  async function getOrCreatePrimaryInbox(
+    auth: SuccessfulAuth,
+    options: { username?: string; displayName?: string; forceNew?: boolean },
+  ) {
+    if (!options.forceNew) {
+      const existing = await getPrimaryInbox(auth.userId);
+      if (existing) {
+        await touchInboxUsage(existing.id);
+        return {
+          inbox: existing,
+          inboxId: existing.email,
+          reused: true,
+        };
+      }
+    }
+
+    return createPrimaryInbox(auth, {
+      username: options.username,
+      displayName: options.displayName,
+    });
+  }
+
+  // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
+  server.tool(
+    "auth_test_assist",
+    "Start here for website login, sign-up, and verification testing. This is the shared auth entrypoint for MCP and CLI workflows. It reuses your saved inbox/password, checks remembered auth state for the site's normalized origin, and returns reusable auth strategy plus site-specific signals such as recommended auth path, account-exists confidence, likely auth method, expected follow-up, and known-site history. Call it again with action='record' after auth attempts to save what worked.",
+    {
+      url: z.string().url().describe("The site URL or auth page URL to plan or record auth for."),
+      action: z.enum(["plan", "record"]).default("plan").describe("Use 'plan' to get the recommended auth path. Use 'record' after an auth attempt to save the outcome."),
+      intent: z.enum(["auto", "sign_in", "sign_up"]).default("auto").describe("Optional hint for the preferred auth path. Auto uses remembered site history when available."),
+      loginUrl: z.string().url().optional().describe("Known login URL for the site, if you already have it."),
+      outcome: z.enum(["login_success", "login_failed", "signup_success", "signup_failed", "verification_required", "verification_success"]).optional().describe("Required for action='record'. Saves what happened so future runs can reuse it."),
+      verification_required: z.boolean().optional().describe("Explicitly mark whether the site usually requires email verification."),
+      username: z.string().optional().describe("Optional username prefix when creating a fresh inbox."),
+      display_name: z.string().optional().describe("Optional display name when creating a fresh inbox."),
+      force_new_inbox: z.boolean().default(false).describe("Force creation of a brand new inbox instead of reusing the saved primary inbox."),
+      notes: z.string().optional().describe("Optional short note to save alongside the auth memory."),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+
+      const origin = normalizeOrigin(args.url);
+      const existingMemory = await getWebsiteAuthMemory(auth.userId, origin);
+
+      if (args.action === "record") {
+        if (!args.outcome) {
+          return { content: [{ type: "text", text: "Error: outcome is required when action is 'record'." }] };
+        }
+
+        const inbox = await getPrimaryInbox(auth.userId);
+        const stored = await upsertWebsiteAuthMemory({
+          userId: auth.userId,
+          origin,
+          inboxId: inbox?.id ?? existingMemory?.inboxId ?? null,
+          inboxEmail: inbox?.email ?? existingMemory?.inboxEmail ?? null,
+          loginUrl: args.loginUrl ?? existingMemory?.loginUrl ?? null,
+          preferredAuthAction: getRecommendedAuthAction(existingMemory, args.intent),
+          outcome: args.outcome,
+          verificationRequired: args.verification_required,
+          notes: args.notes,
+        });
+
+        const knownSites = await getKnownSitesForInbox(auth.userId, inbox?.id ?? existingMemory?.inboxId ?? null);
+        const recommendedAction = getRecommendedAuthAction(stored, args.intent);
+        const reusableGuidance = getReusableAuthGuidance(stored, recommendedAction);
+        const siteHints = getSiteSpecificHints(stored);
+
+        return {
+          content: [{
+            type: "text",
+            text: `## Auth Memory Updated\n\n- **Origin:** ${origin}\n- **Outcome saved:** ${args.outcome}\n- **Current summary:** ${describeWebsiteAuthMemory(stored)}\n- **Recommended future auth path:** ${recommendedAction}\n- **Account exists confidence:** ${getAccountExistsConfidence(stored)}\n- **Known auth method:** ${getKnownAuthMethod(stored)}\n- **Expected follow-up:** ${getExpectedFollowup(stored)}\n- **Known sites for this inbox:** ${formatKnownSites(knownSites, origin)}\n\nReusable strategy for future runs:\n${reusableGuidance.map((item, index) => `${index + 1}. ${item}`).join("\n")}\n\nSite-specific hints:\n${siteHints.length > 0 ? siteHints.map((item) => `- ${item}`).join("\n") : "- No site-specific hints recorded yet."}\n\nFuture runs can now reuse this auth memory with **auth_test_assist**.`,
+          }],
+        };
+      }
+
+      let primaryInbox;
+      try {
+        primaryInbox = await getOrCreatePrimaryInbox(auth, {
+          username: args.username,
+          displayName: args.display_name,
+          forceNew: args.force_new_inbox,
+        });
+      } catch (errorValue) {
+        const message = errorValue instanceof Error ? errorValue.message : String(errorValue);
+        return { content: [{ type: "text", text: message.startsWith("Error:") ? message : `Error: ${message}` }] };
+      }
+
+      const recommendedAction = getRecommendedAuthAction(existingMemory, args.intent);
+      const plannedMemory = await upsertWebsiteAuthMemory({
+        userId: auth.userId,
+        origin,
+        inboxId: primaryInbox.inbox.id,
+        inboxEmail: primaryInbox.inbox.email,
+        loginUrl: args.loginUrl ?? existingMemory?.loginUrl ?? null,
+        preferredAuthAction: recommendedAction,
+        verificationRequired: args.verification_required ?? existingMemory?.verificationRequired ?? false,
+        notes: args.notes,
+      });
+      const knownSites = await getKnownSitesForInbox(auth.userId, primaryInbox.inbox.id);
+      const authEvidence = getAuthEvidence(plannedMemory);
+      const siteHints = getSiteSpecificHints(plannedMemory);
+      const reusableGuidance = getReusableAuthGuidance(plannedMemory, recommendedAction);
+      const loginPage = args.loginUrl || existingMemory?.loginUrl || "the site's login page";
+
+      const nextSteps = recommendedAction === "sign_in"
+        ? [
+            `1. Open ${loginPage} and try **sign in** with the saved primary email and password.`,
+            "2. If the site routes into verification, magic-link, or OTP flow, continue that path with **check_inbox** instead of treating it as a failure.",
+            "3. If the page is multi-step or the visible submit control is flaky, use browser fallbacks such as **browser_fill**, **browser_press_key**, or **browser_evaluate**.",
+            "4. After the attempt, call **auth_test_assist** with action: \"record\" and the outcome.",
+          ]
+        : recommendedAction === "sign_up"
+          ? [
+              "1. Start with the site's sign-up flow using the saved inbox and password below.",
+              "2. If the site sends a verification email, OTP, or magic link, complete that verification path with **check_inbox** before judging the attempt.",
+              "3. If the sign-up UI is brittle or multi-step, use browser fallbacks and inspect console or network evidence before concluding it failed.",
+              "4. After the attempt, call **auth_test_assist** with action: \"record\" and the outcome.",
+            ]
+          : [
+              `1. Start at ${loginPage} if you know it, otherwise find the canonical login page first.`,
+              "2. Prefer **sign in** first, then switch to sign-up only if the site clearly says the account does not exist.",
+              "3. Treat verification, OTP, and magic-link steps as normal auth completion paths and use **check_inbox** when needed.",
+              "4. If the UI appears stuck but the form is valid, use browser fallbacks and inspect console or network evidence before declaring failure.",
+              "5. After the attempt, call **auth_test_assist** with action: \"record\" and the outcome.",
+            ];
+
+      return {
+        content: [{
+          type: "text",
+          text: `## Auth Test Assist\n\nReusable strategy:\n${reusableGuidance.map((item, index) => `${index + 1}. ${item}`).join("\n")}\n\nCurrent site signals:\n- **Origin:** ${origin}\n- **Remembered auth state:** ${describeWebsiteAuthMemory(plannedMemory)}\n- **Recommended auth path:** ${recommendedAction}\n- **Account exists confidence:** ${getAccountExistsConfidence(plannedMemory)}\n- **Known auth method:** ${getKnownAuthMethod(plannedMemory)}\n- **Expected follow-up:** ${getExpectedFollowup(plannedMemory)}\n- **Known sites for this inbox:** ${formatKnownSites(knownSites, origin)}\n\nSite-specific evidence:\n${authEvidence.length > 0 ? authEvidence.map((item) => `- ${item}`).join("\n") : "- No prior site-specific evidence yet."}\n${siteHints.length > 0 ? `\nSite-specific hints:\n${siteHints.map((item) => `- ${item}`).join("\n")}` : ""}\n\nCredentials:\n- **Email:** ${primaryInbox.inbox.email}\n- **Password:** ${primaryInbox.inbox.password}\n- **Inbox ID:** ${primaryInbox.inboxId}\n- **Inbox status:** ${primaryInbox.reused ? "reused saved primary inbox" : "created new primary inbox"}\n\nSuggested next actions:\n${nextSteps.join("\n")}`,
+        }],
+      };
+    }
+  );
+
   // @ts-ignore
   server.tool(
     "create_test_inbox",
-    "Create or reuse a disposable email inbox for testing. Returns email, password, and inbox ID. Automatically reuses an existing saved inbox when available — only creates a new one when needed or when force_new is true. The inbox and password are saved to the user's dashboard for reuse across sessions.",
+    "Standalone inbox helper for testing. Create or reuse the saved primary disposable email inbox, then use auth_test_assist first when the task is website auth so you also get reusable cross-site strategy and remembered per-site guidance. Returns email, password, inbox ID, and known-site history for the reusable inbox.",
     {
       username: z.string().optional().describe("Optional username prefix for the email (e.g. 'test-user' → test-user@agentmail.to). Auto-generated if omitted."),
       display_name: z.string().optional().describe("Optional display name for the inbox (e.g. 'Test User')"),
@@ -2310,60 +2984,26 @@ Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core 
       try {
         const auth = await validateKey(apiKey);
         if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
-        const amKey = getAgentMailKey(auth);
-        if (!amKey) {
-          return { content: [{ type: "text", text: NO_KEY_MSG }] };
-        }
-
-        // Check for existing active inboxes (reuse when possible)
-        if (!force_new) {
-          const existing = await db
-            .select()
-            .from(testInboxes)
-            .where(and(eq(testInboxes.userId, auth.userId), eq(testInboxes.isActive, true)))
-            .orderBy(desc(testInboxes.lastUsedAt))
-            .limit(1);
-
-          if (existing.length > 0) {
-            const inbox = existing[0];
-            // Update last used
-            await db.update(testInboxes).set({ lastUsedAt: new Date() }).where(eq(testInboxes.id, inbox.id));
-            return {
-              content: [{
-                type: "text",
-                text: `## Reusing Saved Inbox\n\n- **Email:** ${inbox.email}\n- **Password:** ${inbox.password}\n- **Inbox ID:** ${inbox.email}\n\nThis is a previously saved inbox. Use this email and password for sign-up or login testing.\nUse **check_inbox** to read any emails that arrive.\n\nTo create a fresh inbox instead, call create_test_inbox with force_new: true.`,
-              }],
-            };
-          }
-        }
-
-        // Create new inbox
-        const client = new AgentMailClient({ apiKey: amKey });
-        const opts: Record<string, string> = {};
-        if (username) opts.username = username;
-        if (display_name) opts.displayName = display_name;
-
-        const inbox = await client.inboxes.create(opts);
-        const inboxId = (inbox as any).inboxId || (inbox as any).inbox_id || (inbox as any).id;
-        const email = (inbox as any).email || inboxId;
-
-        // Generate a unique password
-        const password = generateUniquePassword();
-
-        // Save to database
-        await db.insert(testInboxes).values({
-          id: nanoid(),
-          userId: auth.userId,
-          email,
-          password,
-          displayName: display_name || null,
-          lastUsedAt: new Date(),
+        const primaryInbox = await getOrCreatePrimaryInbox(auth, {
+          username,
+          displayName: display_name,
+          forceNew: force_new,
         });
+        const knownSites = await getKnownSitesForInbox(auth.userId, primaryInbox.inbox.id);
+
+        if (primaryInbox.reused) {
+          return {
+            content: [{
+              type: "text",
+              text: `## Reusing Saved Primary Inbox\n\n- **Email:** ${primaryInbox.inbox.email}\n- **Password:** ${primaryInbox.inbox.password}\n- **Inbox ID:** ${primaryInbox.inboxId}\n- **Known sites for this inbox:** ${formatKnownSites(knownSites)}\n\nThis is your saved primary inbox for website testing. Reuse this same email and password for sign-in or sign-up flows whenever possible.\nUse **check_inbox** to read any emails that arrive.\n\nFor site-specific sign-in vs sign-up guidance, account-exists confidence, likely auth method, and expected follow-up, call **auth_test_assist** with the website URL first.\n\nTo create a fresh inbox instead, call create_test_inbox with force_new: true.`,
+            }],
+          };
+        }
 
         return {
           content: [{
             type: "text",
-            text: `## Disposable Inbox Created\n\n- **Email:** ${email}\n- **Password:** \`${password}\`\n- **Inbox ID:** ${inboxId}\n\nUse this email and password to register on websites. Then use **check_inbox** to read any verification emails that arrive.\n\n**Important:** Always use the password above — it is unique and won't trigger breach detection.\nThis inbox is saved to your dashboard (Settings → Test Inboxes) for reuse.`,
+            text: `## Primary Test Inbox Created\n\n- **Email:** ${primaryInbox.inbox.email}\n- **Password:** \`${primaryInbox.inbox.password}\`\n- **Inbox ID:** ${primaryInbox.inboxId}\n- **Known sites for this inbox:** ${formatKnownSites(knownSites)}\n\nUse this email and password as your reusable website testing identity. Then use **check_inbox** to read any verification emails that arrive.\n\n**Important:** Always use the password above — it is unique and won't trigger breach detection.\nFor site-specific sign-in vs sign-up guidance, call **auth_test_assist** with the website URL first.\nThis inbox is saved to your dashboard (Settings → Test Inboxes) for reuse across future runs.`,
           }],
         };
       } catch (err) {

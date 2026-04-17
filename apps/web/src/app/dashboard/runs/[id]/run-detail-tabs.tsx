@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -420,11 +421,16 @@ export default function RunDetailTabs({
               {primaryRecording ? (
                 <video src={primaryRecording.videoUrl} controls className="aspect-video w-full rounded-lg border bg-black shadow-sm" />
               ) : latestScreenshot?.publicUrl ? (
-                <img
-                  src={latestScreenshot.publicUrl}
-                  alt={latestScreenshot.url}
-                  className="max-h-[72vh] w-full rounded-lg border bg-muted object-contain"
-                />
+                <div className="relative h-[72vh] max-h-[72vh] w-full overflow-hidden rounded-lg border bg-muted">
+                  <Image
+                    src={latestScreenshot.publicUrl}
+                    alt={latestScreenshot.url}
+                    fill
+                    unoptimized
+                    sizes="(min-width: 1536px) 50rem, (min-width: 1024px) 60vw, 100vw"
+                    className="object-contain"
+                  />
+                </div>
               ) : (
                 <div className="rounded-lg border border-dashed p-8 text-sm text-muted-foreground">
                   No persisted primary evidence yet for this run.
@@ -635,9 +641,9 @@ export default function RunDetailTabs({
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                 {screenshots.map((shot) => (
                   <Card key={shot.id} className="overflow-hidden">
-                    <div className="h-56 bg-muted overflow-hidden md:h-64">
+                    <div className="relative h-56 overflow-hidden bg-muted md:h-64">
                       {shot.publicUrl ? (
-                        <img src={shot.publicUrl} alt={shot.url} className="w-full h-full object-cover object-top" />
+                        <Image src={shot.publicUrl} alt={shot.url} fill unoptimized sizes="(min-width: 1280px) 50vw, 100vw" className="object-cover object-top" />
                       ) : (
                         <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Pending</div>
                       )}

@@ -45,6 +45,30 @@ export const screenshotCommand = new Command("screenshot")
     }
   });
 
+export const fullpageCommand = new Command("fullpage")
+  .description("Capture the entire scrollable page with optional height cap")
+  .argument("<url>", "URL to screenshot")
+  .option("-w, --width <px>", "Viewport width", "1280")
+  .option("-f, --format <fmt>", "Image format (png, jpeg, webp)", "png")
+  .option("--max-height <px>", "Cap extremely tall full-page captures")
+  .action(async (url: string, opts: Record<string, string>) => {
+    const spinner = ora(`Capturing full-page screenshot of ${url}...`).start();
+    try {
+      const res = await callTool("screenshot_fullpage", {
+        url,
+        width: parseInt(opts.width, 10) || 1280,
+        format: opts.format || "png",
+        maxHeight: opts.maxHeight ? parseInt(opts.maxHeight, 10) : undefined,
+      });
+      spinner.stop();
+      printResult(extractText(res), extractImageUrl(res));
+    } catch (err) {
+      spinner.fail(chalk.red("Full-page screenshot failed"));
+      console.error(chalk.red(err instanceof Error ? err.message : String(err)));
+      process.exit(1);
+    }
+  });
+
 export const responsiveCommand = new Command("responsive")
   .description("Capture at desktop, tablet, and mobile viewports")
   .argument("<url>", "URL to screenshot")
@@ -247,6 +271,42 @@ export const batchCommand = new Command("batch")
       if (imageUrls.length === 0) console.log(chalk.dim(text));
     } catch (err) {
       spinner.fail(chalk.red("Batch screenshot failed"));
+      console.error(chalk.red(err instanceof Error ? err.message : String(err)));
+      process.exit(1);
+    }
+  });
+
+export const screenshotsCommand = new Command("screenshots")
+  .description("List recent screenshot jobs and URLs")
+  .option("-l, --limit <n>", "Number of screenshots to return", "5")
+  .action(async (opts: Record<string, string>) => {
+    const spinner = ora("Fetching recent screenshots...").start();
+    try {
+      const res = await callTool("list_recent_screenshots", {
+        limit: parseInt(opts.limit, 10) || 5,
+      });
+      spinner.stop();
+      console.log(chalk.green("✓ Recent screenshots"));
+      console.log(extractText(res));
+    } catch (err) {
+      spinner.fail(chalk.red("Failed to fetch recent screenshots"));
+      console.error(chalk.red(err instanceof Error ? err.message : String(err)));
+      process.exit(1);
+    }
+  });
+
+export const screenshotStatusCommand = new Command("screenshot:status")
+  .description("Check the status of a screenshot job by ID")
+  .argument("<id>", "Screenshot job ID")
+  .action(async (id: string) => {
+    const spinner = ora(`Checking screenshot job ${id}...`).start();
+    try {
+      const res = await callTool("get_screenshot_status", { id });
+      spinner.stop();
+      console.log(chalk.green("✓ Screenshot status"));
+      console.log(extractText(res));
+    } catch (err) {
+      spinner.fail(chalk.red("Failed to check screenshot status"));
       console.error(chalk.red(err instanceof Error ? err.message : String(err)));
       process.exit(1);
     }

@@ -1,0 +1,56 @@
+---
+title: auth_test_assist
+description: Start-here helper for website login, sign-up, and verification testing.
+---
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `url` | string | Yes | — | The site URL or auth page URL to plan or record auth for |
+| `action` | string | No | `plan` | Use `plan` to get the recommended auth path, or `record` to save what happened |
+| `intent` | string | No | `auto` | Optional hint: `auto`, `sign_in`, or `sign_up` |
+| `loginUrl` | string | No | — | Known login URL for the site |
+| `outcome` | string | No | — | Outcome to save when `action` is `record` |
+| `verification_required` | boolean | No | — | Mark whether the site usually requires email verification |
+| `username` | string | No | — | Username prefix when forcing a fresh inbox |
+| `display_name` | string | No | — | Display name when forcing a fresh inbox |
+| `force_new_inbox` | boolean | No | `false` | Force creation of a brand new inbox |
+| `notes` | string | No | — | Optional note to save with the auth memory |
+
+## Example
+
+```
+Use auth_test_assist for https://example.com, then follow its recommended auth path.
+```
+
+## What It Returns
+
+`auth_test_assist` is the primary auth planner. It returns:
+
+- Reusable auth strategy for future runs
+- The reusable inbox email and password
+- The recommended auth path
+- Account-exists confidence
+- Likely auth method
+- Expected follow-up step
+- Known-site history for the reusable inbox
+- Site-specific evidence and hints for the current origin
+- The next steps to try
+
+## Recommended Workflow
+
+1. Call `auth_test_assist`
+2. If needed, call `find_login_page`
+3. Try `smart_login` or browser tools based on the page structure
+4. Use `check_inbox` for OTP or verification links
+5. Call `auth_test_assist` again with `action: "record"` to save what worked
+6. When you report the result, summarize reusable auth-system heuristics first and site-specific evidence second
+
+## Notes
+
+- Start here for website auth testing instead of `create_test_inbox`
+- Treat the helper's reusable strategy as the default cross-site guidance, and treat the returned site hints as origin-specific evidence
+- Reuse the saved primary inbox unless you explicitly need a fresh registration
+- If sign-in fails because the account does not exist, try sign-up with the same saved credentials
+- If `smart_login` is uncertain on Clerk or other multi-step auth UIs, inspect network and console evidence before concluding the login failed

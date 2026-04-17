@@ -1,5 +1,37 @@
 export type Plan = "free" | "starter" | "pro";
 
+export const ONBOARDING_CLIENTS = ["cursor", "vscode", "windsurf", "claude", "claude-code"] as const;
+
+export type OnboardingClient = (typeof ONBOARDING_CLIENTS)[number];
+
+export const DEFAULT_ONBOARDING_CLIENT: OnboardingClient = "cursor";
+
+export const CORE_SKILL_INSTALL_PATH = "~/.agents/skills/screenshotsmcp";
+
+export const CORE_SITEWIDE_PERFORMANCE_WORKFLOW_PATH = "workflows/sitewide-performance-audit/WORKFLOW.md";
+
+export const TWO_STEP_ONBOARDING_NUANCE = "For most clients, login + install reaches the same result as setup --client <client>. The main nuances are that install vscode writes a workspace-local .vscode/mcp.json, while install claude-code prints the claude mcp add ... command for you to run manually.";
+
+export function getSetupCommand(client: OnboardingClient = DEFAULT_ONBOARDING_CLIENT): string {
+  return `screenshotsmcp setup --client ${client}`;
+}
+
+export function getNpxSetupCommand(client: OnboardingClient = DEFAULT_ONBOARDING_CLIENT): string {
+  return `npx ${getSetupCommand(client)}`;
+}
+
+export function getInstallCommand(client: OnboardingClient = DEFAULT_ONBOARDING_CLIENT): string {
+  return `screenshotsmcp install ${client}`;
+}
+
+export function getNpxInstallCommand(client: OnboardingClient = DEFAULT_ONBOARDING_CLIENT): string {
+  return `npx ${getInstallCommand(client)}`;
+}
+
+export function getTwoStepOnboardingCommand(client: OnboardingClient = DEFAULT_ONBOARDING_CLIENT): string {
+  return `npx screenshotsmcp login\n${getNpxInstallCommand(client)}`;
+}
+
 export type ScreenshotStatus = "pending" | "processing" | "done" | "failed";
 
 export type ScreenshotFormat = "png" | "jpeg" | "webp";

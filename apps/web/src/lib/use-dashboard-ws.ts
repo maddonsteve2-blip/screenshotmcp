@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type DashboardChannel = "screenshots" | "recordings" | "artifacts" | "run-live";
 
@@ -35,6 +35,10 @@ export function useDashboardWs<TData>({
   const reconnectTimerRef = useRef<number | null>(null);
   const closedManuallyRef = useRef(false);
   const [connected, setConnected] = useState(false);
+  const stableSubscription = useMemo(
+    () => ({ channel: subscription.channel, runId: subscription.runId }),
+    [subscription.channel, subscription.runId],
+  );
 
   const clearReconnectTimer = useCallback(() => {
     if (reconnectTimerRef.current !== null) {
@@ -69,7 +73,7 @@ export function useDashboardWs<TData>({
       socket.onopen = () => {
         setConnected(true);
         onConnectionChange?.(true);
-        socket.send(JSON.stringify({ type: "subscribe", ...subscription }));
+        socket.send(JSON.stringify({ type: "subscribe", ...stableSubscription }));
       };
 
       socket.onmessage = (event) => {
@@ -111,7 +115,7 @@ export function useDashboardWs<TData>({
         }, reconnectDelayMs);
       }
     }
-  }, [clearReconnectTimer, enabled, onConnectionChange, onMessage, reconnectDelayMs, subscription.channel, subscription.runId]);
+  }, [clearReconnectTimer, enabled, onConnectionChange, onMessage, reconnectDelayMs, stableSubscription]);
 
   useEffect(() => {
     closedManuallyRef.current = false;

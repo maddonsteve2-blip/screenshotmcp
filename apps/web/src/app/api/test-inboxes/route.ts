@@ -17,7 +17,7 @@ export async function GET() {
     .select()
     .from(testInboxes)
     .where(and(eq(testInboxes.userId, user.id), eq(testInboxes.isActive, true)))
-    .orderBy(desc(testInboxes.createdAt));
+    .orderBy(desc(testInboxes.lastUsedAt), desc(testInboxes.createdAt));
 
   return NextResponse.json({ inboxes });
 }

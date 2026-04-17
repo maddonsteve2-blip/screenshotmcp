@@ -45,6 +45,25 @@ curl -X POST https://screenshotsmcp-api-production.up.railway.app/v1/screenshot 
 - **Usage tracking** shows screenshots consumed per key
 - Create multiple keys for different environments (dev, staging, prod)
 
+## Recommended Auth Testing Workflow
+
+If you use ScreenshotsMCP for website login, sign-up, or verification testing, start with the reusable auth helper:
+
+```bash
+npx screenshotsmcp auth:test https://example.com
+```
+
+This workflow:
+
+- Reuses your saved primary test inbox and password
+- Checks remembered auth history for the site's normalized origin
+- Recommends whether the agent should try sign-in first, switch to sign-up, or expect verification
+- Returns reusable cross-site auth strategy first and site-specific evidence second
+- Returns account-exists confidence, likely auth method, expected follow-up, and known-site history for the reusable inbox
+- Lets the agent record what happened after the attempt so future runs improve automatically
+
+Your saved inbox credentials are visible in **Dashboard → Settings → Test Inboxes**.
+
 ## Rate Limits
 
 | Plan | Screenshots / month |
