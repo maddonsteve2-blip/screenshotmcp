@@ -1,12 +1,20 @@
 ---
 name: sitewide-performance-audit
 description: >
-  This workflow should be used when the user asks to "run a sitewide performance audit", "check why a site is slow", "find the slowest pages", "measure Core Web Vitals across key pages", or otherwise wants a repeatable multi-page performance review.
+  This workflow must be used when the user asks to "run a sitewide performance audit", "check why a site is slow", "find the slowest pages", "measure Core Web Vitals across key pages", asks for a site audit, or otherwise wants a repeatable multi-page public-site review.
 ---
 
 # Sitewide Performance Audit
 
+Read this workflow before opening browser sessions, running audit tools, or drafting findings for any repeatable multi-page public-site audit. If you start a generic live audit before reading this workflow, the audit is invalid and must be restarted from here.
+
 Use this workflow for repeatable performance investigations across multiple pages. Confirm scope first, gather comparable evidence page by page, and summarize the highest-impact patterns before listing isolated issues.
+
+Before tool use, explicitly state:
+- that you read `workflows/sitewide-performance-audit/WORKFLOW.md`
+- the page set you will audit
+- whether authenticated pages are in scope
+- whether you will use MCP or CLI first
 
 ## Inputs to confirm
 

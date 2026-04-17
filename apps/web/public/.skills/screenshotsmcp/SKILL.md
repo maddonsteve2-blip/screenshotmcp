@@ -21,6 +21,7 @@ Give your AI assistant browser truth. This skill covers all 46+ tools in the Scr
 - Treat this skill as broad guidance for choosing the right path.
 - Treat packaged workflows as targeted procedures for repeatable multi-step jobs.
 - When the task is an audit, verification flow, or another repeatable multi-step procedure, check the available workflows before improvising.
+- For any site audit, performance audit, SEO audit, UX audit, full audit, or another repeatable multi-page website review, read `workflows/sitewide-performance-audit/WORKFLOW.md` before opening browser sessions, running audit tools, or drafting findings.
 - Do not read every workflow up front. Read only the workflow that matches the task.
 - If terminal access exists and repeated tool calls are likely, prefer the CLI when it is clearly faster than repeated MCP round-trips. If terminal access is not available, stay in MCP.
 - For multi-page performance audits in MCP, avoid opening many new browser sessions in parallel. Measure sequentially unless there is a proven reason to increase concurrency.
@@ -381,7 +382,8 @@ User: "Check how example.com looks on all devices"
 ### Full site audit
 ```
 User: "Audit this site"
-→ First read workflows/sitewide-performance-audit/WORKFLOW.md if the user wants a repeatable multi-page audit
+→ First read workflows/sitewide-performance-audit/WORKFLOW.md before any browser or audit tool use
+→ State that you read it, the page set, whether authenticated pages are in scope, and whether you will use MCP or CLI first
 → browser_navigate → browser_get_accessibility_tree → browser_perf_metrics → browser_seo_audit → og_preview → browser_console_logs → browser_network_errors
 ```
 

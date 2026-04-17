@@ -30,6 +30,7 @@ Use this skill to give the assistant eyes and hands for the web. Use it to choos
 - Treat this skill as broad guidance for choosing the right path.
 - Treat packaged workflows as targeted procedures for repeatable multi-step jobs.
 - When the task is an audit, verification flow, or another repeatable multi-step procedure, check the available workflows before improvising.
+- For any site audit, performance audit, SEO audit, UX audit, full audit, or another repeatable multi-page public-site review, read ${INLINE_CODE_TOKEN}workflows/sitewide-performance-audit/WORKFLOW.md${INLINE_CODE_TOKEN} before opening browser sessions, running audit tools, or drafting findings.
 - Do not read every workflow up front. Read only the workflow that matches the task.
 - If terminal access exists and repeated tool calls are likely, prefer the CLI when it is clearly faster than repeated MCP round-trips. If terminal access is not available, stay in MCP.
 - For multi-page performance audits in MCP, avoid opening many new browser sessions in parallel. Measure sequentially unless there is a proven reason to increase concurrency.
@@ -71,7 +72,9 @@ Use the auth workflow when the user needs to test protected or multi-step flows.
 ### 4. Audit and debugging
 Use audit and debug tools when the user wants findings, not just screenshots.
 
-- If the task is a repeatable multi-page performance audit, read ${INLINE_CODE_TOKEN}workflows/sitewide-performance-audit/WORKFLOW.md${INLINE_CODE_TOKEN} first.
+- If the task is a repeatable multi-page performance audit or another repeatable multi-page public-site audit, read ${INLINE_CODE_TOKEN}workflows/sitewide-performance-audit/WORKFLOW.md${INLINE_CODE_TOKEN} first.
+- Before tool use, explicitly state that you read the workflow, the page set you will audit, whether authenticated pages are in scope, and whether you will use MCP or CLI first.
+- If you start a generic live audit before reading the workflow, the audit is invalid and must be restarted from the workflow.
 - Use ${INLINE_CODE_TOKEN}browser_perf_metrics${INLINE_CODE_TOKEN} for Core Web Vitals and network weight.
 - For repeatable public-page performance audits in MCP, run ${INLINE_CODE_TOKEN}browser_navigate${INLINE_CODE_TOKEN} and ${INLINE_CODE_TOKEN}browser_perf_metrics${INLINE_CODE_TOKEN} sequentially page by page instead of fanning out multiple new sessions at once.
 - If the CLI path would need approval and MCP is already available, begin with MCP instead of stalling mid-audit.
@@ -119,10 +122,16 @@ Use audit and debug tools when the user wants findings, not just screenshots.
 export const CORE_SITEWIDE_PERFORMANCE_WORKFLOW_CONTENT = `---
 name: sitewide-performance-audit
 description: >
-  This workflow should be used when the user asks to "run a sitewide performance audit", "check why a site is slow", "find the slowest pages", "measure Core Web Vitals across key pages", or otherwise wants a repeatable multi-page performance review.
+  This workflow must be used when the user asks to "run a sitewide performance audit", "check why a site is slow", "find the slowest pages", "measure Core Web Vitals across key pages", asks for a site audit, or otherwise wants a repeatable multi-page public-site review.
 ---
 # Sitewide Performance Audit
+Read this workflow before opening browser sessions, running audit tools, or drafting findings for any repeatable multi-page public-site audit. If you start a generic live audit before reading this workflow, the audit is invalid and must be restarted from here.
 Use this workflow for repeatable performance investigations across multiple pages. Confirm scope first, gather comparable evidence page by page, and summarize the highest-impact patterns before listing isolated issues.
+Before tool use, explicitly state:
+- that you read ${INLINE_CODE_TOKEN}workflows/sitewide-performance-audit/WORKFLOW.md${INLINE_CODE_TOKEN}
+- the page set you will audit
+- whether authenticated pages are in scope
+- whether you will use MCP or CLI first
 ## Inputs to confirm
 - Confirm the base URL.
 - Confirm the page set. If the user does not provide one, ask permission to infer a representative set such as homepage, pricing, docs, dashboard entry, and a heavy content page.

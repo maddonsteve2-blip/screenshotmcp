@@ -91,6 +91,11 @@ After any feature/tool change, update ALL of these:
 
 Current tool count: 46+ MCP tools, 38 CLI commands.
 
+## Audit Workflow Gate
+- For any request involving a site audit, performance audit, SEO audit, UX audit, full audit, or another repeatable multi-page website review, read `workflows/sitewide-performance-audit/WORKFLOW.md` before opening browser sessions, running audit tools, or drafting findings.
+- Before tool use, explicitly state that you read the workflow, the page set you will audit, whether authenticated pages are in scope, and whether you will use MCP or CLI first.
+- If you start a generic live audit before reading the workflow, the audit is invalid and must be restarted from the workflow.
+
 ## General Working Principles
 - **Think Before Coding**
   - State assumptions explicitly. If ambiguity matters, ask rather than guess.
