@@ -1,0 +1,27 @@
+{
+  "id": "auth-plan-signin",
+  "title": "Sign-in planning uses an auth path instead of guessing",
+  "request": "Test sign in to https://www.screenshotmcp.com",
+  "requiredFiles": [
+    "prompt.md",
+    "first-response.md",
+    "tool-calls.json"
+  ],
+  "responseRequiredRuleSets": [
+    "mentions_auth_planning",
+    "mentions_sign_in_path"
+  ],
+  "responseForbiddenRuleSets": [
+    "avoid_guessed_credentials"
+  ],
+  "toolRules": [
+    {
+      "id": "avoid_unplanned_smart_login",
+      "mode": "max_count",
+      "tool": "smart_login",
+      "value": 0,
+      "weight": 1,
+      "label": "does not jump straight into smart_login before planning or obtaining credentials"
+    }
+  ]
+}

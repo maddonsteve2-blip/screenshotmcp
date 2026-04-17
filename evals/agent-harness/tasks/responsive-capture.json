@@ -1,0 +1,35 @@
+{
+  "id": "responsive-capture",
+  "title": "Responsive capture uses the one-shot responsive path",
+  "request": "Check how https://www.screenshotmcp.com looks on desktop, tablet, and mobile.",
+  "requiredFiles": [
+    "prompt.md",
+    "first-response.md",
+    "tool-calls.json"
+  ],
+  "responseRequiredRuleSets": [
+    "mentions_responsive_capture"
+  ],
+  "toolRules": [
+    {
+      "id": "uses_responsive_tool",
+      "mode": "min_count",
+      "tool": "screenshot_responsive",
+      "value": 1,
+      "weight": 3,
+      "label": "uses screenshot_responsive"
+    },
+    {
+      "id": "avoids_fragmented_device_calls",
+      "mode": "max_combined_count",
+      "tools": [
+        "screenshot_mobile",
+        "screenshot_tablet",
+        "take_screenshot"
+      ],
+      "value": 0,
+      "weight": 1,
+      "label": "does not fragment the responsive task into multiple single-device screenshot calls"
+    }
+  ]
+}

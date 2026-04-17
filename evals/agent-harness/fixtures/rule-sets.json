@@ -1,0 +1,118 @@
+{
+  "response": {
+    "workflow_read_audit": [
+      {
+        "type": "substring",
+        "value": "workflows/sitewide-performance-audit/WORKFLOW.md",
+        "label": "mentions the sitewide audit workflow",
+        "weight": 2
+      }
+    ],
+    "mcp_first": [
+      {
+        "type": "regex",
+        "value": "\\bMCP\\b(?:[^\\n]{0,40})?(?:first|path)",
+        "label": "declares MCP-first execution",
+        "weight": 1
+      }
+    ],
+    "public_auth_out_of_scope": [
+      {
+        "type": "regex",
+        "value": "auth(?:enticated)? pages?(?:[^\\n]{0,80})?(?:out of scope|not included|not in scope|excluded)",
+        "label": "defaults authenticated pages out of scope",
+        "weight": 2
+      }
+    ],
+    "auth_in_scope": [
+      {
+        "type": "regex",
+        "value": "auth(?:enticated)? pages?(?:[^\\n]{0,80})?(?:in scope|included|yes)",
+        "label": "marks authenticated pages as in scope",
+        "weight": 2
+      }
+    ],
+    "inferred_public_pages": [
+      {
+        "type": "regex",
+        "value": "(?:/pricing|/docs(?:/quickstart)?|/dashboard/install|/sign-in)",
+        "label": "lists representative public pages",
+        "weight": 2
+      }
+    ],
+    "avoid_scope_blocking": [
+      {
+        "type": "substring",
+        "value": "Which audit scope do you want?",
+        "label": "does not ask the user to pick an audit scope",
+        "weight": 2
+      },
+      {
+        "type": "regex",
+        "value": "waiting for scope confirmation",
+        "label": "does not wait for scope confirmation",
+        "weight": 1
+      },
+      {
+        "type": "regex",
+        "value": "I need (?:you )?to (?:pick|choose|confirm) (?:the )?audit scope",
+        "label": "does not block on audit-scope clarification",
+        "weight": 2
+      }
+    ],
+    "mentions_sign_in_path": [
+      {
+        "type": "regex",
+        "value": "https://www\\.screenshotmcp\\.com/sign-in|/sign-in",
+        "label": "references the sign-in path",
+        "weight": 1
+      }
+    ],
+    "mentions_auth_planning": [
+      {
+        "type": "regex",
+        "value": "auth(?:entication)? (?:workflow|plan|path)|login page|sign-?in flow",
+        "label": "describes an auth-planning path",
+        "weight": 2
+      }
+    ],
+    "avoid_guessed_credentials": [
+      {
+        "type": "regex",
+        "value": "password:?\\s+[^\n]+",
+        "label": "does not guess a password",
+        "weight": 2
+      },
+      {
+        "type": "substring",
+        "value": "I can't access authenticated pages",
+        "label": "does not incorrectly claim auth pages are inaccessible",
+        "weight": 2
+      }
+    ],
+    "mentions_responsive_capture": [
+      {
+        "type": "regex",
+        "value": "responsive|desktop.*tablet.*mobile",
+        "label": "describes a responsive capture path",
+        "weight": 1
+      }
+    ],
+    "mentions_seo_review": [
+      {
+        "type": "regex",
+        "value": "SEO audit|SEO review|metadata|structured data",
+        "label": "describes SEO review intent",
+        "weight": 1
+      }
+    ],
+    "mentions_debug_evidence": [
+      {
+        "type": "regex",
+        "value": "console|network|accessibility|HTML|DOM|session",
+        "label": "describes browser-debug evidence collection",
+        "weight": 1
+      }
+    ]
+  }
+}

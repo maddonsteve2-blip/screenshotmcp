@@ -1,0 +1,24 @@
+{
+  "id": "audit-auth-explicit",
+  "title": "Explicit auth audit keeps protected scope in play",
+  "request": "Please audit screenshotmcp.com including the dashboard after login.",
+  "requiredFiles": [
+    "prompt.md",
+    "first-response.md",
+    "tool-calls.json"
+  ],
+  "responseRequiredRuleSets": [
+    "workflow_read_audit",
+    "mcp_first",
+    "auth_in_scope"
+  ],
+  "responseForbiddenRules": [
+    {
+      "type": "regex",
+      "value": "auth(?:enticated)? pages?(?:[^\\n]{0,80})?(?:out of scope|not included|not in scope|excluded)",
+      "label": "does not incorrectly force protected pages out of scope",
+      "weight": 2
+    }
+  ],
+  "toolRules": []
+}

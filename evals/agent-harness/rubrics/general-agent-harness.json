@@ -1,0 +1,32 @@
+{
+  "id": "general-agent-harness",
+  "title": "General ScreenshotsMCP agent harness rubric",
+  "dimensions": [
+    {
+      "id": "artifacts",
+      "description": "Required run artifacts exist and are readable.",
+      "source": "requiredFiles"
+    },
+    {
+      "id": "response-required",
+      "description": "The first response includes the required workflow, scope, or planning signals.",
+      "source": "responseRequiredRuleSets,responseRequiredRules"
+    },
+    {
+      "id": "response-forbidden",
+      "description": "The first response avoids known-bad blocking or unsafe patterns.",
+      "source": "responseForbiddenRuleSets,responseForbiddenRules"
+    },
+    {
+      "id": "tools",
+      "description": "Tool choices align with the task-specific harness expectations.",
+      "source": "toolRules"
+    }
+  ],
+  "passCondition": "All configured checks pass.",
+  "notes": [
+    "Deterministic checks come first.",
+    "Measured evidence and evaluator notes should remain separate.",
+    "Optional manual review can be layered on later without changing the base manifest format."
+  ]
+}

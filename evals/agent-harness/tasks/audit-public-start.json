@@ -1,0 +1,29 @@
+{
+  "id": "audit-public-start",
+  "title": "Public audit starts without blocking on scope",
+  "request": "please do a full audit screenshotmcp.com",
+  "requiredFiles": [
+    "prompt.md",
+    "first-response.md",
+    "tool-calls.json"
+  ],
+  "responseRequiredRuleSets": [
+    "workflow_read_audit",
+    "mcp_first",
+    "public_auth_out_of_scope",
+    "inferred_public_pages"
+  ],
+  "responseForbiddenRuleSets": [
+    "avoid_scope_blocking"
+  ],
+  "toolRules": [
+    {
+      "id": "no_browser_before_scope",
+      "mode": "max_count",
+      "tool": "browser_navigate",
+      "value": 0,
+      "weight": 2,
+      "label": "does not start browser work before the first-response preflight is complete"
+    }
+  ]
+}

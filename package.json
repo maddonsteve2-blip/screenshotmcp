@@ -8,11 +8,13 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
+    "eval:agent": "node scripts/agent-eval.mjs",
     "lint": "turbo lint",
     "lint:auth": "npm --workspace @screenshotsmcp/api run lint:mcp-server && npm --workspace screenshotsmcp run lint:auth && npm --workspace @screenshotsmcp/types run lint:auth && npm --workspace @screenshotsmcp/web run lint:auth",
     "lint:quiet": "npm --workspace @screenshotsmcp/web run lint -- --quiet",
     "sync:onboarding": "node scripts/sync-onboarding-copy.mjs",
     "sync:onboarding:check": "node scripts/sync-onboarding-copy.mjs --check",
+    "test:agent-eval": "node --test scripts/agent-eval.test.mjs",
     "test": "npm --prefix packages/vscode-extension run test",
     "test:chrome-extension:e2e": "node packages/chrome-extension/e2e/smoke.mjs",
     "typecheck": "turbo typecheck",

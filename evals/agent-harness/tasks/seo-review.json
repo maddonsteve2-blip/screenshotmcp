@@ -1,0 +1,31 @@
+{
+  "id": "seo-review",
+  "title": "SEO review uses the SEO audit path",
+  "request": "Review the SEO for https://www.screenshotmcp.com/pricing",
+  "requiredFiles": [
+    "prompt.md",
+    "first-response.md",
+    "tool-calls.json"
+  ],
+  "responseRequiredRuleSets": [
+    "mentions_seo_review"
+  ],
+  "toolRules": [
+    {
+      "id": "starts_browser_session",
+      "mode": "min_count",
+      "tool": "browser_navigate",
+      "value": 1,
+      "weight": 1,
+      "label": "starts a browser session for the SEO review"
+    },
+    {
+      "id": "uses_browser_seo_audit",
+      "mode": "min_count",
+      "tool": "browser_seo_audit",
+      "value": 1,
+      "weight": 3,
+      "label": "uses browser_seo_audit"
+    }
+  ]
+}

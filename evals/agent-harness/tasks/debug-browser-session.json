@@ -1,0 +1,37 @@
+{
+  "id": "debug-browser-session",
+  "title": "Browser debugging collects structural evidence",
+  "request": "Debug why https://www.screenshotmcp.com/pricing feels broken and gather evidence from the live page.",
+  "requiredFiles": [
+    "prompt.md",
+    "first-response.md",
+    "tool-calls.json"
+  ],
+  "responseRequiredRuleSets": [
+    "mentions_debug_evidence"
+  ],
+  "toolRules": [
+    {
+      "id": "starts_browser_debug_session",
+      "mode": "min_count",
+      "tool": "browser_navigate",
+      "value": 1,
+      "weight": 1,
+      "label": "opens a browser session"
+    },
+    {
+      "id": "collects_structural_debug_signal",
+      "mode": "min_any_count",
+      "tools": [
+        "browser_get_accessibility_tree",
+        "browser_get_html",
+        "browser_console_logs",
+        "browser_network_errors",
+        "browser_network_requests"
+      ],
+      "value": 1,
+      "weight": 3,
+      "label": "collects at least one structural or runtime debug signal"
+    }
+  ]
+}
