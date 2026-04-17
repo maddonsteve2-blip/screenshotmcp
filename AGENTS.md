@@ -93,7 +93,10 @@ Current tool count: 46+ MCP tools, 38 CLI commands.
 
 ## Audit Workflow Gate
 - For any request involving a site audit, performance audit, SEO audit, UX audit, full audit, or another repeatable multi-page website review, read `workflows/sitewide-performance-audit/WORKFLOW.md` before opening browser sessions, running audit tools, or drafting findings.
+- If the user provides the site or base URL but does not specify a page set, infer a representative public page set and start the audit without blocking on clarification.
+- Default authenticated pages to out of scope unless the user explicitly asks for login, dashboard, or another protected flow.
 - Before tool use, explicitly state that you read the workflow, the page set you will audit, whether authenticated pages are in scope, and whether you will use MCP or CLI first.
+- Ask a blocking clarification question only when the base URL is missing or when authenticated scope is essential and still ambiguous.
 - If you start a generic live audit before reading the workflow, the audit is invalid and must be restarted from the workflow.
 
 ## General Working Principles

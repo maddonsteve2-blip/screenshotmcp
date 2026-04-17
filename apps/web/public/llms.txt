@@ -15,6 +15,8 @@ Download the complete Agent Skill for all tools: https://screenshotsmcp.com/.ski
 - Treat packaged workflows as targeted procedures for repeatable multi-step jobs.
 - When the task is an audit, verification flow, or another repeatable multi-step procedure, check the available workflows before improvising.
 - For any site audit, performance audit, SEO audit, UX audit, full audit, or another repeatable multi-page website review, read `workflows/sitewide-performance-audit/WORKFLOW.md` before opening browser sessions, running audit tools, or drafting findings.
+- If the user gives you a site URL but no page list, infer a representative public page set and start instead of blocking on permission.
+- Default authenticated pages to out of scope unless the user explicitly asks for login, dashboard, or another protected flow.
 - Do not load every workflow up front. Read only the workflow that matches the task.
 - If terminal access exists and repeated tool calls are likely, prefer the CLI when it is clearly faster than repeated MCP round-trips. If terminal access is not available, stay in MCP.
 - For multi-page performance audits in MCP, avoid opening many new browser sessions in parallel. Measure sequentially unless there is a proven reason to increase concurrency.
@@ -522,6 +524,7 @@ Params: url, width, height
 ### Full Site Audit
 → First read `workflows/sitewide-performance-audit/WORKFLOW.md` before any browser or audit tool use
 → State that you read it, the page set, whether authenticated pages are in scope, and whether you will use MCP or CLI first
+→ If the user gave the site URL but not the page list, infer the representative public pages and begin
 → `browser_navigate` → `browser_get_accessibility_tree` → `browser_perf_metrics` → `browser_seo_audit` → `og_preview` → `browser_console_logs` → `browser_network_errors`
 
 ### Sign-Up Testing with Disposable Email

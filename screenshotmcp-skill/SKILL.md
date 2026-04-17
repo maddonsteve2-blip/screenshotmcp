@@ -246,6 +246,7 @@ User: "Check how example.com looks"
 User: "Audit this site"
 → First read workflows/sitewide-performance-audit/WORKFLOW.md before any browser or audit tool use
 → State that you read it, the page set, whether authenticated pages are in scope, and whether you will use MCP or CLI first
+→ If the user gave the site URL but not the page list, infer the representative public pages and begin
 → MCP: browser_navigate → browser_get_accessibility_tree → browser_perf_metrics → browser_seo_audit → browser_console_logs → browser_network_errors
 → CLI: screenshotsmcp seo <url> && screenshotsmcp perf <url> && screenshotsmcp a11y <url>
 ```

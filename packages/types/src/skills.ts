@@ -73,6 +73,9 @@ Use the auth workflow when the user needs to test protected or multi-step flows.
 Use audit and debug tools when the user wants findings, not just screenshots.
 
 - If the task is a repeatable multi-page performance audit or another repeatable multi-page public-site audit, read ${INLINE_CODE_TOKEN}workflows/sitewide-performance-audit/WORKFLOW.md${INLINE_CODE_TOKEN} first.
+- If the user provides the site or base URL but not a page list, infer a representative public page set and start without blocking on clarification.
+- Default authenticated pages to out of scope unless the user explicitly asks for login, dashboard, account, or another protected flow.
+- Ask a blocking clarification question only when the base URL is missing or when protected-page scope is essential and still ambiguous.
 - Before tool use, explicitly state that you read the workflow, the page set you will audit, whether authenticated pages are in scope, and whether you will use MCP or CLI first.
 - If you start a generic live audit before reading the workflow, the audit is invalid and must be restarted from the workflow.
 - Use ${INLINE_CODE_TOKEN}browser_perf_metrics${INLINE_CODE_TOKEN} for Core Web Vitals and network weight.
@@ -97,6 +100,8 @@ Use audit and debug tools when the user wants findings, not just screenshots.
 - Call out breakpoints, clipping, and hierarchy issues.
 
 ### Site audit
+- Read ${INLINE_CODE_TOKEN}workflows/sitewide-performance-audit/WORKFLOW.md${INLINE_CODE_TOKEN} first for repeatable multi-page public-site audits.
+- If the user gives you a site URL but no page list, infer the public page set and proceed instead of asking permission to start.
 - Use ${INLINE_CODE_TOKEN}browser_navigate${INLINE_CODE_TOKEN}.
 - Gather ${INLINE_CODE_TOKEN}browser_get_accessibility_tree${INLINE_CODE_TOKEN}, ${INLINE_CODE_TOKEN}browser_perf_metrics${INLINE_CODE_TOKEN}, ${INLINE_CODE_TOKEN}browser_seo_audit${INLINE_CODE_TOKEN}, ${INLINE_CODE_TOKEN}browser_console_logs${INLINE_CODE_TOKEN}, and ${INLINE_CODE_TOKEN}browser_network_errors${INLINE_CODE_TOKEN}.
 - Summarize the highest-impact issues first.
@@ -126,16 +131,17 @@ description: >
 ---
 # Sitewide Performance Audit
 Read this workflow before opening browser sessions, running audit tools, or drafting findings for any repeatable multi-page public-site audit. If you start a generic live audit before reading this workflow, the audit is invalid and must be restarted from here.
-Use this workflow for repeatable performance investigations across multiple pages. Confirm scope first, gather comparable evidence page by page, and summarize the highest-impact patterns before listing isolated issues.
+Use this workflow for repeatable performance investigations across multiple pages. Infer a practical default scope when the user gives you enough to start, gather comparable evidence page by page, and summarize the highest-impact patterns before listing isolated issues.
 Before tool use, explicitly state:
 - that you read ${INLINE_CODE_TOKEN}workflows/sitewide-performance-audit/WORKFLOW.md${INLINE_CODE_TOKEN}
 - the page set you will audit
 - whether authenticated pages are in scope
 - whether you will use MCP or CLI first
 ## Inputs to confirm
-- Confirm the base URL.
-- Confirm the page set. If the user does not provide one, ask permission to infer a representative set such as homepage, pricing, docs, dashboard entry, and a heavy content page.
-- Confirm whether authenticated pages are in scope.
+- Confirm the base URL. If it is missing, ask for it before starting.
+- If the user does not provide a page set, infer a representative public set such as homepage, pricing, docs, install, sign-in, and one heavier content page or public product surface.
+- Default authenticated pages to out of scope unless the user explicitly asks for login, dashboard, account, or another protected flow.
+- If authenticated scope is essential to the user's request and still ambiguous, ask one blocking clarification question before starting protected-page checks.
 - Confirm whether terminal access exists. If it does and repeated page checks are likely, the CLI may be faster than repeated MCP round-trips.
 - Confirm whether command approval is likely to interrupt progress. If approval would stall the run, prefer MCP first.
 ## Tool path selection
@@ -155,14 +161,15 @@ Before tool use, explicitly state:
 - Console or network failures if they appear related
 ## Execution sequence
 1. Define the page list before starting measurements.
-2. Start with the most business-critical page so early findings are useful even if scope changes.
-3. For each page, capture performance metrics first.
-4. In MCP, open and measure pages sequentially. Do not fan out multiple new ${INLINE_CODE_TOKEN}browser_navigate${INLINE_CODE_TOKEN} sessions at once for a public performance audit.
-5. If a page looks slow, inspect the network waterfall or failed requests before moving on.
-6. If an MCP transport call fails mid-run, reuse the sessions that succeeded and continue sequentially instead of restarting the audit.
-7. Keep the evidence format consistent across pages so rankings are comparable.
-8. Reuse an active session when that reduces overhead without changing the measurement goal.
-9. Close active sessions when the audit is complete.
+2. If the user did not specify pages, infer the page list and proceed without waiting for permission.
+3. Start with the most business-critical page so early findings are useful even if scope changes.
+4. For each page, capture performance metrics first.
+5. In MCP, open and measure pages sequentially. Do not fan out multiple new ${INLINE_CODE_TOKEN}browser_navigate${INLINE_CODE_TOKEN} sessions at once for a public performance audit.
+6. If a page looks slow, inspect the network waterfall or failed requests before moving on.
+7. If an MCP transport call fails mid-run, reuse the sessions that succeeded and continue sequentially instead of restarting the audit.
+8. Keep the evidence format consistent across pages so rankings are comparable.
+9. Reuse an active session when that reduces overhead without changing the measurement goal.
+10. Close active sessions when the audit is complete.
 ## Preferred tools
 - MCP path: for each page, run ${INLINE_CODE_TOKEN}browser_navigate${INLINE_CODE_TOKEN} → ${INLINE_CODE_TOKEN}browser_perf_metrics${INLINE_CODE_TOKEN} → ${INLINE_CODE_TOKEN}browser_network_requests${INLINE_CODE_TOKEN} / ${INLINE_CODE_TOKEN}browser_network_errors${INLINE_CODE_TOKEN} as needed. Keep the MCP path sequential unless there is a proven reason to increase concurrency.
 - CLI path for repeated checks: ${INLINE_CODE_TOKEN}screenshotsmcp perf <url>${INLINE_CODE_TOKEN} for quick page-level metrics, or ${INLINE_CODE_TOKEN}screenshotsmcp browse <url>${INLINE_CODE_TOKEN} followed by ${INLINE_CODE_TOKEN}browse:perf${INLINE_CODE_TOKEN}, ${INLINE_CODE_TOKEN}browse:network-requests${INLINE_CODE_TOKEN}, and ${INLINE_CODE_TOKEN}browse:network-errors${INLINE_CODE_TOKEN} when deeper evidence is needed. If this path needs approval, ask once up front instead of switching mid-audit.
