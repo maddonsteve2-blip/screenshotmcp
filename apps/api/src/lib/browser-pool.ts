@@ -1,9 +1,35 @@
-import { chromium, Browser } from "playwright";
+import type { Browser } from "playwright";
+import { chromium as playwrightChromium } from "playwright";
+import { chromium as patchrightChromium } from "patchright";
 
 const POOL_SIZE = parseInt(process.env.BROWSER_POOL_SIZE || "3", 10);
 const MAX_USES_PER_BROWSER = 100;
 const LAUNCH_TIMEOUT = 30000;
 
+/**
+ * Toggle the "undetected" driver. Patchright patches the Playwright client to
+ * remove the CDP `Runtime.enable` leak and several command-line fingerprints
+ * that Cloudflare / DataDome / hCaptcha server-side scoring reads. Opt-in for
+ * now so existing sessions are unaffected; set `USE_PATCHRIGHT=1` to flip it
+ * on globally. When off we fall back to stock Playwright.
+ */
+const USE_PATCHRIGHT = /^(1|true|yes)$/i.test(process.env.USE_PATCHRIGHT ?? "");
+const chromium = USE_PATCHRIGHT ? patchrightChromium : playwrightChromium;
+
+/**
+ * Keep this list minimal. Every flag below is either necessary for containers
+ * (`--no-sandbox`, `--disable-dev-shm-usage`) or non-signaling. We removed:
+ *
+ * - `--disable-popup-blocking`
+ * - `--disable-component-extensions-with-background-pages`
+ * - `--disable-default-apps`
+ * - `--disable-extensions`
+ * - `--flag-switches-begin / --flag-switches-end`
+ * - `--start-maximized` (no visual window)
+ *
+ * ...because they are on Patchright's well-known "do not use" list — they are
+ * specifically scored as stealth-browser tell-tales by Turnstile.
+ */
 const BROWSER_ARGS = [
   "--no-sandbox",
   "--disable-setuid-sandbox",
@@ -14,18 +40,7 @@ const BROWSER_ARGS = [
   "--disable-background-timer-throttling",
   "--disable-renderer-backgrounding",
   "--disable-backgrounding-occluded-windows",
-  // Anti-detection flags
-  "--disable-features=IsolateOrigins,site-per-process",
-  "--flag-switches-begin",
-  "--flag-switches-end",
   "--window-size=1920,1080",
-  "--start-maximized",
-  "--disable-component-extensions-with-background-pages",
-  "--disable-default-apps",
-  "--no-first-run",
-  "--no-default-browser-check",
-  "--disable-extensions",
-  "--disable-popup-blocking",
 ];
 
 interface PoolEntry {

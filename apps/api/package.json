@@ -26,6 +26,7 @@
     "ioredis": "^5.4.2",
     "nanoid": "^5.0.9",
     "openai": "^6.34.0",
+    "patchright": "^1.59.4",
     "pixelmatch": "^7.1.0",
     "playwright": "^1.59.1",
     "pngjs": "^7.0.0",
