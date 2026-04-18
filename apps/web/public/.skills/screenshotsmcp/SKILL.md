@@ -170,6 +170,25 @@ screenshotsmcp breakpoints <url>         # Detect responsive breakpoints (standa
 
 `perf` and `seo` open a workflow-aware browser session under the hood — their runs land in `/dashboard/runs` with a structured outcome (verdict, summary, findings, proof coverage, next actions). `review`, `a11y`, and `breakpoints` stay standalone analyses and do not create a Run.
 
+### Webhooks
+ScreenshotsMCP can push HMAC-signed events (`screenshot.completed`, `screenshot.failed`, `run.completed`, `run.failed`, `quota.warning`, `test.ping`) to any HTTPS endpoint. Manage via REST:
+
+```bash
+# Create endpoint (signing secret is returned ONCE — store it before deleting the response)
+curl -sS -X POST https://screenshotsmcp-api-production.up.railway.app/v1/webhooks \
+  -H "Authorization: Bearer $SMCP_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com/hooks","events":["*"]}'
+
+# Fire test.ping; rotate; list deliveries; delete
+curl -X POST .../v1/webhooks/$ID/test    -H "Authorization: Bearer $SMCP_KEY"
+curl -X POST .../v1/webhooks/$ID/rotate  -H "Authorization: Bearer $SMCP_KEY"
+curl       .../v1/webhooks/$ID/deliveries -H "Authorization: Bearer $SMCP_KEY"
+curl -X DELETE .../v1/webhooks/$ID       -H "Authorization: Bearer $SMCP_KEY"
+```
+
+Each delivery POST carries `Webhook-Id`, `Webhook-Timestamp`, and `Webhook-Signature: t=<ts>,v1=<hex hmac sha256 of "${ts}.${rawBody}">`. Verify within 5 minutes of `Webhook-Timestamp`. Retries: 6 attempts at 1m / 5m / 30m / 2h / 12h. Full reference: `/docs/api/webhooks`.
+
 ### Disposable Email
 ```bash
 screenshotsmcp auth:test https://example.com  # Reuse auth memory + primary inbox
