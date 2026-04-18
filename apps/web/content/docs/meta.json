@@ -53,6 +53,7 @@
     "tools/create-test-inbox",
     "---Reference---",
     "rest-api",
+    "api/ops-headers",
     "---",
     "changelog"
   ]

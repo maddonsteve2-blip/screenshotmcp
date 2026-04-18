@@ -711,6 +711,9 @@ export default function HomePage() {
               <Link href="#pricing" className="hover:text-gray-300 transition-colors">Pricing</Link>
               <Link href="/docs/quickstart" className="hover:text-gray-300 transition-colors">Quick Start</Link>
               <Link href="/dashboard" className="hover:text-gray-300 transition-colors">Dashboard</Link>
+              <Link href="/changelog" className="hover:text-gray-300 transition-colors">Changelog</Link>
+              <Link href="/status" className="hover:text-gray-300 transition-colors">Status</Link>
+              <Link href="/security" className="hover:text-gray-300 transition-colors">Security</Link>
               <Link href="/privacy-policy" className="hover:text-gray-300 transition-colors">Privacy</Link>
               <Link href="/terms-of-service" className="hover:text-gray-300 transition-colors">Terms</Link>
             </div>

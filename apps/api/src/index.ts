@@ -9,6 +9,7 @@ import { recordingsRouter } from "./routes/recordings.js";
 import { runsRouter } from "./routes/runs.js";
 import { mcpRouter } from "./mcp/server.js";
 import { errorHandler } from "./middleware/error.js";
+import { requestId } from "./middleware/requestId.js";
 import { startWorker } from "./lib/queue.js";
 import { browserPool } from "./lib/browser-pool.js";
 import { attachAnalyticsWs } from "./routes/analytics-ws.js";
@@ -19,9 +20,24 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const APP_URL = process.env.APP_URL || "https://screenshotsmcp-api-production.up.railway.app";
 
+// Attach a stable X-Request-ID before any handler so logs, error envelopes,
+// idempotency caches, and client retries can all reference the same id.
+app.use(requestId);
+
 app.use("/webhooks", express.raw({ type: "application/json" }));
 app.use(express.json({ limit: "50mb" }));
-app.use(cors({ origin: [process.env.WEB_URL || "https://www.screenshotmcp.com", "http://localhost:3000"], credentials: true }));
+app.use(cors({
+  origin: [process.env.WEB_URL || "https://www.screenshotmcp.com", "http://localhost:3000"],
+  credentials: true,
+  exposedHeaders: [
+    "X-Request-ID",
+    "X-RateLimit-Limit",
+    "X-RateLimit-Remaining",
+    "X-RateLimit-Reset",
+    "X-RateLimit-Policy",
+    "Retry-After",
+  ],
+}));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", ts: new Date().toISOString(), pool: browserPool.stats() });

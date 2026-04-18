@@ -126,7 +126,15 @@ export interface LocalBrowserLaunchResult {
 }
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
-  free: { screenshotsPerMonth: 999999, price: 0 },
+  free: { screenshotsPerMonth: 100, price: 0 },
   starter: { screenshotsPerMonth: 2000, price: 9 },
   pro: { screenshotsPerMonth: 10000, price: 29 },
 };
+
+/**
+ * Monthly quota for free users whose accounts were created before the
+ * canonical-quota cutover. Keeps early adopters on their historical
+ * effectively-unlimited allowance while new signups get the 100/mo cap.
+ * Resolved at request time via `FREE_QUOTA_CUTOVER_DATE` (ISO 8601).
+ */
+export const LEGACY_FREE_QUOTA_PER_MONTH = 999_999;

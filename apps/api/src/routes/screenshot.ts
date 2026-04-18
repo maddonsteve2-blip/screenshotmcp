@@ -8,6 +8,7 @@ import { screenshotQueue } from "../lib/queue.js";
 import { uploadScreenshot } from "../lib/r2.js";
 import { requireApiKey, type AuthRequest } from "../middleware/auth.js";
 import { enforcePlanLimit } from "../middleware/rateLimit.js";
+import { idempotency } from "../middleware/idempotency.js";
 
 export const screenshotRouter = Router();
 
@@ -49,6 +50,7 @@ screenshotRouter.post(
   "/",
   requireApiKey,
   enforcePlanLimit,
+  idempotency("v1.screenshot.create"),
   async (req: AuthRequest, res, next) => {
     try {
       const parsed = createSchema.safeParse(req.body);
@@ -113,6 +115,7 @@ screenshotRouter.post(
   "/upload",
   requireApiKey,
   enforcePlanLimit,
+  idempotency("v1.screenshot.upload"),
   async (req: AuthRequest, res, next) => {
     try {
       const parsed = uploadSchema.safeParse(req.body);

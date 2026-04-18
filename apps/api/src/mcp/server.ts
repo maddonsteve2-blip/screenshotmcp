@@ -806,29 +806,30 @@ server.tool(
 
   server.tool(
     "browser_navigate",
--   "Open a browser and navigate to a URL. Returns a screenshot of the loaded page. Use this to start a browser session — the returned sessionId must be passed to all subsequent browser_ tools. Pass width/height to start with a custom viewport (e.g. 393×852 for mobile). Set record_video to true to record the entire session as a video — the recording URL is returned when browser_close is called.",
-+   "Open a browser and navigate to a URL. Returns a screenshot of the loaded page. Use this to start a browser session — the returned sessionId must be passed to all subsequent browser_ tools. Pass width/height to start with a custom viewport (e.g. 393×852 for mobile). Set record_video to true to record the entire session as a video — the recording URL is returned when browser_close is called. When workflow metadata is provided, the resulting run can surface structured verdicts, summaries, and next actions in the dashboard.",
+    "Open a browser and navigate to a URL. Returns a screenshot of the loaded page. Use this to start a browser session — the returned sessionId must be passed to all subsequent browser_ tools. Pass width/height to start with a custom viewport (e.g. 393×852 for mobile). Set record_video to true to record the entire session as a video — the recording URL is returned when browser_close is called. When workflow metadata is provided, the resulting run can surface structured verdicts, summaries, and next actions in the dashboard.",
     {
       url: z.string().url().describe("URL to navigate to"),
       sessionId: z.string().optional().describe("Existing session ID to reuse. Omit to start a new browser session."),
       width: z.number().int().min(320).max(3840).optional().describe("Viewport width for new sessions (default 1280). Ignored if sessionId is provided."),
-@@
+      height: z.number().int().min(240).max(2160).optional().describe("Viewport height for new sessions (default 800). Ignored if sessionId is provided."),
+      record_video: z.boolean().optional().default(false).describe("Record a video of the entire browser session. The .webm recording URL is returned when you call browser_close. Only applies to new sessions."),
+      task_type: z.string().optional().describe("Optional task type for workflow-aware run outcomes, e.g. 'site_audit' or 'browser_review'."),
+      user_goal: z.string().optional().describe("Plain-language user goal for the run outcome shown in the website UI."),
+      workflow_name: z.string().optional().describe("Workflow name used for this run, e.g. 'sitewide-performance-audit'."),
       workflow_required: z.boolean().optional().describe("Whether this task requires workflow compliance to be considered valid."),
       auth_scope: z.enum(["in", "out", "mixed", "unknown"]).optional().describe("Whether authenticated pages are in scope for the run contract."),
       tool_path: z.enum(["mcp", "cli", "unknown"]).optional().describe("Execution path selected for this run contract."),
       page_set: z.array(z.string()).optional().describe("Representative page set or scope list for workflow-driven runs."),
--     required_evidence: z.array(z.string()).optional().describe("Required evidence types for the run contract, e.g. screenshots, console, network, perf."),
-+     required_evidence: z.array(z.string()).optional().describe("Required evidence types for the run contract, e.g. screenshots, console, network, perf, or seo."),
+      required_evidence: z.array(z.string()).optional().describe("Required evidence types for the run contract, e.g. screenshots, console, network, perf, or seo."),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
-     try {
+      try {
         const outcomeContext = {
           taskType: args.task_type,
           userGoal: args.user_goal,
           workflowUsed: args.workflow_name,
-/* ... */
           workflowRequired: args.workflow_required,
           authScope: args.auth_scope,
           toolPath: args.tool_path,

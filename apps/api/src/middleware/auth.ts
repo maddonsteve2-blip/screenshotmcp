@@ -7,15 +7,34 @@ import { apiKeys, users } from "@screenshotsmcp/db";
 export interface AuthRequest extends Request {
   userId?: string;
   userPlan?: string;
+  /**
+   * Forward-compatible org scope. Read from `X-Organization-ID` header when
+   * present so future multi-org auth can become additive without breaking
+   * existing single-user API keys. Today this is advisory only — no route
+   * enforces it. When orgs land, `requireApiKey` will resolve the caller's
+   * default org automatically and `requireScope()` will gate sensitive paths.
+   */
+  organizationId?: string | null;
 }
 
 const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET || "").trim();
+const ORG_ID_PATTERN = /^[A-Za-z0-9_-]{6,64}$/;
+
+function readOrganizationHeader(req: AuthRequest): string | null {
+  const raw = req.headers["x-organization-id"];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value) return null;
+  const trimmed = value.trim();
+  return ORG_ID_PATTERN.test(trimmed) ? trimmed : null;
+}
 
 export async function requireApiKey(
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) {
+  req.organizationId = readOrganizationHeader(req);
+
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     res.status(401).json({ error: "Missing API key" });

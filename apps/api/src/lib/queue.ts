@@ -1,21 +1,17 @@
 import { Queue, Worker } from "bullmq";
-import { Redis } from "ioredis";
+import type { Redis } from "ioredis";
 import { processScreenshotJob } from "../worker/processor.js";
+import { getRedis } from "./redis.js";
 
 let _queue: Queue | null = null;
 let _worker: Worker | null = null;
-let _connection: Redis | null = null;
 
 function getConnection(): Redis {
-  if (!_connection) {
-    _connection = new Redis(process.env.REDIS_URL!, {
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-      lazyConnect: false,
-    });
-    _connection.on("error", (err) => console.error("Redis error:", err.message));
+  const conn = getRedis();
+  if (!conn) {
+    throw new Error("REDIS_URL not set — screenshot queue cannot start");
   }
-  return _connection;
+  return conn;
 }
 
 export function getQueue(): Queue {

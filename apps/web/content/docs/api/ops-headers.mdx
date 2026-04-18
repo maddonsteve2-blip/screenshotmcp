@@ -1,0 +1,101 @@
+---
+title: Ops Headers
+description: Every ScreenshotsMCP API response carries request IDs, rate-limit hints, and a structured error envelope so automated clients can retry safely and support requests are debuggable.
+---
+
+## What you get on every response
+
+Every call to `https://screenshotsmcp-api-production.up.railway.app/v1/*` returns a consistent set of operational headers and — on errors — a consistent JSON envelope. These are stable primitives that CLIs, SDKs, webhooks, and CI integrations can rely on.
+
+## `X-Request-ID`
+
+A short, URL-safe identifier attached to every request.
+
+- Emitted on every response.
+- If you send an inbound `X-Request-ID` matching `[A-Za-z0-9_-]{8,64}`, we echo it back. Otherwise we generate `req_<nanoid>`.
+- Include it when contacting support — we can find any request by id.
+
+```bash
+curl -i https://screenshotsmcp-api-production.up.railway.app/v1/screenshot \
+  -H "Authorization: Bearer $SMCP_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-Request-ID: my-ci-run-7f2a" \
+  -d '{"url":"https://example.com"}'
+# < X-Request-ID: my-ci-run-7f2a
+```
+
+## `Idempotency-Key`
+
+Safe retries for write endpoints. Client sends any stable key; we cache the first response for 24 hours and replay it for any retry with the same key.
+
+- Accepts `[A-Za-z0-9_-]{8,128}`.
+- Supported on `POST /v1/screenshot` and `POST /v1/screenshot/upload`. Future write endpoints (batches, webhooks) will adopt the same contract.
+- Replayed responses include `Idempotency-Replayed: true`.
+- Two in-flight requests with the same key return `409 IDEMPOTENCY_IN_FLIGHT` rather than racing.
+
+```bash
+curl -sS https://screenshotsmcp-api-production.up.railway.app/v1/screenshot \
+  -H "Authorization: Bearer $SMCP_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: pr-42-run-01" \
+  -d '{"url":"https://example.com"}'
+```
+
+## Rate-limit headers
+
+Emitted on every call so well-behaved clients can watch their own budget.
+
+| Header | Meaning |
+| --- | --- |
+| `X-RateLimit-Limit` | Monthly screenshot cap for your current plan. |
+| `X-RateLimit-Remaining` | Cap minus usage this calendar month, clamped at 0. |
+| `X-RateLimit-Reset` | Unix seconds when the window resets (first of next month, UTC). |
+| `X-RateLimit-Policy` | Present as `legacy-free-grandfathered` if your account is on a pre-cutover free allowance. |
+| `Retry-After` | Seconds until the window resets. Sent only on a `429`. |
+
+On quota exhaustion you will receive a `429` with the structured error envelope.
+
+## `X-Organization-ID` (forward-compatible)
+
+Optional today, enforced once the organizations surface lands.
+
+- Format: `[A-Za-z0-9_-]{6,64}`.
+- Safe to include now — unknown values are simply ignored so your integration does not break when orgs become required.
+- Recommended for SDK authors: pass it through untouched if your callers supply it.
+
+## Error envelope
+
+Every error response from `/v1/*` uses the same JSON shape:
+
+```json
+{
+  "error": "Monthly screenshot limit reached",
+  "code": "PLAN_QUOTA_EXCEEDED",
+  "requestId": "req_8H2c...",
+  "details": { "used": 100, "limit": 100, "plan": "free", "resetAt": "2026-05-01T00:00:00.000Z" }
+}
+```
+
+- `error` — human-readable message. Safe to surface to end users.
+- `code` — stable machine code. Keep switches on this.
+- `requestId` — same value as the `X-Request-ID` header.
+- `details` — optional structured context; shape depends on `code`.
+
+## Stable error codes
+
+| Code | HTTP | Meaning |
+| --- | --- | --- |
+| `INVALID_IDEMPOTENCY_KEY` | 400 | `Idempotency-Key` header did not match the allowed pattern. |
+| `IDEMPOTENCY_IN_FLIGHT` | 409 | A prior request with the same key is still running. Retry with backoff. |
+| `PLAN_QUOTA_EXCEEDED` | 429 | Monthly quota reached; see `Retry-After` and `details.resetAt`. |
+| `INTERNAL_ERROR` | 500 | Unexpected failure; include `requestId` when reporting. |
+
+More codes are added as new endpoints ship. Clients should treat unknown codes as transient and retry respecting `Retry-After`.
+
+## Recommended client behavior
+
+1. Generate a fresh `Idempotency-Key` per logical operation, not per retry.
+2. Echo `X-Request-ID` from your CI or caller for end-to-end tracing.
+3. On `429`, sleep `Retry-After` seconds and retry; never hammer.
+4. On `5xx`, exponential backoff; include the same `Idempotency-Key` so you do not double-charge quota.
+5. Surface `code` and `requestId` in your own error telemetry.

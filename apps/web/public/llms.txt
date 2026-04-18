@@ -147,12 +147,14 @@ screenshotsmcp browse:close <sessionId>                        # End session
 
 ### Reviews & Audits
 ```
-screenshotsmcp review <url>              # AI UX review
-screenshotsmcp seo <url>                 # SEO metadata
-screenshotsmcp perf <url>                # Core Web Vitals
-screenshotsmcp a11y <url>                # Accessibility tree
-screenshotsmcp breakpoints <url>         # Responsive breakpoints
+screenshotsmcp review <url>              # AI UX review (standalone, no Run created)
+screenshotsmcp seo <url>                 # SEO metadata, run-backed (shows verdict + summary in /dashboard/runs)
+screenshotsmcp perf <url>                # Core Web Vitals, run-backed against sitewide-performance-audit workflow
+screenshotsmcp a11y <url>                # Accessibility tree (standalone)
+screenshotsmcp breakpoints <url>         # Responsive breakpoints (standalone)
 ```
+
+`perf` and `seo` open a workflow-aware browser session so the run lands in the dashboard Runs UI with a structured outcome (verdict, summary, findings, proof coverage, next actions). `review`, `a11y`, and `breakpoints` stay standalone and do not create a Run.
 
 ### Disposable Email
 ```

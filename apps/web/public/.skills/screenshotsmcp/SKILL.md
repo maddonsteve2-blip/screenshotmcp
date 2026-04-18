@@ -161,12 +161,14 @@ screenshotsmcp browse https://example.com --task-type site_audit --user-goal "Au
 
 ### Reviews & Audits
 ```bash
-screenshotsmcp review <url>              # AI-powered UX review
-screenshotsmcp seo <url>                 # SEO metadata extraction
-screenshotsmcp perf <url>                # Core Web Vitals
-screenshotsmcp a11y <url>                # Accessibility tree
-screenshotsmcp breakpoints <url>         # Detect responsive breakpoints
+screenshotsmcp review <url>              # AI-powered UX review (standalone — does not create a Run)
+screenshotsmcp seo <url>                 # SEO metadata extraction (run-backed: shows up in dashboard Runs with verdict, summary, and next actions)
+screenshotsmcp perf <url>                # Core Web Vitals (run-backed against the sitewide-performance-audit workflow)
+screenshotsmcp a11y <url>                # Accessibility tree (standalone)
+screenshotsmcp breakpoints <url>         # Detect responsive breakpoints (standalone)
 ```
+
+`perf` and `seo` open a workflow-aware browser session under the hood — their runs land in `/dashboard/runs` with a structured outcome (verdict, summary, findings, proof coverage, next actions). `review`, `a11y`, and `breakpoints` stay standalone analyses and do not create a Run.
 
 ### Disposable Email
 ```bash
