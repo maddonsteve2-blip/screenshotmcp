@@ -54,6 +54,7 @@
     "---Reference---",
     "rest-api",
     "api/ops-headers",
+    "api/webhooks",
     "---",
     "changelog"
   ]

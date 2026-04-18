@@ -1,0 +1,129 @@
+---
+title: Webhooks
+description: Subscribe an HTTPS endpoint to ScreenshotsMCP events. Every delivery is HMAC-signed, retried with exponential backoff, and observable from the dashboard.
+---
+
+ScreenshotsMCP can push events to your backend as soon as they happen, so you can wire up Slack pings, Linear tickets, GitHub PR comments, or your own ETL without polling our REST API.
+
+## Event types
+
+| Event | When it fires | Payload highlights |
+| --- | --- | --- |
+| `screenshot.completed` | A queued screenshot finished and the public URL is ready. | `screenshotId`, `url`, `publicUrl`, `format`, `width`, `height` |
+| `screenshot.failed` | A queued screenshot failed permanently. | `screenshotId`, `url`, `error` |
+| `run.completed` | A browser session run closed cleanly. | `runId`, `finalUrl`, `pageTitle`, `videoUrl`, `consoleErrorCount`, `networkErrorCount` |
+| `run.failed` | A browser session run closed with a finalization error. | Same shape as `run.completed`, plus `finalizationError` |
+| `quota.warning` | You crossed 80% or 95% of the monthly screenshot cap (one fire per threshold per month). | `threshold`, `used`, `limit`, `remaining`, `resetAt` |
+| `test.ping` | You called `POST /v1/webhooks/:id/test` from the dashboard or REST. | `endpointId`, `message` |
+
+All deliveries share an envelope:
+
+```json
+{
+  "type": "screenshot.completed",
+  "createdAt": "2026-04-18T02:30:00.123Z",
+  "data": { "...event-specific fields..." }
+}
+```
+
+## Manage endpoints (REST)
+
+```bash
+# Create an endpoint (secret returned ONCE — store it)
+curl -sS https://screenshotsmcp-api-production.up.railway.app/v1/webhooks \
+  -H "Authorization: Bearer $SMCP_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/hooks/screenshotsmcp",
+    "events": ["screenshot.completed", "run.completed", "quota.warning"],
+    "description": "Production prod hooks"
+  }'
+
+# List your endpoints
+curl -sS https://screenshotsmcp-api-production.up.railway.app/v1/webhooks \
+  -H "Authorization: Bearer $SMCP_KEY"
+
+# Rotate the signing secret (returns the new secret once)
+curl -sS -X POST https://screenshotsmcp-api-production.up.railway.app/v1/webhooks/$ID/rotate \
+  -H "Authorization: Bearer $SMCP_KEY"
+
+# Fire a test.ping to validate signing
+curl -sS -X POST https://screenshotsmcp-api-production.up.railway.app/v1/webhooks/$ID/test \
+  -H "Authorization: Bearer $SMCP_KEY"
+
+# Inspect the last 50 deliveries (status, response code, error message)
+curl -sS https://screenshotsmcp-api-production.up.railway.app/v1/webhooks/$ID/deliveries \
+  -H "Authorization: Bearer $SMCP_KEY"
+
+# Delete
+curl -sS -X DELETE https://screenshotsmcp-api-production.up.railway.app/v1/webhooks/$ID \
+  -H "Authorization: Bearer $SMCP_KEY"
+```
+
+`events: ["*"]` (the default) subscribes to every event we publish, including any added in the future.
+
+## Signing scheme
+
+Every POST your endpoint receives includes the following headers:
+
+| Header | Meaning |
+| --- | --- |
+| `Webhook-Id` | Stable delivery id. Use it to dedupe retries. |
+| `Webhook-Timestamp` | Unix seconds at signing time. |
+| `Webhook-Signature` | `t=<ts>,v1=<hex hmac sha256>`. The signed payload is `${ts}.${rawBody}`. |
+| `X-ScreenshotsMCP-Event` | The event type, mirrors the body's `type`. |
+| `User-Agent` | `ScreenshotsMCP-Webhook/1` |
+
+Reject any request older than 5 minutes (clock skew tolerance). After verifying the signature, treat the body's `type` as authoritative.
+
+### Verify in Node.js
+
+```ts
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+export function verifyWebhook(rawBody: string, header: string, secret: string) {
+  const parts = Object.fromEntries(
+    header.split(",").map((p) => p.trim().split("=", 2) as [string, string]),
+  );
+  const ts = Number(parts.t);
+  if (!ts || Math.abs(Math.floor(Date.now() / 1000) - ts) > 300) return false;
+  const expected = createHmac("sha256", secret)
+    .update(`${ts}.${rawBody}`)
+    .digest("hex");
+  const sig = Buffer.from(parts.v1 ?? "", "hex");
+  const exp = Buffer.from(expected, "hex");
+  return sig.length === exp.length && timingSafeEqual(sig, exp);
+}
+```
+
+### Verify in Python
+
+```python
+import hmac, hashlib, time
+
+def verify_webhook(raw_body: bytes, header: str, secret: str) -> bool:
+    parts = dict(p.strip().split("=", 1) for p in header.split(","))
+    try:
+        ts = int(parts["t"])
+    except (KeyError, ValueError):
+        return False
+    if abs(int(time.time()) - ts) > 300:
+        return False
+    expected = hmac.new(secret.encode(), f"{ts}.{raw_body.decode()}".encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(parts.get("v1", ""), expected)
+```
+
+## Retries and delivery ordering
+
+- Each delivery attempts up to **6 times** with exponential backoff: **1m → 5m → 30m → 2h → 12h** (~14 hours total).
+- Return any `2xx` to mark the delivery successful. Any other status (or a network failure / 15s timeout) schedules the next attempt.
+- After the final failure the delivery is marked `exhausted` and visible in `GET /v1/webhooks/:id/deliveries`.
+- We do **not** guarantee strict ordering. Idempotently process events keyed on `Webhook-Id` (which is also returned in `data` for the relevant resource ids).
+
+## Best practices
+
+1. Respond fast (`< 5s`). Acknowledge with `200 {ok:true}` and process work asynchronously.
+2. Verify the `Webhook-Signature` on every request. Never trust the body alone.
+3. Treat unknown event types as forward-compatible and ignore them — we add new types over time.
+4. Rotate the signing secret if it leaks; the rotate endpoint returns a new value once.
+5. Use the `quota.warning` event to alert your own pipeline before you hit the hard `429`.

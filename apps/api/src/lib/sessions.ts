@@ -6,6 +6,7 @@ import { uploadScreenshot } from "./r2.js";
 import { db } from "./db.js";
 import { recordings, runs, screenshots } from "@screenshotsmcp/db";
 import { persistInitialRunOutcome, persistRunOutcomeSnapshot, type RunOutcomeContext, normalizeOutcomeContext } from "./run-outcomes.js";
+import { emitWebhookEvent } from "./webhook-delivery.js";
 import { existsSync } from "fs";
 import { readFile, rm } from "fs/promises";
 import { tmpdir } from "os";
@@ -401,6 +402,26 @@ export async function closeSession(sessionId: string): Promise<{ videoUrl?: stri
 
   await session.release().catch(() => {});
   sessions.delete(sessionId);
+
+  // Best-effort webhook fanout. We treat any finalization error as `run.failed`,
+  // otherwise `run.completed`. Subscribers can use this to trigger downstream
+  // automations (Slack pings, Linear tickets, GitHub PR comments, etc.).
+  void emitWebhookEvent({
+    userId: session.userId,
+    eventType: finalizationError ? "run.failed" : "run.completed",
+    dedupeKey: `${finalizationError ? "run.failed" : "run.completed"}:${sessionId}`,
+    payload: {
+      runId: sessionId,
+      finalUrl: pageSnapshot?.finalUrl ?? null,
+      pageTitle: pageSnapshot?.pageTitle ?? null,
+      recordingEnabled: session.recording,
+      videoUrl: videoUrl ?? null,
+      consoleErrorCount: session.consoleLogs.filter((l) => l.level === "error").length,
+      networkErrorCount: session.networkErrors.length,
+      finalizationError: finalizationError ?? null,
+    },
+  }).catch((err) => console.warn(`[webhooks] emit run event failed:`, err));
+
   return { videoUrl, r2Key, recordingId, finalizationError };
 }
 

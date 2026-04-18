@@ -5,6 +5,7 @@ import { screenshots } from "@screenshotsmcp/db";
 import { uploadScreenshot } from "../lib/r2.js";
 import { browserPool } from "../lib/browser-pool.js";
 import { STEALTH_SCRIPT, DEFAULT_USER_AGENT } from "../lib/stealth.js";
+import { emitWebhookEvent } from "../lib/webhook-delivery.js";
 import type { ScreenshotJob } from "@screenshotsmcp/types";
 import type { Page } from "playwright";
 
@@ -231,12 +232,45 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
         ...(dimensions ? { width: dimensions.width, height: dimensions.height } : {}),
       })
       .where(eq(screenshots.id, id));
+
+    // Best-effort fanout to user webhook subscribers; never block job completion.
+    const [row] = await db
+      .select({ userId: screenshots.userId, url: screenshots.url, format: screenshots.format })
+      .from(screenshots)
+      .where(eq(screenshots.id, id));
+    if (row) {
+      void emitWebhookEvent({
+        userId: row.userId,
+        eventType: "screenshot.completed",
+        dedupeKey: `screenshot.completed:${id}`,
+        payload: {
+          screenshotId: id,
+          url: row.url,
+          publicUrl,
+          format: row.format,
+          width: dimensions?.width ?? null,
+          height: dimensions?.height ?? null,
+        },
+      }).catch((err) => console.warn(`[webhooks] emit screenshot.completed failed:`, err));
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     await db
       .update(screenshots)
       .set({ status: "failed", errorMessage: message })
       .where(eq(screenshots.id, id));
+    const [row] = await db
+      .select({ userId: screenshots.userId, url: screenshots.url })
+      .from(screenshots)
+      .where(eq(screenshots.id, id));
+    if (row) {
+      void emitWebhookEvent({
+        userId: row.userId,
+        eventType: "screenshot.failed",
+        dedupeKey: `screenshot.failed:${id}`,
+        payload: { screenshotId: id, url: row.url, error: message },
+      }).catch((err) => console.warn(`[webhooks] emit screenshot.failed failed:`, err));
+    }
     throw err;
   } finally {
     if (context) await context.close().catch(() => {});

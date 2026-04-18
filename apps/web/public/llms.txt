@@ -245,6 +245,28 @@ npx screenshotsmcp setup
 - Credentials stored in `~/.config/screenshotsmcp/config.json`. Once logged in, all commands are authenticated.
 - Use `npx screenshotsmcp` if unsure whether it's installed globally.
 
+## Webhooks
+
+Subscribe an HTTPS endpoint to receive HMAC-signed events:
+
+```
+POST   /v1/webhooks                  # create endpoint, secret returned once
+GET    /v1/webhooks                  # list endpoints
+PATCH  /v1/webhooks/:id              # update url, events, enabled flag
+POST   /v1/webhooks/:id/rotate       # rotate signing secret
+POST   /v1/webhooks/:id/test         # fire test.ping
+GET    /v1/webhooks/:id/deliveries   # last 50 delivery attempts
+DELETE /v1/webhooks/:id              # remove endpoint
+```
+
+Available events: `screenshot.completed`, `screenshot.failed`, `run.completed`, `run.failed`, `quota.warning`, `test.ping`. Default subscription is `["*"]` (forward-compatible).
+
+Headers on every delivery: `Webhook-Id`, `Webhook-Timestamp`, `Webhook-Signature: t=<unix>,v1=<hex hmac sha256 of "${ts}.${body}">`. Verify within 5 minutes of `Webhook-Timestamp`.
+
+Retries: 6 attempts at 1m / 5m / 30m / 2h / 12h. Exhausted deliveries are visible in `GET /v1/webhooks/:id/deliveries`.
+
+Full reference: https://www.screenshotmcp.com/docs/api/webhooks
+
 ## Server URL
 
 MCP endpoint: `https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY`

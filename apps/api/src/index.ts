@@ -5,12 +5,14 @@ import { createHash } from "crypto";
 import { nanoid } from "nanoid";
 import { screenshotRouter } from "./routes/screenshot.js";
 import { webhookRouter } from "./routes/webhook.js";
+import { webhooksOutboundRouter } from "./routes/webhooks-outbound.js";
 import { recordingsRouter } from "./routes/recordings.js";
 import { runsRouter } from "./routes/runs.js";
 import { mcpRouter } from "./mcp/server.js";
 import { errorHandler } from "./middleware/error.js";
 import { requestId } from "./middleware/requestId.js";
 import { startWorker } from "./lib/queue.js";
+import { startWebhookWorker } from "./lib/webhook-delivery.js";
 import { browserPool } from "./lib/browser-pool.js";
 import { attachAnalyticsWs } from "./routes/analytics-ws.js";
 import { attachDashboardWs } from "./routes/dashboard-ws.js";
@@ -158,6 +160,7 @@ app.post("/oauth/token", express.urlencoded({ extended: false }), (req, res) => 
 });
 
 app.use("/v1/screenshot", screenshotRouter);
+app.use("/v1/webhooks", webhooksOutboundRouter);
 app.use("/webhooks", webhookRouter);
 app.use("/v1/recordings", recordingsRouter);
 app.use("/v1/runs", runsRouter);
@@ -173,4 +176,5 @@ server.listen(PORT, async () => {
   console.log(`API server running on port ${PORT}`);
   await browserPool.init();
   startWorker();
+  startWebhookWorker();
 });

@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   text,
@@ -193,6 +194,66 @@ export const usageEvents = pgTable("usage_events", {
   }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+export const webhookEndpoints = pgTable(
+  "webhook_endpoints",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    secret: text("secret").notNull(),
+    // Event selectors. `*` matches all events.
+    events: text("events")
+      .array()
+      .notNull()
+      .default(sql`ARRAY['*']::text[]`),
+    description: text("description"),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    lastDeliveredAt: timestamp("last_delivered_at"),
+    lastFailureAt: timestamp("last_failure_at"),
+  },
+  (table) => ({
+    byUser: index("webhook_endpoints_user_idx").on(table.userId),
+  }),
+);
+
+export const webhookDeliveries = pgTable(
+  "webhook_deliveries",
+  {
+    id: text("id").primaryKey(),
+    endpointId: text("endpoint_id")
+      .notNull()
+      .references(() => webhookEndpoints.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    eventType: text("event_type").notNull(),
+    // JSON-encoded payload; stored as text to keep the schema dependency-free.
+    payload: text("payload").notNull(),
+    attempt: integer("attempt").notNull().default(0),
+    // pending | success | failed | exhausted
+    status: text("status").notNull().default("pending"),
+    responseCode: integer("response_code"),
+    responseBody: text("response_body"),
+    errorMessage: text("error_message"),
+    deliveredAt: timestamp("delivered_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    byEndpointCreated: index("webhook_deliveries_endpoint_created_idx").on(
+      table.endpointId,
+      table.createdAt,
+    ),
+    byUserCreated: index("webhook_deliveries_user_created_idx").on(
+      table.userId,
+      table.createdAt,
+    ),
+  }),
+);
 
 export const tryRateLimits = pgTable(
   "try_rate_limits",

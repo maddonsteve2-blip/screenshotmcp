@@ -57,6 +57,13 @@
       "when": 1776472361852,
       "tag": "0007_daffy_stick",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776479181948,
+      "tag": "0008_outgoing_shriek",
+      "breakpoints": true
     }
   ]
 }
