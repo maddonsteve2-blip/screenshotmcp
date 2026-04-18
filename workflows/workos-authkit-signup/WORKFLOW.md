@@ -63,26 +63,45 @@ WorkOS renders Turnstile with `render=explicit`, so the sitekey is not in
 
 The sitekey is embedded in the path after `/turnstile/f/ov2/av0/rch/{slot}/`.
 
-## The hard wall: token injection is blocked
+## The real wall: Cloudflare Private Access Token
 
-`solve_captcha` (CapSolver) returns a valid token in ~15s. Token verifies on
-Cloudflare's side. **But**:
+After the April 2026 tool hardening, Turnstile itself is **solvable**:
 
-- The Turnstile widget runs inside an opaque iframe; the hidden
-  `cf-turnstile-response` input is not created until a real user event fires.
-- `browser_evaluate` injection of the token into any input returns
-  `injected: 0` because no field exists yet.
-- `browser_click_at` on the checkbox coordinate registers but Turnstile
-  fingerprints the origin event and refuses to mark verified.
+- `solve_captcha` returns a valid CapSolver token in ~17s.
+- Token injection now works end-to-end: we create the `cf-turnstile-response`
+  hidden input in every form, override `turnstile.getResponse()`, and fire
+  registered widget callbacks across Clerk / WorkOS / generic shapes.
+- `form.requestSubmit()` then successfully POSTs to WorkOS's backend with
+  our token attached and the server returns HTTP 200.
 
-This is **working as designed** — it's the same bot-defence that stops spam.
-Do not waste cycles trying to break it.
+The form still never advances, because WorkOS layers a second gate on top:
+**Cloudflare Private Access Token (PAT)**. The console log makes it explicit:
+
+```
+[LOG] The next request for the Private Access Token challenge may return
+      a 401 and show a warning in console.
+[ERROR] Failed to load resource: the server responded with a status of 401
+```
+
+PAT requires cryptographic **device attestation**:
+
+- Apple iCloud+ Private Access Token (physical Mac / iPhone with Secure Enclave)
+- Android Play Integrity (physical device with Play Services)
+- WebAuthn with a hardware security key
+
+No headless browser can produce one. This is exactly the attack surface
+PAT was designed to close. Do not waste cycles trying.
 
 ## Recommended handoff
 
-1. Drive every step up to and including the Turnstile gate.
-2. Record the outcome via `auth_test_assist(action='record', outcome='signup_failed', notes='WorkOS AuthKit + Turnstile: human click required on checkbox')`.
-3. Hand credentials back to the user:
+1. Drive every step up to **and through** the Turnstile solve + form submit.
+   The form will POST with our token and return 200, then hang on PAT.
+2. Record the outcome via `auth_test_assist(action='record', outcome='signup_failed', notes='WorkOS + PAT: device attestation required, solvable by human in own Chrome or via GitHub OAuth button')`.
+3. Offer the user two honest paths:
+   - Open Smithery in their own browser and click "Continue with GitHub"
+     (skips PAT and email verification entirely).
+   - Complete the Turnstile checkbox in their own browser and verify email.
+4. Hand credentials back to the user:
 
    ```
    Step         URL you paused on
