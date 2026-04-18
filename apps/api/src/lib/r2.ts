@@ -17,6 +17,23 @@ const r2 = new S3Client({
 export const BUCKET = process.env.R2_BUCKET!;
 export const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
 
+/**
+ * Append a non-cryptographic referral marker so every shared screenshot URL
+ * carries attribution back to screenshotmcp.com. R2 ignores unknown query
+ * strings, so this is a no-op for content delivery while turning every public
+ * link into a small marketing surface.
+ *
+ * Set REFERRAL_TAG="" in production to disable globally; the worker also skips
+ * tagging for paid plans (see screenshotsmcp/types#PLAN_LIMITS).
+ */
+const REFERRAL_TAG =
+  process.env.SCREENSHOT_REFERRAL_TAG ?? "via=screenshotmcp.com";
+
+export function tagPublicUrl(url: string): string {
+  if (!REFERRAL_TAG) return url;
+  return url.includes("?") ? `${url}&${REFERRAL_TAG}` : `${url}?${REFERRAL_TAG}`;
+}
+
 export async function uploadScreenshot(
   key: string,
   buffer: Buffer,
@@ -30,7 +47,7 @@ export async function uploadScreenshot(
       ContentType: contentType,
     })
   );
-  return `${R2_PUBLIC_URL}/${key}`;
+  return tagPublicUrl(`${R2_PUBLIC_URL}/${key}`);
 }
 
 export async function getPresignedUrl(key: string, expiresIn = 3600): Promise<string> {

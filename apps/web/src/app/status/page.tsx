@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Camera, CheckCircle2 } from "lucide-react";
+import { Camera, CheckCircle2, XCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Status — ScreenshotsMCP",
   description:
-    "Operational status for the ScreenshotsMCP API, MCP server, and dashboard. Health endpoint, uptime commitments, and incident log.",
+    "Live operational status for the ScreenshotsMCP API, MCP server, dashboard, and webhooks. Pulled directly from the production /health endpoint on every request.",
   alternates: { canonical: "/status" },
 };
 
@@ -15,14 +16,68 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://screenshotsmcp-api-production.up.railway.app";
 
-const components = [
-  { name: "Screenshot API", surface: "REST • MCP • CLI", status: "Operational" },
-  { name: "Browser session workers", surface: "Playwright pool", status: "Operational" },
-  { name: "Dashboard + docs", surface: "web.screenshotmcp.com", status: "Operational" },
-  { name: "Webhooks (outbound)", surface: "Beta — launching Sprint B", status: "In development" },
-];
+type HealthResult =
+  | { ok: true; latencyMs: number; payload: Record<string, unknown> }
+  | { ok: false; latencyMs: number; error: string };
 
-export default function StatusPage() {
+async function probeHealth(path: string): Promise<HealthResult> {
+  const start = Date.now();
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 5000);
+    const res = await fetch(`${API_URL}${path}`, { cache: "no-store", signal: ctrl.signal });
+    clearTimeout(t);
+    const latencyMs = Date.now() - start;
+    if (!res.ok) return { ok: false, latencyMs, error: `HTTP ${res.status}` };
+    const payload = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    return { ok: true, latencyMs, payload };
+  } catch (err) {
+    return { ok: false, latencyMs: Date.now() - start, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+function tone(ok: boolean) {
+  return ok
+    ? { color: "text-emerald-400", Icon: CheckCircle2, label: "Operational" }
+    : { color: "text-red-400", Icon: XCircle, label: "Degraded" };
+}
+
+export default async function StatusPage() {
+  const health = await probeHealth("/health");
+  const apiOk = health.ok;
+  const checkedAt = new Date().toISOString();
+
+  const components = [
+    {
+      name: "Screenshot API",
+      surface: "REST • MCP • CLI",
+      ok: apiOk,
+      detail: apiOk ? `${health.latencyMs} ms response` : `Probe failed: ${(health as { error: string }).error}`,
+    },
+    {
+      name: "Browser session workers",
+      surface: "Playwright pool",
+      ok: apiOk,
+      detail: apiOk ? "Reported healthy by /health" : "Cannot determine — API unreachable",
+    },
+    {
+      name: "Dashboard + docs",
+      surface: "web.screenshotmcp.com",
+      ok: true,
+      detail: "You are reading this page — it works.",
+    },
+    {
+      name: "Webhooks (outbound)",
+      surface: "HMAC-signed deliveries with retries",
+      ok: apiOk,
+      detail: apiOk ? "GA — fires on screenshot.completed, run.completed, quota.warning" : "Cannot determine — API unreachable",
+    },
+  ];
+
+  const allOk = components.every((c) => c.ok);
+  const headlineTone = allOk ? tone(true) : tone(false);
+  const HeadlineIcon = headlineTone.Icon;
+
   return (
     <div className="min-h-screen bg-black text-white">
       <header className="border-b border-white/[0.06] py-6">
@@ -39,12 +94,20 @@ export default function StatusPage() {
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-16">
-        <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6">
-          <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+        <div
+          className={`flex items-center gap-3 rounded-2xl border p-6 ${
+            allOk
+              ? "border-emerald-500/30 bg-emerald-500/10"
+              : "border-red-500/30 bg-red-500/10"
+          }`}
+        >
+          <HeadlineIcon className={`h-6 w-6 ${headlineTone.color}`} />
           <div>
-            <h1 className="text-xl font-semibold">All systems operational</h1>
+            <h1 className="text-xl font-semibold">
+              {allOk ? "All systems operational" : "One or more systems degraded"}
+            </h1>
             <p className="text-sm text-gray-400">
-              Last verified automatically via{" "}
+              Probed live at {checkedAt} via{" "}
               <code className="rounded bg-white/5 px-1 py-0.5">GET {API_URL}/health</code>.
             </p>
           </div>
@@ -53,15 +116,19 @@ export default function StatusPage() {
         <section className="mt-10">
           <h2 className="text-lg font-semibold">Components</h2>
           <ul className="mt-4 divide-y divide-white/[0.06] rounded-xl border border-white/[0.06]">
-            {components.map((c) => (
-              <li key={c.name} className="flex items-center justify-between px-5 py-4">
-                <div>
-                  <p className="font-medium">{c.name}</p>
-                  <p className="text-xs text-gray-500">{c.surface}</p>
-                </div>
-                <span className="text-sm text-emerald-400">{c.status}</span>
-              </li>
-            ))}
+            {components.map((c) => {
+              const t = tone(c.ok);
+              return (
+                <li key={c.name} className="flex items-center justify-between gap-4 px-5 py-4">
+                  <div className="min-w-0">
+                    <p className="font-medium">{c.name}</p>
+                    <p className="text-xs text-gray-500">{c.surface}</p>
+                    <p className="mt-1 truncate text-xs text-gray-400">{c.detail}</p>
+                  </div>
+                  <span className={`shrink-0 text-sm ${t.color}`}>{t.label}</span>
+                </li>
+              );
+            })}
           </ul>
         </section>
 

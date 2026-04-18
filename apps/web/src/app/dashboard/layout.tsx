@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import DashboardSidebar from "./dashboard-sidebar";
+import FeedbackButton from "./feedback-button";
 
 const inter = Inter({ subsets: ["latin"], variable: "--dashboard-font-sans" });
 
@@ -67,6 +68,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <main className="min-w-0 flex-1 overflow-auto">{children}</main>
       </div>
+
+      <FeedbackButton />
     </div>
   );
 }

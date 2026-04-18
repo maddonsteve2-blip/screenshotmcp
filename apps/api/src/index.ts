@@ -45,6 +45,34 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", ts: new Date().toISOString(), pool: browserPool.stats() });
 });
 
+// Public discovery manifest for the MCP server. AI clients (Cursor, Windsurf,
+// Claude Desktop, Smithery, Pulse) probe /.well-known/mcp.json to learn the
+// server name, transports, and the get-an-API-key URL.
+app.get("/.well-known/mcp.json", (_req, res) => {
+  const webUrl = process.env.WEB_URL || "https://www.screenshotmcp.com";
+  res.json({
+    schemaVersion: "1",
+    name: "screenshotsmcp",
+    displayName: "ScreenshotsMCP",
+    description:
+      "Screenshots, browser automation, visual diff, and audit tooling for AI agents. 52+ MCP tools spanning Playwright sessions, full-page captures, accessibility / SEO / performance reviews, CAPTCHA solving, and signed outbound webhooks.",
+    homepage: webUrl,
+    docs: `${webUrl}/docs`,
+    install: `${webUrl}/dashboard/install`,
+    pricing: `${webUrl}/pricing`,
+    changelog: `${webUrl}/changelog`,
+    transports: {
+      streamableHttp: {
+        url: `${APP_URL}/mcp`,
+        keyInPath: `${APP_URL}/mcp/{API_KEY}`,
+        auth: "bearer",
+      },
+    },
+    capabilities: ["tools"],
+    contact: { email: "support@screenshotmcp.com" },
+  });
+});
+
 app.get("/.well-known/oauth-protected-resource", (_req, res) => {
   res.json({
     resource: `${APP_URL}/mcp`,

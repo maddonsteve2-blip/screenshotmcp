@@ -161,7 +161,7 @@ function buildCommentBody(
     "",
     `Resolution: ${diff.width}×${diff.height} · pixelmatch threshold: ${diff.threshold} · changed pixels: ${diff.changedPixels.toLocaleString()} / ${diff.totalPixels.toLocaleString()}`,
     "",
-    `_Powered by [ScreenshotsMCP](https://www.screenshotmcp.com/docs/api/webhooks)._`,
+    `<sub>🤖 Visual diff by [ScreenshotsMCP](https://www.screenshotmcp.com/?ref=github-action) · [Wire it into your AI agent](https://www.screenshotmcp.com/dashboard/install?ref=github-action) · Free for public repos</sub>`,
   ].join("\n");
 }
 

@@ -28,8 +28,8 @@ const plans = [
     price: "$9",
     period: "/ month",
     screenshots: "2,000 screenshots / mo",
-    cta: "Start free trial",
-    href: "/sign-up",
+    cta: "Choose Starter",
+    href: "/sign-up?plan=starter",
     highlight: true,
     features: [
       "2,000 screenshots / month",
@@ -46,8 +46,8 @@ const plans = [
     price: "$29",
     period: "/ month",
     screenshots: "10,000 screenshots / mo",
-    cta: "Start free trial",
-    href: "/sign-up",
+    cta: "Choose Pro",
+    href: "/sign-up?plan=pro",
     highlight: false,
     features: [
       "10,000 screenshots / month",
@@ -89,7 +89,7 @@ export default function PricingPage() {
         <div className="text-center mb-16">
           <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">Simple, transparent pricing</h1>
           <p className="mx-auto max-w-2xl text-[1.1rem] leading-relaxed text-muted-foreground sm:text-[1.28rem]">
-            Start free. No credit card required. Upgrade when you need more.
+            Start on the free plan — no credit card. Upgrade in-app when you need more headroom.
           </p>
         </div>
 

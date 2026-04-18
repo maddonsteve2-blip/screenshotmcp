@@ -6,6 +6,7 @@ import { PLAN_LIMITS, LEGACY_FREE_QUOTA_PER_MONTH } from "@screenshotsmcp/types"
 import type { AuthRequest } from "./auth.js";
 import type { RequestIdRequest } from "./requestId.js";
 import { emitWebhookEvent } from "../lib/webhook-delivery.js";
+import { emitActivation } from "../lib/activation.js";
 import { getRedis } from "../lib/redis.js";
 
 const QUOTA_WARNING_THRESHOLDS = [0.8, 0.95] as const;
@@ -39,19 +40,24 @@ async function maybeEmitQuotaWarning(
       }
     }
     if (!firstFire) continue;
+    const payload = {
+      threshold,
+      used,
+      limit,
+      plan,
+      remaining: Math.max(0, limit - used),
+      resetAt: new Date(resetSeconds * 1000).toISOString(),
+    };
     void emitWebhookEvent({
       userId,
       eventType: "quota.warning",
       dedupeKey: key,
-      payload: {
-        threshold,
-        used,
-        limit,
-        plan,
-        remaining: Math.max(0, limit - used),
-        resetAt: new Date(resetSeconds * 1000).toISOString(),
-      },
+      payload,
     }).catch(() => {});
+    void emitActivation(
+      threshold === 0.95 ? "quota_warning_95" : "quota_warning_80",
+      { userId, properties: payload },
+    );
   }
 }
 

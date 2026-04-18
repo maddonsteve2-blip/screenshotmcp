@@ -3,6 +3,7 @@ import {
   pgTable,
   text,
   timestamp,
+  jsonb,
   boolean,
   integer,
   pgEnum,
@@ -252,6 +253,40 @@ export const webhookDeliveries = pgTable(
       table.userId,
       table.createdAt,
     ),
+  }),
+);
+
+/**
+ * Lightweight activation funnel events. Drop-in replacement target for PostHog
+ * once that's wired up — schema deliberately mirrors PostHog's event shape so
+ * a future backfill is straightforward. Events fire from API route handlers,
+ * webhook routes, and Stripe billing webhooks (when enabled).
+ *
+ * Canonical event names:
+ *   - signup            (user_id present, plan='free')
+ *   - api_key_created
+ *   - first_screenshot
+ *   - first_diff
+ *   - first_session
+ *   - first_webhook
+ *   - upgraded          (props: { fromPlan, toPlan })
+ *   - downgraded
+ *   - quota_warning_80
+ *   - quota_warning_95
+ *   - quota_exceeded
+ */
+export const activationEvents = pgTable(
+  "activation_events",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    eventName: text("event_name").notNull(),
+    properties: jsonb("properties").$type<Record<string, unknown>>().default({}),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    byUserName: index("activation_events_user_name_idx").on(table.userId, table.eventName),
+    byNameCreated: index("activation_events_name_created_idx").on(table.eventName, table.createdAt),
   }),
 );
 
