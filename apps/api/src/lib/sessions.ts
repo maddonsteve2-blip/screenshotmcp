@@ -12,6 +12,7 @@ import { readFile, rm } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 import { eq } from "drizzle-orm";
+import { deriveCaption } from "./captions.js";
 
 export interface NetworkEntry {
   url: string;
@@ -34,6 +35,8 @@ export interface Session {
   consoleLogs: Array<{ level: string; text: string; ts: number }>;
   networkErrors: Array<{ url: string; status: number; statusText: string; ts: number }>;
   networkRequests: NetworkEntry[];
+  /** Monotonic counter for narrated-timeline step indices. */
+  screenshotSeq: number;
   recording: boolean;
   videoDir?: string;
   videoUrl?: string;
@@ -204,7 +207,7 @@ export async function createSession(userId: string, viewport?: { width: number; 
   const networkErrors: Session["networkErrors"] = [];
   const networkRequests: NetworkEntry[] = [];
 
-  const session: Session = { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors, networkRequests, recording: !!recordVideo, videoDir, startTime: Date.now(), outcomeContext: normalizeOutcomeContext(outcomeContext) };
+  const session: Session = { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors, networkRequests, recording: !!recordVideo, screenshotSeq: 0, videoDir, startTime: Date.now(), outcomeContext: normalizeOutcomeContext(outcomeContext) };
   await db.insert(runs).values({
     id: sessionId,
     userId,
@@ -425,7 +428,20 @@ export async function closeSession(sessionId: string): Promise<{ videoUrl?: stri
   return { videoUrl, r2Key, recordingId, finalizationError };
 }
 
-export async function pageScreenshot(page: Page): Promise<{ type: "image"; data: string; mimeType: string }> {
+export interface NarrationContext {
+  toolName?: string;
+  prevUrl?: string | null;
+  prevTitle?: string | null;
+  prevHeading?: string | null;
+  arg?: string | null;
+  arg2?: string | null;
+  agentNote?: string | null;
+}
+
+export async function pageScreenshot(
+  page: Page,
+  narration: NarrationContext = {},
+): Promise<{ type: "image"; data: string; mimeType: string }> {
   const buf = await page.screenshot({ type: "jpeg", quality: 80, fullPage: true, timeout: 15000 });
   const sessionEntry = getSessionEntryByPage(page);
   if (sessionEntry) {
@@ -433,11 +449,41 @@ export async function pageScreenshot(page: Page): Promise<{ type: "image"; data:
     const r2Key = `runs/${sessionEntry.sessionId}/screenshots/${screenshotId}.jpeg`;
     const publicUrl = await uploadScreenshot(r2Key, buf, "image/jpeg");
     const viewport = page.viewportSize();
+
+    const nextUrl = page.url();
+    let nextTitle: string | null = null;
+    let nextHeading: string | null = null;
+    try {
+      nextTitle = await page.title();
+    } catch { /* ignore */ }
+    try {
+      nextHeading = await page.evaluate(() => {
+        const h = document.querySelector("h1,h2");
+        return h ? (h.textContent || "").trim().slice(0, 200) : null;
+      });
+    } catch { /* ignore */ }
+
+    const caption = deriveCaption({
+      toolName: narration.toolName || "browser_screenshot",
+      prevUrl: narration.prevUrl,
+      nextUrl,
+      prevTitle: narration.prevTitle,
+      nextTitle,
+      prevHeading: narration.prevHeading,
+      nextHeading,
+      arg: narration.arg,
+      arg2: narration.arg2,
+      agentNote: narration.agentNote,
+    });
+
+    // Monotonic step index within this run.
+    const stepIndex = ++sessionEntry.session.screenshotSeq;
+
     await db.insert(screenshots).values({
       id: screenshotId,
       userId: sessionEntry.session.userId,
       sessionId: sessionEntry.sessionId,
-      url: page.url(),
+      url: nextUrl,
       status: "done",
       r2Key,
       publicUrl,
@@ -446,6 +492,15 @@ export async function pageScreenshot(page: Page): Promise<{ type: "image"; data:
       fullPage: true,
       format: "jpeg",
       delay: 0,
+      stepIndex,
+      actionLabel: caption.actionLabel,
+      outcome: caption.outcome,
+      toolName: narration.toolName ?? "browser_screenshot",
+      captionSource: caption.captionSource,
+      agentNote: narration.agentNote ?? null,
+      prevUrl: narration.prevUrl ?? null,
+      pageTitle: nextTitle,
+      heading: nextHeading,
       completedAt: new Date(),
     }).catch((err) => console.error(`[Sessions] Failed to persist session screenshot for ${sessionEntry.sessionId}:`, err));
   }

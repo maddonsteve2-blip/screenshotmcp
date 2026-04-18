@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";
 import { cn } from "@/lib/utils";
 import { Activity, AlertTriangle, CheckCircle2, ExternalLink, Globe, Image as ImageIcon, Monitor, Network, RefreshCw, Search, SquareTerminal, Video } from "lucide-react";
+import RunTimelineCarousel from "./run-timeline-carousel";
 
 function formatDate(dateStr?: string | null) {
   if (!dateStr) return "—";
@@ -51,6 +52,14 @@ type ScreenshotItem = {
   format: string;
   fullPage: boolean;
   createdAt: string;
+  stepIndex: number | null;
+  actionLabel: string | null;
+  outcome: string | null;
+  toolName: string | null;
+  captionSource: string | null;
+  agentNote: string | null;
+  pageTitle: string | null;
+  heading: string | null;
 };
 
 type RecordingItem = {
@@ -116,6 +125,7 @@ type RunOutcome = {
   userGoal: string | null;
   workflowUsed: string | null;
   verdict: string;
+  problem: string | null;
   summary: string | null;
   contract: Record<string, unknown>;
   findings: Array<{ id?: string; severity?: string; title?: string; detail?: string; recommendation?: string }>;
@@ -372,6 +382,67 @@ export default function RunDetailTabs({
       </TabsList>
 
       <TabsContent value="summary" className="flex flex-col gap-6">
+        {(outcome?.problem || outcome?.summary) && (
+          <Card>
+            <CardContent className="grid gap-4 p-6 md:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Problem</div>
+                <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+                  {outcome?.problem ?? <span className="text-muted-foreground italic">Agent did not record a problem statement.</span>}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Outcome
+                  {outcome?.verdict && (
+                    <Badge
+                      variant={
+                        outcome.verdict === "passed" ? "secondary"
+                        : outcome.verdict === "failed" ? "destructive"
+                        : "outline"
+                      }
+                      className="capitalize text-[10px]"
+                    >
+                      {outcome.verdict}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+                  {outcome?.summary ?? <span className="text-muted-foreground italic">Agent did not summarise this run.</span>}
+                </p>
+              </div>
+              {outcome?.nextActions && outcome.nextActions.length > 0 && (
+                <div className="md:col-span-2 flex flex-col gap-2 border-t pt-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Next actions</div>
+                  <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+                    {outcome.nextActions.map((action, i) => (
+                      <li key={i}>{action}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {screenshots.length > 0 && (
+          <RunTimelineCarousel
+            steps={screenshots.map((shot) => ({
+              id: shot.id,
+              publicUrl: shot.publicUrl,
+              stepIndex: shot.stepIndex,
+              actionLabel: shot.actionLabel,
+              outcome: shot.outcome,
+              toolName: shot.toolName,
+              captionSource: shot.captionSource,
+              agentNote: shot.agentNote,
+              url: shot.url,
+              pageTitle: shot.pageTitle,
+              createdAt: shot.createdAt,
+            }))}
+          />
+        )}
+
         <Card>
           <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-col gap-2">

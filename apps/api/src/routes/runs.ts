@@ -1,10 +1,12 @@
 import { Router } from "express";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { createHash } from "crypto";
+import { nanoid } from "nanoid";
 import { apiKeys, recordings, runOutcomes, runs, screenshots, users } from "@screenshotsmcp/db";
 import { db } from "../lib/db.js";
 import { getSession } from "../lib/sessions.js";
-import { getPresignedUrl } from "../lib/r2.js";
+import { getPresignedUrl, uploadScreenshot } from "../lib/r2.js";
+import { deriveCaption } from "../lib/captions.js";
 
 export const runsRouter = Router();
 const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET || "").trim();
@@ -166,10 +168,18 @@ runsRouter.get("/shared/:token", async (req, res) => {
       format: screenshots.format,
       fullPage: screenshots.fullPage,
       createdAt: screenshots.createdAt,
+      stepIndex: screenshots.stepIndex,
+      actionLabel: screenshots.actionLabel,
+      outcome: screenshots.outcome,
+      toolName: screenshots.toolName,
+      captionSource: screenshots.captionSource,
+      agentNote: screenshots.agentNote,
+      pageTitle: screenshots.pageTitle,
+      heading: screenshots.heading,
     })
     .from(screenshots)
     .where(eq(screenshots.sessionId, run.id))
-    .orderBy(asc(screenshots.createdAt));
+    .orderBy(asc(screenshots.stepIndex), asc(screenshots.createdAt));
 
   const recordingRows = await db
     .select({
@@ -243,6 +253,7 @@ runsRouter.get("/shared/:token", async (req, res) => {
       userGoal: outcome.userGoal,
       workflowUsed: outcome.workflowUsed,
       verdict: outcome.verdict,
+      problem: outcome.problem,
       summary: outcome.summary,
       contract: parseJson(outcome.contract, {}),
       findings: parseJson(outcome.findings, []),
@@ -259,3 +270,190 @@ runsRouter.get("/shared/:token", async (req, res) => {
     networkErrors: parseJson(run.networkErrors, []).slice(-20).reverse(),
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────
+// CLI bridge — local-browser runs stream snapshots here so they appear in the
+// dashboard narrated timeline alongside managed MCP runs.
+// ──────────────────────────────────────────────────────────────────────────
+
+// POST /v1/runs  → { runId }
+runsRouter.post("/", async (req, res) => {
+  const auth = await resolveUser(req);
+  if (!auth) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const { startUrl, viewportWidth, viewportHeight, userGoal, workflowName } = req.body ?? {};
+  const runId = nanoid();
+  await db.insert(runs).values({
+    id: runId,
+    userId: auth.userId,
+    status: "active",
+    executionMode: "cli-local",
+    startUrl: typeof startUrl === "string" ? startUrl : null,
+    viewportWidth: typeof viewportWidth === "number" ? viewportWidth : null,
+    viewportHeight: typeof viewportHeight === "number" ? viewportHeight : null,
+    startedAt: new Date(),
+    updatedAt: new Date(),
+  });
+  // Stub a run_outcomes row so userGoal/workflowUsed can be filled later.
+  await db.insert(runOutcomes).values({
+    id: nanoid(),
+    runId,
+    userId: auth.userId,
+    userGoal: typeof userGoal === "string" ? userGoal : null,
+    workflowUsed: typeof workflowName === "string" ? workflowName : null,
+    verdict: "inconclusive",
+  }).catch(() => { /* best-effort */ });
+  res.json({ runId });
+});
+
+// POST /v1/runs/:id/steps  (multipart: png + JSON fields)
+// Fields: toolName, prevUrl, nextUrl, pageTitle, heading, arg, arg2, agentNote
+runsRouter.post("/:id/steps", async (req, res) => {
+  const auth = await resolveUser(req);
+  if (!auth) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const runId = req.params.id;
+  const [run] = await db
+    .select({ id: runs.id })
+    .from(runs)
+    .where(and(eq(runs.id, runId), eq(runs.userId, auth.userId)));
+  if (!run) {
+    res.status(404).json({ error: "Run not found" });
+    return;
+  }
+
+  // Accept either base64 JSON (simpler for CLI) or raw binary.
+  const body = req.body ?? {};
+  const png: string | undefined = body.pngBase64;
+  if (!png || typeof png !== "string") {
+    res.status(400).json({ error: "Missing pngBase64" });
+    return;
+  }
+  const buffer = Buffer.from(png, "base64");
+  const screenshotId = nanoid();
+  const r2Key = `runs/${runId}/screenshots/${screenshotId}.png`;
+  const publicUrl = await uploadScreenshot(r2Key, buffer, "image/png");
+
+  const caption = deriveCaption({
+    toolName: body.toolName ?? "cli:browser:action",
+    prevUrl: body.prevUrl ?? null,
+    nextUrl: body.nextUrl ?? null,
+    prevTitle: body.prevTitle ?? null,
+    nextTitle: body.pageTitle ?? null,
+    prevHeading: body.prevHeading ?? null,
+    nextHeading: body.heading ?? null,
+    arg: body.arg ?? null,
+    arg2: body.arg2 ?? null,
+    agentNote: body.agentNote ?? null,
+  });
+
+  // Compute next step_index server-side (max + 1 within this run).
+  const [{ maxStep }] = await db
+    .select({ maxStep: sql<number>`COALESCE(MAX(${screenshots.stepIndex}), 0)` })
+    .from(screenshots)
+    .where(eq(screenshots.sessionId, runId));
+  const stepIndex = (maxStep ?? 0) + 1;
+
+  await db.insert(screenshots).values({
+    id: screenshotId,
+    userId: auth.userId,
+    sessionId: runId,
+    url: body.nextUrl ?? "",
+    status: "done",
+    r2Key,
+    publicUrl,
+    width: typeof body.width === "number" ? body.width : 1280,
+    height: typeof body.height === "number" ? body.height : 800,
+    fullPage: false,
+    format: "png",
+    delay: 0,
+    stepIndex,
+    actionLabel: caption.actionLabel,
+    outcome: caption.outcome,
+    toolName: body.toolName ?? "cli:browser:action",
+    captionSource: caption.captionSource,
+    agentNote: body.agentNote ?? null,
+    prevUrl: body.prevUrl ?? null,
+    pageTitle: body.pageTitle ?? null,
+    heading: body.heading ?? null,
+    completedAt: new Date(),
+  });
+
+  await db.update(runs)
+    .set({ finalUrl: body.nextUrl ?? null, pageTitle: body.pageTitle ?? null, updatedAt: new Date() })
+    .where(eq(runs.id, runId));
+
+  res.json({
+    screenshotId,
+    publicUrl,
+    stepIndex,
+    actionLabel: caption.actionLabel,
+    outcome: caption.outcome,
+  });
+});
+
+// PATCH /v1/runs/:id  → finish run
+runsRouter.patch("/:id", async (req, res) => {
+  const auth = await resolveUser(req);
+  if (!auth) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const runId = req.params.id;
+  const { status, finalUrl, pageTitle } = req.body ?? {};
+  const nextStatus = status === "completed" || status === "failed" ? status : null;
+  await db.update(runs)
+    .set({
+      ...(nextStatus ? { status: nextStatus, endedAt: new Date() } : {}),
+      ...(typeof finalUrl === "string" ? { finalUrl } : {}),
+      ...(typeof pageTitle === "string" ? { pageTitle } : {}),
+      updatedAt: new Date(),
+    })
+    .where(and(eq(runs.id, runId), eq(runs.userId, auth.userId)));
+  res.json({ ok: true });
+});
+
+// POST /v1/runs/:id/outcome  → write problem + summary + verdict + next actions
+runsRouter.post("/:id/outcome", async (req, res) => {
+  const auth = await resolveUser(req);
+  if (!auth) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const runId = req.params.id;
+  const { problem, summary, verdict, nextActions, findings, userGoal, taskType } = req.body ?? {};
+
+  const [existing] = await db
+    .select({ id: runOutcomes.id })
+    .from(runOutcomes)
+    .where(eq(runOutcomes.runId, runId));
+
+  const patch = {
+    ...(typeof problem === "string" ? { problem } : {}),
+    ...(typeof summary === "string" ? { summary } : {}),
+    ...(typeof verdict === "string" ? { verdict } : {}),
+    ...(typeof userGoal === "string" ? { userGoal } : {}),
+    ...(typeof taskType === "string" ? { taskType } : {}),
+    ...(Array.isArray(nextActions) ? { nextActions: JSON.stringify(nextActions) } : {}),
+    ...(Array.isArray(findings) ? { findings: JSON.stringify(findings) } : {}),
+    updatedAt: new Date(),
+  };
+
+  if (existing) {
+    await db.update(runOutcomes).set(patch).where(eq(runOutcomes.id, existing.id));
+  } else {
+    await db.insert(runOutcomes).values({
+      id: nanoid(),
+      runId,
+      userId: auth.userId,
+      verdict: typeof verdict === "string" ? verdict : "inconclusive",
+      ...patch,
+    });
+  }
+  res.json({ ok: true });
+});
+

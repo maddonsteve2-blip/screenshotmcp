@@ -88,6 +88,7 @@ type RunOutcome = {
   userGoal: string | null;
   workflowUsed: string | null;
   verdict: string;
+  problem: string | null;
   summary: string | null;
   contract: Record<string, unknown>;
   findings: Array<Record<string, unknown>>;
@@ -149,10 +150,18 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
       format: screenshots.format,
       fullPage: screenshots.fullPage,
       createdAt: screenshots.createdAt,
+      stepIndex: screenshots.stepIndex,
+      actionLabel: screenshots.actionLabel,
+      outcome: screenshots.outcome,
+      toolName: screenshots.toolName,
+      captionSource: screenshots.captionSource,
+      agentNote: screenshots.agentNote,
+      pageTitle: screenshots.pageTitle,
+      heading: screenshots.heading,
     })
     .from(screenshots)
     .where(and(eq(screenshots.userId, user.id), eq(screenshots.sessionId, id)))
-    .orderBy(asc(screenshots.createdAt));
+    .orderBy(asc(screenshots.stepIndex), asc(screenshots.createdAt));
 
   const recordingRes = user
     ? await (async () => {
@@ -177,6 +186,7 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
       userGoal: runOutcomes.userGoal,
       workflowUsed: runOutcomes.workflowUsed,
       verdict: runOutcomes.verdict,
+      problem: runOutcomes.problem,
       summary: runOutcomes.summary,
       contract: runOutcomes.contract,
       findings: runOutcomes.findings,
@@ -196,6 +206,7 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
     userGoal: outcomeRow.userGoal,
     workflowUsed: outcomeRow.workflowUsed,
     verdict: outcomeRow.verdict,
+    problem: outcomeRow.problem,
     summary: outcomeRow.summary,
     contract: parseJson(outcomeRow.contract, {}),
     findings: parseJson(outcomeRow.findings, []),

@@ -4,7 +4,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "../lib/db.js";
-import { screenshots, apiKeys, users, usageEvents, testInboxes, websiteAuthMemories, webhookEndpoints, webhookDeliveries } from "@screenshotsmcp/db";
+import { screenshots, apiKeys, users, usageEvents, testInboxes, websiteAuthMemories, webhookEndpoints, webhookDeliveries, runs, runOutcomes } from "@screenshotsmcp/db";
 import { screenshotQueue } from "../lib/queue.js";
 import { createHash, randomBytes } from "crypto";
 import { eq, and, count, gte, desc } from "drizzle-orm";
@@ -67,6 +67,26 @@ async function enqueueScreenshot(userId: string, options: {
   await screenshotQueue.add("capture", { id, userId, options }, { jobId: id, attempts: 2, backoff: { type: "exponential", delay: 2000 } });
   await db.insert(usageEvents).values({ id: nanoid(), userId, screenshotId: id });
   return id;
+}
+
+/**
+ * Capture the before-snapshot of a page right before a mutating browser tool
+ * runs. Returns `prevUrl/prevTitle/prevHeading` to thread into pageScreenshot
+ * so the narrated run timeline can compute a URL/heading delta.
+ */
+async function captureBefore(page: import("playwright").Page) {
+  let prevUrl: string | null = null;
+  let prevTitle: string | null = null;
+  let prevHeading: string | null = null;
+  try { prevUrl = page.url(); } catch { /* ignore */ }
+  try { prevTitle = await page.title(); } catch { /* ignore */ }
+  try {
+    prevHeading = await page.evaluate(() => {
+      const h = document.querySelector("h1,h2");
+      return h ? (h.textContent || "").trim().slice(0, 200) : null;
+    });
+  } catch { /* ignore */ }
+  return { prevUrl, prevTitle, prevHeading };
 }
 
 function humanizeError(msg: string): string {
@@ -871,10 +891,11 @@ server.tool(
 
   server.tool(
     "browser_click",
-    "Click an element on the current browser page by CSS selector or visible text. Returns a screenshot after clicking.",
+    "Click an element on the current browser page by CSS selector or visible text. Returns a screenshot after clicking. Optional `caption`: one-line note on why you're clicking this element — surfaces in the run timeline on the dashboard.",
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
       selector: z.string().describe("CSS selector (e.g. '#submit-btn', '.nav-link') or visible text to click (e.g. 'Sign in', 'Submit')"),
+      caption: z.string().optional().describe("Optional one-line note about why you're taking this action. Appears under the screenshot in the dashboard run timeline."),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -883,6 +904,7 @@ server.tool(
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       try {
         const page = session.page;
+        const before = await captureBefore(page);
         const el = page.locator(args.selector).first();
         if (await el.count() === 0) {
           const textEl = page.getByText(args.selector, { exact: false }).first();
@@ -891,7 +913,7 @@ server.tool(
           await el.click({ timeout: 5000 });
         }
         await page.waitForLoadState("domcontentloaded").catch(() => {});
-        const img = await pageScreenshot(page);
+        const img = await pageScreenshot(page, { toolName: "browser_click", arg: args.selector, agentNote: args.caption, ...before });
         return { content: [{ type: "text", text: `Clicked: ${args.selector}` }, img] };
       } catch (err) {
         const raw = err instanceof Error ? err.message : String(err);
@@ -910,6 +932,7 @@ server.tool(
       y: z.number().describe("Y coordinate (pixels from top edge of viewport)"),
       clickCount: z.number().optional().default(1).describe("Number of clicks (default: 1, use 2 for double-click)"),
       delay: z.number().optional().default(0).describe("Delay in ms between mousedown and mouseup (simulates human-like click)"),
+      caption: z.string().optional().describe("Optional one-line note about why you're taking this action. Appears under the screenshot in the dashboard run timeline."),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -918,22 +941,19 @@ server.tool(
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       try {
         const page = session.page;
+        const before = await captureBefore(page);
         // Humanized motion: curved path, variable speed, pre-click dwell.
-        // This matters for fingerprint-sensitive targets (Turnstile, hCaptcha,
-        // DataDome) that measure mouse entropy before trusting a click.
         const clicks = args.clickCount || 1;
         if (clicks <= 1) {
           await humanClick(page, args.x, args.y, { holdMin: args.delay || 30, holdMax: Math.max(60, args.delay || 60) });
         } else {
-          // Double / triple clicks: move humanly once, then use native click
-          // with the requested repeat count.
           await humanMouseMove(page, args.x, args.y);
           await naturalPause(page);
           await page.mouse.click(args.x, args.y, { clickCount: clicks, delay: args.delay || 50 });
         }
         await page.waitForLoadState("domcontentloaded").catch(() => {});
         await page.waitForTimeout(500);
-        const img = await pageScreenshot(page);
+        const img = await pageScreenshot(page, { toolName: "browser_click_at", arg: `(${args.x},${args.y})`, agentNote: args.caption, ...before });
         return { content: [{ type: "text", text: `Clicked at coordinates (${args.x}, ${args.y})` }, img] };
       } catch (err) {
         const raw = err instanceof Error ? err.message : String(err);
@@ -944,11 +964,12 @@ server.tool(
 
   server.tool(
     "browser_fill",
-    "Type text into an input field on the current browser page. Clears the field first, then types the value.",
+    "Type text into an input field on the current browser page. Clears the field first, then types the value. Optional `caption`: one-line note surfaced in the dashboard run timeline.",
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
       selector: z.string().describe("CSS selector for the input field (e.g. '#email', 'input[name=password]', 'textarea')"),
       value: z.string().describe("Text to type into the field"),
+      caption: z.string().optional().describe("Optional one-line note about this fill. Appears under the screenshot in the dashboard run timeline."),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -957,8 +978,9 @@ server.tool(
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       try {
         const page = session.page;
+        const before = await captureBefore(page);
         await page.locator(args.selector).first().fill(args.value, { timeout: 5000 });
-        const img = await pageScreenshot(page);
+        const img = await pageScreenshot(page, { toolName: "browser_fill", arg: args.selector, arg2: args.value, agentNote: args.caption, ...before });
         return { content: [{ type: "text", text: `Filled ${args.selector} with value` }, img] };
       } catch (err) {
         const raw = err instanceof Error ? err.message : String(err);
@@ -1593,9 +1615,10 @@ server.tool(
       const session = await getSession(args.sessionId, auth.userId);
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       try {
+        const before = await captureBefore(session.page);
         await session.page.keyboard.press(args.key);
         await session.page.waitForTimeout(300);
-        const img = await pageScreenshot(session.page);
+        const img = await pageScreenshot(session.page, { toolName: "browser_press_key", arg: args.key, ...before });
         return { content: [{ type: "text", text: `Pressed key: ${args.key}` }, img] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
@@ -3239,6 +3262,61 @@ server.tool(
             ``,
             `Call \`auth:plan ${args.site}\` first to refresh this state, and \`auth:record ${args.site} <outcome>\` after the attempt so future runs resume correctly.`,
           ].filter(Boolean).join("\n"),
+        }],
+      };
+    }
+  );
+
+  // @ts-ignore - TS2589 guard
+  server.tool(
+    "write_run_outcome",
+    "Write the developer-facing 'problem → outcome' story for a browser run so the dashboard Summary tab can render it above the narrated timeline. Call this at the end of any non-trivial flow (signup, audit, login, automation). Takes a short `problem` (what you were trying to do), a `summary` (what actually happened), a `verdict`, and optional `nextActions`. Updates the run_outcomes row for this runId.",
+    {
+      runId: z.string().describe("The run id (from browser_navigate / CLI browser:start / dashboard)."),
+      problem: z.string().describe("One-paragraph statement of the problem or task you attempted (e.g. 'Publish ScreenshotsMCP to Smithery MCP registry via WorkOS AuthKit signup')."),
+      summary: z.string().describe("One-paragraph summary of what actually happened and whether it worked. Include URLs, credentials persisted, blockers hit."),
+      verdict: z.enum(["passed", "failed", "inconclusive", "flaky"]).optional().describe("Overall verdict for this run. Defaults to 'inconclusive' if omitted."),
+      nextActions: z.array(z.string()).optional().describe("Optional follow-up steps for a future session."),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+
+      // Verify the run belongs to this user.
+      const [run] = await db
+        .select({ id: runs.id })
+        .from(runs)
+        .where(and(eq(runs.id, args.runId), eq(runs.userId, auth.userId)));
+      if (!run) return { content: [{ type: "text", text: `Error: run ${args.runId} not found for this account.` }] };
+
+      const [existing] = await db
+        .select({ id: runOutcomes.id })
+        .from(runOutcomes)
+        .where(eq(runOutcomes.runId, args.runId));
+
+      const patch = {
+        problem: args.problem,
+        summary: args.summary,
+        verdict: args.verdict ?? "inconclusive",
+        ...(args.nextActions ? { nextActions: JSON.stringify(args.nextActions) } : {}),
+        updatedAt: new Date(),
+      };
+
+      if (existing) {
+        await db.update(runOutcomes).set(patch).where(eq(runOutcomes.id, existing.id));
+      } else {
+        await db.insert(runOutcomes).values({
+          id: nanoid(),
+          runId: args.runId,
+          userId: auth.userId,
+          ...patch,
+        });
+      }
+
+      return {
+        content: [{
+          type: "text",
+          text: `Run outcome saved for ${args.runId}. View at https://web-phi-eight-56.vercel.app/dashboard/runs/${args.runId}`,
         }],
       };
     }

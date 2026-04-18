@@ -162,4 +162,7 @@ program.addCommand(browserPasteLocalCommand);
 program.addCommand(browserInspectLocalCommand);
 program.addCommand(browserStopCommand);
 
+// Narrated run timeline — write the problem/outcome story for any run
+program.addCommand(runFinishCommand);
+
 program.parse();

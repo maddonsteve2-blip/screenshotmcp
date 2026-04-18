@@ -11,6 +11,11 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import {
+  createCliRun,
+  postRunStep,
+  finishCliRun,
+} from "../api.js";
 
 /**
  * Interactive local browser driven one action at a time by a calling agent
@@ -37,6 +42,14 @@ interface SessionState {
   userDataDir: string;
   snapshotDir: string;
   tickCount: number;
+  /** Dashboard run id (optional — null means --no-upload or unauth). */
+  runId?: string | null;
+  /** Last seen URL/title/heading so we can compute deltas for narration. */
+  lastUrl?: string | null;
+  lastTitle?: string | null;
+  lastHeading?: string | null;
+  /** Whether the user passed --no-upload. */
+  uploadDisabled?: boolean;
 }
 
 function loadSession(): SessionState {
@@ -68,16 +81,62 @@ async function snapshot(
   page: Page,
   state: SessionState,
   label: string,
+  narration: { agentNote?: string; arg?: string; arg2?: string } = {},
 ): Promise<string> {
   state.tickCount += 1;
-  saveSession(state);
   const file = join(
     state.snapshotDir,
     `${String(state.tickCount).padStart(3, "0")}-${label.replace(/[^\w-]/g, "_")}.png`,
   );
-  await page
-    .screenshot({ path: file, fullPage: false })
-    .catch(() => {});
+  const buf = await page.screenshot({ path: file, fullPage: false }).catch(() => null);
+
+  // Capture after-state for dashboard upload.
+  let nextUrl: string | null = null;
+  let nextTitle: string | null = null;
+  let nextHeading: string | null = null;
+  try { nextUrl = page.url(); } catch { /* ignore */ }
+  try { nextTitle = await page.title(); } catch { /* ignore */ }
+  try {
+    nextHeading = await page
+      .locator("h1, h2, [role=heading]")
+      .first()
+      .innerText({ timeout: 500 })
+      .catch(() => null);
+  } catch { /* ignore */ }
+
+  // Best-effort upload to dashboard.
+  if (state.runId && !state.uploadDisabled && buf) {
+    try {
+      const result = await postRunStep(state.runId, {
+        pngBase64: buf.toString("base64"),
+        toolName: `cli:browser:${label.split("-")[0]}`,
+        prevUrl: state.lastUrl ?? null,
+        nextUrl,
+        prevTitle: state.lastTitle ?? null,
+        pageTitle: nextTitle,
+        prevHeading: state.lastHeading ?? null,
+        heading: nextHeading,
+        arg: narration.arg ?? null,
+        arg2: narration.arg2 ?? null,
+        agentNote: narration.agentNote ?? null,
+      });
+      console.log(
+        chalk.dim(
+          `  dashboard: step #${result.stepIndex} — ${result.actionLabel} ${result.outcome}`,
+        ),
+      );
+    } catch (err) {
+      // Non-fatal — local PNG still saved.
+      console.log(
+        chalk.dim(`  dashboard upload skipped: ${err instanceof Error ? err.message : String(err)}`),
+      );
+    }
+  }
+
+  state.lastUrl = nextUrl;
+  state.lastTitle = nextTitle;
+  state.lastHeading = nextHeading;
+  saveSession(state);
   return file;
 }
 
@@ -153,11 +212,14 @@ function findChromeExecutable(): string {
 
 export const browserStartCommand = new Command("browser:start")
   .description(
-    "Launch a persistent local Chrome with remote debugging. Subsequent browser:* commands drive it.",
+    "Launch a persistent local Chrome with remote debugging. Subsequent browser:* commands drive it. Streams every snapshot to the dashboard unless --no-upload is passed.",
   )
   .argument("[url]", "Initial URL to load", "about:blank")
   .option("--port <port>", "CDP port", String(9222 + Math.floor(Math.random() * 200)))
-  .action(async (url: string, opts: Record<string, string>) => {
+  .option("--no-upload", "Do not upload snapshots to the dashboard (local-only)")
+  .option("--goal <text>", "Optional user goal, saved to run_outcomes.userGoal")
+  .option("--workflow <name>", "Optional workflow name, saved to run_outcomes.workflowUsed")
+  .action(async (url: string, opts: Record<string, string | boolean>) => {
     // Clean up any stale session.
     if (existsSync(SESSION_FILE)) {
       try {
@@ -229,12 +291,34 @@ export const browserStartCommand = new Command("browser:start")
       return;
     }
 
+    const uploadDisabled = opts.upload === false;
+    let runId: string | null = null;
+    if (!uploadDisabled) {
+      try {
+        const created = await createCliRun({
+          startUrl: url === "about:blank" ? undefined : url,
+          userGoal: typeof opts.goal === "string" ? opts.goal : undefined,
+          workflowName: typeof opts.workflow === "string" ? opts.workflow : undefined,
+        });
+        runId = created.runId;
+        console.log(chalk.dim(`  Dashboard run: ${runId}`));
+      } catch (err) {
+        console.log(
+          chalk.yellow(
+            `  dashboard disabled: ${err instanceof Error ? err.message.split("\n")[0] : String(err)}`,
+          ),
+        );
+      }
+    }
+
     const state: SessionState = {
       port,
       pid,
       userDataDir,
       snapshotDir,
       tickCount: 0,
+      runId,
+      uploadDisabled,
     };
     saveSession(state);
 
@@ -259,15 +343,24 @@ function makeActionCommand(
   for (const a of args) {
     cmd.argument(a.optional ? `[${a.name}]` : `<${a.name}>`, a.description);
   }
+  // Every action command accepts --note "..." which becomes agentNote on the
+  // uploaded step (surfaces in the dashboard run timeline).
+  cmd.option("-n, --note <text>", "Agent narration for this step (surfaces in the dashboard timeline)");
   cmd.action(async (...cliArgs: unknown[]) => {
-    // commander passes positional args then the Command itself at the end
+    // commander passes positional args, then options object, then the Command
     const positional = cliArgs.slice(0, args.length) as string[];
+    const optsObj = cliArgs[args.length] as { note?: string } | undefined;
+    const agentNote = optsObj?.note;
     const state = loadSession();
     const { browser, page } = await connect(state);
     try {
       const { label, extra } = await action(page, state, ...positional);
       await page.waitForLoadState("domcontentloaded", { timeout: 5_000 }).catch(() => {});
-      const snap = await snapshot(page, state, label);
+      const snap = await snapshot(page, state, label, {
+        agentNote,
+        arg: positional[0] ?? null,
+        arg2: positional[1] ?? null,
+      });
       if (extra) {
         for (const [k, v] of Object.entries(extra)) {
           console.log(`  ${k}: ${JSON.stringify(v)}`);
@@ -517,6 +610,22 @@ export const browserStopCommand = new Command("browser:stop")
       return;
     }
     const state = JSON.parse(readFileSync(SESSION_FILE, "utf8")) as SessionState;
+    if (state.runId && !state.uploadDisabled) {
+      try {
+        await finishCliRun(state.runId, {
+          status: "completed",
+          finalUrl: state.lastUrl ?? undefined,
+          pageTitle: state.lastTitle ?? undefined,
+        });
+        console.log(chalk.dim(`  Dashboard run ${state.runId} finalized.`));
+      } catch (err) {
+        console.log(
+          chalk.yellow(
+            `  Could not finalize run: ${err instanceof Error ? err.message.split("\n")[0] : String(err)}`,
+          ),
+        );
+      }
+    }
     try {
       if (state.pid) {
         try {
@@ -529,5 +638,8 @@ export const browserStopCommand = new Command("browser:stop")
       rmSync(SESSION_FILE, { force: true });
       console.log(chalk.green("✓ Session closed."));
       console.log(chalk.dim(`  Snapshots remain at: ${state.snapshotDir}`));
+      if (state.runId && !state.uploadDisabled) {
+        console.log(chalk.cyan(`  View run: https://web-phi-eight-56.vercel.app/dashboard/runs/${state.runId}`));
+      }
     }
   });

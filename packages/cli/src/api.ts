@@ -1,4 +1,5 @@
 import { getApiKey, getApiUrl, syncApiKeyFromEditorConfigs } from "./config.js";
+export { getApiUrl };
 
 interface McpResponse {
   result?: {
@@ -150,4 +151,95 @@ export function extractImageUrl(response: McpResponse): string | null {
   const text = extractText(response);
   const urlMatch = text.match(/https?:\/\/[^\s"]+\.(png|jpg|jpeg|webp|gif|pdf)/i);
   return urlMatch ? urlMatch[0] : null;
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// REST helpers for CLI-driven runs (local-browser bridge).
+// ──────────────────────────────────────────────────────────────────────────
+
+function getAuthedApiKey(): string {
+  const storedApiKey = getApiKey();
+  const apiKey = syncApiKeyFromEditorConfigs(storedApiKey);
+  if (!apiKey) {
+    throw new Error("Not logged in. Run `screenshotsmcp login` first.");
+  }
+  return apiKey;
+}
+
+async function restJson<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const apiKey = getAuthedApiKey();
+  const res = await fetch(`${getApiUrl()}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "x-api-key": apiKey,
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API error (${res.status}): ${text.slice(0, 300)}`);
+  }
+  return (await res.json()) as T;
+}
+
+export interface CreateRunInput {
+  startUrl?: string;
+  viewportWidth?: number;
+  viewportHeight?: number;
+  userGoal?: string;
+  workflowName?: string;
+}
+
+export async function createCliRun(input: CreateRunInput = {}): Promise<{ runId: string }> {
+  return restJson<{ runId: string }>("POST", "/v1/runs", input);
+}
+
+export interface StepInput {
+  pngBase64: string;
+  toolName: string;
+  prevUrl?: string | null;
+  nextUrl?: string | null;
+  prevTitle?: string | null;
+  pageTitle?: string | null;
+  prevHeading?: string | null;
+  heading?: string | null;
+  arg?: string | null;
+  arg2?: string | null;
+  agentNote?: string | null;
+  width?: number;
+  height?: number;
+}
+
+export async function postRunStep(runId: string, step: StepInput): Promise<{
+  screenshotId: string;
+  publicUrl: string;
+  stepIndex: number;
+  actionLabel: string;
+  outcome: string;
+}> {
+  return restJson("POST", `/v1/runs/${runId}/steps`, step);
+}
+
+export async function finishCliRun(
+  runId: string,
+  data: { status?: "completed" | "failed"; finalUrl?: string; pageTitle?: string } = {},
+): Promise<void> {
+  await restJson("PATCH", `/v1/runs/${runId}`, { status: data.status ?? "completed", ...data });
+}
+
+export async function writeRunOutcome(
+  runId: string,
+  outcome: {
+    problem?: string;
+    summary?: string;
+    verdict?: "passed" | "failed" | "inconclusive" | "flaky";
+    nextActions?: string[];
+    findings?: Array<Record<string, unknown>>;
+    userGoal?: string;
+    taskType?: string;
+  },
+): Promise<void> {
+  await restJson("POST", `/v1/runs/${runId}/outcome`, outcome);
 }
