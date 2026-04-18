@@ -1,0 +1,210 @@
+[
+  {
+    "name": "passed-browser-audit-run",
+    "input": {
+      "runId": "run_passed",
+      "userId": "user_passed",
+      "status": "completed",
+      "recordingEnabled": true,
+      "outcomeContext": {
+        "taskType": "site_audit",
+        "userGoal": "Audit public pages for UX regressions",
+        "workflowUsed": "sitewide-performance-audit",
+        "workflowRequired": true,
+        "authScope": "out",
+        "toolPath": "mcp",
+        "pageSet": ["homepage", "pricing", "docs"],
+        "requiredEvidence": ["screenshots", "console", "network"]
+      },
+      "consoleLogs": [
+        {
+          "level": "log",
+          "text": "page loaded",
+          "ts": 1710000000000
+        }
+      ],
+      "networkErrors": [],
+      "networkRequests": [
+        {
+          "url": "https://example.com/",
+          "method": "GET",
+          "status": 200,
+          "statusText": "OK",
+          "resourceType": "document",
+          "duration": 120,
+          "size": 20480,
+          "ts": 1710000000100
+        }
+      ],
+      "screenshotCount": 2,
+      "recordingCount": 1
+    },
+    "expected": {
+      "verdict": "passed",
+      "summaryIncludes": [
+        "Audit public pages for UX regressions.",
+        "2 persisted captures and 1 replay",
+        "no blocking workflow or diagnostic failures"
+      ],
+      "findingIds": [],
+      "missingEvidence": [],
+      "workflowUsedCorrectly": true,
+      "partial": false,
+      "primaryEvidence": "recording",
+      "workflowRequired": true,
+      "nextActionsInclude": [
+        "Share the run link or archive the run as a passing proof artifact."
+      ]
+    }
+  },
+  {
+    "name": "needs-review-browser-run",
+    "input": {
+      "runId": "run_needs_review",
+      "userId": "user_needs_review",
+      "status": "completed",
+      "recordingEnabled": false,
+      "outcomeContext": {
+        "taskType": "browser_review",
+        "userGoal": "Review checkout browser run",
+        "workflowUsed": "checkout-review",
+        "workflowRequired": true,
+        "authScope": "in",
+        "toolPath": "cli",
+        "pageSet": ["checkout"],
+        "requiredEvidence": ["screenshots", "console", "network"]
+      },
+      "consoleLogs": [
+        {
+          "level": "error",
+          "text": "Unhandled promise rejection",
+          "ts": 1710000001000
+        },
+        {
+          "level": "warning",
+          "text": "Slow resource detected",
+          "ts": 1710000001100
+        }
+      ],
+      "networkErrors": [
+        {
+          "url": "https://example.com/api/checkout",
+          "method": "POST",
+          "status": 500,
+          "statusText": "Internal Server Error",
+          "resourceType": "fetch",
+          "duration": 480,
+          "size": 1200,
+          "ts": 1710000001200
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "https://example.com/api/checkout",
+          "method": "POST",
+          "status": 500,
+          "statusText": "Internal Server Error",
+          "resourceType": "fetch",
+          "duration": 480,
+          "size": 1200,
+          "ts": 1710000001200
+        },
+        {
+          "url": "https://example.com/checkout",
+          "method": "GET",
+          "status": 200,
+          "statusText": "OK",
+          "resourceType": "document",
+          "duration": 160,
+          "size": 16000,
+          "ts": 1710000001300
+        }
+      ],
+      "screenshotCount": 1,
+      "recordingCount": 0
+    },
+    "expected": {
+      "verdict": "needs_review",
+      "summaryIncludes": [
+        "Review checkout browser run.",
+        "2 high-priority diagnostic issues",
+        "needs review before it can be trusted"
+      ],
+      "findingIds": [
+        "console_errors",
+        "network_failures"
+      ],
+      "missingEvidence": [],
+      "workflowUsedCorrectly": true,
+      "partial": false,
+      "primaryEvidence": "screenshot",
+      "workflowRequired": true,
+      "nextActionsInclude": [
+        "Open the Network tab and investigate failed requests before trusting the result.",
+        "Review console errors and page exceptions before treating the run as passed."
+      ]
+    }
+  },
+  {
+    "name": "failed-browser-run",
+    "input": {
+      "runId": "run_failed",
+      "userId": "user_failed",
+      "status": "failed",
+      "recordingEnabled": false,
+      "outcomeContext": {
+        "taskType": "browser_review",
+        "userGoal": "Verify sign-in flow works",
+        "workflowUsed": "sign-in-review",
+        "workflowRequired": true,
+        "authScope": "in",
+        "toolPath": "mcp",
+        "pageSet": ["sign-in"],
+        "requiredEvidence": ["screenshots", "console", "network"]
+      },
+      "consoleLogs": [
+        {
+          "level": "error",
+          "text": "Clerk sign-in failed",
+          "ts": 1710000002000
+        }
+      ],
+      "networkErrors": [],
+      "networkRequests": [
+        {
+          "url": "https://example.com/sign-in",
+          "method": "GET",
+          "status": 200,
+          "statusText": "OK",
+          "resourceType": "document",
+          "duration": 140,
+          "size": 12000,
+          "ts": 1710000002100
+        }
+      ],
+      "screenshotCount": 1,
+      "recordingCount": 0
+    },
+    "expected": {
+      "verdict": "failed",
+      "summaryIncludes": [
+        "Verify sign-in flow works.",
+        "failed before completing successfully",
+        "should not be treated as a passing proof run"
+      ],
+      "findingIds": [
+        "console_errors",
+        "run_failed"
+      ],
+      "missingEvidence": [],
+      "workflowUsedCorrectly": true,
+      "partial": false,
+      "primaryEvidence": "screenshot",
+      "workflowRequired": true,
+      "nextActionsInclude": [
+        "Retry the run after inspecting the failed step and final diagnostics.",
+        "Review console errors and page exceptions before treating the run as passed."
+      ]
+    }
+  }
+]

@@ -9,16 +9,29 @@ description: Open a browser and navigate to a URL. Returns a screenshot and a se
 | --- | --- | --- | --- | --- |
 | `url` | string | Yes | — | URL to navigate to |
 | `sessionId` | string | No | — | Reuse an existing session. Omit to start a new session. |
+| `width` | number | No | `1280` | Viewport width for new sessions. Ignored when `sessionId` is provided. |
+| `height` | number | No | `800` | Viewport height for new sessions. Ignored when `sessionId` is provided. |
+| `record_video` | boolean | No | `false` | Record the browser session and return a video URL when `browser_close` is called. |
+| `task_type` | string | No | — | Workflow-aware task type such as `site_audit` or `browser_review`. |
+| `user_goal` | string | No | — | Plain-language user goal shown in run summaries. |
+| `workflow_name` | string | No | — | Workflow identifier used for the run, such as `sitewide-performance-audit`. |
+| `workflow_required` | boolean | No | `false` | Marks workflow compliance as required for the run to be considered valid. |
+| `auth_scope` | string | No | `unknown` | Whether authenticated pages are in scope: `in`, `out`, `mixed`, or `unknown`. |
+| `tool_path` | string | No | — | Execution path, typically `mcp` or `cli`. |
+| `page_set` | string[] | No | — | Representative page set covered by the run contract. |
+| `required_evidence` | string[] | No | — | Evidence types required for the run, such as `screenshots`, `console`, `network`, or `perf`. |
 
 ## Example
 
 ```
-Navigate to https://myapp.com and show me what it looks like
+Navigate to https://example.com, treat this as a public site audit, use the sitewide-performance-audit workflow, keep authenticated pages out of scope, and collect screenshot, console, and network evidence.
 ```
 
 ## Response
 
 Returns a screenshot of the loaded page and a **session ID**. Use this session ID with all other `browser_*` tools to continue interacting with the same page.
+
+When workflow metadata is provided, ScreenshotsMCP also persists structured run outcome context so the dashboard and shared run pages can explain the verdict, findings, evidence coverage, and next actions.
 
 ## Sessions
 

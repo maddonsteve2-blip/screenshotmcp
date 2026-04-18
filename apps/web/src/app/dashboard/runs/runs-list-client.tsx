@@ -10,6 +10,12 @@ import { cn } from "@/lib/utils";
 import { AlertTriangle, ArrowRight, Clock, ExternalLink, Globe, Image as ImageIcon, Monitor, Network, Search, SquareTerminal, Video } from "lucide-react";
 
 type RunListItem = {
+  outcome: {
+    verdict: string;
+    summary: string | null;
+    userGoal: string | null;
+    workflowUsed: string | null;
+  } | null;
   id: string;
   status: string;
   executionMode: string;
@@ -268,6 +274,18 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
             const title = run.pageTitle || hostname(run.finalUrl ?? run.startUrl);
             const targetUrl = run.finalUrl ?? run.startUrl ?? "Managed browser session";
             const sharedHref = run.shareToken ? `/shared/runs/${encodeURIComponent(run.shareToken)}` : null;
+            const verdictLabel = run.outcome?.verdict ? run.outcome.verdict.replace(/_/g, " ") : run.status;
+            const verdictVariant = run.outcome?.verdict === "failed"
+              ? "destructive"
+              : run.outcome?.verdict === "passed"
+                ? "secondary"
+                : "outline";
+            const summaryText = run.outcome?.summary
+              || (issueCount > 0
+                ? `Completed with ${issueCount} diagnostic issue${issueCount === 1 ? "" : "s"}.`
+                : run.status === "failed"
+                  ? "Run failed before completion."
+                  : "No high-priority persisted issues recorded.");
 
             return (
               <Card key={run.id} className="transition-colors hover:border-primary/40 hover:bg-accent/20">
@@ -277,12 +295,13 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
                       <div className="flex flex-wrap items-center gap-2">
                         <CardTitle className="text-base">{title}</CardTitle>
                         <Badge
-                          variant={run.status === "completed" ? "secondary" : run.status === "failed" ? "destructive" : "outline"}
+                          variant={verdictVariant}
                           className="capitalize"
                         >
-                          {run.status}
+                          {verdictLabel}
                         </Badge>
                         <Badge variant="outline" className="capitalize">{run.executionMode}</Badge>
+                        {run.outcome?.workflowUsed && <Badge variant="outline">{run.outcome.workflowUsed}</Badge>}
                         {run.recordingEnabled && <Badge variant="outline">Recording enabled</Badge>}
                         {run.shareToken && <Badge variant="outline" className="border-emerald-200 text-emerald-700">Shared</Badge>}
                         {run.captureCount > 0 && <Badge variant="secondary">{run.captureCount} captures</Badge>}
@@ -294,6 +313,8 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
                       <CardDescription className="truncate" title={targetUrl}>
                         {targetUrl}
                       </CardDescription>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{summaryText}</p>
+                      {run.outcome?.userGoal && <p className="text-xs text-muted-foreground">Goal: {run.outcome.userGoal}</p>}
                       {run.shareToken && (
                         <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
                           <Globe className="h-3.5 w-3.5" />

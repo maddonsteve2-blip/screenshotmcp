@@ -6,6 +6,7 @@ import {
   integer,
   pgEnum,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
 
 export const planEnum = pgEnum("plan", ["free", "starter", "pro"]);
@@ -76,6 +77,35 @@ export const runs = pgTable("runs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+export const runOutcomes = pgTable(
+  "run_outcomes",
+  {
+    id: text("id").primaryKey(),
+    runId: text("run_id")
+      .notNull()
+      .references(() => runs.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    version: integer("version").notNull().default(1),
+    taskType: text("task_type"),
+    userGoal: text("user_goal"),
+    workflowUsed: text("workflow_used"),
+    contract: text("contract").notNull().default("{}"),
+    verdict: text("verdict").notNull().default("inconclusive"),
+    summary: text("summary"),
+    findings: text("findings").notNull().default("[]"),
+    proofCoverage: text("proof_coverage").notNull().default("{}"),
+    validity: text("validity").notNull().default("{}"),
+    nextActions: text("next_actions").notNull().default("[]"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    runIdIdx: uniqueIndex("run_outcomes_run_id_idx").on(table.runId),
+  }),
+);
 
 export const screenshots = pgTable("screenshots", {
   id: text("id").primaryKey(),
@@ -163,3 +193,18 @@ export const usageEvents = pgTable("usage_events", {
   }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+export const tryRateLimits = pgTable(
+  "try_rate_limits",
+  {
+    id: text("id").primaryKey(),
+    ipHash: text("ip_hash").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    ipHashCreatedAtIdx: index("try_rate_limits_ip_created_at_idx").on(
+      table.ipHash,
+      table.createdAt,
+    ),
+  }),
+);

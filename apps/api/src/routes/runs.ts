@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { createHash } from "crypto";
-import { apiKeys, recordings, runs, screenshots, users } from "@screenshotsmcp/db";
+import { apiKeys, recordings, runOutcomes, runs, screenshots, users } from "@screenshotsmcp/db";
 import { db } from "../lib/db.js";
 import { getSession } from "../lib/sessions.js";
 import { getPresignedUrl } from "../lib/r2.js";
@@ -187,6 +187,22 @@ runsRouter.get("/shared/:token", async (req, res) => {
     .where(eq(recordings.sessionId, run.id))
     .orderBy(desc(recordings.createdAt));
 
+  const [outcome] = await db
+    .select({
+      taskType: runOutcomes.taskType,
+      userGoal: runOutcomes.userGoal,
+      workflowUsed: runOutcomes.workflowUsed,
+      verdict: runOutcomes.verdict,
+      summary: runOutcomes.summary,
+      contract: runOutcomes.contract,
+      findings: runOutcomes.findings,
+      proofCoverage: runOutcomes.proofCoverage,
+      validity: runOutcomes.validity,
+      nextActions: runOutcomes.nextActions,
+    })
+    .from(runOutcomes)
+    .where(eq(runOutcomes.runId, run.id));
+
   const recordingsForShare = await Promise.all(
     recordingRows.map(async (recording) => ({
       id: recording.id,
@@ -222,6 +238,18 @@ runsRouter.get("/shared/:token", async (req, res) => {
       createdAt: run.createdAt?.toISOString?.() ?? null,
       sharedAt: run.sharedAt?.toISOString?.() ?? null,
     },
+    outcome: outcome ? {
+      taskType: outcome.taskType,
+      userGoal: outcome.userGoal,
+      workflowUsed: outcome.workflowUsed,
+      verdict: outcome.verdict,
+      summary: outcome.summary,
+      contract: parseJson(outcome.contract, {}),
+      findings: parseJson(outcome.findings, []),
+      proofCoverage: parseJson(outcome.proofCoverage, {}),
+      validity: parseJson(outcome.validity, {}),
+      nextActions: parseJson(outcome.nextActions, []),
+    } : null,
     screenshots: screenshotRows.map((screenshot) => ({
       ...screenshot,
       createdAt: screenshot.createdAt?.toISOString?.() ?? null,

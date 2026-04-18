@@ -1,0 +1,17 @@
+{
+  "runId": "2026-04-17T11-15-09-691Z-audit-public-start-demo",
+  "taskId": "audit-public-start",
+  "title": "Public audit starts without blocking on scope",
+  "createdAt": "2026-04-17T11:15:09.696Z",
+  "status": "passed",
+  "requiredFiles": [
+    "prompt.md",
+    "first-response.md",
+    "tool-calls.json"
+  ],
+  "request": "please do a full audit screenshotmcp.com",
+  "lastScoredAt": "2026-04-17T11:15:30.702Z",
+  "percent": 100,
+  "earnedScore": 18,
+  "maxScore": 18
+}

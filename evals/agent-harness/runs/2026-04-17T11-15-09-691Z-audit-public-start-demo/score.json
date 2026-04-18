@@ -1,0 +1,98 @@
+{
+  "runId": "2026-04-17T11-15-09-691Z-audit-public-start-demo",
+  "taskId": "audit-public-start",
+  "title": "Public audit starts without blocking on scope",
+  "passed": true,
+  "earnedScore": 18,
+  "maxScore": 18,
+  "percent": 100,
+  "checks": [
+    {
+      "category": "artifacts",
+      "id": "artifact:prompt.md",
+      "label": "has prompt.md",
+      "weight": 1,
+      "passed": true
+    },
+    {
+      "category": "artifacts",
+      "id": "artifact:first-response.md",
+      "label": "has first-response.md",
+      "weight": 1,
+      "passed": true
+    },
+    {
+      "category": "artifacts",
+      "id": "artifact:tool-calls.json",
+      "label": "has tool-calls.json",
+      "weight": 1,
+      "passed": true
+    },
+    {
+      "category": "artifacts",
+      "id": "artifact:manifest.json",
+      "label": "has manifest.json",
+      "weight": 1,
+      "passed": true
+    },
+    {
+      "category": "response",
+      "id": "response:0",
+      "label": "mentions the sitewide audit workflow",
+      "weight": 2,
+      "passed": true
+    },
+    {
+      "category": "response",
+      "id": "response:1",
+      "label": "declares MCP-first execution",
+      "weight": 1,
+      "passed": true
+    },
+    {
+      "category": "response",
+      "id": "response:2",
+      "label": "defaults authenticated pages out of scope",
+      "weight": 2,
+      "passed": true
+    },
+    {
+      "category": "response",
+      "id": "response:3",
+      "label": "lists representative public pages",
+      "weight": 2,
+      "passed": true
+    },
+    {
+      "category": "response-forbidden",
+      "id": "response-forbidden:0",
+      "label": "does not ask the user to pick an audit scope",
+      "weight": 2,
+      "passed": true
+    },
+    {
+      "category": "response-forbidden",
+      "id": "response-forbidden:1",
+      "label": "does not wait for scope confirmation",
+      "weight": 1,
+      "passed": true
+    },
+    {
+      "category": "response-forbidden",
+      "id": "response-forbidden:2",
+      "label": "does not block on audit-scope clarification",
+      "weight": 2,
+      "passed": true
+    },
+    {
+      "category": "tools",
+      "id": "tool:no_browser_before_scope",
+      "label": "does not start browser work before the first-response preflight is complete",
+      "weight": 2,
+      "passed": true,
+      "observed": 0
+    }
+  ],
+  "toolCalls": [],
+  "scoredAt": "2026-04-17T11:15:30.702Z"
+}

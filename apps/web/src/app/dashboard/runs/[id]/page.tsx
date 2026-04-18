@@ -5,7 +5,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
 import { getInternalApiBase, getInternalApiHeaders } from "@/lib/internal-api";
-import { runs, screenshots } from "@screenshotsmcp/db";
+import { runOutcomes, runs, screenshots } from "@screenshotsmcp/db";
 import RunDetailTabs from "./run-detail-tabs";
 import RunShareDialog from "./run-share-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -83,6 +83,19 @@ type NetworkRequestEntry = {
   ts: number;
 };
 
+type RunOutcome = {
+  taskType: string | null;
+  userGoal: string | null;
+  workflowUsed: string | null;
+  verdict: string;
+  summary: string | null;
+  contract: Record<string, unknown>;
+  findings: Array<Record<string, unknown>>;
+  proofCoverage: Record<string, unknown>;
+  validity: Record<string, unknown>;
+  nextActions: string[];
+};
+
 export default async function RunDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { userId: clerkId } = await auth();
   const db = getDb();
@@ -158,10 +171,38 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
     ? await recordingRes.json()
     : { recordings: [] as RecordingItem[] };
 
+  const [outcomeRow] = await db
+    .select({
+      taskType: runOutcomes.taskType,
+      userGoal: runOutcomes.userGoal,
+      workflowUsed: runOutcomes.workflowUsed,
+      verdict: runOutcomes.verdict,
+      summary: runOutcomes.summary,
+      contract: runOutcomes.contract,
+      findings: runOutcomes.findings,
+      proofCoverage: runOutcomes.proofCoverage,
+      validity: runOutcomes.validity,
+      nextActions: runOutcomes.nextActions,
+    })
+    .from(runOutcomes)
+    .where(eq(runOutcomes.runId, id));
+
   const recordingsForRun = (recordingData.recordings ?? []) as RecordingItem[];
   const consoleLogs = parseJson<ConsoleEntry[]>(run.consoleLogs, []);
   const networkErrors = parseJson<NetworkErrorEntry[]>(run.networkErrors, []);
   const networkRequests = parseJson<NetworkRequestEntry[]>(run.networkRequests, []);
+  const outcomeForClient: RunOutcome | null = outcomeRow ? {
+    taskType: outcomeRow.taskType,
+    userGoal: outcomeRow.userGoal,
+    workflowUsed: outcomeRow.workflowUsed,
+    verdict: outcomeRow.verdict,
+    summary: outcomeRow.summary,
+    contract: parseJson(outcomeRow.contract, {}),
+    findings: parseJson(outcomeRow.findings, []),
+    proofCoverage: parseJson(outcomeRow.proofCoverage, {}),
+    validity: parseJson(outcomeRow.validity, {}),
+    nextActions: parseJson(outcomeRow.nextActions, []),
+  } : null;
 
   const startedAt = run.startedAt?.toISOString() ?? null;
   const endedAt = run.endedAt?.toISOString() ?? null;
@@ -297,6 +338,7 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
         initialConsoleLogs={consoleLogs}
         initialNetworkErrors={networkErrors}
         initialNetworkRequests={networkRequests}
+        outcome={outcomeForClient}
       />
     </div>
   );

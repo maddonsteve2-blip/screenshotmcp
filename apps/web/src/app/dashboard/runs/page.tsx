@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
-import { recordings, runs, screenshots } from "@screenshotsmcp/db";
+import { recordings, runOutcomes, runs, screenshots } from "@screenshotsmcp/db";
 import RunsListClient from "@/app/dashboard/runs/runs-list-client";
 
 export default async function RunsPage() {
@@ -54,6 +54,19 @@ export default async function RunsPage() {
       ])
     : [[], []];
 
+  const outcomeRows = user && sessionIds.length > 0
+    ? await db
+        .select({
+          runId: runOutcomes.runId,
+          verdict: runOutcomes.verdict,
+          summary: runOutcomes.summary,
+          userGoal: runOutcomes.userGoal,
+          workflowUsed: runOutcomes.workflowUsed,
+        })
+        .from(runOutcomes)
+        .where(and(eq(runOutcomes.userId, user.id), inArray(runOutcomes.runId, sessionIds)))
+    : [];
+
   const screenshotCountBySession = new Map(
     screenshotCounts
       .filter((row) => !!row.sessionId)
@@ -64,7 +77,12 @@ export default async function RunsPage() {
     recordingCounts.map((row) => [row.sessionId, row.count]),
   );
 
+  const outcomeBySession = new Map(
+    outcomeRows.map((row) => [row.runId, row]),
+  );
+
   const normalizedRuns = runRows.map((run) => ({
+    outcome: outcomeBySession.get(run.id) ?? null,
     id: run.id,
     status: run.status,
     executionMode: run.executionMode,

@@ -67,6 +67,15 @@ type NetworkErrorEntry = {
 
 type SharedRunResponse = {
   run: SharedRun;
+  outcome: {
+    taskType: string | null;
+    userGoal: string | null;
+    workflowUsed: string | null;
+    verdict: string;
+    summary: string | null;
+    findings: Array<{ id?: string; title?: string; detail?: string; recommendation?: string }>;
+    nextActions: string[];
+  } | null;
   screenshots: SharedScreenshot[];
   recordings: SharedRecording[];
   consoleLogs: ConsoleEntry[];
@@ -124,16 +133,28 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
     notFound();
   }
 
-  const { run, screenshots, recordings, consoleLogs, networkErrors } = data;
+  const { run, outcome, screenshots, recordings, consoleLogs, networkErrors } = data;
   const primaryRecording = recordings[0] ?? null;
   const primaryScreenshot = screenshots[screenshots.length - 1] ?? null;
   const issueCount = run.consoleErrorCount + run.networkErrorCount;
-  const outcomeClassName = run.status === "failed"
+  const outcomeClassName = run.status === "active"
+    ? "border-primary/30 text-primary"
+    : outcome?.verdict === "failed"
+    ? "border-red-200 text-red-700"
+    : outcome?.verdict === "inconclusive"
+      ? "border-amber-200 text-amber-700"
+      : outcome?.verdict === "needs_review"
+        ? "border-amber-200 text-amber-700"
+        : run.status === "failed"
     ? "border-red-200 text-red-700"
     : issueCount > 0
       ? "border-amber-200 text-amber-700"
       : "border-emerald-200 text-emerald-700";
-  const outcomeLabel = run.status === "failed"
+  const outcomeLabel = run.status === "active"
+    ? "Active"
+    : outcome?.verdict
+    ? outcome.verdict.replace(/_/g, " ")
+    : run.status === "failed"
     ? "Failed"
     : issueCount > 0
       ? "Needs review"
@@ -147,11 +168,13 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline" className={outcomeClassName}>{outcomeLabel}</Badge>
               <Badge variant="outline" className="capitalize">{run.executionMode}</Badge>
+              {outcome?.workflowUsed && <Badge variant="outline">{outcome.workflowUsed}</Badge>}
               {run.recordingEnabled && <Badge variant="outline">Recording enabled</Badge>}
             </div>
             <div className="space-y-1">
               <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{run.pageTitle || prettyHost(run.startUrl)}</h1>
               <p className="break-all text-[1.05rem] text-muted-foreground sm:text-[1.12rem]">{run.finalUrl ?? run.startUrl ?? "Shared browser run"}</p>
+              {outcome?.userGoal && <p className="text-base text-muted-foreground">Goal: {outcome.userGoal}</p>}
               <p className="font-mono text-base text-muted-foreground">Run ID: {run.id}</p>
             </div>
           </div>
@@ -176,7 +199,9 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
                 <p className="text-base font-medium">Shared review summary</p>
               </div>
               <p className="text-[1.02rem] leading-relaxed text-muted-foreground">
-                {run.status === "failed"
+                {outcome?.summary
+                  ? outcome.summary
+                  : run.status === "failed"
                   ? "This run failed before completion and should be treated as an unsuccessful proof run."
                   : issueCount > 0
                     ? `This run completed with ${issueCount} high-priority diagnostic issue${issueCount === 1 ? "" : "s"} across console and network signals.`
@@ -190,6 +215,45 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
             </div>
           </CardContent>
         </Card>
+
+        {outcome && (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Top findings</CardTitle>
+                <CardDescription>Why this outcome was classified the way it was.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                {outcome.findings.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No structured findings were saved for this run.</p>
+                ) : (
+                  outcome.findings.slice(0, 3).map((finding, index) => (
+                    <div key={finding.id ?? `${finding.title}-${index}`} className="flex flex-col gap-1">
+                      <p className="font-medium">{finding.title ?? "Finding"}</p>
+                      <p className="text-sm text-muted-foreground">{finding.detail ?? "No detail recorded."}</p>
+                      {finding.recommendation && <p className="text-sm">Next: {finding.recommendation}</p>}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Next actions</CardTitle>
+                <CardDescription>Smallest concrete follow-ups for this run.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                {outcome.nextActions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No follow-up actions were saved for this run.</p>
+                ) : (
+                  outcome.nextActions.slice(0, 4).map((action, index) => (
+                    <p key={`${action}-${index}`} className="text-sm text-muted-foreground">{index + 1}. {action}</p>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
           <Card>

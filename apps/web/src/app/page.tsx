@@ -398,20 +398,25 @@ export default function HomePage() {
           </p>
 
           <div className="animate-fade-in-up delay-300 flex items-center justify-center gap-4 flex-wrap">
-            <Link href="/sign-up">
+            <Link href="/try">
               <Button size="lg" className="bg-green-500 hover:bg-green-400 text-black font-semibold gap-2 glow-green-pulse px-7 h-12 text-base">
                 <Camera className="h-4 w-4" />
+                Try it — no signup
+              </Button>
+            </Link>
+            <Link href="/sign-up">
+              <Button size="lg" variant="outline" className="h-12 gap-2 border-white/15 bg-white/[0.03] text-gray-100 hover:border-white/25 hover:bg-white/[0.08] hover:text-white text-base">
                 Install free
               </Button>
             </Link>
             <Link href="/docs">
-              <Button size="lg" variant="outline" className="h-12 gap-2 border-white/15 bg-white/[0.03] text-gray-100 hover:border-white/25 hover:bg-white/[0.08] hover:text-white text-base">
+              <Button size="lg" variant="ghost" className="h-12 gap-2 text-gray-400 hover:bg-white/5 hover:text-white text-base">
                 See docs
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </div>
-          <p className="animate-fade-in-up delay-300 mt-4 text-sm text-gray-500 sm:text-base">No credit card required. Start with the free plan.</p>
+          <p className="animate-fade-in-up delay-300 mt-4 text-sm text-gray-500 sm:text-base">No credit card. No signup to try. Free plan after that.</p>
 
           {/* Hero video */}
           <div className="animate-fade-in-up delay-400 mt-14 mx-auto max-w-4xl rounded-xl overflow-hidden border border-white/10 shadow-2xl shadow-green-500/5">

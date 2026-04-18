@@ -128,7 +128,6 @@ screenshotsmcp browse:screenshot <sessionId>                   # Capture current
 screenshotsmcp browse:text <sessionId>                         # Get visible text
 screenshotsmcp browse:html <sessionId>                         # Get page HTML
 screenshotsmcp browse:a11y <sessionId>                         # Accessibility tree
-screenshotsmcp browse:eval <sessionId> "document.title"       # Evaluate JavaScript
 screenshotsmcp browse:console <sessionId> --level error        # Console logs
 screenshotsmcp browse:network-errors <sessionId>               # Failed requests
 screenshotsmcp browse:network-requests <sessionId>             # Request waterfall
@@ -141,6 +140,23 @@ screenshotsmcp browse:scroll <sessionId> --y 500               # Scroll down
 screenshotsmcp browse:key <sessionId> Enter                    # Press key
 screenshotsmcp browse:goto <sessionId> <newUrl>                # Navigate
 screenshotsmcp browse:close <sessionId>                        # End session
+```
+
+### Workflow-Aware Browser Navigation
+
+When starting a new browser session with `screenshotsmcp browse <url>`, you can add workflow-aware parameters to persist an explicit contract and outcome summary. This is useful for multi-step procedures, audits, or verification flows.
+
+- `--task-type`: The type of task being performed (e.g., site_audit, performance_audit, seo_audit)
+- `--user-goal`: A brief description of the user's goal (e.g., "Audit public marketing pages for UX regressions")
+- `--workflow-name`: The name of the workflow being executed (e.g., sitewide-performance-audit)
+- `--workflow-required`: A boolean indicating whether the workflow is required for the task
+- `--auth-scope`: The scope of authentication required for the task (e.g., out, in, private)
+- `--page-set`: A comma-separated list of pages to be audited or verified (e.g., homepage, pricing, docs)
+- `--required-evidence`: A comma-separated list of evidence required for the task (e.g., screenshots, console, network)
+
+Example:
+```bash
+screenshotsmcp browse https://example.com --task-type site_audit --user-goal "Audit public marketing pages for UX regressions" --workflow-name sitewide-performance-audit --auth-scope out --page-set homepage,pricing,docs --required-evidence screenshots,console,network
 ```
 
 ### Reviews & Audits

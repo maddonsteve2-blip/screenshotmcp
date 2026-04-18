@@ -39,3 +39,6 @@ yarn-error.log*
 
 # Test scripts with secrets
 load-test.ps1
+
+# Local editor/tool state
+.claude/

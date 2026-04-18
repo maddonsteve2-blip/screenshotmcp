@@ -111,6 +111,19 @@ type RunDetails = {
   networkErrorCount: number;
 };
 
+type RunOutcome = {
+  taskType: string | null;
+  userGoal: string | null;
+  workflowUsed: string | null;
+  verdict: string;
+  summary: string | null;
+  contract: Record<string, unknown>;
+  findings: Array<{ id?: string; severity?: string; title?: string; detail?: string; recommendation?: string }>;
+  proofCoverage: Record<string, unknown>;
+  validity: Record<string, unknown>;
+  nextActions: string[];
+};
+
 type LiveSnapshotResponse = {
   runId: string;
   status: string;
@@ -139,6 +152,7 @@ type Props = {
   initialConsoleLogs: ConsoleEntry[];
   initialNetworkErrors: NetworkErrorEntry[];
   initialNetworkRequests: NetworkRequestEntry[];
+  outcome: RunOutcome | null;
 };
 
 type TabValue = "summary" | "captures" | "replay" | "console" | "network" | "session";
@@ -175,6 +189,7 @@ export default function RunDetailTabs({
   initialConsoleLogs,
   initialNetworkErrors,
   initialNetworkRequests,
+  outcome,
 }: Props) {
   const primaryRecording = recordings[0] ?? null;
   const latestScreenshot = screenshots[screenshots.length - 1] ?? null;
@@ -251,28 +266,44 @@ export default function RunDetailTabs({
   const totalIssueCount = effectiveConsoleErrorCount + effectiveNetworkErrorCount;
   const evidenceItemCount = screenshots.length + recordings.length;
   const hasPersistedEvidence = evidenceItemCount > 0;
-  const outcomeLabel = run.status === "failed"
+  const outcomeLabel = pollingEnabled
+    ? "Active"
+    : outcome?.verdict
+    ? outcome.verdict.replace(/_/g, " ")
+    : run.status === "failed"
     ? "Failed"
     : pollingEnabled
       ? "Active"
       : totalIssueCount > 0
         ? "Needs review"
         : "Healthy";
-  const outcomeClassName = run.status === "failed"
+  const outcomeClassName = pollingEnabled
+    ? "border-primary/30 text-primary"
+    : outcome?.verdict === "failed"
+    ? "border-destructive/30 text-destructive"
+    : outcome?.verdict === "needs_review"
+      ? "border-border text-foreground"
+      : outcome?.verdict === "inconclusive"
+        ? "border-amber-300 text-amber-700"
+        : run.status === "failed"
     ? "border-destructive/30 text-destructive"
     : pollingEnabled
       ? "border-primary/30 text-primary"
       : totalIssueCount > 0
         ? "border-border text-foreground"
         : "border-primary/20 text-primary";
-  const outcomeMessage = run.status === "failed"
+  const outcomeMessage = outcome?.summary
+    ? outcome.summary
+    : run.status === "failed"
     ? "The run ended in a failed state and should be reviewed before retrying or sharing outcomes."
     : pollingEnabled
       ? "The run is still active. Live console and network activity may change as the browser continues working."
       : totalIssueCount > 0
         ? `The run completed, but ${totalIssueCount} high-priority issue${totalIssueCount === 1 ? " was" : "s were"} captured across console and network diagnostics.`
         : "The run completed without high-priority console or network failures in the persisted snapshot.";
-  const attentionMessage = run.status === "failed"
+  const attentionMessage = outcome?.nextActions?.[0]
+    ? outcome.nextActions[0]
+    : run.status === "failed"
     ? "Prioritize this run for review: it failed before completion and may need a retry or workflow fix."
     : totalIssueCount > 0
       ? `Review the failing diagnostics before trusting this run. ${effectiveNetworkErrorCount} network failure${effectiveNetworkErrorCount === 1 ? "" : "s"} and ${effectiveConsoleErrorCount} console error${effectiveConsoleErrorCount === 1 ? "" : "s"} were recorded.`
@@ -451,8 +482,10 @@ export default function RunDetailTabs({
                     <Badge variant="outline" className={cn("capitalize", outcomeClassName)}>{outcomeLabel}</Badge>
                     {run.recordingEnabled && <Badge variant="outline">Recording enabled</Badge>}
                     {run.shareToken && <Badge variant="secondary">Shared</Badge>}
+                    {outcome?.workflowUsed && <Badge variant="outline">{outcome.workflowUsed}</Badge>}
                   </div>
                   <p className="font-medium">{outcomeMessage}</p>
+                  {outcome?.userGoal && <p className="text-sm text-muted-foreground">Goal: {outcome.userGoal}</p>}
                   <p className="text-sm text-muted-foreground break-all">{effectiveFinalUrl ?? run.startUrl ?? "Managed browser session"}</p>
                   {run.shareToken && (
                     <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -487,6 +520,35 @@ export default function RunDetailTabs({
                     description={`failed of ${effectiveNetworkRequestCount} requests`}
                   />
                 </div>
+
+                {outcome && (
+                  <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                    <div className="flex flex-col gap-3 rounded-lg border p-4">
+                      <p className="text-sm font-medium">Top findings</p>
+                      {outcome.findings.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No structured findings were saved for this run.</p>
+                      ) : (
+                        outcome.findings.slice(0, 3).map((finding, index) => (
+                          <div key={finding.id ?? `${finding.title}-${index}`} className="flex flex-col gap-1">
+                            <p className="font-medium">{finding.title ?? "Finding"}</p>
+                            <p className="text-sm text-muted-foreground">{finding.detail ?? "No detail recorded."}</p>
+                            {finding.recommendation && <p className="text-sm">Next: {finding.recommendation}</p>}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-3 rounded-lg border p-4">
+                      <p className="text-sm font-medium">Next actions</p>
+                      {outcome.nextActions.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No follow-up actions were saved for this run.</p>
+                      ) : (
+                        outcome.nextActions.slice(0, 4).map((action, index) => (
+                          <p key={`${action}-${index}`} className="text-sm text-muted-foreground">{index + 1}. {action}</p>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-4">

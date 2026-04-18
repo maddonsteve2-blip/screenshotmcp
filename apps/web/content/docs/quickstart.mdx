@@ -37,6 +37,7 @@ npx screenshotsmcp auth:find-login https://example.com
 npx screenshotsmcp auth:authorize-email
 npx screenshotsmcp review https://example.com
 npx screenshotsmcp browse https://example.com
+npx screenshotsmcp browse https://example.com --task-type site_audit --user-goal "Audit public pages for UX regressions" --workflow-name sitewide-performance-audit --auth-scope out --page-set homepage,pricing,docs --required-evidence screenshots,console,network
 npx screenshotsmcp browse:console <sessionId> --level error
 npx screenshotsmcp browse:network-errors <sessionId>
 npx screenshotsmcp browse:a11y <sessionId>
@@ -46,7 +47,7 @@ npx screenshotsmcp browser open https://example.com
 npx screenshotsmcp skills sync
 ```
 
-Use remote execution first for public websites. The CLI now mirrors the MCP remote workflow directly: start a remote session with `browse`, keep the `sessionId`, and then use `browse:*` commands for interaction, debugging, SEO, performance, accessibility, cookies, storage, and CAPTCHA solving. When you need localhost access, private apps, VPN-only environments, or more realistic manual-browser behavior, switch to the managed local browser without installing an extension:
+Use remote execution first for public websites. The CLI now mirrors the MCP remote workflow directly: start a remote session with `browse`, keep the `sessionId`, and then use `browse:*` commands for interaction, debugging, SEO, performance, accessibility, cookies, storage, and CAPTCHA solving. Add workflow-aware flags like `--task-type`, `--user-goal`, `--workflow-name`, `--page-set`, and `--required-evidence` when you want the run UI to persist a verdict, proof coverage, and next actions. When you need localhost access, private apps, VPN-only environments, or more realistic manual-browser behavior, switch to the managed local browser without installing an extension:
 
 ```bash
 npx screenshotsmcp browser open https://example.com

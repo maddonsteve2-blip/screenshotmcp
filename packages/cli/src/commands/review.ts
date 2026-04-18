@@ -3,6 +3,12 @@ import chalk from "chalk";
 import ora from "ora";
 import { callTool, extractText } from "../api.js";
 
+function requireSessionId(text: string): string {
+  const sessionMatch = text.match(/Session ID:\s*(\S+)/);
+  if (!sessionMatch) throw new Error("Failed to start browser session");
+  return sessionMatch[1];
+}
+
 export const uxReviewCommand = new Command("review")
   .description("Run an AI-powered UX review on a URL")
   .argument("<url>", "URL to review")
@@ -32,18 +38,24 @@ export const seoCommand = new Command("seo")
     const spinner = ora(`Running SEO audit on ${url}...`).start();
     try {
       // Need a browser session for SEO audit
-      const navRes = await callTool("browser_navigate", { url });
-      const text = extractText(navRes);
-      const sessionMatch = text.match(/Session ID:\s*(\S+)/);
-      if (!sessionMatch) throw new Error("Failed to start browser session");
+      const navRes = await callTool("browser_navigate", {
+        url,
+        task_type: "seo_scan",
+        user_goal: `Review SEO metadata and page structure for ${url}`,
+        auth_scope: "out",
+        tool_path: "cli",
+        page_set: [url],
+        required_evidence: ["screenshots", "console", "network", "seo"],
+      });
+      const sessionId = requireSessionId(extractText(navRes));
 
-      const res = await callTool("browser_seo_audit", { sessionId: sessionMatch[1] });
+      const res = await callTool("browser_seo_audit", { sessionId });
       spinner.stop();
       console.log(chalk.green("✓ SEO Audit\n"));
       console.log(extractText(res));
 
       // Close the session
-      await callTool("browser_close", { sessionId: sessionMatch[1] }).catch(() => {});
+      await callTool("browser_close", { sessionId }).catch(() => {});
     } catch (err) {
       spinner.fail(chalk.red("SEO audit failed"));
       console.error(chalk.red(err instanceof Error ? err.message : String(err)));
@@ -56,17 +68,25 @@ export const perfCommand = new Command("perf")
   .action(async (url: string) => {
     const spinner = ora(`Measuring performance of ${url}...`).start();
     try {
-      const navRes = await callTool("browser_navigate", { url });
-      const text = extractText(navRes);
-      const sessionMatch = text.match(/Session ID:\s*(\S+)/);
-      if (!sessionMatch) throw new Error("Failed to start browser session");
+      const navRes = await callTool("browser_navigate", {
+        url,
+        task_type: "performance_audit",
+        user_goal: `Measure page performance and review related failures for ${url}`,
+        workflow_name: "sitewide-performance-audit",
+        workflow_required: true,
+        auth_scope: "out",
+        tool_path: "cli",
+        page_set: [url],
+        required_evidence: ["screenshots", "console", "network", "perf"],
+      });
+      const sessionId = requireSessionId(extractText(navRes));
 
-      const res = await callTool("browser_perf_metrics", { sessionId: sessionMatch[1] });
+      const res = await callTool("browser_perf_metrics", { sessionId });
       spinner.stop();
       console.log(chalk.green("✓ Performance Metrics\n"));
       console.log(extractText(res));
 
-      await callTool("browser_close", { sessionId: sessionMatch[1] }).catch(() => {});
+      await callTool("browser_close", { sessionId }).catch(() => {});
     } catch (err) {
       spinner.fail(chalk.red("Performance measurement failed"));
       console.error(chalk.red(err instanceof Error ? err.message : String(err)));

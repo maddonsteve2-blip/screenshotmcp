@@ -3,6 +3,12 @@ import chalk from "chalk";
 import ora from "ora";
 import { callTool, extractText, extractImageUrl } from "../api.js";
 
+function splitList(value: string | boolean | undefined) {
+  if (typeof value !== "string") return undefined;
+  const items = value.split(",").map((item) => item.trim()).filter(Boolean);
+  return items.length > 0 ? items : undefined;
+}
+
 function printRemoteBrowserResult(label: string, response: Awaited<ReturnType<typeof callTool>>) {
   console.log(chalk.green(label));
   const imageUrl = extractImageUrl(response);
@@ -21,6 +27,13 @@ export const browseCommand = new Command("browse")
   .option("-w, --width <px>", "Viewport width", "1280")
   .option("-h, --height <px>", "Viewport height", "800")
   .option("--record", "Record a video of the session")
+  .option("--task-type <taskType>", "Task type for workflow-aware run outcomes, e.g. site_audit")
+  .option("--user-goal <goal>", "Plain-language goal shown in the run UI summary")
+  .option("--workflow-name <workflow>", "Workflow name used for the run, e.g. sitewide-performance-audit")
+  .option("--workflow-required", "Mark workflow compliance as required for the run")
+  .option("--auth-scope <scope>", "Auth scope for the run contract: in, out, mixed, or unknown")
+  .option("--page-set <pages>", "Comma-separated representative page set for workflow-driven runs")
+  .option("--required-evidence <types>", "Comma-separated required evidence types, e.g. screenshots,console,network")
   .action(async (url: string, opts: Record<string, string | boolean>) => {
     const spinner = ora(`Opening browser to ${url}...`).start();
     try {
@@ -29,6 +42,14 @@ export const browseCommand = new Command("browse")
         width: parseInt(opts.width as string) || 1280,
         height: parseInt(opts.height as string) || 800,
         record_video: !!opts.record,
+        task_type: typeof opts.taskType === "string" ? opts.taskType : undefined,
+        user_goal: typeof opts.userGoal === "string" ? opts.userGoal : undefined,
+        workflow_name: typeof opts.workflowName === "string" ? opts.workflowName : undefined,
+        workflow_required: !!opts.workflowRequired,
+        auth_scope: typeof opts.authScope === "string" ? opts.authScope : undefined,
+        tool_path: "cli",
+        page_set: splitList(opts.pageSet),
+        required_evidence: splitList(opts.requiredEvidence),
       });
       spinner.stop();
       const text = extractText(res);
@@ -41,6 +62,9 @@ export const browseCommand = new Command("browse")
       const imageUrl = extractImageUrl(res);
       if (imageUrl) console.log(`  Screenshot: ${chalk.cyan(imageUrl)}`);
       if (opts.record) console.log(chalk.yellow("  🔴 Recording — use `smcp browse:close <sessionId>` to stop and get the video"));
+      if (opts.workflowName || opts.userGoal || opts.taskType) {
+        console.log(chalk.dim("  Outcome context saved for run summaries"));
+      }
       console.log(chalk.dim("\nUse browser sub-commands with the session ID:"));
       console.log(chalk.dim("  smcp browse:click <sessionId> <selector>"));
       console.log(chalk.dim("  smcp browse:fill <sessionId> <selector> <value>"));

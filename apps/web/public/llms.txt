@@ -338,8 +338,8 @@ Params: id
 Start with `browser_navigate` → get sessionId → pass to all tools → `browser_close` when done.
 
 #### browser_navigate
-Open URL, returns screenshot + sessionId.
-Params: url, sessionId (optional), width, height
+Open URL, returns screenshot + sessionId. Supports workflow-aware outcome context for run summaries.
+Params: url, sessionId (optional), width, height, record_video, task_type, user_goal, workflow_name, workflow_required, auth_scope, tool_path, page_set, required_evidence
 
 #### browser_click
 Click by CSS selector or visible text.

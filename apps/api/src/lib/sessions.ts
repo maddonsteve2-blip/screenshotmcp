@@ -5,6 +5,7 @@ import { STEALTH_SCRIPT, DEFAULT_USER_AGENT } from "./stealth.js";
 import { uploadScreenshot } from "./r2.js";
 import { db } from "./db.js";
 import { recordings, runs, screenshots } from "@screenshotsmcp/db";
+import { persistInitialRunOutcome, persistRunOutcomeSnapshot, type RunOutcomeContext, normalizeOutcomeContext } from "./run-outcomes.js";
 import { existsSync } from "fs";
 import { readFile, rm } from "fs/promises";
 import { tmpdir } from "os";
@@ -37,6 +38,7 @@ export interface Session {
   videoUrl?: string;
   startUrl?: string;
   startTime: number;
+  outcomeContext?: RunOutcomeContext | null;
 }
 
 const sessions = new Map<string, Session>();
@@ -148,9 +150,28 @@ async function persistRunDiagnostics(
     })
     .where(eq(runs.id, sessionId))
     .catch((err) => console.error(`[Sessions] Failed to persist run diagnostics for ${sessionId}:`, err));
+
+  await persistRunOutcomeSnapshot({
+    runId: sessionId,
+    userId: session.userId,
+    status,
+    recordingEnabled: session.recording,
+    outcomeContext: session.outcomeContext,
+    consoleLogs: session.consoleLogs,
+    networkErrors: session.networkErrors,
+    networkRequests: session.networkRequests,
+    screenshotCount: (await db
+      .select({ id: screenshots.id })
+      .from(screenshots)
+      .where(eq(screenshots.sessionId, sessionId))).length,
+    recordingCount: (await db
+      .select({ id: recordings.id })
+      .from(recordings)
+      .where(eq(recordings.sessionId, sessionId))).length,
+  }).catch((err) => console.error(`[Sessions] Failed to persist run outcome for ${sessionId}:`, err));
 }
 
-export async function createSession(userId: string, viewport?: { width: number; height: number }, recordVideo?: boolean): Promise<string> {
+export async function createSession(userId: string, viewport?: { width: number; height: number }, recordVideo?: boolean, outcomeContext?: RunOutcomeContext | null): Promise<string> {
   const sessionId = nanoid();
   // Enforce max session limit — close oldest
   if (sessions.size >= MAX_SESSIONS) {
@@ -182,7 +203,7 @@ export async function createSession(userId: string, viewport?: { width: number; 
   const networkErrors: Session["networkErrors"] = [];
   const networkRequests: NetworkEntry[] = [];
 
-  const session: Session = { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors, networkRequests, recording: !!recordVideo, videoDir, startTime: Date.now() };
+  const session: Session = { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors, networkRequests, recording: !!recordVideo, videoDir, startTime: Date.now(), outcomeContext: normalizeOutcomeContext(outcomeContext) };
   await db.insert(runs).values({
     id: sessionId,
     userId,
@@ -194,6 +215,7 @@ export async function createSession(userId: string, viewport?: { width: number; 
     startedAt: new Date(),
     updatedAt: new Date(),
   });
+  await persistInitialRunOutcome(sessionId, userId, session.outcomeContext).catch((err) => console.error(`[Sessions] Failed to persist initial run outcome for ${sessionId}:`, err));
   attachPageListeners(page, session);
 
   sessions.set(sessionId, session);
@@ -221,6 +243,14 @@ export async function setSessionViewport(sessionId: string, userId: string, widt
     .catch((err) => console.error(`[Sessions] Failed to update viewport for ${sessionId}:`, err));
   return true;
 }
+
+export async function setSessionOutcomeContext(sessionId: string, userId: string, outcomeContext: RunOutcomeContext | null): Promise<boolean> {
+  const session = await getSession(sessionId, userId);
+  if (!session) return false;
+  session.outcomeContext = normalizeOutcomeContext(outcomeContext);
+  await persistInitialRunOutcome(sessionId, userId, session.outcomeContext).catch((err) => console.error(`[Sessions] Failed to update run outcome context for ${sessionId}:`, err));
+  return true;
+ }
 
 export async function getSession(sessionId: string, userId: string): Promise<Session | null> {
   const session = sessions.get(sessionId);
@@ -346,6 +376,28 @@ export async function closeSession(sessionId: string): Promise<{ videoUrl?: stri
   }
 
   await persistRunDiagnostics(sessionId, session, "completed", endedAt, pageSnapshot);
+
+  if (finalizationError) {
+    await persistRunOutcomeSnapshot({
+      runId: sessionId,
+      userId: session.userId,
+      status: "completed",
+      recordingEnabled: session.recording,
+      outcomeContext: session.outcomeContext,
+      consoleLogs: session.consoleLogs,
+      networkErrors: session.networkErrors,
+      networkRequests: session.networkRequests,
+      screenshotCount: (await db
+        .select({ id: screenshots.id })
+        .from(screenshots)
+        .where(eq(screenshots.sessionId, sessionId))).length,
+      recordingCount: (await db
+        .select({ id: recordings.id })
+        .from(recordings)
+        .where(eq(recordings.sessionId, sessionId))).length,
+      finalizationError,
+    }).catch((err) => console.error(`[Sessions] Failed to persist final run outcome for ${sessionId}:`, err));
+  }
 
   await session.release().catch(() => {});
   sessions.delete(sessionId);

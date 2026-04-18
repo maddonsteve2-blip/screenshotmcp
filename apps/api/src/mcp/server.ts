@@ -9,7 +9,7 @@ import { screenshotQueue } from "../lib/queue.js";
 import { createHash } from "crypto";
 import { eq, and, count, gte, desc } from "drizzle-orm";
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
-import { createSession, getSession, closeSession, pageScreenshot, navigateWithRetry, setSessionStartUrl, setSessionViewport } from "../lib/sessions.js";
+import { createSession, getSession, closeSession, pageScreenshot, navigateWithRetry, setSessionOutcomeContext, setSessionStartUrl, setSessionViewport } from "../lib/sessions.js";
 import { browserPool } from "../lib/browser-pool.js";
 import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
@@ -806,18 +806,35 @@ server.tool(
 
   server.tool(
     "browser_navigate",
-    "Open a browser and navigate to a URL. Returns a screenshot of the loaded page. Use this to start a browser session — the returned sessionId must be passed to all subsequent browser_ tools. Pass width/height to start with a custom viewport (e.g. 393×852 for mobile). Set record_video to true to record the entire session as a video — the recording URL is returned when browser_close is called.",
+-   "Open a browser and navigate to a URL. Returns a screenshot of the loaded page. Use this to start a browser session — the returned sessionId must be passed to all subsequent browser_ tools. Pass width/height to start with a custom viewport (e.g. 393×852 for mobile). Set record_video to true to record the entire session as a video — the recording URL is returned when browser_close is called.",
++   "Open a browser and navigate to a URL. Returns a screenshot of the loaded page. Use this to start a browser session — the returned sessionId must be passed to all subsequent browser_ tools. Pass width/height to start with a custom viewport (e.g. 393×852 for mobile). Set record_video to true to record the entire session as a video — the recording URL is returned when browser_close is called. When workflow metadata is provided, the resulting run can surface structured verdicts, summaries, and next actions in the dashboard.",
     {
       url: z.string().url().describe("URL to navigate to"),
       sessionId: z.string().optional().describe("Existing session ID to reuse. Omit to start a new browser session."),
       width: z.number().int().min(320).max(3840).optional().describe("Viewport width for new sessions (default 1280). Ignored if sessionId is provided."),
-      height: z.number().int().min(240).max(2160).optional().describe("Viewport height for new sessions (default 800). Ignored if sessionId is provided."),
-      record_video: z.boolean().optional().default(false).describe("Record a video of the entire browser session. The .webm recording URL is returned when you call browser_close. Only applies to new sessions."),
+@@
+      workflow_required: z.boolean().optional().describe("Whether this task requires workflow compliance to be considered valid."),
+      auth_scope: z.enum(["in", "out", "mixed", "unknown"]).optional().describe("Whether authenticated pages are in scope for the run contract."),
+      tool_path: z.enum(["mcp", "cli", "unknown"]).optional().describe("Execution path selected for this run contract."),
+      page_set: z.array(z.string()).optional().describe("Representative page set or scope list for workflow-driven runs."),
+-     required_evidence: z.array(z.string()).optional().describe("Required evidence types for the run contract, e.g. screenshots, console, network, perf."),
++     required_evidence: z.array(z.string()).optional().describe("Required evidence types for the run contract, e.g. screenshots, console, network, perf, or seo."),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
-      try {
+     try {
+        const outcomeContext = {
+          taskType: args.task_type,
+          userGoal: args.user_goal,
+          workflowUsed: args.workflow_name,
+/* ... */
+          workflowRequired: args.workflow_required,
+          authScope: args.auth_scope,
+          toolPath: args.tool_path,
+          pageSet: args.page_set,
+          requiredEvidence: args.required_evidence,
+        };
         let sessionId = args.sessionId;
         let page;
         let isRecording = false;
@@ -826,9 +843,10 @@ server.tool(
           if (!session) return { content: [{ type: "text", text: `Error: Session ${sessionId} not found or expired. Start a new one by omitting sessionId.` }] };
           page = session.page;
           isRecording = session.recording;
+          await setSessionOutcomeContext(sessionId, auth.userId, outcomeContext).catch(() => false);
         } else {
           const vp = (args.width || args.height) ? { width: args.width || 1280, height: args.height || 800 } : undefined;
-          sessionId = await createSession(auth.userId, vp, args.record_video);
+          sessionId = await createSession(auth.userId, vp, args.record_video, outcomeContext);
           const session = await getSession(sessionId, auth.userId);
           page = session!.page;
           isRecording = session!.recording;
@@ -838,7 +856,10 @@ server.tool(
         const img = await pageScreenshot(page);
         const vpSize = page.viewportSize();
         const recordingNote = isRecording ? "\n🔴 Recording session — call browser_close to get the video URL" : "";
-        return { content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\nViewport: ${vpSize?.width}×${vpSize?.height}\n(Pass this sessionId to all browser_ tools)${recordingNote}` }, img] };
+        const workflowNote = args.workflow_name || args.user_goal
+          ? `\nRun outcome context: ${args.user_goal || args.task_type || "general browser task"}${args.workflow_name ? ` · workflow ${args.workflow_name}` : ""}`
+          : "";
+        return { content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\nViewport: ${vpSize?.width}×${vpSize?.height}\n(Pass this sessionId to all browser_ tools)${recordingNote}${workflowNote}` }, img] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error navigating: ${humanizeError(err instanceof Error ? err.message : String(err))}` }] };
       }
