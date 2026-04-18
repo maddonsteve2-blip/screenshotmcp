@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, CreditCard, Download, FileText, FolderSearch, type LucideIcon, Image, Key, LayoutDashboard, ListVideo, Play, ScrollText, Settings, Video } from "lucide-react";
+import { BarChart3, CreditCard, Download, FileText, FolderSearch, type LucideIcon, Image, Key, LayoutDashboard, ListVideo, Play, ScrollText, Settings, Video, Webhook } from "lucide-react";
 import { DialogClose } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +55,7 @@ const navGroups: NavGroup[] = [
     label: "Manage",
     items: [
       { href: "/dashboard/keys", label: "API Keys", icon: Key, match: "exact" },
+      { href: "/dashboard/webhooks", label: "Webhooks", icon: Webhook, match: "exact" },
       { href: "/dashboard/install", label: "Install", icon: Download, match: "exact" },
       { href: "/dashboard/billing", label: "Billing", icon: CreditCard, match: "exact" },
       { href: "/dashboard/settings", label: "Settings", icon: Settings, match: "exact" },

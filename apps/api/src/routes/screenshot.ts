@@ -9,6 +9,7 @@ import { uploadScreenshot } from "../lib/r2.js";
 import { requireApiKey, type AuthRequest } from "../middleware/auth.js";
 import { enforcePlanLimit } from "../middleware/rateLimit.js";
 import { idempotency } from "../middleware/idempotency.js";
+import { performScreenshotDiff } from "../lib/screenshot-diff.js";
 
 export const screenshotRouter = Router();
 
@@ -155,6 +156,43 @@ screenshotRouter.post(
       next(err);
     }
   }
+);
+
+const diffSchema = z.object({
+  urlA: z.string().url(),
+  urlB: z.string().url(),
+  width: z.number().int().min(320).max(3840).optional().default(1280),
+  height: z.number().int().min(240).max(2160).optional().default(800),
+  threshold: z.number().min(0).max(1).optional().default(0.1),
+});
+
+/**
+ * Synchronous visual diff. Used by the `screenshotsmcp/action` GitHub Action
+ * and any CI pipeline that wants a baseline-vs-head comparison without
+ * driving the MCP transport directly. Counts as one screenshot against the
+ * monthly quota (the underlying captures share the request).
+ */
+screenshotRouter.post(
+  "/diff",
+  requireApiKey,
+  enforcePlanLimit,
+  idempotency("v1.screenshot.diff"),
+  async (req: AuthRequest, res, next) => {
+    try {
+      const parsed = diffSchema.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({ error: parsed.error.flatten() });
+        return;
+      }
+      const result = await performScreenshotDiff(parsed.data);
+      await db
+        .insert(usageEvents)
+        .values({ id: nanoid(), userId: req.userId!, screenshotId: null });
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
 );
 
 screenshotRouter.get(
