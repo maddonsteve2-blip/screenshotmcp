@@ -99,6 +99,43 @@ Current tool count: 46+ MCP tools, 38 CLI commands.
 - Ask a blocking clarification question only when the base URL is missing or when authenticated scope is essential and still ambiguous.
 - If you start a generic live audit before reading the workflow, the audit is invalid and must be restarted from the workflow.
 
+## Progressive Visibility — never wait blindly for browser state
+
+Applies to every browser-automation task in this repo (MCP tools, CLI
+commands, new code you write).
+
+**The rule:** Do not call a tool that might silently hang with a long
+timeout. Poll on an escalating schedule, emit a visual snapshot on every
+tick, and decide whether to keep waiting based on what you actually see.
+
+Standard schedule: `[2s, 5s, 10s, 20s, 40s, 40s]` — ≈2 minutes max,
+six visible checkpoints.
+
+After each tick, compare against the previous snapshot:
+
+| Observation | Decision |
+|---|---|
+| URL changed | Likely done — verify expected state |
+| Visible text changed | Progress — keep waiting |
+| Same state 2+ ticks | Stuck — abort or change strategy |
+| Error modal / toast visible | Abort immediately, report to user |
+
+Concrete patterns:
+
+- `browser_wait_for` → short timeout (5s), pair with `browser_screenshot`.
+- `browser_navigate` on SPAs → wait 2s, screenshot, check skeleton vs real.
+- `smart_login` / `solve_captcha` → screenshot the result, don't trust the
+  text response alone.
+- CLI commands that poll → emit snapshot (URL + H1 + visible text) every
+  tick, let the calling agent decide.
+
+Reference implementation:
+`packages/cli/src/commands/smithery-signup.ts` uses this schedule and logs
+each snapshot to stdout.
+
+The full rule with rationale lives in `SKILL.md` under **Progressive
+Visibility**.
+
 ## General Working Principles
 - **Think Before Coding**
   - State assumptions explicitly. If ambiguity matters, ask rather than guess.

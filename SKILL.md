@@ -343,6 +343,52 @@ User: "Log in and check my dashboard"
 
 ---
 
+## Progressive Visibility — never wait blindly
+
+**THE RULE:** Any time a browser action might not complete instantly, you must
+poll with a screenshot on each tick and decide from the visible state, not
+blind timeouts. Silent hangs are the #1 way agents get stuck.
+
+**Wrong** — blind wait:
+
+```
+# Hits timeout, no feedback, agent sits blind for 30s
+browser_wait_for selector=".success" timeout=30000
+```
+
+**Right** — escalating poll with visibility:
+
+```
+# t=2s
+browser_screenshot + browser_evaluate("location.href, document.title")
+# decide: done? still loading? stuck? → based on actual pixels
+# if still waiting:
+# t=7s   (wait 5s)  → screenshot + state
+# t=17s  (wait 10s) → screenshot + state
+# t=37s  (wait 20s) → screenshot + state
+# t=77s  (wait 40s) → screenshot + state  ← final check, abort if no change
+```
+
+**Standard escalation schedule:** `[2s, 5s, 10s, 20s, 40s, 40s]` (≈2 minutes
+max, 6 visible checkpoints). After each tick, look at the screenshot and
+decide:
+
+- Has the URL changed? → Probably done, verify.
+- Has visible H1 / body text changed? → Progress, keep waiting.
+- Same state for 2+ ticks? → Likely stuck, abort or change strategy.
+- Visible error modal / toast? → Abort immediately.
+
+**Applies to:**
+
+- `browser_wait_for` → always pair with `browser_screenshot` after each call.
+- `browser_navigate` on SPAs → wait 2s, screenshot, check for skeleton vs real
+  content; don't assume load state.
+- `smart_login` / `solve_captcha` → these have internal waits but you should
+  screenshot afterward to confirm UI state, not trust the text response alone.
+- Any CLI command that polls a remote resource — emit a snapshot on each tick.
+
+This rule replaces every "wait N seconds" pattern in older skill docs.
+
 ## Best Practices
 
 - **Always close sessions:** Call `browser_close` when done

@@ -37,6 +37,7 @@ import {
 import { installCommand } from "./commands/install.js";
 import { skillsCommand } from "./commands/skills.js";
 import { setupCommand } from "./commands/setup.js";
+import { smitherySignupCommand } from "./commands/smithery-signup.js";
 
 const program = new Command();
 
@@ -125,5 +126,8 @@ program.addCommand(breakpointsCommand);
 program.addCommand(installCommand);
 program.addCommand(skillsCommand);
 program.addCommand(setupCommand);
+
+// Local-browser signup flows (run on the user's machine, not Railway)
+program.addCommand(smitherySignupCommand);
 
 program.parse();
