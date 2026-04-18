@@ -1801,7 +1801,7 @@ server.tool(
 
   server.tool(
     "smart_login",
-    "Attempt to log in to a website. Navigates to the login URL, finds email/username and password fields, fills them in, and submits the form with click, Enter, and form-submit fallbacks for Clerk and other multi-step auth UIs. Returns a screenshot and reports whether login succeeded, failed, or needs verification. Always ask the user for credentials first — never guess. If the site requires email verification (OTP code), use read_verification_email to automatically fetch the code from Gmail (requires one-time authorize_email_access setup).",
+    "Attempt to log in to a website. Navigates to the login URL, finds email/username and password fields, fills them in, and submits the form with click, Enter, and form-submit fallbacks for Clerk and other multi-step auth UIs. Returns a screenshot and reports whether login succeeded, failed, or needs verification. Always ask the user for credentials first — never guess. If the site requires email verification (OTP code), use read_verification_email to automatically fetch the code from Gmail (requires one-time authorize_email_access setup). ESCALATION: if smart_login returns UNCERTAIN or the page silently refuses to advance after a valid-looking submit (common on WorkOS AuthKit / Cloudflare Turnstile / Clerk bot-detection), do NOT retry. Escalate to the CLI local browser: `npx screenshotsmcp browser:start <url>` and drive real Chrome one atomic command at a time. Real Chrome on the user's residential IP passes trust checks the Railway-hosted cloud browser cannot.",
     {
       loginUrl: z.string().url().describe("The login page URL to navigate to"),
       username: z.string().describe("The username or email to enter"),
@@ -3162,6 +3162,88 @@ server.tool(
     }
   );
 
+  // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
+  server.tool(
+    "local_browser_escalate_hint",
+    "When MCP browser automation silently stalls on a cloud-browser-hostile site (WorkOS AuthKit, Cloudflare Turnstile, Clerk bot-detection, Akamai/PerimeterX), call this tool to get the exact CLI commands the agent should run to escalate to the user's local Chrome. Returns a ready-to-run command sequence plus the saved credentials for the site's origin from websiteAuthMemories/testInboxes. Does NOT take any browser action — purely informational.",
+    {
+      site: z.string().url().describe("The site URL that MCP stalled on (e.g. https://smithery.ai)."),
+      lastObservedIssue: z.string().optional().describe("Short free-text note describing what the cloud browser saw (e.g. 'solve_captcha returned success but form did not advance'). Optional."),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+
+      const origin = normalizeOrigin(args.site);
+      const [memory, primaryInbox] = await Promise.all([
+        getWebsiteAuthMemory(auth.userId, origin),
+        getPrimaryInbox(auth.userId),
+      ]);
+
+      const savedEmail = memory?.inboxEmail ?? primaryInbox?.email ?? "<run `auth:plan` first>";
+      const savedPassword = primaryInbox?.password ?? "<run `auth:plan` first>";
+      const siteNote = memory?.notes ? `\n\n**Saved notes for ${origin}:**\n${memory.notes}` : "";
+      const priorPath = memory?.lastSuccessfulAuthPath
+        ? `\n**Last successful auth path:** ${memory.lastSuccessfulAuthPath}`
+        : "";
+
+      const commands = [
+        `npx screenshotsmcp auth:plan ${args.site}`,
+        `npx screenshotsmcp browser:start ${args.site}`,
+        `npx screenshotsmcp browser:inspect   # dump the visible form fields and selectors`,
+        `npx screenshotsmcp browser:click "<selector-or-text>"`,
+        `npx screenshotsmcp browser:fill "input[name=email]" "${savedEmail}"`,
+        `npx screenshotsmcp browser:fill "input[name=password]" "${savedPassword}"`,
+        `npx screenshotsmcp browser:click "button[type=submit]"`,
+        `npx screenshotsmcp browser:wait 3000   # or browser:wait-for <selector>`,
+        `# → if an OTP screen appears:`,
+        `npx screenshotsmcp inbox:check ${savedEmail}   # grab the code`,
+        `npx screenshotsmcp browser:paste "input.rt-TextFieldInput" "<6-digit-code>"`,
+        `npx screenshotsmcp browser:eval "document.querySelector('form').requestSubmit(); 'ok'"`,
+        `npx screenshotsmcp auth:record ${args.site} signup_success --notes "..."`,
+        `npx screenshotsmcp browser:stop`,
+      ];
+
+      const rationale = [
+        "Cloud-browser-hostile sites (WorkOS AuthKit / Cloudflare Turnstile / Clerk bot-detection) filter out requests from the Railway-hosted Chromium fingerprint even when `solve_captcha` returns a valid token. Retrying in MCP is futile.",
+        "Real Chrome on the user's residential IP passes those trust checks silently — often without showing a CAPTCHA at all (the Smithery signup went the full name → email → password → OTP path without any checkbox appearing).",
+        "The interactive rule: after every `browser:*` command, read the returned PNG, confirm the state matches expectations, then issue the next command. Never chain commands blindly.",
+      ];
+
+      return {
+        content: [{
+          type: "text",
+          text: [
+            `## Escalate to CLI local browser`,
+            ``,
+            `**Site:** ${args.site}`,
+            args.lastObservedIssue ? `**Observed issue:** ${args.lastObservedIssue}` : "",
+            priorPath,
+            siteNote,
+            ``,
+            `### Why escalate`,
+            ``,
+            rationale.map((line) => `- ${line}`).join("\n"),
+            ``,
+            `### Command sequence`,
+            ``,
+            "```bash",
+            commands.join("\n"),
+            "```",
+            ``,
+            `### Saved credentials from the DB`,
+            ``,
+            `- **Email:** ${savedEmail}`,
+            `- **Password:** ${savedPassword}`,
+            `- **Known auth state for ${origin}:** ${memory ? describeWebsiteAuthMemory(memory) : "no prior attempts recorded"}`,
+            ``,
+            `Call \`auth:plan ${args.site}\` first to refresh this state, and \`auth:record ${args.site} <outcome>\` after the attempt so future runs resume correctly.`,
+          ].filter(Boolean).join("\n"),
+        }],
+      };
+    }
+  );
+
   // @ts-ignore
   server.tool(
     "create_test_inbox",
@@ -3333,7 +3415,7 @@ server.tool(
 
   server.tool(
     "solve_captcha",
-    "Automatically solve CAPTCHAs on the current page using CapSolver AI. Supports Cloudflare Turnstile, reCAPTCHA v2/v3, and hCaptcha. Detects the CAPTCHA type and sitekey automatically, sends it to CapSolver for solving, injects the token, and optionally submits the form. Use this when a CAPTCHA blocks form submission during browser automation.",
+    "Automatically solve CAPTCHAs on the current page using CapSolver AI. Supports Cloudflare Turnstile, reCAPTCHA v2/v3, and hCaptcha. Detects the CAPTCHA type and sitekey automatically, sends it to CapSolver for solving, injects the token, and optionally submits the form. Use this when a CAPTCHA blocks form submission during browser automation. IMPORTANT: if this returns success:true but the form silently fails to submit (URL doesn't change, no error, form resets) — common on WorkOS AuthKit + Cloudflare Turnstile (e.g. Smithery) — the token was rejected by Siteverify because the Railway-hosted Chromium fingerprint doesn't match a real user. Do NOT retry. Escalate to the CLI local browser: `npx screenshotsmcp browser:start <url>` and drive real Chrome interactively. Real Chrome on the user's residential IP passes Turnstile trust checks silently, often without even showing a checkbox.",
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
       type: z.enum(["turnstile", "recaptchav2", "recaptchav3", "hcaptcha"]).optional().describe("CAPTCHA type. Auto-detected if omitted."),
@@ -4054,7 +4136,10 @@ function resolveKey(req: Request): string | undefined {
   return (
     (req.headers["x-api-key"] as string | undefined) ||
     (req.params.key as string | undefined) ||
-    (req.query.key as string | undefined)
+    (req.query.key as string | undefined) ||
+    // Smithery's default config parameter template publishes us with
+    // `?apiKey={apiKey}` in the gateway URL. Accept it as a synonym for `key`.
+    (req.query.apiKey as string | undefined)
   );
 }
 

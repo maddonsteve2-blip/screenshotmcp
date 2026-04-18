@@ -17,6 +17,8 @@ import {
 import { browserCommand } from "./commands/browser.js";
 import {
   authTestCommand,
+  authPlanCommand,
+  authRecordCommand,
   authFindLoginCommand,
   authSmartLoginCommand,
   authorizeEmailAccessCommand,
@@ -38,6 +40,20 @@ import { installCommand } from "./commands/install.js";
 import { skillsCommand } from "./commands/skills.js";
 import { setupCommand } from "./commands/setup.js";
 import { smitherySignupCommand } from "./commands/smithery-signup.js";
+import {
+  browserStartCommand,
+  browserClickLocalCommand,
+  browserFillLocalCommand,
+  browserPressLocalCommand,
+  browserScreenshotLocalCommand,
+  browserEvalLocalCommand,
+  browserWaitLocalCommand,
+  browserWaitForLocalCommand,
+  browserPasteLocalCommand,
+  browserInspectLocalCommand,
+  browserNavigateLocalCommand,
+  browserStopCommand,
+} from "./commands/local-browser.js";
 
 const program = new Command();
 
@@ -51,6 +67,8 @@ program.addCommand(loginCommand);
 program.addCommand(logoutCommand);
 program.addCommand(whoamiCommand);
 program.addCommand(authTestCommand);
+program.addCommand(authPlanCommand);
+program.addCommand(authRecordCommand);
 program.addCommand(authFindLoginCommand);
 program.addCommand(authSmartLoginCommand);
 program.addCommand(authorizeEmailAccessCommand);
@@ -129,5 +147,19 @@ program.addCommand(setupCommand);
 
 // Local-browser signup flows (run on the user's machine, not Railway)
 program.addCommand(smitherySignupCommand);
+
+// Interactive local browser — atomic primitives an agent can drive step-by-step
+program.addCommand(browserStartCommand);
+program.addCommand(browserNavigateLocalCommand);
+program.addCommand(browserClickLocalCommand);
+program.addCommand(browserFillLocalCommand);
+program.addCommand(browserPressLocalCommand);
+program.addCommand(browserScreenshotLocalCommand);
+program.addCommand(browserEvalLocalCommand);
+program.addCommand(browserWaitLocalCommand);
+program.addCommand(browserWaitForLocalCommand);
+program.addCommand(browserPasteLocalCommand);
+program.addCommand(browserInspectLocalCommand);
+program.addCommand(browserStopCommand);
 
 program.parse();

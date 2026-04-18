@@ -60,6 +60,80 @@ export const authTestCommand = new Command("auth:test")
     }
   });
 
+/**
+ * Ergonomic alias: `auth:plan <url>` — same as `auth:test <url>` without `--record`.
+ * Agents should call this FIRST for any website auth task. Returns the saved inbox,
+ * password, and remembered per-site auth state so the next attempt can resume at
+ * the right stage.
+ */
+export const authPlanCommand = new Command("auth:plan")
+  .description("Plan the next auth step for a site. Returns saved email/password + known auth state from the DB. Call this before any signup/login attempt.")
+  .argument("<url>", "Site URL or auth page URL")
+  .option("--login-url <loginUrl>", "Known login URL for the site")
+  .option("--intent <intent>", "Auth intent: auto, sign_in, sign_up", "auto")
+  .option("--username <username>", "Username prefix when forcing a fresh inbox")
+  .option("--name <name>", "Display name when forcing a fresh inbox")
+  .option("--force-new-inbox", "Force a brand new inbox instead of reusing the saved primary inbox")
+  .action(async (url: string, opts: Record<string, string | boolean>) => {
+    const intent = String(opts.intent || "auto");
+    if (!VALID_INTENTS.has(intent)) {
+      console.error(chalk.red(`Invalid intent: ${intent}`));
+      process.exit(1);
+    }
+    const spinner = ora(`Planning auth workflow for ${url}...`).start();
+    try {
+      const res = await callTool("auth_test_assist", {
+        url,
+        action: "plan",
+        intent,
+        loginUrl: opts.loginUrl,
+        username: opts.username,
+        display_name: opts.name,
+        force_new_inbox: !!opts.forceNewInbox,
+      });
+      spinner.stop();
+      console.log(chalk.green("✓ Auth plan"));
+      console.log(extractText(res));
+    } catch (err) {
+      spinner.fail(chalk.red("Failed to plan auth workflow"));
+      console.error(chalk.red(err instanceof Error ? err.message : String(err)));
+      process.exit(1);
+    }
+  });
+
+/**
+ * Ergonomic alias: `auth:record <url> <outcome>` — persists the result of an
+ * auth attempt to `websiteAuthMemories` so the next run resumes correctly.
+ * Call this at the end of every signup/login attempt (success OR failure).
+ */
+export const authRecordCommand = new Command("auth:record")
+  .description("Record the outcome of an auth attempt to the DB so the next run remembers what worked.")
+  .argument("<url>", "Site URL the auth was attempted against")
+  .argument("<outcome>", `Outcome: ${Array.from(VALID_OUTCOMES).join(" | ")}`)
+  .option("--notes <notes>", "Optional freeform note to save with the auth memory")
+  .action(async (url: string, outcome: string, opts: Record<string, string>) => {
+    if (!VALID_OUTCOMES.has(outcome)) {
+      console.error(chalk.red(`Invalid outcome: ${outcome}. Must be one of: ${Array.from(VALID_OUTCOMES).join(", ")}`));
+      process.exit(1);
+    }
+    const spinner = ora(`Recording ${outcome} for ${url}...`).start();
+    try {
+      const res = await callTool("auth_test_assist", {
+        url,
+        action: "record",
+        outcome,
+        notes: opts.notes,
+      });
+      spinner.stop();
+      console.log(chalk.green(`✓ Auth memory updated: ${outcome}`));
+      console.log(extractText(res));
+    } catch (err) {
+      spinner.fail(chalk.red("Failed to save auth memory"));
+      console.error(chalk.red(err instanceof Error ? err.message : String(err)));
+      process.exit(1);
+    }
+  });
+
 export const authFindLoginCommand = new Command("auth:find-login")
   .description("Discover likely login or sign-in URLs for a site before attempting auth")
   .argument("<url>", "Base site URL")

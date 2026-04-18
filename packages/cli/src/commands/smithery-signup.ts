@@ -1,6 +1,10 @@
 import { Command } from "commander";
 import chalk from "chalk";
-import { chromium } from "playwright";
+import { chromium, Page } from "playwright";
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { randomBytes } from "node:crypto";
 
 /**
  * Local-browser Smithery signup.
@@ -136,7 +140,14 @@ export const smitherySignupCommand = new Command("smithery-signup")
         await continueBtn.click();
       }
 
+      // Snapshot directory — PNGs are written here and the path is printed so
+      // the user / watching agent can open them.
+      const runId = randomBytes(4).toString("hex");
+      const snapshotDir = join(tmpdir(), `smithery-signup-${runId}`);
+      mkdirSync(snapshotDir, { recursive: true });
+      console.log(chalk.dim(`  Snapshots → ${snapshotDir}`));
       console.log();
+
       console.log(
         chalk.yellow.bold(
           "→ Your turn: click the Turnstile checkbox in the Chrome window.",
@@ -144,113 +155,168 @@ export const smitherySignupCommand = new Command("smithery-signup")
       );
       console.log(
         chalk.dim(
-          "  (The CLI will poll with escalating intervals and print progress snapshots.)",
+          "  (CLI auto-detects every step and walks through password + verify.)",
         ),
       );
       console.log();
 
-      const startUrlHost = new URL(page.url()).host;
+      let tickCount = 0;
+      const snapshot = async (stepLabel: string, elapsedMs: number) => {
+        tickCount += 1;
+        const elapsed = `${Math.round(elapsedMs / 1000)}s`;
+        const url = page.url();
+        const title = await page.title().catch(() => "");
+        const h1 =
+          (await page
+            .locator("h1, h2")
+            .first()
+            .innerText({ timeout: 500 })
+            .catch(() => null)) ?? null;
+        // innerText (not textContent) so inline CSS doesn't leak.
+        const visibleText = (
+          (await page
+            .locator("body")
+            .innerText({ timeout: 500 })
+            .catch(() => "")) ?? ""
+        )
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 160);
 
-      // Progressive Visibility: escalating poll intervals with a state snapshot
-      // on each tick. This avoids the silent-hang pattern — any caller (agent
-      // or human) can always see current URL + H1 text and decide whether to
-      // keep waiting or abort, rather than sitting blind on a long wait.
-      const POLL_SCHEDULE_MS = [2_000, 5_000, 10_000, 20_000, 40_000, 40_000, 40_000];
-      let succeeded = false;
-      let totalElapsed = 0;
+        const pngPath = join(
+          snapshotDir,
+          `${String(tickCount).padStart(2, "0")}-${stepLabel}-${elapsed}.png`,
+        );
+        await page
+          .screenshot({ path: pngPath, fullPage: false })
+          .catch(() => {});
 
-      const checkTerminal = async (): Promise<
-        "done" | "still-authk" | "error"
-      > => {
+        console.log(
+          chalk.dim(`  [${elapsed}] ${stepLabel}: ${h1 ?? title} — ${url}`),
+        );
+        if (visibleText)
+          console.log(chalk.dim(`         "${visibleText}..."`));
+        console.log(chalk.dim(`         png: ${pngPath}`));
+      };
+
+      const pathOf = (u: string) => {
         try {
-          const currentHost = new URL(page.url()).host;
-          if (currentHost !== startUrlHost && !currentHost.startsWith("authk.")) {
-            return "done";
-          }
-          const verifyMarker = page.getByText(
-            /verify|check.*email|code.*sent|enter.*code/i,
-          ).first();
-          if (await verifyMarker.isVisible().catch(() => false)) {
-            return "done";
-          }
-          return "still-authk";
+          return new URL(u).pathname;
         } catch {
-          return "error";
+          return u;
         }
       };
 
-      for (const waitMs of POLL_SCHEDULE_MS) {
+      // Step 1 — wait for Turnstile to clear, signalled by URL path change
+      // away from `/sign-up` (usually to `/sign-up/password`).
+      console.log(chalk.bold("Step 1: Turnstile"));
+      const step1Start = Date.now();
+      const SCHEDULE = [2_000, 5_000, 10_000, 20_000, 40_000, 40_000];
+      let turnstileCleared = false;
+      for (const waitMs of SCHEDULE) {
         await page.waitForTimeout(waitMs);
-        totalElapsed += waitMs;
-
-        const state = await checkTerminal();
-        if (state === "done") {
-          succeeded = true;
+        const elapsed = Date.now() - step1Start;
+        const currentPath = pathOf(page.url());
+        if (currentPath !== "/sign-up") {
+          turnstileCleared = true;
+          await snapshot("turnstile-cleared", elapsed);
           break;
         }
-
-        // Progress snapshot — visible to any watching agent.
-        const snap = {
-          elapsed: `${Math.round(totalElapsed / 1000)}s`,
-          url: page.url(),
-          title: await page.title().catch(() => ""),
-          h1:
-            (await page
-              .locator("h1, h2")
-              .first()
-              .textContent({ timeout: 500 })
-              .catch(() => null)) ?? null,
-          visibleText: (
-            (await page
-              .locator("body")
-              .textContent({ timeout: 500 })
-              .catch(() => "")) ?? ""
-          )
-            .replace(/\s+/g, " ")
-            .trim()
-            .slice(0, 200),
-        };
-        console.log(
-          chalk.dim(
-            `  [${snap.elapsed}] ${snap.h1 ?? snap.title} — ${snap.url}`,
-          ),
-        );
-        if (snap.visibleText) {
-          console.log(chalk.dim(`         ${snap.visibleText}`));
-        }
+        await snapshot("turnstile-waiting", elapsed);
       }
-
-      if (succeeded) {
-        console.log(chalk.green.bold("\n✓ Turnstile cleared — WorkOS accepted."));
-        console.log(`  Current URL: ${chalk.cyan(page.url())}`);
-        console.log();
+      if (!turnstileCleared) {
         console.log(
-          chalk.dim(
-            "  If the next step is email verification, check the inbox:",
-          ),
-        );
-        console.log(
-          chalk.cyan(`    screenshotsmcp inbox:check --inbox-id ${email}`),
-        );
-        console.log();
-        console.log(
-          chalk.dim(
-            "  Browser stays open so you can finish any remaining steps.",
+          chalk.red(
+            "\n✗ Turnstile never cleared. Browser still open — finish manually.",
           ),
         );
         await page.waitForEvent("close", { timeout: 0 }).catch(() => {});
-      } else {
-        console.log(
-          chalk.red(
-            `\n✗ No state change after ${Math.round(totalElapsed / 1000)}s. The browser window is still open — finish manually, or re-run with a higher --max-wait.`,
-          ),
-        );
-        console.log(
-          chalk.dim(
-            "  If you saw the Turnstile checkbox never appear, the Siteverify may have rejected your client silently. Try with a different IP / VPN off.",
-          ),
-        );
+        return;
       }
+      console.log(chalk.green("  ✓ Turnstile cleared — advanced past Cloudflare gate."));
+      console.log();
+
+      // Step 2 — Password step. WorkOS shows "Create a password" after a
+      // successful signup init. We auto-generate a strong password and fill it.
+      if (pathOf(page.url()).startsWith("/sign-up/password")) {
+        console.log(chalk.bold("Step 2: Create password"));
+        const password =
+          "Scr" +
+          randomBytes(8).toString("base64").replace(/[+/=]/g, "") +
+          "!9A";
+        console.log(
+          chalk.yellow(
+            `  Generated password: ${chalk.bold(password)}  (save this — you'll need it)`,
+          ),
+        );
+
+        const pwInput = page
+          .locator('input[type="password"], input[name="password"]')
+          .first();
+        if (await pwInput.isVisible().catch(() => false)) {
+          await pwInput.fill(password);
+          await snapshot("password-filled", 0);
+
+          const pwContinue = page
+            .getByRole("button", { name: /continue|sign\s*up/i })
+            .first();
+          if (await pwContinue.isVisible().catch(() => false)) {
+            await pwContinue.click();
+            await snapshot("password-submitted", 0);
+          }
+
+          // Wait for URL to advance past /password
+          const step2Start = Date.now();
+          let pwCleared = false;
+          for (const waitMs of SCHEDULE) {
+            await page.waitForTimeout(waitMs);
+            const elapsed = Date.now() - step2Start;
+            const p = pathOf(page.url());
+            if (!p.startsWith("/sign-up/password")) {
+              pwCleared = true;
+              await snapshot("password-cleared", elapsed);
+              break;
+            }
+            await snapshot("password-waiting", elapsed);
+          }
+          if (!pwCleared) {
+            console.log(
+              chalk.red("  ✗ Password step didn't advance. Finish manually."),
+            );
+            await page.waitForEvent("close", { timeout: 0 }).catch(() => {});
+            return;
+          }
+          console.log(chalk.green("  ✓ Password accepted."));
+          console.log();
+        }
+      }
+
+      // Step 3 — whatever comes next (verify email, profile, or success
+      // redirect). We don't assume — poll and snapshot until the host
+      // changes off `authk.` or 60s elapses.
+      console.log(chalk.bold("Step 3: Post-password (verify email / redirect)"));
+      const step3Start = Date.now();
+      for (const waitMs of SCHEDULE) {
+        await page.waitForTimeout(waitMs);
+        const elapsed = Date.now() - step3Start;
+        const host = new URL(page.url()).host;
+        await snapshot("post-password", elapsed);
+        if (!host.startsWith("authk.")) {
+          console.log(
+            chalk.green.bold("\n✓ Signup complete — redirected off AuthKit."),
+          );
+          console.log(`  Final URL: ${chalk.cyan(page.url())}`);
+          break;
+        }
+      }
+
+      console.log();
+      console.log(chalk.dim("  Browser stays open. Check email for a"));
+      console.log(chalk.dim("  verification link/code if prompted:"));
+      console.log(
+        chalk.cyan(`    screenshotsmcp inbox:check --inbox-id ${email}`),
+      );
+      await page.waitForEvent("close", { timeout: 0 }).catch(() => {});
     } catch (err) {
       console.error(
         chalk.red(

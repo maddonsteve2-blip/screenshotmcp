@@ -12,7 +12,7 @@ compatibility: >
   Works with Claude, Cursor, Windsurf, VS Code, and any MCP-compatible agent.
 metadata:
   author: stevejford
-  version: "2.2.1"
+  version: "2.3.0"
   website: https://screenshotsmcp.com
   api: https://screenshotsmcp-api-production.up.railway.app
   github: https://github.com/stevejford/screenshotmcp
@@ -334,12 +334,40 @@ User: "Log in and check my dashboard"
 - Use JS API directly if UI blocks: `window.Clerk.client.signUp.create(...)`
 - Sitekey is readable from `/v1/environment` on the Clerk frontend API
 
-**WorkOS AuthKit tips (sites under `authk.*.ai`):**
-- Automatable up to the Turnstile checkbox; the final click requires a human.
-- Sitekey is not in the DOM — pull it from `performance.getEntriesByType('resource')` filtered on `turnstile/f/`.
-- `solve_captcha` gets a valid token but WorkOS blocks programmatic injection — do not retry.
-- Plan for a 10-second human handoff. See `workflows/workos-authkit-signup/WORKFLOW.md`.
-- Known WorkOS-backed sites: **Smithery** (`authk.smithery.ai`). Add more as you encounter them.
+**WorkOS AuthKit / Cloudflare Turnstile (sites under `authk.*.ai`):**
+`solve_captcha` returns a valid token but WorkOS' Siteverify rejects it because
+the IP/TLS fingerprint of Railway-hosted Chromium looks like a bot. Retrying
+from the cloud browser is futile. **Escalate to the CLI local browser** (see
+Escalation Ladder) — real Chrome on the user's residential IP clears the
+challenge silently, often without even showing a checkbox.
+Known WorkOS-backed sites: **Smithery** (`authk.smithery.ai`). Add more as
+you encounter them.
+
+---
+
+## Escalation Ladder (when MCP silently stalls)
+
+Some cloud-browser-hostile sites — WorkOS AuthKit, Cloudflare Turnstile-
+fronted signups, Clerk bot-detection, Akamai/PerimeterX — reject traffic from
+Railway-hosted Chromium at the fingerprint level. No token trick fixes this.
+
+When a valid-looking submit silently does nothing (URL doesn't change, no
+visible error, form resets), **stop retrying in MCP and switch to CLI**:
+
+1. MCP first (`browser_navigate`, `smart_login`, `solve_captcha`).
+2. If MCP stalls → `npx screenshotsmcp browser:start <url>` and drive real
+   Chrome interactively: `browser:click`, `browser:fill`, `browser:paste`
+   (React-compatible), `browser:inspect` (DOM form dump), `browser:wait-for`.
+3. Always call `auth:plan` before a fresh auth attempt and `auth:record`
+   after — credentials and per-site auth state persist in the DB.
+
+The interactive rule: after every `browser:*` command, **read the PNG** and
+decide the next action from what you actually see. No preset scripts.
+
+The Smithery signup (`authk.smithery.ai` + Turnstile + WorkOS) took 13
+atomic commands with this pattern and cleared Turnstile without showing a
+checkbox. The reference recipe lives in the shipped SKILL under "Escalation
+Ladder".
 
 ---
 

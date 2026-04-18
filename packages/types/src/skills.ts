@@ -3,7 +3,7 @@ import { homedir } from "os";
 import { dirname, join } from "path";
 
 export const CORE_SKILL_NAME = "screenshotsmcp";
-export const CORE_SKILL_VERSION = "2.4.0";
+export const CORE_SKILL_VERSION = "2.5.0";
 const MANIFEST_SCHEMA_VERSION = 1;
 const INLINE_CODE_TOKEN = "__INLINE_CODE__";
 
@@ -15,7 +15,7 @@ license: MIT
 compatibility: Requires the ScreenshotsMCP MCP server connected and authenticated, or the ScreenshotsMCP CLI when terminal access is available.
 metadata:
   author: screenshotsmcp
-  version: "2.3.1"
+  version: "2.4.0"
   website: https://www.screenshotmcp.com
   api: https://screenshotsmcp-api-production.up.railway.app
 ---
@@ -38,7 +38,19 @@ Use this skill to give the assistant eyes and hands for the web. Use it to choos
 ## Available workflows
 
 - ${INLINE_CODE_TOKEN}workflows/sitewide-performance-audit/WORKFLOW.md${INLINE_CODE_TOKEN} — use when the user asks why a site is slow, wants the slowest pages identified, or wants a repeatable multi-page performance review.
-- ${INLINE_CODE_TOKEN}workflows/workos-authkit-signup/WORKFLOW.md${INLINE_CODE_TOKEN} — use when the sign-up or sign-in page redirects to ${INLINE_CODE_TOKEN}authk.*.ai${INLINE_CODE_TOKEN} (e.g. Smithery). Automates everything up to the Cloudflare Turnstile checkbox, then hands off to the user for one click.
+
+## Escalation ladder (when MCP silently stalls)
+
+Some sites reject traffic from the Railway-hosted cloud browser at the fingerprint level: Cloudflare Turnstile, WorkOS AuthKit (${INLINE_CODE_TOKEN}authk.*.ai${INLINE_CODE_TOKEN}, e.g. Smithery), Clerk bot-detection, and Akamai/PerimeterX-protected signups. ${INLINE_CODE_TOKEN}solve_captcha${INLINE_CODE_TOKEN} returns a valid token but Siteverify rejects it. Retrying is futile.
+
+When a valid-looking submit silently does nothing (URL does not change, no error, form resets), escalate instead of retrying:
+
+1. Start with MCP tools: ${INLINE_CODE_TOKEN}browser_navigate${INLINE_CODE_TOKEN}, ${INLINE_CODE_TOKEN}smart_login${INLINE_CODE_TOKEN}, ${INLINE_CODE_TOKEN}solve_captcha${INLINE_CODE_TOKEN}.
+2. If MCP stalls, switch to the CLI local browser: ${INLINE_CODE_TOKEN}npx screenshotsmcp browser:start <url>${INLINE_CODE_TOKEN}, then drive real Chrome one atomic command at a time with ${INLINE_CODE_TOKEN}browser:click${INLINE_CODE_TOKEN}, ${INLINE_CODE_TOKEN}browser:fill${INLINE_CODE_TOKEN}, ${INLINE_CODE_TOKEN}browser:paste${INLINE_CODE_TOKEN} (React-compatible), ${INLINE_CODE_TOKEN}browser:wait-for${INLINE_CODE_TOKEN}, ${INLINE_CODE_TOKEN}browser:inspect${INLINE_CODE_TOKEN}, and ${INLINE_CODE_TOKEN}browser:eval${INLINE_CODE_TOKEN}. Real Chrome on the user's residential IP passes trust checks the cloud browser cannot, often without even showing a CAPTCHA checkbox.
+3. Always call ${INLINE_CODE_TOKEN}screenshotsmcp auth:plan <url>${INLINE_CODE_TOKEN} before a fresh auth attempt and ${INLINE_CODE_TOKEN}screenshotsmcp auth:record <url> <outcome>${INLINE_CODE_TOKEN} after. Inbox, password, and per-site auth state persist so the next run resumes correctly.
+4. Use ${INLINE_CODE_TOKEN}+alias${INLINE_CODE_TOKEN} emails (e.g. ${INLINE_CODE_TOKEN}you+smithery@agentmail.to${INLINE_CODE_TOKEN}) to reuse a single inbox for multiple signups.
+
+The interactive rule: after every ${INLINE_CODE_TOKEN}browser:*${INLINE_CODE_TOKEN} command, read the returned PNG, confirm the state, then issue the next command. No preset scripts.
 
 ## Choose the right tool path
 

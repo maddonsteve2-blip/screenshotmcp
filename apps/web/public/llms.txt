@@ -38,6 +38,17 @@ If you prefer to do onboarding in two steps, run `npx screenshotsmcp login` foll
 
 Use remote workflows first for public sites. Escalate to the managed local browser when you need localhost access, intranet or VPN reachability, authenticated realism, or explicit user-approved local execution.
 
+## Escalation Ladder for website auth
+
+Some sites (Cloudflare Turnstile, WorkOS AuthKit, Clerk bot-detection, Akamai/PerimeterX-protected signups) silently reject requests from the Railway-hosted cloud browser. `solve_captcha` returns a valid token, but the fingerprint gets filtered by Siteverify — no amount of token injection fixes it. When a valid-looking submit silently does nothing (URL doesn't change, no error, form resets), escalate instead of retrying:
+
+1. Start with MCP tools (`browser_navigate`, `smart_login`, `solve_captcha`).
+2. If MCP stalls silently, switch to the CLI local browser: `npx screenshotsmcp browser:start <url>`, then drive real Chrome one atomic command at a time with `browser:click`, `browser:fill`, `browser:paste` (React-compatible), `browser:wait-for`, `browser:inspect`, `browser:eval`. Real Chrome on the user's residential IP passes WorkOS/Turnstile trust checks silently, often without even showing a CAPTCHA checkbox.
+3. Always call `screenshotsmcp auth:plan <url>` before a fresh auth attempt and `screenshotsmcp auth:record <url> <outcome>` after. Inbox, password, and per-site auth state persist in the DB so the next run resumes at the right stage.
+4. Use `+alias` emails (e.g. `you+smithery@agentmail.to`) to reuse a single inbox for multiple signups — most providers treat each alias as a distinct identity.
+
+The interactive rule: read the returned PNG after every `browser:*` command, confirm the state, then issue the next command. No preset scripts.
+
 For repeatable public-page performance audits, use the CLI only when the command path is already available or can be approved up front. If command approval would stall the run and MCP is already available, begin with MCP and collect metrics sequentially.
 
 Important: `screenshotsmcp skills ...` only manages the local core ScreenshotsMCP skill. For community skill discovery or installation, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...` instead.

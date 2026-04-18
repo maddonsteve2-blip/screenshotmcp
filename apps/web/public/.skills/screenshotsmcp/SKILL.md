@@ -6,7 +6,7 @@ license: MIT
 compatibility: Requires the ScreenshotsMCP MCP server connected and authenticated, or the ScreenshotsMCP CLI when terminal access is available.
 metadata:
   author: screenshotsmcp
-  version: "2.3.1"
+  version: "2.3.0"
   website: https://www.screenshotmcp.com
   api: https://screenshotsmcp-api-production.up.railway.app
 ---
@@ -31,6 +31,68 @@ Give your AI assistant browser truth. This skill covers all 46+ tools in the Scr
 ## Available Workflows
 
 - `workflows/sitewide-performance-audit/WORKFLOW.md` — use when the user asks why a site is slow, wants the slowest pages identified, or wants a repeatable multi-page performance review.
+
+## Escalation Ladder (when MCP tools stall)
+
+Some sites (Cloudflare Turnstile, WorkOS AuthKit, Clerk bot-detection, some
+Akamai/PerimeterX-protected sites) **silently reject** requests from the cloud
+browser even when `solve_captcha` returns a valid token. The IP/TLS fingerprint
+of Railway-hosted Chromium is flagged by Siteverify-style bot checks and no
+amount of token injection or synthetic-click bypass fixes it.
+
+When that happens, escalate — don't retry. In order:
+
+1. **Start with MCP tools** (`browser_navigate`, `smart_login`, `solve_captcha`).
+   They cover the majority of public-site automation.
+2. **If the page refuses to advance** after a valid-looking submit — no visible
+   error, URL doesn't change, form silently resets — it's a cloud-browser trust
+   rejection. **Switch to the CLI local browser**, which drives real Chrome on
+   the user's residential IP. That combination routinely passes WorkOS /
+   Turnstile without showing any CAPTCHA at all.
+3. **Always call `auth:plan` before a fresh auth attempt and `auth:record`
+   after.** Every run persists to the DB so the next run resumes at the right
+   stage with the right credentials.
+
+```
+# The 10-command Smithery signup recipe (reference pattern)
+npx screenshotsmcp auth:plan https://smithery.ai
+npx screenshotsmcp browser:start https://smithery.ai/servers/new
+npx screenshotsmcp browser:click "Sign up"
+npx screenshotsmcp browser:fill "input[name=first_name]" "Agent"
+npx screenshotsmcp browser:fill "input[name=last_name]"  "User"
+npx screenshotsmcp browser:fill "input[name=email]"      "you+smithery@agentmail.to"
+npx screenshotsmcp browser:click "button[type=submit]"   # Turnstile clears silently
+npx screenshotsmcp browser:fill "input[name=password]"   "<saved-from-auth:plan>"
+npx screenshotsmcp browser:click "button[type=submit]"
+# — reach OTP screen, check inbox, then —
+npx screenshotsmcp browser:paste "input.rt-TextFieldInput" "123456"
+npx screenshotsmcp browser:eval "document.querySelector('form').requestSubmit(); 'ok'"
+npx screenshotsmcp auth:record https://smithery.ai signup_success --notes "..."
+npx screenshotsmcp browser:stop
+```
+
+**The interactive rule:** after every `browser:*` command, read the returned
+PNG, confirm the state matches what you expected, and only then issue the next
+command. No preset scripts — you are the closed loop.
+
+### When to reach for which primitive
+
+| Situation | Command |
+|---|---|
+| Start a local Chrome session | `browser:start <url>` |
+| Navigate without restarting | `browser:goto <url>` |
+| Click anything (CSS or text) | `browser:click <selector-or-text>` |
+| Type into an input | `browser:fill <selector> <value>` |
+| React-controlled input / OTP fields | `browser:paste <selector> <value>` |
+| Don't know the selectors yet | `browser:inspect` |
+| Wait for a specific element | `browser:wait-for <selector>` (Progressive Visibility schedule) |
+| Blind wait with screenshot | `browser:wait <ms>` |
+| Keyboard key | `browser:press <key>` |
+| Run arbitrary JS | `browser:eval "<expr>"` |
+| Just screenshot the state | `browser:screenshot` |
+| Close Chrome | `browser:stop` |
+
+See `Local Browser (CLI)` below for full details and the `+alias` email trick.
 
 ## Setup
 
@@ -374,14 +436,15 @@ For Clerk-powered sites, it automatically:
 - Calls the Clerk sign-up/sign-in API directly with the solved token
 - Prepares email verification
 
-For **WorkOS AuthKit** sites (sites that redirect to `authk.*.ai`, e.g. Smithery):
-- `solve_captcha` will return a valid token, but WorkOS blocks programmatic
-  token injection and synthetic-click bypass.
-- Drive the flow to the "Verify you are human" checkbox, then hand off to the
-  user for a single real click. Do not waste cycles retrying.
-- Sitekey is not in the DOM — pull it via `performance.getEntriesByType('resource')`
-  filtered on `turnstile/f/`.
-- Pattern lives in `workflows/workos-authkit-signup/WORKFLOW.md`.
+For **WorkOS AuthKit + Cloudflare Turnstile** sites (e.g. Smithery, sites that
+redirect to `authk.*.ai`): `solve_captcha` returns a valid token, but WorkOS'
+Siteverify check correlates the solver IP + TLS fingerprint with the submitting
+client and **silently rejects** tokens coming from Railway-hosted Chromium,
+no matter how the token is injected. Retrying from the cloud browser is futile.
+
+**Instead, escalate to the CLI local browser** (see "Escalation Ladder" below).
+Real Chrome on the user's residential IP passes WorkOS' trust check without a
+visible CAPTCHA challenge at all, because the fingerprint score is high.
 
 Parameters: sessionId (required), type (auto-detected), sitekey (auto-detected), pageUrl (auto-detected), autoSubmit (default: true)
 
@@ -397,14 +460,34 @@ Create real email inboxes for testing sign-ups and reading verification codes.
 
 **Setup:** Each user needs their own AgentMail API key (free at https://console.agentmail.to). Add it in Dashboard → Settings.
 
-**Typical sign-up testing flow:**
-1. `create_test_inbox` → get email address
-2. `browser_navigate` to sign-up page
-3. `browser_fill` the email + password
-4. `solve_captcha` if CAPTCHA present
-5. Submit the form
-6. `check_inbox` → get verification code
-7. Enter the code or click the verification link
+**Sign-up testing — use the screenshot-first loop, not a preset script.**
+
+The only durable pattern is:
+
+```
+loop:
+  1. snapshot the page (screenshot + URL + title + inputs)
+  2. read the PNG / state output
+  3. decide the ONE next action from what you actually see
+  4. run exactly ONE atomic command
+  5. repeat
+```
+
+Concrete starting moves:
+1. `auth:plan <site-url>` — returns saved inbox, password, and known per-site
+   auth state. Never invent credentials; always reuse the saved ones unless
+   the site has clearly blocked that identity.
+2. If you need a second identity on the same inbox, use a **`+alias`**:
+   `foo+smithery@agentmail.to` is treated as a distinct account by almost
+   every provider, and `check_inbox foo@agentmail.to` still reads the mail.
+3. If MCP is driving: `browser_navigate` → `solve_captcha` → check what
+   happened. If MCP stalls silently, hop the Escalation Ladder.
+4. If CLI is driving: `browser:start` → `browser:click` / `browser:fill` one
+   step at a time. Use `browser:paste` for OTP or React-controlled inputs
+   where plain `fill` gets reverted.
+5. `check_inbox` for the verification code, then paste it in.
+6. `auth:record <url> <outcome>` — persist what happened so the next run
+   resumes correctly.
 
 ### 6. Gmail Verification (OAuth)
 
