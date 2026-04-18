@@ -3,7 +3,7 @@ import { homedir } from "os";
 import { dirname, join } from "path";
 
 export const CORE_SKILL_NAME = "screenshotsmcp";
-export const CORE_SKILL_VERSION = "2.3.1";
+export const CORE_SKILL_VERSION = "2.4.0";
 const MANIFEST_SCHEMA_VERSION = 1;
 const INLINE_CODE_TOKEN = "__INLINE_CODE__";
 
@@ -38,6 +38,7 @@ Use this skill to give the assistant eyes and hands for the web. Use it to choos
 ## Available workflows
 
 - ${INLINE_CODE_TOKEN}workflows/sitewide-performance-audit/WORKFLOW.md${INLINE_CODE_TOKEN} — use when the user asks why a site is slow, wants the slowest pages identified, or wants a repeatable multi-page performance review.
+- ${INLINE_CODE_TOKEN}workflows/workos-authkit-signup/WORKFLOW.md${INLINE_CODE_TOKEN} — use when the sign-up or sign-in page redirects to ${INLINE_CODE_TOKEN}authk.*.ai${INLINE_CODE_TOKEN} (e.g. Smithery). Automates everything up to the Cloudflare Turnstile checkbox, then hands off to the user for one click.
 
 ## Choose the right tool path
 
@@ -189,6 +190,63 @@ Always structure the result like this:
 - If the audit was partial, say which pages were included and which were not.
 `.replaceAll(INLINE_CODE_TOKEN, "`");
 
+export const CORE_WORKOS_AUTHKIT_WORKFLOW_CONTENT = `---
+name: workos-authkit-signup
+description: >
+  Use this workflow when the sign-up or sign-in page redirects to an ${INLINE_CODE_TOKEN}authk.*.ai${INLINE_CODE_TOKEN} host (WorkOS AuthKit). The flow is automatable right up to the Cloudflare Turnstile checkbox, where a human click is required.
+---
+# WorkOS AuthKit sign-up
+
+## Identify
+The site uses WorkOS AuthKit if any of these are true:
+- The URL is under ${INLINE_CODE_TOKEN}authk.<vendor>.ai${INLINE_CODE_TOKEN} (e.g. ${INLINE_CODE_TOKEN}authk.smithery.ai${INLINE_CODE_TOKEN}).
+- Telemetry requests hit ${INLINE_CODE_TOKEN}forwarder.workos.com${INLINE_CODE_TOKEN} or ${INLINE_CODE_TOKEN}o207216.ingest.sentry.io${INLINE_CODE_TOKEN}.
+- The page loads ${INLINE_CODE_TOKEN}challenges.cloudflare.com/turnstile/v0/api.js?...render=explicit${INLINE_CODE_TOKEN}.
+
+## Flow that works
+1. ${INLINE_CODE_TOKEN}auth_test_assist${INLINE_CODE_TOKEN} with ${INLINE_CODE_TOKEN}intent: sign_up${INLINE_CODE_TOKEN} to reuse or provision a disposable inbox.
+2. ${INLINE_CODE_TOKEN}browser_navigate${INLINE_CODE_TOKEN} to the sign-up URL.
+3. ${INLINE_CODE_TOKEN}browser_fill input[type=email]${INLINE_CODE_TOKEN} with the disposable address, then ${INLINE_CODE_TOKEN}browser_click 'Sign up'${INLINE_CODE_TOKEN}.
+4. Fill the first-name, last-name, and email fields (emails can be duplicated).
+5. ${INLINE_CODE_TOKEN}browser_click button:has-text('Continue')${INLINE_CODE_TOKEN}. You will land on a Turnstile gate.
+
+## Extract the Turnstile sitekey (not in the DOM)
+WorkOS uses ${INLINE_CODE_TOKEN}render=explicit${INLINE_CODE_TOKEN} so the sitekey is not in ${INLINE_CODE_TOKEN}data-sitekey${INLINE_CODE_TOKEN}. Pull it from the resource list via ${INLINE_CODE_TOKEN}browser_evaluate${INLINE_CODE_TOKEN}:
+
+${INLINE_CODE_TOKEN}${INLINE_CODE_TOKEN}${INLINE_CODE_TOKEN}js
+performance.getEntriesByType('resource').map(e => e.name).find(n => n.includes('turnstile/f/'))
+${INLINE_CODE_TOKEN}${INLINE_CODE_TOKEN}${INLINE_CODE_TOKEN}
+
+The sitekey is embedded in the path after ${INLINE_CODE_TOKEN}/turnstile/f/ov2/av0/rch/{slot}/${INLINE_CODE_TOKEN}.
+
+## Hard wall: do not try to bypass Turnstile
+- ${INLINE_CODE_TOKEN}solve_captcha${INLINE_CODE_TOKEN} returns a valid token. The token verifies on Cloudflare's side.
+- Token injection into the iframed widget is blocked. Synthetic clicks on the checkbox are fingerprinted and rejected.
+- This is anti-automation working as designed. Stop when you reach the checkbox.
+
+## Hand off to the human
+1. Record the attempt via ${INLINE_CODE_TOKEN}auth_test_assist${INLINE_CODE_TOKEN} with ${INLINE_CODE_TOKEN}action: 'record', outcome: 'signup_failed'${INLINE_CODE_TOKEN} and notes describing the Turnstile stop.
+2. Give the user:
+   - The sign-up URL you paused on.
+   - The disposable inbox email.
+   - The command to check it: ${INLINE_CODE_TOKEN}screenshotsmcp inbox:check --inbox-id <email>${INLINE_CODE_TOKEN}.
+3. Ask them to click the Turnstile checkbox and submit. Typically 10 seconds.
+
+## After the human click
+WorkOS flows usually follow one of these paths:
+- Session cookie set immediately — resume automation.
+- Magic link emailed — ${INLINE_CODE_TOKEN}check_inbox${INLINE_CODE_TOKEN}, then ${INLINE_CODE_TOKEN}browser_navigate${INLINE_CODE_TOKEN} to the link.
+- OTP emailed — ${INLINE_CODE_TOKEN}check_inbox${INLINE_CODE_TOKEN}, then ${INLINE_CODE_TOKEN}browser_fill${INLINE_CODE_TOKEN} the code.
+
+## Contrast with Clerk
+Clerk exposes a programmatic sign-up API (${INLINE_CODE_TOKEN}window.Clerk.client.signUp.create(...)${INLINE_CODE_TOKEN}) that accepts solved CAPTCHA tokens, and its sitekey is readable from ${INLINE_CODE_TOKEN}/v1/environment${INLINE_CODE_TOKEN}. WorkOS has no equivalent programmatic path — the Turnstile click is the gate.
+
+## Known WorkOS-backed sites
+- Smithery (${INLINE_CODE_TOKEN}authk.smithery.ai${INLINE_CODE_TOKEN}) — publish flow at ${INLINE_CODE_TOKEN}/servers/new${INLINE_CODE_TOKEN}.
+
+Add more as you encounter them. If a site pretends to be WorkOS but does not redirect to ${INLINE_CODE_TOKEN}authk.*.ai${INLINE_CODE_TOKEN}, do not assume this wall applies — drive the flow and see.
+`.replaceAll(INLINE_CODE_TOKEN, "`");
+
 // ---------------------------------------------------------------------------
 // Curated skill catalog
 // ---------------------------------------------------------------------------
@@ -322,10 +380,16 @@ export function listInstalledSkills(): InstalledSkillSummary[] {
 export function syncCoreSkill(): SkillSyncResult {
   return syncManagedSkill({
     content: CORE_SKILL_CONTENT,
-    files: [{
-      content: CORE_SITEWIDE_PERFORMANCE_WORKFLOW_CONTENT,
-      relativePath: join("workflows", "sitewide-performance-audit", "WORKFLOW.md"),
-    }],
+    files: [
+      {
+        content: CORE_SITEWIDE_PERFORMANCE_WORKFLOW_CONTENT,
+        relativePath: join("workflows", "sitewide-performance-audit", "WORKFLOW.md"),
+      },
+      {
+        content: CORE_WORKOS_AUTHKIT_WORKFLOW_CONTENT,
+        relativePath: join("workflows", "workos-authkit-signup", "WORKFLOW.md"),
+      },
+    ],
     name: CORE_SKILL_NAME,
     version: CORE_SKILL_VERSION,
   });

@@ -374,6 +374,15 @@ For Clerk-powered sites, it automatically:
 - Calls the Clerk sign-up/sign-in API directly with the solved token
 - Prepares email verification
 
+For **WorkOS AuthKit** sites (sites that redirect to `authk.*.ai`, e.g. Smithery):
+- `solve_captcha` will return a valid token, but WorkOS blocks programmatic
+  token injection and synthetic-click bypass.
+- Drive the flow to the "Verify you are human" checkbox, then hand off to the
+  user for a single real click. Do not waste cycles retrying.
+- Sitekey is not in the DOM — pull it via `performance.getEntriesByType('resource')`
+  filtered on `turnstile/f/`.
+- Pattern lives in `workflows/workos-authkit-signup/WORKFLOW.md`.
+
 Parameters: sessionId (required), type (auto-detected), sitekey (auto-detected), pageUrl (auto-detected), autoSubmit (default: true)
 
 ### 5. Disposable Email (AgentMail)

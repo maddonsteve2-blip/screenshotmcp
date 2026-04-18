@@ -332,6 +332,14 @@ User: "Log in and check my dashboard"
 - Sign-up creates local account (bypasses Google SSO)
 - CAPTCHA is required but hidden — call `solve_captcha`
 - Use JS API directly if UI blocks: `window.Clerk.client.signUp.create(...)`
+- Sitekey is readable from `/v1/environment` on the Clerk frontend API
+
+**WorkOS AuthKit tips (sites under `authk.*.ai`):**
+- Automatable up to the Turnstile checkbox; the final click requires a human.
+- Sitekey is not in the DOM — pull it from `performance.getEntriesByType('resource')` filtered on `turnstile/f/`.
+- `solve_captcha` gets a valid token but WorkOS blocks programmatic injection — do not retry.
+- Plan for a 10-second human handoff. See `workflows/workos-authkit-signup/WORKFLOW.md`.
+- Known WorkOS-backed sites: **Smithery** (`authk.smithery.ai`). Add more as you encounter them.
 
 ---
 
