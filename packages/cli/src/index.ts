@@ -24,6 +24,14 @@ import {
 } from "./commands/auth-test.js";
 import { inboxCreateCommand, inboxCheckCommand, inboxSendCommand } from "./commands/inbox.js";
 import {
+  webhooksListCommand,
+  webhooksCreateCommand,
+  webhooksTestCommand,
+  webhooksRotateCommand,
+  webhooksDeliveriesCommand,
+  webhooksDeleteCommand,
+} from "./commands/webhooks.js";
+import {
   uxReviewCommand, seoCommand, perfCommand, a11yCommand, ogPreviewCommand, breakpointsCommand,
 } from "./commands/review.js";
 import { installCommand } from "./commands/install.js";
