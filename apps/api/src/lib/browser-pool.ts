@@ -55,11 +55,36 @@ class BrowserPool {
   }
 
   private async createEntry(): Promise<PoolEntry> {
-    const browser = await chromium.launch({
+    // Prefer the system-installed Google Chrome over bundled Chromium when
+    // available. Real Chrome matches the fingerprint Turnstile / hCaptcha /
+    // DataDome expect — same UA, same enterprise-signed binary, full WebGL
+    // stack (no SwiftShader fallback). Fall back to bundled Chromium if
+    // Chrome is missing or fails to launch. Explicit opt-out via
+    // BROWSER_CHANNEL=chromium.
+    const explicitChannel = process.env.BROWSER_CHANNEL;
+    const useChrome = explicitChannel !== "chromium";
+    const launchOpts = {
       args: BROWSER_ARGS,
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
       timeout: LAUNCH_TIMEOUT,
-    });
+    } as const;
+
+    let browser: Browser;
+    if (useChrome) {
+      try {
+        browser = await chromium.launch({
+          ...launchOpts,
+          channel: explicitChannel || "chrome",
+        });
+      } catch (err) {
+        console.warn(
+          `[BrowserPool] Chrome channel launch failed (${(err as Error).message}); falling back to bundled Chromium.`,
+        );
+        browser = await chromium.launch(launchOpts);
+      }
+    } else {
+      browser = await chromium.launch(launchOpts);
+    }
     browser.on("disconnected", () => {
       const idx = this.pool.findIndex((e) => e.browser === browser);
       if (idx !== -1) {

@@ -17,6 +17,7 @@ import OpenAI from "openai";
 import { uploadScreenshot } from "../lib/r2.js";
 import { AgentMailClient } from "agentmail";
 import { emitWebhookEvent } from "../lib/webhook-delivery.js";
+import { humanClick, humanMouseMove, idleHover, naturalPause } from "../lib/human.js";
 
 export const mcpRouter = Router();
 
@@ -917,12 +918,19 @@ server.tool(
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       try {
         const page = session.page;
-        // Move mouse smoothly to target (more human-like)
-        await page.mouse.move(args.x, args.y, { steps: 5 });
-        await page.mouse.click(args.x, args.y, {
-          clickCount: args.clickCount || 1,
-          delay: args.delay || 50,
-        });
+        // Humanized motion: curved path, variable speed, pre-click dwell.
+        // This matters for fingerprint-sensitive targets (Turnstile, hCaptcha,
+        // DataDome) that measure mouse entropy before trusting a click.
+        const clicks = args.clickCount || 1;
+        if (clicks <= 1) {
+          await humanClick(page, args.x, args.y, { holdMin: args.delay || 30, holdMax: Math.max(60, args.delay || 60) });
+        } else {
+          // Double / triple clicks: move humanly once, then use native click
+          // with the requested repeat count.
+          await humanMouseMove(page, args.x, args.y);
+          await naturalPause(page);
+          await page.mouse.click(args.x, args.y, { clickCount: clicks, delay: args.delay || 50 });
+        }
         await page.waitForLoadState("domcontentloaded").catch(() => {});
         await page.waitForTimeout(500);
         const img = await pageScreenshot(page);
@@ -3359,7 +3367,10 @@ server.tool(
             if (!result.sitekey) {
               const scripts = document.querySelectorAll('script');
               for (const s of scripts) {
-                const match = s.textContent?.match(/sitekey['":\s]+['"]?(0x[a-fA-F0-9]+)/);
+                // Turnstile sitekeys are `0x` + ~22 base62 chars
+                // (e.g. `0x4AAAAAAAMNIvC45A4Wjjln`). The regex used to
+                // only match pure hex, which silently truncated real keys.
+                const match = s.textContent?.match(/sitekey['":\s]+['"]?(0x[A-Za-z0-9_-]{18,})/);
                 if (match) { result.sitekey = match[1]; break; }
               }
             }
@@ -3393,13 +3404,30 @@ server.tool(
         // If Turnstile and no sitekey found, try to get it from network requests
         let finalSitekey = sitekey;
         if (captchaType === 'turnstile' && !finalSitekey) {
-          // Check network requests for Turnstile sitekey
-          const networkSitekey = session.networkRequests
-            .map(r => r.url)
-            .find(u => u.includes('turnstile') && u.includes('sitekey='));
-          if (networkSitekey) {
-            const match = networkSitekey.match(/sitekey=([^&]+)/);
-            if (match) finalSitekey = match[1];
+          // Two known encodings for the sitekey in Turnstile network traffic:
+          //   1. Query string: `...?sitekey=0x...` (classic `<div data-sitekey>`)
+          //   2. Path slot:    `.../turnstile/f/ov2/av0/rch/{slot}/0x.../...`
+          //      (WorkOS AuthKit + any explicit-render integration)
+          // Also scan the parent doc's resource entries via evaluate in case
+          // the request went to the iframe and was not captured by our
+          // request listener on the top frame.
+          const allUrls = [
+            ...session.networkRequests.map(r => r.url),
+            ...(await page.evaluate(() => {
+              try {
+                return performance.getEntriesByType('resource').map((e) => (e as PerformanceResourceTiming).name);
+              } catch { return []; }
+            })) as string[],
+          ];
+          const SITE_KEY_RE = /\b0x[A-Za-z0-9_-]{18,}/;
+          for (const u of allUrls) {
+            if (!u.includes('turnstile')) continue;
+            // Query-string style
+            const qMatch = u.match(/[?&]sitekey=([^&]+)/);
+            if (qMatch) { finalSitekey = qMatch[1]; break; }
+            // Path-slot style (WorkOS and explicit-render)
+            const pMatch = u.match(SITE_KEY_RE);
+            if (pMatch) { finalSitekey = pMatch[0]; break; }
           }
           // Last resort: try Clerk's Turnstile config from page
           if (!finalSitekey) {
@@ -3520,26 +3548,83 @@ server.tool(
           return { content: [{ type: "text", text: `CapSolver failed after retry. ${lastError || 'Timed out (60s).'}` }] };
         }
 
-        // Step 3: Inject token into the page
+        // Step 3: Inject token into the page.
+        //
+        // For Turnstile we cannot just drop the token into a hidden
+        // <input name="cf-turnstile-response"> — WorkOS AuthKit and several
+        // other integrations render the widget with `render=explicit` and
+        // never create that input until the real widget success callback
+        // fires. We need to:
+        //   (a) Ensure the hidden input exists inside every candidate form.
+        //   (b) Overwrite `turnstile.getResponse()` so any code that reads
+        //       the token gets ours.
+        //   (c) Invoke the widget's registered `callback` (the function the
+        //       host app passed to `turnstile.render(config)`) with the
+        //       solved token. This is the single step that mutates the app's
+        //       internal auth state on every AuthKit / Clerk / generic
+        //       Turnstile integration.
+        //   (d) Fire standard DOM events so form-level validators see the
+        //       value change.
         const injected = await page.evaluate((data) => {
           const { type, token } = data;
           if (type === 'turnstile') {
-            // Set the hidden input value
-            const input = document.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement;
-            if (input) {
+            // (a) Ensure hidden input exists in every form we can see.
+            const forms = document.querySelectorAll('form');
+            const ensureInputIn = (parent: Element) => {
+              let input = parent.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null;
+              if (!input) {
+                input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'cf-turnstile-response';
+                parent.appendChild(input);
+              }
               input.value = token;
               input.dispatchEvent(new Event('input', { bubbles: true }));
               input.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-            // Also try turnstile callback
+              return input;
+            };
+            let injectedAny = false;
+            forms.forEach((f) => { ensureInputIn(f); injectedAny = true; });
+            // If no form, still drop one into <body> so any polling code finds it.
+            if (!injectedAny) ensureInputIn(document.body);
+
+            // (b) Make `turnstile.getResponse()` return our token for any
+            // code that asks. Guard with try/catch because the API may not
+            // yet be initialised.
             try {
-              const widgets = (window as any).turnstile;
-              if (widgets?.getResponse) {
-                // Override getResponse to return our token
-                (window as any).turnstile.getResponse = () => token;
+              const ts = (window as any).turnstile;
+              if (ts) {
+                (window as any).turnstile.getResponse = (_id?: string) => token;
               }
             } catch {}
-            return !!input;
+
+            // (c) Invoke every registered widget callback. Turnstile stores
+            // configs in an internal registry that varies by version; we
+            // probe a few well-known shapes.
+            let callbackFired = false;
+            try {
+              const ts: any = (window as any).turnstile;
+              // Modern Turnstile exposes _w / _widgets / _config maps.
+              const registries = [ts?._widgets, ts?._w, ts?._config, ts?._renderCallbacks].filter(Boolean);
+              for (const reg of registries) {
+                if (!reg) continue;
+                const values = reg instanceof Map ? [...reg.values()] : Object.values(reg);
+                for (const cfg of values as any[]) {
+                  const cb = cfg?.callback || cfg?.params?.callback || cfg?.options?.callback;
+                  if (typeof cb === "function") { try { cb(token); callbackFired = true; } catch {} }
+                }
+              }
+              // Clerk registers success handlers on `window.__clerk_captcha_callbacks`
+              const clerkCbs = (window as any).__clerk_captcha_callbacks;
+              if (Array.isArray(clerkCbs)) {
+                for (const cb of clerkCbs) { try { cb(token); callbackFired = true; } catch {} }
+              }
+              // WorkOS / WorkOS AuthKit sometimes uses a global onload handler
+              const workosCb = (window as any).onloadTurnstileCallback || (window as any).cfCallback;
+              if (typeof workosCb === "function") { try { workosCb(token); callbackFired = true; } catch {} }
+            } catch {}
+
+            return callbackFired || injectedAny;
           }
           if (type === 'recaptchav2' || type === 'recaptchav3') {
             const textarea = document.querySelector('#g-recaptcha-response, textarea[name="g-recaptcha-response"]') as HTMLTextAreaElement;
