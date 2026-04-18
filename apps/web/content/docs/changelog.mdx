@@ -3,6 +3,15 @@ title: Changelog
 description: Every update, fix, and new feature — in one place.
 ---
 
+## April 2026 — v2.1
+
+**New**
+
+- **Outbound webhooks** — subscribe HTTPS endpoints to `screenshot.completed`, `screenshot.failed`, `run.completed`, `run.failed`, `quota.warning`, and `test.ping`. HMAC-SHA256 signed deliveries with `Webhook-Id` / `Webhook-Timestamp` / `Webhook-Signature` headers, retried 6× over ~14h (1m / 5m / 30m / 2h / 12h). Manage from `/dashboard/webhooks`, REST `/v1/webhooks`, MCP (`webhook_*` tools), or CLI (`screenshotsmcp webhooks:*`).
+- **Visual diff REST endpoint** — `POST /v1/screenshot/diff` returns `beforeUrl`, `afterUrl`, `diffUrl`, and pixel-change percentage in a single sync call.
+- **GitHub Action for visual regression** — `stevejford/action@v1` posts a sticky PR comment with baseline / preview / diff images and fails the check above your configured threshold.
+- **Quota warnings** — `quota.warning` fires once at 80% and once at 95% of your monthly cap so you can self-throttle before hitting 429.
+
 ## April 2026 — v2.0
 
 **New**

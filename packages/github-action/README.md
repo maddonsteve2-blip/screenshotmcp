@@ -1,9 +1,9 @@
-# `screenshotsmcp/action` — Visual Diff for Pull Requests
+# `stevejford/action` — Visual Diff for Pull Requests
 
 A GitHub Action that captures two URLs through [ScreenshotsMCP](https://www.screenshotmcp.com), pixel-diffs them, and posts (or updates) a sticky PR comment with the result. Fails the check when the change percentage exceeds your configured threshold.
 
 ```yaml
-- uses: screenshotsmcp/action@v1
+- uses: stevejford/action@v1
   with:
     api-key: ${{ secrets.SCREENSHOTSMCP_API_KEY }}
     baseline-url: https://your-app.com
@@ -58,7 +58,7 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-      - uses: screenshotsmcp/action@v1
+      - uses: stevejford/action@v1
         with:
           api-key: ${{ secrets.SCREENSHOTSMCP_API_KEY }}
           baseline-url: https://your-app.com
@@ -78,6 +78,6 @@ npm install
 npm run build         # emits dist/index.js (commit this)
 ```
 
-The action's runtime is a single bundled CJS file under `dist/`. Commit the bundle along with `action.yml` so consumers can pull `screenshotsmcp/action@v1` without npm install.
+The action's runtime is a single bundled CJS file under `dist/`. The published version lives at [`stevejford/action`](https://github.com/stevejford/action) — that repo holds the committed bundle so consumers can pull `stevejford/action@v1` without an install step.
 
 See the [Webhooks docs](https://www.screenshotmcp.com/docs/api/webhooks) and [Ops Headers reference](https://www.screenshotmcp.com/docs/api/ops-headers) for related primitives.

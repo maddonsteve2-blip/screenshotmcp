@@ -97,6 +97,14 @@ program.addCommand(inboxCreateCommand);
 program.addCommand(inboxCheckCommand);
 program.addCommand(inboxSendCommand);
 
+// Outbound webhooks
+program.addCommand(webhooksListCommand);
+program.addCommand(webhooksCreateCommand);
+program.addCommand(webhooksTestCommand);
+program.addCommand(webhooksRotateCommand);
+program.addCommand(webhooksDeliveriesCommand);
+program.addCommand(webhooksDeleteCommand);
+
 // Review / audit
 program.addCommand(uxReviewCommand);
 program.addCommand(seoCommand);

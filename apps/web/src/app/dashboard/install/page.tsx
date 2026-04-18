@@ -91,6 +91,7 @@ const TEST_PROMPTS = [
   "Start with auth_test_assist for https://example.com, follow its recommended auth path, reuse the saved inbox credentials, test the auth flow end-to-end, and summarize reusable auth heuristics first with site-specific evidence second",
   "Start a remote browser session for https://example.com, declare the workflow, page set, and required evidence up front, inspect console and network failures with the session tools, and summarize the verdict with supporting proof",
   "Open my local app, inspect the page, and export evidence for anything suspicious",
+  "Use webhook_create to register https://example.com/hooks for screenshot.completed and quota.warning, then fire webhook_test to confirm signed delivery (manage at /dashboard/webhooks)",
 ];
 
 /* ───── main page ───── */

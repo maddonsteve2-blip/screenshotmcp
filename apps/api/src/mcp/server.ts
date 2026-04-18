@@ -4,9 +4,9 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "../lib/db.js";
-import { screenshots, apiKeys, users, usageEvents, testInboxes, websiteAuthMemories } from "@screenshotsmcp/db";
+import { screenshots, apiKeys, users, usageEvents, testInboxes, websiteAuthMemories, webhookEndpoints, webhookDeliveries } from "@screenshotsmcp/db";
 import { screenshotQueue } from "../lib/queue.js";
-import { createHash } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import { eq, and, count, gte, desc } from "drizzle-orm";
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
 import { createSession, getSession, closeSession, pageScreenshot, navigateWithRetry, setSessionOutcomeContext, setSessionStartUrl, setSessionViewport } from "../lib/sessions.js";
@@ -16,6 +16,7 @@ import pixelmatch from "pixelmatch";
 import OpenAI from "openai";
 import { uploadScreenshot } from "../lib/r2.js";
 import { AgentMailClient } from "agentmail";
+import { emitWebhookEvent } from "../lib/webhook-delivery.js";
 
 export const mcpRouter = Router();
 
@@ -2244,6 +2245,166 @@ server.tool(
         await release();
       }
     }
+  );
+
+  // ── Webhooks ─────────────────────────────────────────────────
+  // Operate against the webhook_endpoints / webhook_deliveries tables
+  // directly so AI agents can configure delivery destinations without
+  // needing to leave the MCP session for the REST surface.
+
+  server.tool(
+    "webhook_list",
+    "List all outbound webhook endpoints registered for the current account. Use this to confirm which URLs will receive screenshot.completed, run.completed, run.failed, and quota.warning events.",
+    {},
+    async () => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const rows = await db
+        .select()
+        .from(webhookEndpoints)
+        .where(eq(webhookEndpoints.userId, auth.userId))
+        .orderBy(desc(webhookEndpoints.createdAt));
+      if (rows.length === 0) {
+        return { content: [{ type: "text", text: "No webhook endpoints configured. Use `webhook_create` to add one." }] };
+      }
+      const lines = rows.map((r) =>
+        `• ${r.id} — ${r.url} ${r.enabled ? "(enabled)" : "(paused)"} events=[${r.events.join(", ")}] last_delivered=${r.lastDeliveredAt?.toISOString() ?? "never"}`,
+      );
+      return { content: [{ type: "text", text: `${rows.length} endpoint${rows.length === 1 ? "" : "s"}:\n${lines.join("\n")}` }] };
+    },
+  );
+
+  server.tool(
+    "webhook_create",
+    "Register a new outbound webhook endpoint. The signing secret is returned ONCE — store it before doing anything else. Default events=['*'] subscribes to every event type. Available events: screenshot.completed, screenshot.failed, run.completed, run.failed, quota.warning, test.ping.",
+    {
+      url: z.string().url().describe("HTTPS URL that will receive POST requests"),
+      events: z.array(z.string()).optional().describe("Event types to subscribe to. Default ['*'] = all events."),
+      description: z.string().max(280).optional().describe("Optional human-readable description"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const id = nanoid();
+      const secret = `whsec_${randomBytes(32).toString("base64url")}`;
+      await db.insert(webhookEndpoints).values({
+        id,
+        userId: auth.userId,
+        url: args.url,
+        secret,
+        events: args.events && args.events.length > 0 ? args.events : ["*"],
+        description: args.description ?? null,
+      });
+      return {
+        content: [{
+          type: "text",
+          text: [
+            `Webhook endpoint created.`,
+            ``,
+            `id:     ${id}`,
+            `url:    ${args.url}`,
+            `events: ${(args.events ?? ["*"]).join(", ")}`,
+            ``,
+            `Signing secret (shown ONCE — save it now):`,
+            `  ${secret}`,
+            ``,
+            `Verify deliveries with HMAC-SHA256("${"${ts}.${rawBody}"}", secret) and compare against the v1=... portion of the Webhook-Signature header.`,
+          ].join("\n"),
+        }],
+      };
+    },
+  );
+
+  server.tool(
+    "webhook_test",
+    "Fire a test.ping event to a webhook endpoint to verify reachability and signature handling. Returns once the delivery has been enqueued — inspect with webhook_deliveries shortly after.",
+    { endpointId: z.string().describe("Endpoint id from webhook_list / webhook_create") },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const [row] = await db
+        .select()
+        .from(webhookEndpoints)
+        .where(and(eq(webhookEndpoints.id, args.endpointId), eq(webhookEndpoints.userId, auth.userId)));
+      if (!row) return { content: [{ type: "text", text: `Error: endpoint ${args.endpointId} not found.` }] };
+      // Temporarily allow test.ping if the endpoint is filtered to specific events.
+      const wasFiltered = !row.events.includes("*") && !row.events.includes("test.ping");
+      if (wasFiltered) {
+        await db.update(webhookEndpoints).set({ events: [...row.events, "test.ping"], updatedAt: new Date() }).where(eq(webhookEndpoints.id, row.id));
+      }
+      await emitWebhookEvent({
+        userId: auth.userId,
+        eventType: "test.ping",
+        payload: { endpointId: row.id, message: "Hello from ScreenshotsMCP" },
+      });
+      if (wasFiltered) {
+        await db.update(webhookEndpoints).set({ events: row.events, updatedAt: new Date() }).where(eq(webhookEndpoints.id, row.id));
+      }
+      return { content: [{ type: "text", text: `Test ping enqueued to ${row.url}. Use webhook_deliveries to inspect status.` }] };
+    },
+  );
+
+  server.tool(
+    "webhook_rotate",
+    "Rotate the signing secret for an endpoint. The new secret is returned once — update your verifier immediately to avoid signature mismatches.",
+    { endpointId: z.string().describe("Endpoint id to rotate") },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const secret = `whsec_${randomBytes(32).toString("base64url")}`;
+      const [row] = await db
+        .update(webhookEndpoints)
+        .set({ secret, updatedAt: new Date() })
+        .where(and(eq(webhookEndpoints.id, args.endpointId), eq(webhookEndpoints.userId, auth.userId)))
+        .returning();
+      if (!row) return { content: [{ type: "text", text: `Error: endpoint ${args.endpointId} not found.` }] };
+      return { content: [{ type: "text", text: `New signing secret for ${row.url}:\n  ${secret}\n\nThis is the only time it will be displayed.` }] };
+    },
+  );
+
+  server.tool(
+    "webhook_deliveries",
+    "List the most recent delivery attempts for a webhook endpoint, including HTTP status, attempt count, and any error message. Use after a test.ping or when debugging customer-reported missed events.",
+    {
+      endpointId: z.string().describe("Endpoint id"),
+      limit: z.number().int().min(1).max(50).default(10).describe("Maximum rows to return"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const [endpoint] = await db
+        .select({ id: webhookEndpoints.id })
+        .from(webhookEndpoints)
+        .where(and(eq(webhookEndpoints.id, args.endpointId), eq(webhookEndpoints.userId, auth.userId)));
+      if (!endpoint) return { content: [{ type: "text", text: `Error: endpoint ${args.endpointId} not found.` }] };
+      const rows = await db
+        .select()
+        .from(webhookDeliveries)
+        .where(eq(webhookDeliveries.endpointId, args.endpointId))
+        .orderBy(desc(webhookDeliveries.createdAt))
+        .limit(args.limit);
+      if (rows.length === 0) return { content: [{ type: "text", text: "No deliveries yet." }] };
+      const lines = rows.map((d) =>
+        `• ${d.createdAt.toISOString()} ${d.eventType} → ${d.status}${d.responseCode ? ` (HTTP ${d.responseCode})` : ""} attempt=${d.attempt}${d.errorMessage ? ` err="${d.errorMessage}"` : ""}`,
+      );
+      return { content: [{ type: "text", text: lines.join("\n") }] };
+    },
+  );
+
+  server.tool(
+    "webhook_delete",
+    "Permanently delete a webhook endpoint and stop sending events to it. Existing in-flight deliveries are not retried.",
+    { endpointId: z.string().describe("Endpoint id to delete") },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const [row] = await db
+        .delete(webhookEndpoints)
+        .where(and(eq(webhookEndpoints.id, args.endpointId), eq(webhookEndpoints.userId, auth.userId)))
+        .returning({ id: webhookEndpoints.id, url: webhookEndpoints.url });
+      if (!row) return { content: [{ type: "text", text: `Error: endpoint ${args.endpointId} not found.` }] };
+      return { content: [{ type: "text", text: `Deleted endpoint ${row.id} (${row.url}).` }] };
+    },
   );
 
   // ── Batch Screenshots ──────────────────────────────────────
