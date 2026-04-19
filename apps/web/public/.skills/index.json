@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-04-20T00:00:00.000Z",
+  "skills": [
+    {
+      "name": "screenshotsmcp",
+      "displayName": "ScreenshotsMCP Core",
+      "description": "Screenshot, browser automation, CAPTCHA solving, email testing, SEO/perf audits — the full 46+ tool suite.",
+      "version": "2.5.0",
+      "contentUrl": "https://www.screenshotmcp.com/.skills/screenshotsmcp/SKILL.md",
+      "tags": ["core", "screenshots", "audit", "browser", "auth"],
+      "managed": true
+    }
+  ]
+}

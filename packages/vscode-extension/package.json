@@ -2,7 +2,7 @@
   "name": "screenshotsmcp-vscode",
   "displayName": "ScreenshotsMCP",
   "description": "VS Code extension for ScreenshotsMCP: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
-  "version": "0.0.13",
+  "version": "0.1.0",
   "publisher": "ScreenshotMCP",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
@@ -45,8 +45,9 @@
     "accessibility"
   ],
   "activationEvents": [
-    "onStartupFinished",
-    "onUri"
+    "onUri",
+    "workspaceContains:**/.vscode/mcp.json",
+    "workspaceContains:**/.cursor/mcp.json"
   ],
   "main": "./dist/extension.js",
   "scripts": {
@@ -106,8 +107,20 @@
         "title": "ScreenshotsMCP: Install Skill"
       },
       {
+        "command": "screenshotsmcp.previewSkill",
+        "title": "ScreenshotsMCP: Preview Skill"
+      },
+      {
         "command": "screenshotsmcp.takeScreenshot",
         "title": "ScreenshotsMCP: Take Screenshot"
+      },
+      {
+        "command": "screenshotsmcp.takeScreenshotAtUrl",
+        "title": "ScreenshotsMCP: Take Screenshot of URL"
+      },
+      {
+        "command": "screenshotsmcp.auditUrl",
+        "title": "ScreenshotsMCP: Audit URL"
       },
       {
         "command": "screenshotsmcp.openTimeline",
@@ -145,11 +158,17 @@
           "type": "string",
           "default": "https://www.screenshotmcp.com/dashboard/keys",
           "description": "URL used to retrieve ScreenshotsMCP API keys."
+        },
+        "screenshotsmcp.codeLens.urlActions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show 📸 Screenshot and 🔍 Audit CodeLens actions above URLs in supported files."
         }
       }
     }
   },
   "devDependencies": {
+    "@screenshotsmcp/types": "*",
     "@types/node": "^22.10.2",
     "@types/vscode": "^1.105.0",
     "esbuild": "^0.24.0",

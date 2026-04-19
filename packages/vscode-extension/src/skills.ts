@@ -6,7 +6,8 @@ import {
   type CatalogSkill,
   type InstalledSkillSummary,
   type SkillSyncResult,
-} from "../../types/src/skills.js";
+} from "@screenshotsmcp/types/skills";
+export type { CatalogSkill } from "@screenshotsmcp/types/skills";
 import { logLine } from "./output";
 import { TimelineStore } from "./timeline/store";
 
@@ -106,22 +107,23 @@ export function getInstalledSkillsForSidebar(): InstalledSkillSummary[] {
   }
 }
 
-export function getAvailableSkillsForSidebar(): CatalogSkill[] {
+export function getAvailableSkillsForSidebar(catalog: CatalogSkill[] = SKILL_CATALOG): CatalogSkill[] {
   try {
     const installed = new Set(listInstalledSkills().map((s) => s.name));
-    return SKILL_CATALOG.filter((s) => !installed.has(s.name));
+    return catalog.filter((s) => !installed.has(s.name));
   } catch {
-    return SKILL_CATALOG;
+    return catalog;
   }
 }
 
 export async function installCatalogSkillForExtension(
   name: string,
   timelineStore: TimelineStore,
+  catalog: CatalogSkill[] = SKILL_CATALOG,
 ): Promise<ExtensionSkillSyncOutcome> {
   logLine(`Installing catalog skill: ${name}`);
   try {
-    const result = await installCatalogSkill(name);
+    const result = await installCatalogSkill(name, catalog);
     const title = `Skill "${name}" ${getActionLabel(result.status).toLowerCase()}`;
     const detail = `${result.installPath} · v${result.version}`;
     timelineStore.add({ title, detail, status: "success" });

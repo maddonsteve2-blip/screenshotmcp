@@ -16,7 +16,11 @@
     }
   },
   "scripts": {
+    "prebuild": "node scripts/generate-skill-content.mjs",
     "build": "tsc -p tsconfig.json",
+    "generate:skills": "node scripts/generate-skill-content.mjs",
+    "sync:skills-to-web": "node scripts/sync-skills-to-web.mjs",
+    "verify:skills": "node scripts/verify-skills.mjs",
     "lint:auth": "node --max-old-space-size=4096 ../../node_modules/typescript/bin/tsc -p tsconfig.auth.json"
   },
   "devDependencies": {

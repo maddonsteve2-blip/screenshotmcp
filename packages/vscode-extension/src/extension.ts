@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { OAuthController } from "./auth/oauth";
 import { AuthStore } from "./auth/store";
+import { CatalogCache } from "./catalog/cache";
 import { configureEditorAfterSignIn, registerCommands } from "./commands";
 import { SIDEBAR_VIEW_ID } from "./constants";
 import { EditorMcpAutoInstaller } from "./mcp/autoInstaller";
@@ -10,6 +11,7 @@ import { TimelineStore } from "./timeline/store";
 import { SidebarProvider } from "./views/sidebar";
 import { StatusBarController } from "./views/statusBar";
 import { TimelinePanelController } from "./views/timelinePanel";
+import { UrlCodeLensProvider } from "./views/urlCodeLens";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const authStore = new AuthStore(context);
@@ -18,7 +20,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const autoInstaller = new EditorMcpAutoInstaller(context, provider);
   const timelineStore = new TimelineStore();
   const timelinePanel = new TimelinePanelController(context, timelineStore);
-  const sidebarProvider = new SidebarProvider(authStore, timelineStore);
+  const catalogCache = new CatalogCache(context);
+  const sidebarProvider = new SidebarProvider(authStore, timelineStore, catalogCache);
   const oauthController = new OAuthController(context, authStore, provider, statusBar, timelineStore);
 
   logLine("Activating ScreenshotsMCP extension.");
@@ -51,12 +54,43 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   registerCommands(context, {
     authStore,
     autoInstaller,
+    catalogCache,
     oauthController,
     provider,
     statusBar,
     timelineStore,
     timelinePanel,
   });
+
+  // Kick off a background refresh of the hosted skill catalog. Errors fall back
+  // to the in-code SKILL_CATALOG silently; the sidebar always has something to
+  // render.
+  void catalogCache.refresh();
+
+  // Register CodeLens on URLs if the user hasn't disabled it. The setting
+  // `screenshotsmcp.codeLens.urlActions` defaults to true and is observed on
+  // change below.
+  const codeLensProvider = new UrlCodeLensProvider();
+  let codeLensDisposable: vscode.Disposable | undefined;
+  const registerCodeLens = () => {
+    const enabled = vscode.workspace
+      .getConfiguration("screenshotsmcp")
+      .get<boolean>("codeLens.urlActions", true);
+    codeLensDisposable?.dispose();
+    codeLensDisposable = enabled
+      ? vscode.languages.registerCodeLensProvider(UrlCodeLensProvider.SELECTOR, codeLensProvider)
+      : undefined;
+  };
+  registerCodeLens();
+  context.subscriptions.push(
+    codeLensProvider,
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration("screenshotsmcp.codeLens.urlActions")) {
+        registerCodeLens();
+      }
+    }),
+    { dispose: () => codeLensDisposable?.dispose() },
+  );
 
   const hasApiKey = await authStore.hasApiKey();
   statusBar.update(hasApiKey);

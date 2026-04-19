@@ -3,6 +3,7 @@ import { homedir } from "os";
 import { join } from "path";
 import * as vscode from "vscode";
 import { AuthStore } from "../auth/store";
+import { CatalogCache } from "../catalog/cache";
 import { EXTENSION_DISPLAY_NAME } from "../constants";
 import { getInstalledSkillsForSidebar, getAvailableSkillsForSidebar } from "../skills";
 import { TimelineStore, type TimelineEvent, type TimelineEventStatus } from "../timeline/store";
@@ -61,8 +62,17 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
   private skillsWatcher: fs.FSWatcher | undefined;
   private refreshTimer: ReturnType<typeof setTimeout> | undefined;
 
-  constructor(private readonly authStore: AuthStore, private readonly timelineStore: TimelineStore) {
+  private readonly catalogUnsubscribe: vscode.Disposable | undefined;
+
+  constructor(
+    private readonly authStore: AuthStore,
+    private readonly timelineStore: TimelineStore,
+    private readonly catalogCache: CatalogCache,
+  ) {
     this.unsubscribe = this.timelineStore.subscribe(() => {
+      this.refresh();
+    });
+    this.catalogUnsubscribe = this.catalogCache.onChange(() => {
       this.refresh();
     });
     this.watchSkillsDir();
@@ -74,6 +84,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
 
   dispose(): void {
     this.unsubscribe?.();
+    this.catalogUnsubscribe?.dispose();
     this.skillsWatcher?.close();
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);
@@ -168,11 +179,11 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
       const item = new vscode.TreeItem(element.displayName, vscode.TreeItemCollapsibleState.None);
       item.id = element.id;
       item.description = element.description;
-      item.tooltip = `Click to install "${element.skillName}"`;
-      item.iconPath = new vscode.ThemeIcon("cloud-download");
+      item.tooltip = `Preview "${element.skillName}" — shows the SKILL.md before installing.`;
+      item.iconPath = new vscode.ThemeIcon("eye");
       item.command = {
-        command: "screenshotsmcp.installSkill",
-        title: `Install ${element.displayName}`,
+        command: "screenshotsmcp.previewSkill",
+        title: `Preview ${element.displayName}`,
         arguments: [element.skillName],
       };
       return item;
@@ -312,7 +323,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
   }
 
   private getAvailableSkillNodes(): SidebarNode[] {
-    const available = getAvailableSkillsForSidebar();
+    const available = getAvailableSkillsForSidebar(this.catalogCache.get());
     if (available.length === 0) {
       return [
         {

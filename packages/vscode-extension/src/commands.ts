@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { OAuthController } from "./auth/oauth";
 import { AuthStore } from "./auth/store";
+import { CatalogCache } from "./catalog/cache";
 import { WORKSPACE_MCP_PATH } from "./constants";
 import { callTool, extractImageUrl, extractText, validateApiKey } from "./mcp/client";
 import { EditorMcpAutoInstaller } from "./mcp/autoInstaller";
@@ -11,12 +12,14 @@ import { formatSkillSyncFailureMessage, formatSkillSyncMessage, installCatalogSk
 import { TimelineStore } from "./timeline/store";
 import { buildWorkspaceMcpConfig } from "./utils/mcpConfig";
 import { validateHttpUrl } from "./utils/url";
+import { SkillPreviewPanel } from "./views/skillPreviewPanel";
 import { StatusBarController } from "./views/statusBar";
 import { TimelinePanelController } from "./views/timelinePanel";
 
 interface CommandDependencies {
   authStore: AuthStore;
   autoInstaller: EditorMcpAutoInstaller;
+  catalogCache: CatalogCache;
   oauthController: OAuthController;
   provider: ScreenshotsMcpServerProvider;
   statusBar: StatusBarController;
@@ -177,7 +180,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       }
       const outcome = await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: `Installing skill "${skillName}"` },
-        () => installCatalogSkillForExtension(skillName, deps.timelineStore),
+        () => installCatalogSkillForExtension(skillName, deps.timelineStore, deps.catalogCache.get()),
       );
       deps.provider.refresh();
       if (outcome.ok && outcome.result) {
@@ -186,11 +189,20 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
         vscode.window.showErrorMessage(outcome.errorMessage ?? `Failed to install skill "${skillName}".`);
       }
     }),
-    vscode.commands.registerCommand("screenshotsmcp.takeScreenshot", async () => {
-      const apiKey = await ensureAuthenticated(deps.authStore, deps.oauthController, deps.provider, deps.statusBar, deps.timelineStore, deps.autoInstaller);
-      if (!apiKey) {
+    vscode.commands.registerCommand("screenshotsmcp.previewSkill", async (skillName?: string) => {
+      if (!skillName) {
         return;
       }
+      const skill = deps.catalogCache.get().find((s) => s.name === skillName);
+      if (!skill) {
+        vscode.window.showErrorMessage(`Skill "${skillName}" is not in the catalog.`);
+        return;
+      }
+      SkillPreviewPanel.show(skill, () => {
+        void vscode.commands.executeCommand("screenshotsmcp.installSkill", skill.name);
+      });
+    }),
+    vscode.commands.registerCommand("screenshotsmcp.takeScreenshot", async () => {
       const url = await vscode.window.showInputBox({
         title: "ScreenshotsMCP",
         prompt: "Enter the URL to capture",
@@ -200,66 +212,29 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       if (!url) {
         return;
       }
-      logLine(`Capturing screenshot for ${url}`);
-      deps.timelineStore.add({
-        title: "Screenshot started",
-        detail: url,
-        status: "info",
-      });
-      try {
-        const response = await vscode.window.withProgress(
-          {
-            location: vscode.ProgressLocation.Notification,
-            title: `Capturing ${url}`,
-          },
-          () => callTool(apiKey, "take_screenshot", {
-            url,
-            width: 1280,
-            height: 800,
-            format: "png",
-            fullPage: true,
-            delay: 0,
-          }),
-        );
-        const imageUrl = extractImageUrl(response);
-        const text = extractText(response);
-        if (!imageUrl) {
-          deps.timelineStore.add({
-            title: "Screenshot finished without image URL",
-            detail: text,
-            status: "error",
-          });
-          showOutputChannel();
-          vscode.window.showWarningMessage(text);
-          return;
-        }
-        logLine(`Screenshot complete: ${imageUrl}`);
-        deps.timelineStore.add({
-          title: "Screenshot complete",
-          detail: imageUrl,
-          status: "success",
-        });
-        const action = await vscode.window.showInformationMessage("Screenshot captured.", "Open", "Copy URL", "Show Output");
-        if (action === "Open") {
-          await openExternal(imageUrl);
-        }
-        if (action === "Copy URL") {
-          await vscode.env.clipboard.writeText(imageUrl);
-        }
-        if (action === "Show Output") {
-          showOutputChannel();
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        logLine(`Screenshot failed: ${message}`);
-        deps.timelineStore.add({
-          title: "Screenshot failed",
-          detail: message,
-          status: "error",
-        });
-        showOutputChannel();
-        vscode.window.showErrorMessage(`Screenshot failed: ${message}`);
+      await runScreenshot(deps, url);
+    }),
+    vscode.commands.registerCommand("screenshotsmcp.takeScreenshotAtUrl", async (url?: string) => {
+      if (!url) {
+        return;
       }
+      const validationError = validateHttpUrl(url);
+      if (validationError) {
+        vscode.window.showErrorMessage(validationError);
+        return;
+      }
+      await runScreenshot(deps, url);
+    }),
+    vscode.commands.registerCommand("screenshotsmcp.auditUrl", async (url?: string) => {
+      if (!url) {
+        return;
+      }
+      const validationError = validateHttpUrl(url);
+      if (validationError) {
+        vscode.window.showErrorMessage(validationError);
+        return;
+      }
+      await runAudit(deps, url);
     }),
     vscode.commands.registerCommand("screenshotsmcp.openDashboard", async () => {
       deps.timelineStore.add({
@@ -450,6 +425,110 @@ export async function configureEditorAfterSignIn(
 
 async function openExternal(target: string): Promise<void> {
   await vscode.env.openExternal(vscode.Uri.parse(target));
+}
+
+async function runScreenshot(deps: CommandDependencies, url: string): Promise<void> {
+  const apiKey = await ensureAuthenticated(deps.authStore, deps.oauthController, deps.provider, deps.statusBar, deps.timelineStore, deps.autoInstaller);
+  if (!apiKey) {
+    return;
+  }
+  logLine(`Capturing screenshot for ${url}`);
+  deps.timelineStore.add({
+    title: "Screenshot started",
+    detail: url,
+    status: "info",
+  });
+  try {
+    const response = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: `Capturing ${url}` },
+      () => callTool(apiKey, "take_screenshot", {
+        url,
+        width: 1280,
+        height: 800,
+        format: "png",
+        fullPage: true,
+        delay: 0,
+      }),
+    );
+    const imageUrl = extractImageUrl(response);
+    const text = extractText(response);
+    if (!imageUrl) {
+      deps.timelineStore.add({
+        title: "Screenshot finished without image URL",
+        detail: text,
+        status: "error",
+      });
+      showOutputChannel();
+      vscode.window.showWarningMessage(text);
+      return;
+    }
+    logLine(`Screenshot complete: ${imageUrl}`);
+    deps.timelineStore.add({
+      title: "Screenshot complete",
+      detail: imageUrl,
+      status: "success",
+    });
+    const action = await vscode.window.showInformationMessage("Screenshot captured.", "Open", "Copy URL", "Show Output");
+    if (action === "Open") {
+      await openExternal(imageUrl);
+    }
+    if (action === "Copy URL") {
+      await vscode.env.clipboard.writeText(imageUrl);
+    }
+    if (action === "Show Output") {
+      showOutputChannel();
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logLine(`Screenshot failed: ${message}`);
+    deps.timelineStore.add({
+      title: "Screenshot failed",
+      detail: message,
+      status: "error",
+    });
+    showOutputChannel();
+    vscode.window.showErrorMessage(`Screenshot failed: ${message}`);
+  }
+}
+
+async function runAudit(deps: CommandDependencies, url: string): Promise<void> {
+  const apiKey = await ensureAuthenticated(deps.authStore, deps.oauthController, deps.provider, deps.statusBar, deps.timelineStore, deps.autoInstaller);
+  if (!apiKey) {
+    return;
+  }
+  logLine(`Auditing ${url}`);
+  deps.timelineStore.add({
+    title: "UX audit started",
+    detail: url,
+    status: "info",
+  });
+  try {
+    const response = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: `Auditing ${url}` },
+      () => callTool(apiKey, "ux_review", { url, width: 1280, height: 800 }),
+    );
+    const text = extractText(response);
+    deps.timelineStore.add({
+      title: "UX audit complete",
+      detail: url,
+      status: "success",
+    });
+    const doc = await vscode.workspace.openTextDocument({
+      content: `# UX audit · ${url}\n\n${text}\n`,
+      language: "markdown",
+    });
+    await vscode.window.showTextDocument(doc, { preview: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logLine(`Audit failed: ${message}`);
+    deps.timelineStore.add({
+      title: "UX audit failed",
+      detail: message,
+      status: "error",
+    });
+    showOutputChannel();
+    vscode.window.showErrorMessage(`Audit failed: ${message}`);
+  }
 }
 
 async function readJsonFile(uri: vscode.Uri): Promise<Record<string, unknown>> {

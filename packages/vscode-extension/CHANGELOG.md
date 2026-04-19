@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.0
+
+- Added `📸 Screenshot` and `🔍 Audit` CodeLens actions above every URL in markdown, JS/TS, JSON, YAML, and HTML files (gated behind `screenshotsmcp.codeLens.urlActions`, defaults on)
+- Added a rich skill preview WebView that renders the full `SKILL.md` with an **Install skill** button — clicking a catalog skill in the sidebar now previews before installing
+- Switched the skill catalog to a hosted `index.json` at `/.skills/index.json` with 24h client-side cache and transparent fallback to the in-code catalog when offline
+- Fixed the double source of truth for embedded skill content — the extension and the web docs now share the same `.md` sources in `@screenshotsmcp/types`
+- Narrowed extension activation: removed `onStartupFinished`; extension now activates on command palette, sidebar open, URI handler, or when a workspace contains `.vscode/mcp.json` or `.cursor/mcp.json`
+- Added `screenshotsmcp.takeScreenshotAtUrl` and `screenshotsmcp.auditUrl` commands
+- Removed tracked `.vsix` build artifacts from the repo and added `.gitignore`
+- Fixed cross-package relative import in `skills.ts` (now `@screenshotsmcp/types/skills`)
+
 ## 0.0.10
 
 - Added automatic managed core skill sync alongside startup restoration, sign-in, and manual editor integration repair
