@@ -54,6 +54,7 @@ import {
   browserNavigateLocalCommand,
   browserStopCommand,
 } from "./commands/local-browser.js";
+import { runFinishCommand } from "./commands/run-finish.js";
 
 const program = new Command();
 
