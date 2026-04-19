@@ -77,4 +77,4 @@ export async function validateApiKey(apiKey: string): Promise<{ ok: boolean; mes
   }
 }
 
-export { extractImageUrl, extractText } from "./response";
+export { extractImageUrl, extractRunUrl, extractText } from "./response";

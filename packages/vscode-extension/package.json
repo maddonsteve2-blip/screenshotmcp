@@ -2,7 +2,7 @@
   "name": "screenshotsmcp-vscode",
   "displayName": "ScreenshotsMCP",
   "description": "VS Code extension for ScreenshotsMCP: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "ScreenshotMCP",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
@@ -123,6 +123,14 @@
         "title": "ScreenshotsMCP: Audit URL"
       },
       {
+        "command": "screenshotsmcp.screenshotSelectedUrl",
+        "title": "ScreenshotsMCP: Screenshot Selected URL"
+      },
+      {
+        "command": "screenshotsmcp.auditSelectedUrl",
+        "title": "ScreenshotsMCP: Audit Selected URL"
+      },
+      {
         "command": "screenshotsmcp.openTimeline",
         "title": "ScreenshotsMCP: Open Timeline"
       },
@@ -131,10 +139,28 @@
         "title": "ScreenshotsMCP: Open Dashboard"
       },
       {
+        "command": "screenshotsmcp.createSkill",
+        "title": "ScreenshotsMCP: Create New Skill"
+      },
+      {
         "command": "screenshotsmcp.showOutput",
         "title": "ScreenshotsMCP: Show Output"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "screenshotsmcp.screenshotSelectedUrl",
+          "group": "screenshotsmcp@1",
+          "when": "editorHasSelection || editorTextFocus"
+        },
+        {
+          "command": "screenshotsmcp.auditSelectedUrl",
+          "group": "screenshotsmcp@2",
+          "when": "editorHasSelection || editorTextFocus"
+        }
+      ]
+    },
     "mcpServerDefinitionProviders": [
       {
         "id": "screenshotsmcp.provider",

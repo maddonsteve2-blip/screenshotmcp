@@ -3,15 +3,18 @@ import { OAuthController } from "./auth/oauth";
 import { AuthStore } from "./auth/store";
 import { CatalogCache } from "./catalog/cache";
 import { WORKSPACE_MCP_PATH } from "./constants";
-import { callTool, extractImageUrl, extractText, validateApiKey } from "./mcp/client";
+import { callTool, extractImageUrl, extractRunUrl, extractText, validateApiKey } from "./mcp/client";
 import { EditorMcpAutoInstaller } from "./mcp/autoInstaller";
 import { logLine, showOutputChannel } from "./output";
 import { getApiUrl, getDashboardUrl, getKeysUrl } from "./settings";
 import { ScreenshotsMcpServerProvider } from "./mcp/serverProvider";
 import { formatSkillSyncFailureMessage, formatSkillSyncMessage, installCatalogSkillForExtension, syncCoreSkillForExtension } from "./skills";
+import { buildSkillTemplate } from "./skills/template";
 import { TimelineStore } from "./timeline/store";
 import { buildWorkspaceMcpConfig } from "./utils/mcpConfig";
 import { validateHttpUrl } from "./utils/url";
+import { AuditPanel } from "./views/auditPanel";
+import { ScreenshotPanel } from "./views/screenshotPanel";
 import { SkillPreviewPanel } from "./views/skillPreviewPanel";
 import { StatusBarController } from "./views/statusBar";
 import { TimelinePanelController } from "./views/timelinePanel";
@@ -236,6 +239,25 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       }
       await runAudit(deps, url);
     }),
+    vscode.commands.registerCommand("screenshotsmcp.screenshotSelectedUrl", async () => {
+      const url = pickUrlFromActiveEditor();
+      if (!url) {
+        vscode.window.showWarningMessage("Select a URL (or place the cursor on one) first.");
+        return;
+      }
+      await runScreenshot(deps, url);
+    }),
+    vscode.commands.registerCommand("screenshotsmcp.auditSelectedUrl", async () => {
+      const url = pickUrlFromActiveEditor();
+      if (!url) {
+        vscode.window.showWarningMessage("Select a URL (or place the cursor on one) first.");
+        return;
+      }
+      await runAudit(deps, url);
+    }),
+    vscode.commands.registerCommand("screenshotsmcp.createSkill", async () => {
+      await runCreateSkill(deps);
+    }),
     vscode.commands.registerCommand("screenshotsmcp.openDashboard", async () => {
       deps.timelineStore.add({
         title: "Opened dashboard",
@@ -427,6 +449,129 @@ async function openExternal(target: string): Promise<void> {
   await vscode.env.openExternal(vscode.Uri.parse(target));
 }
 
+/**
+ * Resolves a URL from the active editor:
+ * 1) non-empty selection that contains a URL, or
+ * 2) URL at the cursor position (via the editor's URL word-pattern), or
+ * 3) the first URL in the line at the cursor.
+ * Trailing punctuation is trimmed.
+ */
+function pickUrlFromActiveEditor(): string | undefined {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    return undefined;
+  }
+
+  const urlRegex = /https?:\/\/[^\s"'`,<>)\]]+/;
+  const selection = editor.selection;
+
+  if (!selection.isEmpty) {
+    const selected = editor.document.getText(selection).trim();
+    const m = selected.match(urlRegex);
+    if (m) {
+      return trimTrailing(m[0]);
+    }
+  }
+
+  const range = editor.document.getWordRangeAtPosition(selection.active, /https?:\/\/[^\s"'`,<>)\]]+/);
+  if (range) {
+    return trimTrailing(editor.document.getText(range));
+  }
+
+  const line = editor.document.lineAt(selection.active.line).text;
+  const m = line.match(urlRegex);
+  if (m) {
+    return trimTrailing(m[0]);
+  }
+  return undefined;
+}
+
+function trimTrailing(url: string): string {
+  return url.replace(/[.,:;!?]+$/, "");
+}
+
+async function runCreateSkill(deps: CommandDependencies): Promise<void> {
+  const name = await vscode.window.showInputBox({
+    title: "New skill · slug",
+    prompt: "Kebab-case slug used for the directory and catalog name",
+    placeHolder: "my-new-skill",
+    validateInput: (value) => {
+      if (!value.trim()) {
+        return "A slug is required.";
+      }
+      if (!/^[a-z][a-z0-9-]*$/.test(value.trim())) {
+        return "Use lowercase letters, numbers, and hyphens only.";
+      }
+      return undefined;
+    },
+  });
+  if (!name) {
+    return;
+  }
+
+  const displayName = await vscode.window.showInputBox({
+    title: "New skill · display name",
+    prompt: "Human-readable name shown in the sidebar",
+    value: toDisplayName(name),
+  });
+  if (!displayName) {
+    return;
+  }
+
+  const description = await vscode.window.showInputBox({
+    title: "New skill · description",
+    prompt: "One-sentence description of what this skill does",
+    placeHolder: "Helps agents do X when Y.",
+  });
+  if (!description) {
+    return;
+  }
+
+  const folders = vscode.workspace.workspaceFolders;
+  if (!folders || folders.length === 0) {
+    vscode.window.showErrorMessage("Open a workspace folder before creating a skill.");
+    return;
+  }
+
+  const target = vscode.Uri.joinPath(folders[0].uri, "skills", name, "SKILL.md");
+  try {
+    await vscode.workspace.fs.stat(target);
+    const overwrite = await vscode.window.showWarningMessage(
+      `A skill already exists at ${target.fsPath}. Overwrite?`,
+      { modal: true },
+      "Overwrite",
+    );
+    if (overwrite !== "Overwrite") {
+      return;
+    }
+  } catch {
+    // File does not exist — proceed.
+  }
+
+  const content = buildSkillTemplate({ name, displayName, description });
+  await vscode.workspace.fs.writeFile(target, Buffer.from(content, "utf8"));
+
+  const doc = await vscode.workspace.openTextDocument(target);
+  await vscode.window.showTextDocument(doc, { preview: false });
+
+  deps.timelineStore.add({
+    title: `Skill scaffolded: ${name}`,
+    detail: target.fsPath,
+    status: "success",
+  });
+  logLine(`Scaffolded new skill at ${target.fsPath}`);
+  vscode.window.showInformationMessage(
+    `Skill "${displayName}" created at ${target.fsPath}. Fill in the template, then submit a PR to screenshotmcp/apps/web/public/.skills/index.json to publish it.`,
+  );
+}
+
+function toDisplayName(slug: string): string {
+  return slug
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 async function runScreenshot(deps: CommandDependencies, url: string): Promise<void> {
   const apiKey = await ensureAuthenticated(deps.authStore, deps.oauthController, deps.provider, deps.statusBar, deps.timelineStore, deps.autoInstaller);
   if (!apiKey) {
@@ -468,16 +613,17 @@ async function runScreenshot(deps: CommandDependencies, url: string): Promise<vo
       detail: imageUrl,
       status: "success",
     });
-    const action = await vscode.window.showInformationMessage("Screenshot captured.", "Open", "Copy URL", "Show Output");
-    if (action === "Open") {
-      await openExternal(imageUrl);
-    }
-    if (action === "Copy URL") {
-      await vscode.env.clipboard.writeText(imageUrl);
-    }
-    if (action === "Show Output") {
-      showOutputChannel();
-    }
+    ScreenshotPanel.show(
+      {
+        url,
+        imageUrl,
+        capturedAt: new Date().toLocaleString(),
+        runUrl: extractRunUrl(text, getDashboardUrl()),
+      },
+      () => {
+        void runScreenshot(deps, url);
+      },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logLine(`Screenshot failed: ${message}`);
@@ -508,16 +654,24 @@ async function runAudit(deps: CommandDependencies, url: string): Promise<void> {
       () => callTool(apiKey, "ux_review", { url, width: 1280, height: 800 }),
     );
     const text = extractText(response);
+    const screenshotUrl = extractImageUrl(response) ?? undefined;
     deps.timelineStore.add({
       title: "UX audit complete",
       detail: url,
       status: "success",
     });
-    const doc = await vscode.workspace.openTextDocument({
-      content: `# UX audit · ${url}\n\n${text}\n`,
-      language: "markdown",
-    });
-    await vscode.window.showTextDocument(doc, { preview: true });
+    AuditPanel.show(
+      {
+        url,
+        reviewText: text,
+        screenshotUrl,
+        capturedAt: new Date().toLocaleString(),
+        runUrl: extractRunUrl(text, getDashboardUrl()),
+      },
+      () => {
+        void runAudit(deps, url);
+      },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logLine(`Audit failed: ${message}`);

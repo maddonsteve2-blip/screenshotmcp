@@ -1,4 +1,8 @@
 import * as vscode from "vscode";
+import { findUrlsForCodeLens, type UrlCodeLensMatch } from "./urlScan";
+
+export { findUrlsForCodeLens };
+export type { UrlCodeLensMatch };
 
 /**
  * Surfaces "📸 Screenshot" and "🔍 Audit" CodeLens actions above every HTTP(S)
@@ -34,27 +38,9 @@ export class UrlCodeLensProvider implements vscode.CodeLensProvider {
     }
 
     const lenses: vscode.CodeLens[] = [];
-    const urlRegex = /https?:\/\/[^\s"'`,<>)\]]+/g;
-    const text = document.getText();
-
-    let match: RegExpExecArray | null;
-    let emitted = 0;
-    const MAX = 50;
-
-    while ((match = urlRegex.exec(text)) !== null) {
-      if (emitted >= MAX) {
-        break;
-      }
-      let url = match[0];
-      // Trim trailing punctuation that's commonly not part of the URL.
-      url = url.replace(/[.,:;!?]+$/, "");
-      if (url.length < 10) {
-        continue;
-      }
-
-      const startPos = document.positionAt(match.index);
+    for (const { url, index } of findUrlsForCodeLens(document.getText())) {
+      const startPos = document.positionAt(index);
       const range = new vscode.Range(startPos, startPos);
-
       lenses.push(
         new vscode.CodeLens(range, {
           title: "📸 Screenshot",
@@ -69,9 +55,9 @@ export class UrlCodeLensProvider implements vscode.CodeLensProvider {
           tooltip: `Audit ${url}`,
         }),
       );
-      emitted += 1;
     }
 
     return lenses;
   }
 }
+

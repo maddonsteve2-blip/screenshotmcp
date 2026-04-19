@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0
+
+- Inline **Screenshot** WebView panel — captured images render alongside the editor with open, copy, rerun, and "View run" toolbar actions
+- Inline **Audit** WebView panel — UX review results render as structured sections with a hero screenshot, re-audit, and dashboard deep-link
+- Added dashboard run deep-link (`View run`) extracted from any tool response that mentions a run id or `/dashboard/runs/<id>` URL
+- Added editor context menu entries: **ScreenshotsMCP: Screenshot Selected URL** and **ScreenshotsMCP: Audit Selected URL**
+- Added `ScreenshotsMCP: Create Skill` skill-authoring scaffold that writes a ready-to-edit `SKILL.md` into `~/.agents/skills/<name>/`
+- New unit tests for Phase 1 code — `extractRunUrl` branches and the `findUrlsForCodeLens` URL scanner
+- Extracted `findUrlsForCodeLens` into a pure `urlScan.ts` module so it's testable without the `vscode` runtime
+
 ## 0.1.0
 
 - Added `📸 Screenshot` and `🔍 Audit` CodeLens actions above every URL in markdown, JS/TS, JSON, YAML, and HTML files (gated behind `screenshotsmcp.codeLens.urlActions`, defaults on)

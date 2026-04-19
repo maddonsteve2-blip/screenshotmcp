@@ -54,3 +54,19 @@ export function extractImageUrl(response: McpResponse): string | null {
   const match = text.match(/https?:\/\/[^\s"]+\.(png|jpg|jpeg|webp|gif|pdf)/i);
   return match ? match[0] : null;
 }
+
+/**
+ * Finds a ScreenshotsMCP dashboard run URL in tool response text, or
+ * synthesises one from a `run id: <id>` mention paired with a dashboard base.
+ */
+export function extractRunUrl(text: string, dashboardBaseUrl: string): string | undefined {
+  const direct = text.match(/https?:\/\/[^\s"]+\/dashboard\/runs\/[A-Za-z0-9_-]+/);
+  if (direct) {
+    return direct[0];
+  }
+  const idMatch = text.match(/run\s*id[:\s]+([A-Za-z0-9_-]{6,})/i);
+  if (idMatch && dashboardBaseUrl) {
+    return `${dashboardBaseUrl.replace(/\/$/, "")}/runs/${idMatch[1]}`;
+  }
+  return undefined;
+}
