@@ -5,16 +5,24 @@ import * as vscode from "vscode";
 import { AuthStore } from "../auth/store";
 import { CatalogCache } from "../catalog/cache";
 import { EXTENSION_DISPLAY_NAME } from "../constants";
+import { UrlHistoryStore } from "../history/store";
 import { getInstalledSkillsForSidebar, getAvailableSkillsForSidebar } from "../skills";
 import { discoverWorkflows, type DiscoveredWorkflow } from "../skills/discoverWorkflows";
 import { TimelineStore, type TimelineEvent, type TimelineEventStatus } from "../timeline/store";
 import { getApiUrl } from "../settings";
 
-type SidebarNode = StatusNode | ActionNode | SectionNode | EventNode | InstalledSkillNode | CatalogSkillNode | WorkflowNode;
+type SidebarNode = StatusNode | ActionNode | SectionNode | EventNode | InstalledSkillNode | CatalogSkillNode | WorkflowNode | RecentUrlNode;
 
 interface BaseNode {
   id: string;
-  kind: "status" | "action" | "section" | "event" | "installed-skill" | "catalog-skill" | "workflow";
+  kind: "status" | "action" | "section" | "event" | "installed-skill" | "catalog-skill" | "workflow" | "recent-url";
+}
+
+interface RecentUrlNode extends BaseNode {
+  kind: "recent-url";
+  url: string;
+  count: number;
+  lastSeen: string;
 }
 
 interface WorkflowNode extends BaseNode {
@@ -74,6 +82,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
     private readonly authStore: AuthStore,
     private readonly timelineStore: TimelineStore,
     private readonly catalogCache: CatalogCache,
+    private readonly urlHistory: UrlHistoryStore,
   ) {
     this.unsubscribe = this.timelineStore.subscribe(() => {
       this.refresh();
@@ -135,7 +144,38 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
       return this.getWorkflowNodes();
     }
 
+    if (element.kind === "section" && element.id === "section-recent-urls") {
+      return this.getRecentUrlNodes();
+    }
+
     return [];
+  }
+
+  private getRecentUrlNodes(): SidebarNode[] {
+    const urls = this.urlHistory.listUrls().slice(0, 10);
+    if (urls.length === 0) {
+      return [
+        {
+          id: "recent-url-empty",
+          kind: "event",
+          event: {
+            id: "recent-url-empty",
+            title: "No URLs yet",
+            detail: "Capture or audit a URL to populate this list.",
+            status: "info",
+            kind: "info",
+            occurredAt: new Date().toISOString(),
+          },
+        },
+      ];
+    }
+    return urls.map((u) => ({
+      id: `recent-url-${u.url}`,
+      kind: "recent-url" as const,
+      url: u.url,
+      count: u.count,
+      lastSeen: u.lastSeen,
+    }));
   }
 
   private getWorkflowNodes(): SidebarNode[] {
@@ -198,7 +238,9 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
           ? "extensions"
           : element.id === "section-workflows"
             ? "run-all"
-            : "history";
+            : element.id === "section-recent-urls"
+              ? "globe"
+              : "history";
       item.iconPath = new vscode.ThemeIcon(sectionIcon);
       return item;
     }
@@ -236,6 +278,21 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
         command: "screenshotsmcp.openWorkflow",
         title: `Open ${element.workflow.title}`,
         arguments: [element.workflow.path],
+      };
+      return item;
+    }
+
+    if (element.kind === "recent-url") {
+      const item = new vscode.TreeItem(shortenUrl(element.url), vscode.TreeItemCollapsibleState.None);
+      item.id = element.id;
+      item.description = `${element.count} \u00b7 ${formatTimestamp(element.lastSeen)}`;
+      item.tooltip = `${element.url}\n${element.count} event${element.count === 1 ? "" : "s"} \u00b7 last ${formatTimestamp(element.lastSeen)}\n\nClick to open history`;
+      item.iconPath = new vscode.ThemeIcon("globe");
+      item.contextValue = "recentUrl";
+      item.command = {
+        command: "screenshotsmcp.showUrlHistory",
+        title: "Show URL history",
+        arguments: [element.url],
       };
       return item;
     }
@@ -311,6 +368,12 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
         kind: "section",
         label: "Workflows",
         description: "Packaged runbooks from installed skills",
+      },
+      {
+        id: "section-recent-urls",
+        kind: "section",
+        label: "Recent URLs",
+        description: `${Math.min(this.urlHistory.listUrls().length, 10)} most-recent`,
       },
       {
         id: "action-browse-skills",
@@ -444,6 +507,16 @@ function getEventIcon(status: TimelineEventStatus): string {
   }
 
   return "circle-outline";
+}
+
+function shortenUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const base = parsed.host + parsed.pathname;
+    return base.length > 48 ? base.slice(0, 45) + "..." : base;
+  } catch {
+    return url.length > 48 ? url.slice(0, 45) + "..." : url;
+  }
 }
 
 function formatTimestamp(value: string): string {

@@ -27,7 +27,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const catalogCache = new CatalogCache(context);
   const auditDiagnostics = new AuditDiagnostics();
   const urlHistory = new UrlHistoryStore(context);
-  const sidebarProvider = new SidebarProvider(authStore, timelineStore, catalogCache);
+  const sidebarProvider = new SidebarProvider(authStore, timelineStore, catalogCache, urlHistory);
   const oauthController = new OAuthController(context, authStore, provider, statusBar, timelineStore);
 
   logLine("Activating ScreenshotsMCP extension.");

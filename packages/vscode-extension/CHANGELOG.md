@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.13.0
+
+- **Recent URLs in the sidebar** — the activity-bar `ScreenshotsMCP` view now lists the 10 most recently captured/audited URLs
+  - Each row shows the short URL, run count, and last-seen timestamp
+  - Click opens the URL history panel directly
+  - Auto-refreshes every time a screenshot or audit completes
+
 ## 0.12.0
 
 - **Magic-comment CodeLens** — drop directives in any supported file and get one-click actions:
