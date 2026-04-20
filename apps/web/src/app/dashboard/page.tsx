@@ -1,15 +1,18 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { eq, count, and, gte, desc, gt, inArray, isNotNull, or } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
 import { usageEvents, apiKeys, screenshots, recordings, runs } from "@screenshotsmcp/db";
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
 import { DashboardClient } from "./dashboard-client";
+import { DashboardOnboarding } from "./dashboard-onboarding";
 
 export default async function DashboardPage() {
   const { userId: clerkId } = await auth();
+  if (!clerkId) redirect("/sign-in");
   const db = getDb();
-  const user = await getOrCreateDbUser(clerkId!);
+  const user = await getOrCreateDbUser(clerkId);
 
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
@@ -116,6 +119,23 @@ export default async function DashboardPage() {
   const failedRunCount = failedRunRows[0]?.count ?? 0;
   const issueRunCount = issueRunRows[0]?.count ?? 0;
   const sharedRunCount = sharedRunRows[0]?.count ?? 0;
+
+  const hasActivity =
+    used > 0 ||
+    keyCount > 0 ||
+    recordingCount > 0 ||
+    activeRunCount > 0 ||
+    failedRunCount > 0 ||
+    issueRunCount > 0 ||
+    sharedRunCount > 0 ||
+    recentRunRows.length > 0 ||
+    recentScreenshotRows.length > 0 ||
+    recentRecordingRows.length > 0;
+
+  if (!hasActivity) {
+    const clerkUser = await currentUser();
+    return <DashboardOnboarding firstName={clerkUser?.firstName ?? null} />;
+  }
 
   return (
     <DashboardClient

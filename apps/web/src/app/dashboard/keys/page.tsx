@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, RefreshCw, Trash2, Key, AlertTriangle } from "lucide-react";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ActiveKey {
   id: string;
@@ -22,7 +23,7 @@ export default function KeysPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   async function fetchKey() {
-    const res = await fetch("/api/keys");
+    const res = await apiFetch("/api/keys");
     const data = await res.json();
     setActiveKey(data.key ?? null);
     setLoading(false);
@@ -36,7 +37,7 @@ export default function KeysPage() {
 
   async function createKey() {
     setActing(true);
-    const res = await fetch("/api/keys", { method: "POST" });
+    const res = await apiFetch("/api/keys", { method: "POST" });
     const data = await res.json();
     if (data.existing) {
       // Already have one — just refresh
@@ -50,7 +51,7 @@ export default function KeysPage() {
 
   async function rollKey() {
     setActing(true);
-    const res = await fetch("/api/keys", { method: "PUT" });
+    const res = await apiFetch("/api/keys", { method: "PUT" });
     const data = await res.json();
     if (data.key) {
       setRawKey(data.key);
@@ -62,7 +63,7 @@ export default function KeysPage() {
   async function deleteKey() {
     if (!activeKey) return;
     setActing(true);
-    await fetch(`/api/keys/${activeKey.id}`, { method: "DELETE" });
+    await apiFetch(`/api/keys/${activeKey.id}`, { method: "DELETE" });
     setActiveKey(null);
     setRawKey(null);
     setConfirmDelete(false);
@@ -104,8 +105,13 @@ export default function KeysPage() {
               <code className="flex-1 rounded bg-white dark:bg-gray-900 border px-3 py-2 text-sm font-mono break-all">
                 {rawKey}
               </code>
-              <Button size="icon" variant="outline" onClick={() => copyToClipboard(rawKey)}>
-                {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => copyToClipboard(rawKey)}
+                aria-label={copied ? "Copied" : "Copy API key"}
+              >
+                {copied ? <Check className="h-4 w-4 text-green-500" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
               </Button>
             </div>
             <Button variant="outline" size="sm" onClick={() => setRawKey(null)}>

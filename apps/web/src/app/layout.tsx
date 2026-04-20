@@ -3,7 +3,9 @@ import { Outfit, Sora } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import "./globals.css";
+import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ConfirmDialogHost } from "@/components/confirm-dialog";
 import { cn } from "@/lib/utils";
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-sans" });
@@ -13,8 +15,6 @@ function envValue(value?: string) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
 }
-
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "ScreenshotsMCP – Screenshot API + MCP Server",
@@ -64,6 +64,8 @@ export default function RootLayout({
           <TooltipProvider>
             <RootProvider>
               {children}
+              <ConfirmDialogHost />
+              <Toaster position="bottom-right" richColors closeButton theme="dark" />
             </RootProvider>
           </TooltipProvider>
         </ClerkProvider>

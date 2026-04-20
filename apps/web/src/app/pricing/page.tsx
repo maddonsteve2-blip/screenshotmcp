@@ -4,63 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { PLAN_DESCRIPTORS } from "@screenshotsmcp/types";
 
-const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    period: "forever",
-    screenshots: "100 screenshots / mo",
-    cta: "Get started free",
-    href: "/sign-up",
-    highlight: false,
-    features: [
-      "100 screenshots / month",
-      "REST API",
-      "MCP server (Claude, Cursor, Windsurf)",
-      "PNG, JPEG, WebP formats",
-      "Custom viewport sizes",
-      "Community support",
-    ],
-  },
-  {
-    name: "Starter",
-    price: "$9",
-    period: "/ month",
-    screenshots: "2,000 screenshots / mo",
-    cta: "Choose Starter",
-    href: "/sign-up?plan=starter",
-    highlight: true,
-    features: [
-      "2,000 screenshots / month",
-      "REST API",
-      "MCP server (Claude, Cursor, Windsurf)",
-      "PNG, JPEG, WebP formats",
-      "Custom viewport sizes",
-      "Full-page screenshots",
-      "Email support",
-    ],
-  },
-  {
-    name: "Pro",
-    price: "$29",
-    period: "/ month",
-    screenshots: "10,000 screenshots / mo",
-    cta: "Choose Pro",
-    href: "/sign-up?plan=pro",
-    highlight: false,
-    features: [
-      "10,000 screenshots / month",
-      "REST API",
-      "MCP server (Claude, Cursor, Windsurf)",
-      "PNG, JPEG, WebP formats",
-      "Custom viewport sizes",
-      "Full-page screenshots",
-      "Custom delay support",
-      "Priority support",
-    ],
-  },
-];
+const plans = [PLAN_DESCRIPTORS.free, PLAN_DESCRIPTORS.starter, PLAN_DESCRIPTORS.pro];
 
 export default function PricingPage() {
   return (
@@ -89,7 +35,7 @@ export default function PricingPage() {
         <div className="text-center mb-16">
           <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">Simple, transparent pricing</h1>
           <p className="mx-auto max-w-2xl text-[1.1rem] leading-relaxed text-muted-foreground sm:text-[1.28rem]">
-            Start on the free plan — no credit card. Upgrade in-app when you need more headroom.
+            Start on the free plan — no credit card. Paid tiers are launching soon; join the waitlist to hear first.
           </p>
         </div>
 
@@ -107,15 +53,20 @@ export default function PricingPage() {
               <CardHeader className="pb-4">
                 <CardTitle className="text-2xl">{plan.name}</CardTitle>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-5xl font-bold">{plan.price}</span>
-                  <span className="text-base text-muted-foreground">{plan.period}</span>
+                  <span className="text-5xl font-bold">{plan.priceLabel}</span>
+                  <span className="text-base text-muted-foreground">{plan.periodLabel}</span>
                 </div>
                 <CardDescription className="text-base font-medium leading-relaxed text-foreground/70">
-                  {plan.screenshots}
+                  {plan.quotaLabel}
                 </CardDescription>
+                {!plan.available && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Paid plans launch soon — join the waitlist and we&apos;ll email you first.
+                  </p>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
-                <Link href={plan.href}>
+                <Link href={plan.ctaHref}>
                   <Button
                     className="w-full"
                     variant={plan.highlight ? "default" : "outline"}
@@ -128,7 +79,7 @@ export default function PricingPage() {
                 <ul className="space-y-2">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2 text-base leading-relaxed text-muted-foreground">
-                      <span className="text-primary font-bold">✓</span>
+                      <span aria-hidden="true" className="text-primary font-bold">✓</span>
                       {feature}
                     </li>
                   ))}
@@ -153,7 +104,7 @@ export default function PricingPage() {
 
       <footer className="border-t mt-16 py-8">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 text-base text-muted-foreground">
-          <span>© 2025 ScreenshotsMCP</span>
+          <span>© {new Date().getFullYear()} ScreenshotsMCP</span>
           <div className="flex gap-4">
             <Link href="/docs" className="hover:text-foreground">Docs</Link>
             <Link href="/pricing" className="hover:text-foreground">Pricing</Link>

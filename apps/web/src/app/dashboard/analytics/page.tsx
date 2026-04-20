@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Camera, TrendingUp, CheckCircle, Calendar, Zap, ArrowUpRight, RefreshCw, Wifi, WifiOff, LayoutDashboard, ListVideo, FolderSearch } from "lucide-react";
 import Link from "next/link";
+import { apiFetch } from "@/lib/api-fetch";
 
 type PlanData = {
   name: string;
@@ -78,9 +79,9 @@ export default function AnalyticsPage() {
 
     const connectWs = async () => {
       try {
-        const res = await fetch("/api/analytics-ws-token");
+        const res = await apiFetch("/api/analytics-ws-token");
         if (!res.ok) {
-          const fallback = await fetch("/api/analytics");
+          const fallback = await apiFetch("/api/analytics");
           if (!disposed && fallback.ok) setData(await fallback.json());
           if (!disposed) setLoading(false);
           return;
@@ -113,7 +114,7 @@ export default function AnalyticsPage() {
         ws.onerror = () => ws.close();
       } catch {
         try {
-          const fallback = await fetch("/api/analytics");
+          const fallback = await apiFetch("/api/analytics");
           if (!disposed && fallback.ok) setData(await fallback.json());
         } catch {}
         if (!disposed) setLoading(false);
@@ -137,7 +138,7 @@ export default function AnalyticsPage() {
       wsRef.current.send(JSON.stringify({ type: "refresh" }));
     } else {
       setRefreshing(true);
-      fetch("/api/analytics")
+      apiFetch("/api/analytics")
         .then((r) => r.json())
         .then((d) => { setData(d); setRefreshing(false); })
         .catch(() => setRefreshing(false));

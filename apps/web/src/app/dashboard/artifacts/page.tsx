@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Clock3, ExternalLink, FileImage, FileText, FolderSearch, Globe, Link2, Search, Video } from "lucide-react";
+import { LibraryTabs } from "@/components/library-tabs";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";
 
 type Screenshot = {
@@ -218,29 +219,20 @@ export default function ArtifactsPage() {
 
   return (
     <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">Artifacts</h1>
+      <div className="flex flex-col gap-3">
+        <h1 className="text-2xl font-bold">Library</h1>
         <p className="text-muted-foreground">
           Searchable evidence library across captures and replays. Use Runs when you want the full execution story, findings, and next actions.
         </p>
+        <LibraryTabs />
       </div>
 
       <Card>
         <CardContent className="flex flex-col gap-2 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <span>Runs remains the primary review surface. Artifacts is the secondary library for locating evidence quickly.</span>
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/runs" className="text-primary hover:underline">
-              Open runs
-            </Link>
-            <div className="flex items-center gap-3">
-              <Link href="/dashboard/screenshots" className="hover:text-foreground">
-                Captures
-              </Link>
-              <Link href="/dashboard/recordings" className="hover:text-foreground">
-                Replays
-              </Link>
-            </div>
-          </div>
+          <span>Runs remains the primary review surface. The Library is your secondary lookup for evidence.</span>
+          <Link href="/dashboard/runs" className="text-primary hover:underline">
+            Open runs
+          </Link>
         </CardContent>
       </Card>
 

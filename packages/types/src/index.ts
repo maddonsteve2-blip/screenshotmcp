@@ -133,6 +133,89 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   pro: { screenshotsPerMonth: 10000, price: 29 },
 };
 
+export interface PlanDescriptor {
+  name: string;
+  tagline: string;
+  priceLabel: string;
+  periodLabel: string;
+  quotaLabel: string;
+  highlight: boolean;
+  cta: string;
+  ctaHref: string;
+  available: boolean;
+  features: string[];
+}
+
+/**
+ * Single source of truth for plan feature lists. Consumed by /pricing and
+ * /dashboard/billing so the two surfaces can't drift apart.
+ *
+ * `available: false` means the plan is not yet purchasable (Stripe not wired).
+ * UIs should disable CTAs and show a waitlist note when this is false.
+ */
+export const PLAN_DESCRIPTORS: Record<Plan, PlanDescriptor> = {
+  free: {
+    name: "Free",
+    tagline: "Get started with no credit card",
+    priceLabel: "$0",
+    periodLabel: "forever",
+    quotaLabel: "100 screenshots / mo",
+    highlight: false,
+    cta: "Get started free",
+    ctaHref: "/sign-up",
+    available: true,
+    features: [
+      "100 screenshots / month",
+      "REST API",
+      "MCP server (Claude, Cursor, Windsurf)",
+      "PNG, JPEG, WebP formats",
+      "Custom viewport sizes",
+      "Community support",
+    ],
+  },
+  starter: {
+    name: "Starter",
+    tagline: "For growing projects and teams",
+    priceLabel: "$9",
+    periodLabel: "/ month",
+    quotaLabel: "2,000 screenshots / mo",
+    highlight: true,
+    cta: "Join waitlist",
+    ctaHref: "mailto:hello@screenshotmcp.com?subject=ScreenshotsMCP%20Starter%20waitlist",
+    available: false,
+    features: [
+      "2,000 screenshots / month",
+      "REST API",
+      "MCP server (Claude, Cursor, Windsurf)",
+      "PNG, JPEG, WebP formats",
+      "Custom viewport sizes",
+      "Full-page screenshots",
+      "Email support",
+    ],
+  },
+  pro: {
+    name: "Pro",
+    tagline: "For heavy automation workflows",
+    priceLabel: "$29",
+    periodLabel: "/ month",
+    quotaLabel: "10,000 screenshots / mo",
+    highlight: false,
+    cta: "Join waitlist",
+    ctaHref: "mailto:hello@screenshotmcp.com?subject=ScreenshotsMCP%20Pro%20waitlist",
+    available: false,
+    features: [
+      "10,000 screenshots / month",
+      "REST API",
+      "MCP server (Claude, Cursor, Windsurf)",
+      "PNG, JPEG, WebP formats",
+      "Custom viewport sizes",
+      "Full-page screenshots",
+      "Custom delay support",
+      "Priority support",
+    ],
+  },
+};
+
 /**
  * Monthly quota for free users whose accounts were created before the
  * canonical-quota cutover. Keeps early adopters on their historical

@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { toast } from "sonner";
+import { apiFetch } from "@/lib/api-fetch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,11 +19,21 @@ export default function BillingPage() {
 
   async function openPortal() {
     setLoading(true);
-    const res = await fetch("/api/billing/portal", { method: "POST" });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else alert(data.error ?? "Billing portal unavailable");
-    setLoading(false);
+    try {
+      const res = await apiFetch("/api/billing/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      toast.error(data.error ?? "Billing portal unavailable");
+    } catch (err) {
+      toast.error("Could not open billing portal", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

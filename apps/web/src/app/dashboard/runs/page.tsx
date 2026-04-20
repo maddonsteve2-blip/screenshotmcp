@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
@@ -7,8 +8,9 @@ import RunsListClient from "@/app/dashboard/runs/runs-list-client";
 
 export default async function RunsPage() {
   const { userId: clerkId } = await auth();
+  if (!clerkId) redirect("/sign-in");
   const db = getDb();
-  const user = await getOrCreateDbUser(clerkId!);
+  const user = await getOrCreateDbUser(clerkId);
 
   const runRows = user
     ? await db

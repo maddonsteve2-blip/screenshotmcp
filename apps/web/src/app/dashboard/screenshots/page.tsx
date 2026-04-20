@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { ExternalLink, Copy, Check, ImageOff, FileText, Search, Clock3, Link2, ScanSearch } from "lucide-react";
+import { LibraryTabs } from "@/components/library-tabs";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";
 
 type Screenshot = {
@@ -234,11 +235,12 @@ export default function ScreenshotsPage() {
 
   return (
     <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-3">
         <h1 className="text-2xl font-bold text-pretty">Captures</h1>
         <p className="text-muted-foreground">
           Artifact library for screenshot, PDF, and export outputs. Use Runs when you want the full story of a session.
         </p>
+        <LibraryTabs />
       </div>
 
       <Card>

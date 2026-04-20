@@ -383,7 +383,7 @@ export default function HomePage() {
           </div>
 
           <h1 className="animate-fade-in-up delay-100 font-[var(--font-heading)] text-5xl sm:text-6xl lg:text-[4.5rem] xl:text-[5rem] font-extrabold tracking-[-0.04em] mb-7 leading-[1.05]">
-            Give your AI
+            Give your AI{" "}
             <br />
             <span className="text-gradient">a real browser — and proof.</span>
           </h1>

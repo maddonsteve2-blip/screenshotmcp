@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Video, Trash2, ExternalLink, Clock, Globe, Monitor, Loader2, Search, HardDrive, Link2, ScanSearch } from "lucide-react";
+import { toast } from "sonner";
+import { confirmDialog } from "@/components/confirm-dialog";
+import { LibraryTabs } from "@/components/library-tabs";
+import { apiFetch } from "@/lib/api-fetch";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";
 
 interface Recording {
@@ -93,13 +97,23 @@ export default function RecordingsPage() {
   });
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this recording? This cannot be undone.")) return;
+    const ok = await confirmDialog({
+      title: "Delete this recording?",
+      description: "The video file will be removed from storage. This cannot be undone.",
+      confirmLabel: "Delete recording",
+      variant: "destructive",
+    });
+    if (!ok) return;
     setDeleting(id);
     try {
-      await fetch(`/api/recordings/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/recordings/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`Delete failed (${res.status})`);
       setRecordings((prev) => prev.filter((r) => r.id !== id));
+      toast.success("Recording deleted");
     } catch (err) {
-      console.error("Failed to delete:", err);
+      toast.error("Could not delete recording", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
     } finally {
       setDeleting(null);
     }
@@ -154,16 +168,17 @@ export default function RecordingsPage() {
 
   return (
     <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-3">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-pretty">
-          <Video className="h-6 w-6" />
+          <Video className="h-6 w-6" aria-hidden="true" />
           Replays
         </h1>
-        <p className="mt-1 text-muted-foreground">
+        <p className="text-muted-foreground">
           Artifact library for replayable video evidence. Use Runs when you want the full session review with captures and replay together. Start recording by passing{" "}
           <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">record_video: true</code>{" "}
           to <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">browser_navigate</code>.
         </p>
+        <LibraryTabs />
       </div>
 
       <Card>

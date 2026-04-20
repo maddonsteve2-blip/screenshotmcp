@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Check, Copy, ArrowLeft, ArrowRight, Key, Terminal, AlertCircle, Download, ExternalLink, Monitor, Smartphone, Globe, Code2, MessageSquare, Sparkles } from "lucide-react";
+import { apiFetch } from "@/lib/api-fetch";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
 const MCP_URL = `${API_BASE}/mcp`;
@@ -25,8 +26,14 @@ function CopyBlock({ code, id, label, copiedId, onCopy }: {
       {label && <p className="mb-2 text-base font-medium text-foreground/80">{label}</p>}
       <div className="relative">
         <pre className="overflow-x-auto rounded-lg border bg-muted/60 p-4 pr-12 text-[0.95rem] leading-7 sm:text-base"><code>{code}</code></pre>
-        <Button size="icon" variant="ghost" className="absolute top-2 right-2 h-8 w-8 hover:bg-background" onClick={() => onCopy(code, id)}>
-          {copiedId === id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+        <Button
+          size="icon"
+          variant="ghost"
+          className="absolute top-2 right-2 h-8 w-8 hover:bg-background"
+          onClick={() => onCopy(code, id)}
+          aria-label={copiedId === id ? "Copied" : "Copy to clipboard"}
+        >
+          {copiedId === id ? <Check className="h-3.5 w-3.5 text-green-500" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
         </Button>
       </div>
     </div>
@@ -104,7 +111,7 @@ export default function InstallPage() {
 
   async function createAndUseKey() {
     setCreating(true);
-    const res = await fetch("/api/keys", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: "MCP Install" }) });
+    const res = await apiFetch("/api/keys", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: "MCP Install" }) });
     const data = await res.json();
     if (data.key) { setApiKey(data.key); setNewKeyCreated(true); }
     setCreating(false);
@@ -205,8 +212,14 @@ export default function InstallPage() {
                 <div key={i} className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3 hover:bg-muted/50 transition-colors">
                   <Terminal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <span className="flex-1 font-mono text-[0.95rem] leading-7 text-foreground/80 sm:text-base">{prompt}</span>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => copy(prompt, `p${i}`)}>
-                    {copiedId === `p${i}` ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 shrink-0"
+                    onClick={() => copy(prompt, `p${i}`)}
+                    aria-label={copiedId === `p${i}` ? "Copied" : "Copy prompt"}
+                  >
+                    {copiedId === `p${i}` ? <Check className="h-3.5 w-3.5 text-green-500" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
                   </Button>
                 </div>
               ))}

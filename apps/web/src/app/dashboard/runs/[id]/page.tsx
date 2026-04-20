@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
@@ -99,8 +99,9 @@ type RunOutcome = {
 
 export default async function RunDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { userId: clerkId } = await auth();
+  if (!clerkId) redirect("/sign-in");
   const db = getDb();
-  const user = await getOrCreateDbUser(clerkId!);
+  const user = await getOrCreateDbUser(clerkId);
   const { id } = await params;
 
   if (!user) {

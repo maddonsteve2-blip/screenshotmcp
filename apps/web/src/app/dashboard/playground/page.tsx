@@ -18,6 +18,7 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import { apiFetch } from "@/lib/api-fetch";
 
 type Device = { label: string; width: number; height: number; icon: React.ElementType };
 type Format = "png" | "jpeg" | "webp" | "pdf";
@@ -45,7 +46,7 @@ async function captureScreenshot(params: {
   dark: boolean;
   format: Format;
 }): Promise<{ publicUrl: string; width: number; height: number; format: string; elapsed: string } | { error: string }> {
-  const res = await fetch("/api/playground/screenshot", {
+  const res = await apiFetch("/api/playground/screenshot", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -70,7 +71,7 @@ async function captureScreenshot(params: {
   // Poll for result via proxy
   for (let i = 0; i < 30; i++) {
     await new Promise((r) => setTimeout(r, 2000));
-    const poll = await fetch(`/api/playground/screenshot/${jobId}`);
+    const poll = await apiFetch(`/api/playground/screenshot/${jobId}`);
     if (!poll.ok) continue;
     const data = await poll.json();
     if (data.status === "done" && (data.url || data.publicUrl)) {
@@ -130,7 +131,7 @@ export default function PlaygroundPage() {
     setDiffResult(null);
     setDiffError(null);
     try {
-      const res = await fetch("/api/playground/screenshot", {
+      const res = await apiFetch("/api/playground/screenshot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: urlA.trim(), width: device.width, height: device.height }),

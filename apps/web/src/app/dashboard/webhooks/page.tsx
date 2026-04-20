@@ -14,6 +14,9 @@ import {
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
+import { toast } from "sonner";
+import { confirmDialog } from "@/components/confirm-dialog";
+import { apiFetch } from "@/lib/api-fetch";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -91,7 +94,7 @@ export default function WebhooksPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/outbound-webhooks", { cache: "no-store" });
+      const res = await apiFetch("/api/outbound-webhooks", { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) {
         setError(data?.error ?? `Failed (HTTP ${res.status})`);
@@ -114,7 +117,7 @@ export default function WebhooksPage() {
     setSelectedEndpoint(endpointId);
     setLoadingDeliveries(true);
     try {
-      const res = await fetch(`/api/outbound-webhooks/${endpointId}/deliveries?limit=50`, {
+      const res = await apiFetch(`/api/outbound-webhooks/${endpointId}/deliveries?limit=50`, {
         cache: "no-store",
       });
       const data = await res.json();
@@ -143,7 +146,7 @@ export default function WebhooksPage() {
     if (!createUrl.trim()) return;
     setCreating(true);
     try {
-      const res = await fetch("/api/outbound-webhooks", {
+      const res = await apiFetch("/api/outbound-webhooks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -173,7 +176,7 @@ export default function WebhooksPage() {
   async function handleRotate(id: string) {
     setBusyId(id);
     try {
-      const res = await fetch(`/api/outbound-webhooks/${id}/rotate`, { method: "POST" });
+      const res = await apiFetch(`/api/outbound-webhooks/${id}/rotate`, { method: "POST" });
       const data = await res.json();
       if (res.ok && data.endpoint?.secret) {
         setRevealedSecret({ endpointId: id, secret: data.endpoint.secret });
@@ -187,7 +190,7 @@ export default function WebhooksPage() {
   async function handleTest(id: string) {
     setBusyId(id);
     try {
-      await fetch(`/api/outbound-webhooks/${id}/test`, { method: "POST" });
+      await apiFetch(`/api/outbound-webhooks/${id}/test`, { method: "POST" });
       await loadDeliveries(id);
     } finally {
       setBusyId(null);
@@ -197,7 +200,7 @@ export default function WebhooksPage() {
   async function handleToggle(ep: Endpoint) {
     setBusyId(ep.id);
     try {
-      await fetch(`/api/outbound-webhooks/${ep.id}`, {
+      await apiFetch(`/api/outbound-webhooks/${ep.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled: !ep.enabled }),
@@ -209,15 +212,27 @@ export default function WebhooksPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this webhook endpoint? This cannot be undone.")) return;
+    const ok = await confirmDialog({
+      title: "Delete this webhook endpoint?",
+      description: "Outgoing events will stop immediately. This cannot be undone.",
+      confirmLabel: "Delete endpoint",
+      variant: "destructive",
+    });
+    if (!ok) return;
     setBusyId(id);
     try {
-      await fetch(`/api/outbound-webhooks/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/outbound-webhooks/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`Delete failed (${res.status})`);
       if (selectedEndpoint === id) {
         setSelectedEndpoint(null);
         setDeliveries([]);
       }
       await loadEndpoints();
+      toast.success("Webhook deleted");
+    } catch (err) {
+      toast.error("Could not delete webhook", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
     } finally {
       setBusyId(null);
     }
@@ -439,8 +454,9 @@ export default function WebhooksPage() {
                       className="text-rose-400"
                       onClick={() => void handleDelete(ep.id)}
                       disabled={busyId === ep.id}
+                      aria-label="Delete webhook endpoint"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>

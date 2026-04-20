@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Mail, ExternalLink, Check, AlertCircle, Trash2, Eye, EyeOff, Inbox, Copy, Clock } from "lucide-react";
+import { apiFetch } from "@/lib/api-fetch";
 
 export default function SettingsPage() {
   const [agentmailKey, setAgentmailKey] = useState("");
@@ -20,8 +21,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/settings").then((r) => r.json()),
-      fetch("/api/test-inboxes").then((r) => r.json()),
+      apiFetch("/api/settings").then((r) => r.json()),
+      apiFetch("/api/test-inboxes").then((r) => r.json()),
     ])
       .then(([settings, inboxData]) => {
         setHasKey(settings.hasAgentmailKey ?? false);
@@ -35,7 +36,7 @@ export default function SettingsPage() {
     setSaving(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/settings", {
+      const res = await apiFetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agentmailApiKey: agentmailKey }),
@@ -59,7 +60,7 @@ export default function SettingsPage() {
     setSaving(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/settings", {
+      const res = await apiFetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agentmailApiKey: "" }),
@@ -373,7 +374,7 @@ export default function SettingsPage() {
                       size="icon-sm"
                       variant="destructive"
                       onClick={async () => {
-                        await fetch(`/api/test-inboxes?id=${inbox.id}`, { method: "DELETE" });
+                        await apiFetch(`/api/test-inboxes?id=${inbox.id}`, { method: "DELETE" });
                         setInboxes((prev) => prev.filter((i) => i.id !== inbox.id));
                       }}
                       className="shrink-0"

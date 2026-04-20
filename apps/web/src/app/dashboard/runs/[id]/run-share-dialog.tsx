@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Copy, Globe, Loader2, RefreshCcw, Share2, Trash2 } from "lucide-react";
+import { apiFetch } from "@/lib/api-fetch";
 
 type ShareResponse = {
   shareToken: string | null;
@@ -37,7 +38,7 @@ export default function RunShareDialog({ runId }: { runId: string }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/runs/${encodeURIComponent(runId)}/share`, { cache: "no-store" });
+      const res = await apiFetch(`/api/runs/${encodeURIComponent(runId)}/share`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to load share settings");
       setShare(data as ShareResponse);
@@ -58,7 +59,7 @@ export default function RunShareDialog({ runId }: { runId: string }) {
     setError(null);
     setCopyState("idle");
     try {
-      const res = await fetch(`/api/runs/${encodeURIComponent(runId)}/share`, {
+      const res = await apiFetch(`/api/runs/${encodeURIComponent(runId)}/share`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ regenerate }),
@@ -78,7 +79,7 @@ export default function RunShareDialog({ runId }: { runId: string }) {
     setError(null);
     setCopyState("idle");
     try {
-      const res = await fetch(`/api/runs/${encodeURIComponent(runId)}/share`, {
+      const res = await apiFetch(`/api/runs/${encodeURIComponent(runId)}/share`, {
         method: "DELETE",
       });
       const data = await res.json();
