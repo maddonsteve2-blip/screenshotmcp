@@ -11,17 +11,15 @@ export class StatusBarController {
 
   update(isAuthenticated: boolean): void {
     if (isAuthenticated) {
-      this.item.text = "$(device-camera-video) ScreenshotsMCP";
-      this.item.tooltip = "ScreenshotsMCP connected";
+      this.item.text = "$(device-camera) ScreenshotsMCP";
+      this.item.tooltip = "ScreenshotsMCP — click for quick actions";
       this.item.backgroundColor = undefined;
+      this.item.command = "screenshotsmcp.showQuickActions";
     } else {
       this.item.text = "$(key) ScreenshotsMCP Sign In";
       this.item.tooltip = "Sign in to ScreenshotsMCP";
       this.item.backgroundColor = new vscode.ThemeColor("statusBarItem.warningBackground");
       this.item.command = "screenshotsmcp.signIn";
-    }
-    if (isAuthenticated) {
-      this.item.command = "screenshotsmcp.checkStatus";
     }
     this.item.show();
   }

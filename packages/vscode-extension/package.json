@@ -2,7 +2,7 @@
   "name": "screenshotsmcp-vscode",
   "displayName": "ScreenshotsMCP",
   "description": "VS Code extension for ScreenshotsMCP: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "ScreenshotMCP",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
@@ -22,6 +22,7 @@
   "files": [
     "dist/**",
     "images/**",
+    "media/**",
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
@@ -145,6 +146,10 @@
       {
         "command": "screenshotsmcp.showOutput",
         "title": "ScreenshotsMCP: Show Output"
+      },
+      {
+        "command": "screenshotsmcp.showQuickActions",
+        "title": "ScreenshotsMCP: Quick Actions"
       }
     ],
     "menus": {
@@ -165,6 +170,75 @@
       {
         "id": "screenshotsmcp.provider",
         "label": "ScreenshotsMCP"
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "screenshotsmcp.getStarted",
+        "title": "Get started with ScreenshotsMCP",
+        "description": "Sign in, take your first screenshot, and run your first audit — all from VS Code.",
+        "steps": [
+          {
+            "id": "signIn",
+            "title": "Sign in to ScreenshotsMCP",
+            "description": "Sign in with your browser (OAuth) or paste an API key.\n[Sign In](command:screenshotsmcp.signIn)",
+            "media": {
+              "markdown": "media/walkthrough/sign-in.md"
+            },
+            "completionEvents": [
+              "onCommand:screenshotsmcp.signIn"
+            ]
+          },
+          {
+            "id": "firstScreenshot",
+            "title": "Take your first screenshot",
+            "description": "Capture any URL — the result opens inline with open, copy, rerun, and dashboard actions.\n[Take Screenshot](command:screenshotsmcp.takeScreenshot)",
+            "media": {
+              "markdown": "media/walkthrough/screenshot.md"
+            },
+            "completionEvents": [
+              "onCommand:screenshotsmcp.takeScreenshot"
+            ]
+          },
+          {
+            "id": "firstAudit",
+            "title": "Run your first audit",
+            "description": "Run a UX review on any URL. Findings render as a structured report with a hero screenshot and dashboard deep-link.\n[Audit URL](command:screenshotsmcp.showQuickActions)",
+            "media": {
+              "markdown": "media/walkthrough/audit.md"
+            },
+            "completionEvents": [
+              "onCommand:screenshotsmcp.auditUrl"
+            ]
+          },
+          {
+            "id": "codeLens",
+            "title": "Right-click any URL in your code",
+            "description": "Screenshot and Audit CodeLens actions appear above every URL in markdown, JS/TS, JSON, YAML, and HTML. You can also right-click the editor to run these actions on the URL under the cursor.",
+            "media": {
+              "markdown": "media/walkthrough/codelens.md"
+            },
+            "completionEvents": [
+              "onCommand:screenshotsmcp.takeScreenshotAtUrl",
+              "onCommand:screenshotsmcp.auditUrl",
+              "onCommand:screenshotsmcp.screenshotSelectedUrl",
+              "onCommand:screenshotsmcp.auditSelectedUrl"
+            ]
+          },
+          {
+            "id": "skills",
+            "title": "Install agent skills",
+            "description": "ScreenshotsMCP ships skills (SKILL.md + workflows) that teach AI agents how to drive the tools. Install one from the sidebar or scaffold your own.\n[Open Sidebar](command:workbench.view.extension.screenshotsmcp) \u00b7 [Create Skill](command:screenshotsmcp.createSkill)",
+            "media": {
+              "markdown": "media/walkthrough/skills.md"
+            },
+            "completionEvents": [
+              "onCommand:screenshotsmcp.installSkill",
+              "onCommand:screenshotsmcp.previewSkill",
+              "onCommand:screenshotsmcp.createSkill"
+            ]
+          }
+        ]
       }
     ],
     "configuration": {

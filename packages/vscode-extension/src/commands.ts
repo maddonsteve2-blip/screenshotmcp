@@ -277,7 +277,63 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       });
       showOutputChannel();
     }),
+    vscode.commands.registerCommand("screenshotsmcp.showQuickActions", async () => {
+      await runQuickActions(deps);
+    }),
   );
+}
+
+interface QuickAction extends vscode.QuickPickItem {
+  command: string;
+  args?: unknown[];
+}
+
+async function runQuickActions(deps: CommandDependencies): Promise<void> {
+  const hasApiKey = await deps.authStore.hasApiKey();
+  const actions: QuickAction[] = hasApiKey
+    ? [
+        { label: "$(device-camera) Take Screenshot", description: "Capture a URL", command: "screenshotsmcp.takeScreenshot" },
+        { label: "$(search) Audit URL", description: "Run a UX review", command: "screenshotsmcp.takeScreenshot", args: [] },
+        { label: "$(list-unordered) Open Timeline", description: "Recent runs and events", command: "screenshotsmcp.openTimeline" },
+        { label: "$(book) Create Skill", description: "Scaffold a new ~/.agents/skills/<name>", command: "screenshotsmcp.createSkill" },
+        { label: "$(globe) Open Dashboard", description: getDashboardUrl(), command: "screenshotsmcp.openDashboard" },
+        { label: "$(output) Show Output", description: "ScreenshotsMCP log channel", command: "screenshotsmcp.showOutput" },
+        { label: "$(sign-out) Sign Out", description: "Clear stored API key", command: "screenshotsmcp.signOut" },
+      ]
+    : [
+        { label: "$(key) Sign In", description: "Authenticate with ScreenshotsMCP", command: "screenshotsmcp.signIn" },
+        { label: "$(globe) Open Dashboard", description: getDashboardUrl(), command: "screenshotsmcp.openDashboard" },
+      ];
+
+  // Replace the "Audit URL" placeholder with a real prompt so we don't need a second command.
+  const audit = actions.find((a) => a.label.startsWith("$(search)"));
+  if (audit) {
+    audit.command = "__inline_audit__";
+  }
+
+  const picked = await vscode.window.showQuickPick(actions, {
+    title: "ScreenshotsMCP",
+    placeHolder: hasApiKey ? "Pick an action" : "Sign in to get started",
+  });
+  if (!picked) {
+    return;
+  }
+
+  if (picked.command === "__inline_audit__") {
+    const url = await vscode.window.showInputBox({
+      title: "Audit URL",
+      prompt: "Enter the URL to audit",
+      placeHolder: "https://example.com",
+      ignoreFocusOut: true,
+    });
+    if (!url) {
+      return;
+    }
+    await vscode.commands.executeCommand("screenshotsmcp.auditUrl", url);
+    return;
+  }
+
+  await vscode.commands.executeCommand(picked.command, ...(picked.args ?? []));
 }
 
 async function ensureAuthenticated(

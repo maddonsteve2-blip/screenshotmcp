@@ -95,6 +95,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const hasApiKey = await authStore.hasApiKey();
   statusBar.update(hasApiKey);
 
+  // First-run: open the "Get started" walkthrough once per machine.
+  const welcomedKey = "screenshotsmcp.welcomedAt";
+  if (!context.globalState.get<string>(welcomedKey)) {
+    await context.globalState.update(welcomedKey, new Date().toISOString());
+    void vscode.commands.executeCommand(
+      "workbench.action.openWalkthrough",
+      { category: "ScreenshotMCP.screenshotsmcp-vscode#screenshotsmcp.getStarted", step: "screenshotsmcp.getStarted#signIn" },
+      false,
+    );
+  }
+
   if (hasApiKey) {
     const apiKey = await authStore.getApiKey();
     if (apiKey) {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- New **Get started with ScreenshotsMCP** walkthrough (auto-opens on first install) — sign in → first screenshot → first audit → CodeLens → skills, in 5 clicks
+- Status bar item now opens a **Quick Actions** menu (take screenshot, audit URL, open timeline, create skill, open dashboard, sign out) when authenticated
+- New command palette entry: `ScreenshotsMCP: Quick Actions` (`screenshotsmcp.showQuickActions`)
+
 ## 0.2.0
 
 - Inline **Screenshot** WebView panel — captured images render alongside the editor with open, copy, rerun, and "View run" toolbar actions
