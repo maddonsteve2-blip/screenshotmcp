@@ -2,7 +2,7 @@
   "name": "screenshotsmcp-vscode",
   "displayName": "ScreenshotsMCP",
   "description": "VS Code extension for ScreenshotsMCP: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "publisher": "ScreenshotMCP",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
@@ -311,6 +311,38 @@
           "type": "boolean",
           "default": true,
           "description": "Show 📸 Screenshot and 🔍 Audit CodeLens actions above URLs in supported files."
+        },
+        "screenshotsmcp.screenshot.width": {
+          "type": "integer",
+          "default": 1280,
+          "minimum": 320,
+          "maximum": 3840,
+          "description": "Default viewport width (px) for screenshots triggered from this editor."
+        },
+        "screenshotsmcp.screenshot.height": {
+          "type": "integer",
+          "default": 800,
+          "minimum": 240,
+          "maximum": 2160,
+          "description": "Default viewport height (px) for screenshots triggered from this editor."
+        },
+        "screenshotsmcp.screenshot.fullPage": {
+          "type": "boolean",
+          "default": true,
+          "description": "Capture the entire scrollable page by default."
+        },
+        "screenshotsmcp.screenshot.delay": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 10000,
+          "description": "Delay in ms after page load before capturing (useful for SPAs)."
+        },
+        "screenshotsmcp.screenshot.format": {
+          "type": "string",
+          "enum": ["png", "jpeg", "webp"],
+          "default": "png",
+          "description": "Image format for screenshots."
         }
       }
     }

@@ -6,7 +6,7 @@ import { WORKSPACE_MCP_PATH } from "./constants";
 import { callTool, extractImageUrl, extractRunUrl, extractText, validateApiKey } from "./mcp/client";
 import { EditorMcpAutoInstaller } from "./mcp/autoInstaller";
 import { logLine, showOutputChannel } from "./output";
-import { getApiUrl, getDashboardUrl, getKeysUrl } from "./settings";
+import { getApiUrl, getDashboardUrl, getKeysUrl, getScreenshotDefaults } from "./settings";
 import { ScreenshotsMcpServerProvider } from "./mcp/serverProvider";
 import { formatSkillSyncFailureMessage, formatSkillSyncMessage, installCatalogSkillForExtension, syncCoreSkillForExtension } from "./skills";
 import { buildSkillTemplate } from "./skills/template";
@@ -706,7 +706,8 @@ async function runScreenshot(deps: CommandDependencies, url: string): Promise<vo
   if (!apiKey) {
     return;
   }
-  logLine(`Capturing screenshot for ${url}`);
+  const defaults = getScreenshotDefaults();
+  logLine(`Capturing screenshot for ${url} (${defaults.width}x${defaults.height}, ${defaults.format}${defaults.fullPage ? ", fullPage" : ""}${defaults.delay ? `, delay=${defaults.delay}ms` : ""})`);
   deps.timelineStore.add({
     title: "Screenshot started",
     detail: url,
@@ -719,11 +720,11 @@ async function runScreenshot(deps: CommandDependencies, url: string): Promise<vo
       { location: vscode.ProgressLocation.Notification, title: `Capturing ${url}` },
       () => callTool(apiKey, "take_screenshot", {
         url,
-        width: 1280,
-        height: 800,
-        format: "png",
-        fullPage: true,
-        delay: 0,
+        width: defaults.width,
+        height: defaults.height,
+        format: defaults.format,
+        fullPage: defaults.fullPage,
+        delay: defaults.delay,
       }),
     );
     const imageUrl = extractImageUrl(response);
@@ -796,7 +797,14 @@ async function runAudit(deps: CommandDependencies, url: string): Promise<void> {
   try {
     const response = await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: `Auditing ${url}` },
-      () => callTool(apiKey, "ux_review", { url, width: 1280, height: 800 }),
+      () => {
+        const auditDefaults = getScreenshotDefaults();
+        return callTool(apiKey, "ux_review", {
+          url,
+          width: auditDefaults.width,
+          height: auditDefaults.height,
+        });
+      },
     );
     const text = extractText(response);
     const screenshotUrl = extractImageUrl(response) ?? undefined;

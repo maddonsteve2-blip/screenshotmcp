@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.0
+
+- **Per-workspace screenshot defaults** — five new settings honoured by every extension-triggered capture:
+  - `screenshotsmcp.screenshot.width` (320–3840, default 1280)
+  - `screenshotsmcp.screenshot.height` (240–2160, default 800)
+  - `screenshotsmcp.screenshot.fullPage` (default `true`)
+  - `screenshotsmcp.screenshot.delay` ms (0–10 000, default 0)
+  - `screenshotsmcp.screenshot.format` (`png` / `jpeg` / `webp`, default `png`)
+- Audit viewport now mirrors the `width` / `height` settings
+- Values are clamped to safe ranges so a typo in `settings.json` can't break capture
+
 ## 0.8.0
 
 - **URL history** — every screenshot and audit is recorded per-URL in global state (max 20 entries × 200 URLs)
