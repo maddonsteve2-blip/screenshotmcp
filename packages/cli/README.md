@@ -99,6 +99,34 @@ screenshotsmcp baseline rm https://example.com       # remove a baseline
 
 Each baseline is a tiny JSON file (no binaries committed); `screenshot_diff` re-fetches both sides at diff time so the comparison always uses live pages.
 
+```bash
+# Drift check across every stored baseline (CI-friendly)
+screenshotsmcp baseline verify --threshold 0.1 --max-changed 5
+```
+
+## Day-to-day commands
+
+| Command | What it does |
+| --- | --- |
+| `screenshotsmcp share <url>` | Capture and copy the CDN image URL to your clipboard (Win/macOS/Linux). `--open` to launch in the default browser. |
+| `screenshotsmcp logs` (alias `recent`) | Tail your last N screenshots/audits. `--json` for raw output. |
+| `screenshotsmcp doctor` | Diagnoses API key validity, network reachability, project-file health, GH workflow presence. Color-coded with hints. |
+| `screenshotsmcp upgrade` | Self-update to the latest npm version. `--check` for CI-friendly version-only check. |
+| `screenshotsmcp config list` | Inspect/manage stored API key + URL without editing JSON. `config set apiUrl https://...`, `config path`, etc. |
+| `screenshotsmcp budget show` / `budget set <key> <value>` | Edit `.screenshotsmcp/budget.json` (`maxFindingsPerUrl`, `maxTotalFindings`, `warnThreshold`, `categories`) without touching JSON by hand. |
+| `screenshotsmcp watch` | Re-run `check` every time `urls.json` or `budget.json` changes — keep this running while editing. Forwards `--report` and `--report-out`. |
+
+### Reports for CI
+
+`check` supports four `--report` formats so you can plug it into any pipeline:
+
+```bash
+screenshotsmcp check --report github-comment --report-out report.md  # sticky PR comment
+screenshotsmcp check --report html --report-out report.html          # self-contained, emailable
+screenshotsmcp check --report short                                   # one-liner status check
+screenshotsmcp check --report json                                    # structured machine output
+```
+
 Every successful `login`, `install`, and `setup` flow now also installs or repairs the managed core ScreenshotsMCP skill under `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`, so your MCP connection and local skill stay aligned.
 
 For most clients, `login` + `install` reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
