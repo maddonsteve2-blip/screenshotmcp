@@ -166,6 +166,89 @@ baselineCommand
   });
 
 baselineCommand
+  .command("verify")
+  .description("Re-diff every stored baseline. Exits non-zero when any URL drifts beyond the threshold.")
+  .option("-t, --threshold <number>", "Color difference threshold (0=exact, 1=lenient)", "0.1")
+  .option("--max-changed <pct>", "Fail if a single URL changed more than this percent of pixels", "5")
+  .option("--json", "Emit per-URL results as JSON on stdout")
+  .action(async (opts: Record<string, string | boolean>) => {
+    const threshold = Number.parseFloat(String(opts.threshold ?? "0.1")) || 0.1;
+    const maxChanged = Number.parseFloat(String(opts.maxChanged ?? "5")) || 5;
+    const jsonOnly = Boolean(opts.json);
+    const dir = resolve(process.cwd(), BASELINE_DIR);
+    let entries: string[];
+    try {
+      entries = await readdir(dir);
+    } catch {
+      console.error(chalk.yellow(`No baselines stored at ${dir}.`));
+      process.exit(0);
+      return;
+    }
+    const baselines: Baseline[] = [];
+    for (const name of entries) {
+      if (!name.endsWith(".json")) continue;
+      try {
+        const text = await readFile(join(dir, name), "utf8");
+        baselines.push(JSON.parse(text) as Baseline);
+      } catch {
+        continue;
+      }
+    }
+    if (baselines.length === 0) {
+      console.error(chalk.yellow("No baselines to verify."));
+      process.exit(0);
+      return;
+    }
+
+    if (!jsonOnly) {
+      console.log(chalk.bold(`\n\u{1F50E} Verifying ${baselines.length} baseline${baselines.length === 1 ? "" : "s"} (threshold=${threshold}, maxChanged=${maxChanged}%)\n`));
+    }
+
+    const report: Array<{ url: string; ok: boolean; matchScore?: number; changedPercent?: number; error?: string }> = [];
+    for (const baseline of baselines) {
+      const spinner = jsonOnly ? undefined : ora(`Diffing ${baseline.url}\u2026`).start();
+      try {
+        const res = await callTool("screenshot_diff", {
+          urlA: baseline.url,
+          urlB: baseline.url,
+          width: baseline.width ?? 1280,
+          height: baseline.height ?? 800,
+          threshold,
+        });
+        const text = extractText(res);
+        const matchScore = Number.parseFloat(text.match(/Match\s*score:\s*([\d.]+)/i)?.[1] ?? "");
+        const changedPercent = Number.parseFloat(text.match(/Changed:\s*[\d,]+\s*pixels\s*\(([\d.]+)/i)?.[1] ?? "");
+        const ok = Number.isFinite(changedPercent) ? changedPercent <= maxChanged : true;
+        spinner?.stop();
+        if (!jsonOnly) {
+          const icon = ok ? chalk.green("\u2713") : chalk.red("\u2717");
+          const score = Number.isFinite(matchScore) ? `${matchScore.toFixed(1)}% match` : "unknown match";
+          const changed = Number.isFinite(changedPercent) ? `${changedPercent.toFixed(2)}% changed` : "";
+          console.log(`${icon} ${baseline.url}  \u2014  ${score}${changed ? ` \u00b7 ${changed}` : ""}`);
+        }
+        report.push({ url: baseline.url, ok, matchScore: Number.isFinite(matchScore) ? matchScore : undefined, changedPercent: Number.isFinite(changedPercent) ? changedPercent : undefined });
+      } catch (err) {
+        spinner?.fail(`${chalk.red("\u2717")} ${baseline.url}`);
+        const message = err instanceof Error ? err.message : String(err);
+        report.push({ url: baseline.url, ok: false, error: message });
+      }
+    }
+
+    const failed = report.filter((r) => !r.ok).length;
+    if (jsonOnly) {
+      console.log(JSON.stringify({ pass: failed === 0, threshold, maxChanged, report }, null, 2));
+    } else {
+      console.log("");
+      if (failed === 0) {
+        console.log(chalk.green.bold(`\u2713 All ${report.length} baseline${report.length === 1 ? "" : "s"} within tolerance.`));
+      } else {
+        console.log(chalk.red.bold(`\u2717 ${failed} baseline${failed === 1 ? "" : "s"} drifted.`));
+      }
+    }
+    process.exit(failed > 0 ? 1 : 0);
+  });
+
+baselineCommand
   .command("delete <url>")
   .alias("rm")
   .description("Delete the stored baseline for a URL")

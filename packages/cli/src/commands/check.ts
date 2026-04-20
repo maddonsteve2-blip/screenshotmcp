@@ -5,7 +5,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { callTool, extractImageUrl, extractText } from "../api.js";
 import { loadBudgetFromCwd } from "../budget.js";
-import { renderGithubComment, renderShortSummary, type UrlReport } from "../report.js";
+import { renderGithubComment, renderHtmlReport, renderShortSummary, type UrlReport } from "../report.js";
 
 /**
  * CI-friendly check command. Reads a URL list (default
@@ -22,7 +22,7 @@ export const checkCommand = new Command("check")
   .option("--max-total <n>", "Fail if total findings across all URLs exceed this", "50")
   .option("--json", "Emit the per-URL report as JSON on stdout")
   .option("--only <categories>", "Comma-separated categories to count (accessibility,performance,seo)")
-  .option("--report <format>", "Emit a formatted report: 'github-comment' (markdown), 'short' (one-line), 'json'")
+  .option("--report <format>", "Emit a formatted report: 'github-comment' (markdown), 'html', 'short' (one-line), 'json'")
   .option("--report-out <path>", "Write the formatted report to this file (default: stdout)")
   .action(async (opts: Record<string, string | boolean>) => {
     const file = typeof opts.file === "string" ? opts.file : ".screenshotsmcp/urls.json";
@@ -99,12 +99,14 @@ export const checkCommand = new Command("check")
     if (reportFmt) {
       const ctx = { totalFindings, maxPer, maxTotal, pass, budgetSource: budgetPath };
       const rendered = reportFmt === "github-comment"
-        ? renderGithubComment(report as UrlReport[], ctx)
-        : reportFmt === "short"
-          ? renderShortSummary(report as UrlReport[], ctx)
-          : reportFmt === "json"
-            ? JSON.stringify({ ...ctx, report }, null, 2)
-            : "";
+        ? renderGithubComment(report, ctx)
+        : reportFmt === "html"
+          ? renderHtmlReport(report, ctx)
+          : reportFmt === "short"
+            ? renderShortSummary(report, ctx)
+            : reportFmt === "json"
+              ? JSON.stringify({ ...ctx, report }, null, 2)
+              : "";
       if (!rendered) {
         console.error(chalk.red(`Unknown --report format: ${opts.report as string}`));
         process.exit(2);
