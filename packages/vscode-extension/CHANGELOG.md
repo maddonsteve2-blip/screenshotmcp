@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.22.0
+
+- **Edit Project Budget** command — opens (or scaffolds) `.screenshotsmcp/budget.json` with sensible defaults
+- **Watch Project URLs** command — launches `npx screenshotsmcp watch` in an integrated terminal so the CI gate re-runs every time you edit `urls.json` / `budget.json`
+- Both surfaced in Quick Actions
+
 ## 0.21.0
 
 - **`@baseline` magic comment** — drop `// @baseline https://example.com` (or `#`/`<!-- -->`) and get two CodeLens actions inline:

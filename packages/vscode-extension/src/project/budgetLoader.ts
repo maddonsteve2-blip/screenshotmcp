@@ -1,6 +1,25 @@
 import * as vscode from "vscode";
 import { DEFAULT_BUDGET, parseBudgetJson, type AuditBudget } from "./budget";
 
+/**
+ * Returns the URI of the existing budget file, or creates a defaults-filled
+ * one at `.screenshotsmcp/budget.json` and returns that. Mirrors
+ * `ensureProjectUrlsFile`.
+ */
+export async function ensureProjectBudgetFile(): Promise<vscode.Uri | undefined> {
+  const folder = vscode.workspace.workspaceFolders?.[0];
+  if (!folder) {
+    void vscode.window.showWarningMessage("Open a workspace folder first.");
+    return undefined;
+  }
+  const existing = await loadAuditBudget();
+  if (existing.uri) return existing.uri;
+  const uri = vscode.Uri.joinPath(folder.uri, ".screenshotsmcp/budget.json");
+  const sample = JSON.stringify(DEFAULT_BUDGET, null, 2) + "\n";
+  await vscode.workspace.fs.writeFile(uri, Buffer.from(sample, "utf8"));
+  return uri;
+}
+
 const CANDIDATE_PATHS = [".screenshotsmcp/budget.json", ".screenshotsmcp.budget.json"];
 
 export interface BudgetLoadResult {

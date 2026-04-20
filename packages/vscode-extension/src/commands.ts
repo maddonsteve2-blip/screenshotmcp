@@ -27,6 +27,7 @@ import { DiffPanel } from "./views/diffPanel";
 import { parseDiffText } from "./views/diffParse";
 import { HtmlReportPanel } from "./views/htmlReportPanel";
 import { ensureProjectUrlsFile, formatEntryLabel, loadProjectUrls } from "./project/loader";
+import { ensureProjectBudgetFile } from "./project/budgetLoader";
 import type { ProjectUrlEntry } from "./project/urlList";
 import { WorkspaceBaselineStore } from "./project/baselineStore";
 
@@ -397,6 +398,27 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       const doc = await vscode.workspace.openTextDocument(uri);
       await vscode.window.showTextDocument(doc);
     }),
+    vscode.commands.registerCommand("screenshotsmcp.editProjectBudget", async () => {
+      const uri = await ensureProjectBudgetFile();
+      if (!uri) return;
+      const doc = await vscode.workspace.openTextDocument(uri);
+      await vscode.window.showTextDocument(doc);
+    }),
+    vscode.commands.registerCommand("screenshotsmcp.watchProjectUrls", async () => {
+      const folder = vscode.workspace.workspaceFolders?.[0];
+      if (!folder) {
+        void vscode.window.showWarningMessage("Open a workspace folder first.");
+        return;
+      }
+      const existing = vscode.window.terminals.find((t) => t.name === "ScreenshotsMCP Watch");
+      const terminal = existing ?? vscode.window.createTerminal({
+        name: "ScreenshotsMCP Watch",
+        cwd: folder.uri.fsPath,
+      });
+      terminal.show(true);
+      // Use `npx` so it works whether or not the CLI is installed globally.
+      terminal.sendText("npx -y screenshotsmcp watch");
+    }),
     vscode.commands.registerCommand("screenshotsmcp.runProjectUrls", async () => {
       await runProjectUrlBatch(deps, "screenshot");
     }),
@@ -495,6 +517,8 @@ async function runQuickActions(deps: CommandDependencies): Promise<void> {
         { label: "$(folder-library) Screenshot Project URLs", description: "Batch-capture .screenshotsmcp/urls.json", command: "screenshotsmcp.runProjectUrls" },
         { label: "$(checklist) Audit Project URLs", description: "Batch-audit .screenshotsmcp/urls.json", command: "screenshotsmcp.auditProjectUrls" },
         { label: "$(edit) Edit Project URLs", description: "Open or create .screenshotsmcp/urls.json", command: "screenshotsmcp.editProjectUrls" },
+        { label: "$(gear) Edit Project Budget", description: "Open or create .screenshotsmcp/budget.json", command: "screenshotsmcp.editProjectBudget" },
+        { label: "$(eye) Watch Project URLs", description: "Run `screenshotsmcp watch` in a terminal", command: "screenshotsmcp.watchProjectUrls" },
         { label: "$(file-code) Open HTML Report", description: "Render a screenshotsmcp-report.html file inline", command: "screenshotsmcp.openHtmlReport" },
         { label: "$(run-all) Open Workflow", description: "Pick a packaged skill workflow to preview", command: "screenshotsmcp.openWorkflow" },
         { label: "$(book) Create Skill", description: "Scaffold a new ~/.agents/skills/<name>", command: "screenshotsmcp.createSkill" },
