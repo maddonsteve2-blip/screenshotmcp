@@ -62,6 +62,43 @@ screenshotsmcp diff https://staging.example.com https://example.com
 screenshotsmcp pdf https://example.com
 ```
 
+## Project setup & CI gating
+
+The CLI ships an opinionated, zero-config workflow for adding ScreenshotsMCP to a repo:
+
+```bash
+# Scaffold .screenshotsmcp/{urls,budget}.json, agents.json, and a GH Action
+screenshotsmcp init
+
+# Run the audit gate locally — exits non-zero when findings exceed the budget
+screenshotsmcp check
+
+# Emit a sticky-PR-comment-friendly markdown report
+screenshotsmcp check --report github-comment --report-out report.md
+```
+
+The default `init` produces:
+
+- **`.screenshotsmcp/urls.json`** — the list of URLs to capture/audit (string or `{ url, label, tags }` entries)
+- **`.screenshotsmcp/budget.json`** — shared finding/perf thresholds consumed by both `check` and the VS Code extension's status-bar badge
+- **`agents.json`** — manifest any AI framework (Claude Code, Cursor, Aider, Continue, OpenAI Agents) can ingest to expose `screenshot`, `review`, `diff`, `check`, etc. as tools
+- **`.github/workflows/screenshotsmcp.yml`** — opt-in PR audit workflow that posts a sticky comment
+
+Pass `--no-agents` or `--no-github-action` to skip individual outputs; `--force` overwrites existing files.
+
+### Visual baselines
+
+Per-URL visual regression with local manifests stored under `.screenshotsmcp/baselines/`:
+
+```bash
+screenshotsmcp baseline create https://example.com   # capture & store
+screenshotsmcp baseline list                         # see all stored baselines
+screenshotsmcp baseline diff https://example.com    # compare current page vs reference
+screenshotsmcp baseline rm https://example.com       # remove a baseline
+```
+
+Each baseline is a tiny JSON file (no binaries committed); `screenshot_diff` re-fetches both sides at diff time so the comparison always uses live pages.
+
 Every successful `login`, `install`, and `setup` flow now also installs or repairs the managed core ScreenshotsMCP skill under `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`, so your MCP connection and local skill stay aligned.
 
 For most clients, `login` + `install` reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.

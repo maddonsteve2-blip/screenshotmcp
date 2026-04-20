@@ -38,6 +38,7 @@ import {
 } from "./commands/review.js";
 import { checkCommand } from "./commands/check.js";
 import { baselineCommand } from "./commands/baseline.js";
+import { initCommand } from "./commands/init.js";
 import { installCommand } from "./commands/install.js";
 import { skillsCommand } from "./commands/skills.js";
 import { setupCommand } from "./commands/setup.js";
@@ -144,6 +145,7 @@ program.addCommand(ogPreviewCommand);
 program.addCommand(breakpointsCommand);
 
 // CI / pre-commit
+program.addCommand(initCommand);
 program.addCommand(checkCommand);
 program.addCommand(baselineCommand);
 
