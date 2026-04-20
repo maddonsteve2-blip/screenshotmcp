@@ -21,6 +21,8 @@ import { discoverWorkflows } from "./skills/discoverWorkflows";
 import { StatusBarController } from "./views/statusBar";
 import { TimelinePanelController } from "./views/timelinePanel";
 import { AuditDiagnostics, parseAuditFindings } from "./views/auditDiagnostics";
+import { UrlHistoryStore } from "./history/store";
+import { UrlHistoryPanel } from "./views/historyPanel";
 
 interface CommandDependencies {
   authStore: AuthStore;
@@ -32,6 +34,7 @@ interface CommandDependencies {
   timelineStore: TimelineStore;
   timelinePanel: TimelinePanelController;
   auditDiagnostics: AuditDiagnostics;
+  urlHistory: UrlHistoryStore;
 }
 
 export function registerCommands(context: vscode.ExtensionContext, deps: CommandDependencies): void {
@@ -284,6 +287,29 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     vscode.commands.registerCommand("screenshotsmcp.showQuickActions", async () => {
       await runQuickActions(deps);
     }),
+    vscode.commands.registerCommand("screenshotsmcp.showUrlHistory", async (urlArg?: string) => {
+      const resolved = await resolveUrlForHistory(deps, urlArg);
+      if (!resolved) {
+        return;
+      }
+      UrlHistoryPanel.show(resolved, deps.urlHistory);
+    }),
+    vscode.commands.registerCommand("screenshotsmcp.showHistoryForSelectedUrl", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        void vscode.window.showWarningMessage("Open a file and select a URL first.");
+        return;
+      }
+      const selected = editor.document.getText(editor.selection).trim();
+      const url = selected && validateHttpUrl(selected)
+        ? selected
+        : editor.document.getText(editor.document.getWordRangeAtPosition(editor.selection.active, /https?:\/\/[^\s)"']+/));
+      if (!url || !validateHttpUrl(url)) {
+        void vscode.window.showWarningMessage("Select a valid http/https URL first.");
+        return;
+      }
+      UrlHistoryPanel.show(url, deps.urlHistory);
+    }),
     vscode.commands.registerCommand("screenshotsmcp.clearAuditDiagnostics", () => {
       deps.auditDiagnostics.clear();
       deps.timelineStore.add({
@@ -340,6 +366,7 @@ async function runQuickActions(deps: CommandDependencies): Promise<void> {
         { label: "$(device-camera) Take Screenshot", description: "Capture a URL", command: "screenshotsmcp.takeScreenshot" },
         { label: "$(search) Audit URL", description: "Run a UX review", command: "screenshotsmcp.takeScreenshot", args: [] },
         { label: "$(list-unordered) Open Timeline", description: "Recent runs and events", command: "screenshotsmcp.openTimeline" },
+        { label: "$(history) Show URL History", description: "Past screenshots/audits grouped by URL", command: "screenshotsmcp.showUrlHistory" },
         { label: "$(run-all) Open Workflow", description: "Pick a packaged skill workflow to preview", command: "screenshotsmcp.openWorkflow" },
         { label: "$(book) Create Skill", description: "Scaffold a new ~/.agents/skills/<name>", command: "screenshotsmcp.createSkill" },
         { label: "$(globe) Open Dashboard", description: getDashboardUrl(), command: "screenshotsmcp.openDashboard" },
@@ -722,6 +749,13 @@ async function runScreenshot(deps: CommandDependencies, url: string): Promise<vo
       targetUrl: url,
       runUrl: screenshotRunUrl,
     });
+    deps.urlHistory.record({
+      kind: "screenshot",
+      url,
+      imageUrl,
+      runUrl: screenshotRunUrl,
+      occurredAt: new Date().toISOString(),
+    });
     ScreenshotPanel.show(
       {
         url,
@@ -776,6 +810,13 @@ async function runAudit(deps: CommandDependencies, url: string): Promise<void> {
       targetUrl: url,
       runUrl: auditRunUrl,
     });
+    deps.urlHistory.record({
+      kind: "audit",
+      url,
+      imageUrl: screenshotUrl,
+      runUrl: auditRunUrl,
+      occurredAt: new Date().toISOString(),
+    });
     const findings = parseAuditFindings(text);
     await deps.auditDiagnostics.publish(url, findings);
     if (findings.length > 0) {
@@ -810,6 +851,35 @@ async function runAudit(deps: CommandDependencies, url: string): Promise<void> {
     showOutputChannel();
     vscode.window.showErrorMessage(`Audit failed: ${message}`);
   }
+}
+
+async function resolveUrlForHistory(deps: CommandDependencies, urlArg?: string): Promise<string | undefined> {
+  if (urlArg && validateHttpUrl(urlArg)) {
+    return urlArg;
+  }
+  const urls = deps.urlHistory.listUrls();
+  if (urls.length === 0) {
+    const manual = await vscode.window.showInputBox({
+      title: "Show URL history",
+      prompt: "Enter the URL to view history for",
+      placeHolder: "https://example.com",
+      validateInput: (value) => (validateHttpUrl(value) ? undefined : "Must be a valid http(s) URL"),
+    });
+    return manual?.trim() || undefined;
+  }
+  const picked = await vscode.window.showQuickPick(
+    urls.map((u) => ({
+      label: u.url,
+      description: `${u.count} entries`,
+      detail: `Last seen ${new Date(u.lastSeen).toLocaleString()}`,
+      url: u.url,
+    })),
+    {
+      title: "Show URL history",
+      placeHolder: "Pick a URL or type a new one",
+    },
+  );
+  return picked?.url;
 }
 
 async function readJsonFile(uri: vscode.Uri): Promise<Record<string, unknown>> {

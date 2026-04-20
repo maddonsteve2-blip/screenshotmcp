@@ -9,6 +9,7 @@ import { logLine } from "./output";
 import { ScreenshotsMcpServerProvider } from "./mcp/serverProvider";
 import { TimelineStore } from "./timeline/store";
 import { registerChatParticipant } from "./chat/participant";
+import { UrlHistoryStore } from "./history/store";
 import { AuditDiagnostics } from "./views/auditDiagnostics";
 import { SidebarProvider } from "./views/sidebar";
 import { StatusBarController } from "./views/statusBar";
@@ -24,6 +25,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const timelinePanel = new TimelinePanelController(context, timelineStore);
   const catalogCache = new CatalogCache(context);
   const auditDiagnostics = new AuditDiagnostics();
+  const urlHistory = new UrlHistoryStore(context);
   const sidebarProvider = new SidebarProvider(authStore, timelineStore, catalogCache);
   const oauthController = new OAuthController(context, authStore, provider, statusBar, timelineStore);
 
@@ -65,6 +67,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     timelineStore,
     timelinePanel,
     auditDiagnostics,
+    urlHistory,
   });
 
   registerChatParticipant(context, { timelineStore });

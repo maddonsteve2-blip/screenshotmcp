@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0
+
+- **URL history** — every screenshot and audit is recorded per-URL in global state (max 20 entries × 200 URLs)
+- **URL history WebView** — thumbnails for every past run, badges for `screenshot` vs `audit`, buttons to re-capture/re-audit the same URL, open image, or view the dashboard run
+- New commands:
+  - `ScreenshotsMCP: Show URL History` (palette + Quick Actions)
+  - `ScreenshotsMCP: Show History for Selected URL` (right-click a URL in the editor)
+- 4 new unit tests for `UrlHistoryStore` (36 total)
+
 ## 0.7.0
 
 - **Chat participant** `@screenshotsmcp` — works in Copilot Chat, Continue, or any client that supports the VS Code Chat API
