@@ -25,6 +25,8 @@ import { UrlHistoryStore } from "./history/store";
 import { UrlHistoryPanel } from "./views/historyPanel";
 import { DiffPanel } from "./views/diffPanel";
 import { parseDiffText } from "./views/diffParse";
+import { ensureProjectUrlsFile, formatEntryLabel, loadProjectUrls } from "./project/loader";
+import type { ProjectUrlEntry } from "./project/urlList";
 
 interface CommandDependencies {
   authStore: AuthStore;
@@ -289,6 +291,18 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     vscode.commands.registerCommand("screenshotsmcp.showQuickActions", async () => {
       await runQuickActions(deps);
     }),
+    vscode.commands.registerCommand("screenshotsmcp.editProjectUrls", async () => {
+      const uri = await ensureProjectUrlsFile();
+      if (!uri) return;
+      const doc = await vscode.workspace.openTextDocument(uri);
+      await vscode.window.showTextDocument(doc);
+    }),
+    vscode.commands.registerCommand("screenshotsmcp.runProjectUrls", async () => {
+      await runProjectUrlBatch(deps, "screenshot");
+    }),
+    vscode.commands.registerCommand("screenshotsmcp.auditProjectUrls", async () => {
+      await runProjectUrlBatch(deps, "audit");
+    }),
     vscode.commands.registerCommand("screenshotsmcp.diffUrls", async (urlAArg?: string, urlBArg?: string) => {
       const urls = deps.urlHistory.listUrls().map((u) => u.url);
       const urlA = urlAArg && validateHttpUrl(urlAArg) ? urlAArg : await pickOrEnterUrl("Compare A: pick or enter the 'before' URL", urls);
@@ -378,6 +392,9 @@ async function runQuickActions(deps: CommandDependencies): Promise<void> {
         { label: "$(list-unordered) Open Timeline", description: "Recent runs and events", command: "screenshotsmcp.openTimeline" },
         { label: "$(history) Show URL History", description: "Past screenshots/audits grouped by URL", command: "screenshotsmcp.showUrlHistory" },
         { label: "$(diff) Visual Diff", description: "Compare two URLs pixel-by-pixel", command: "screenshotsmcp.diffUrls" },
+        { label: "$(folder-library) Screenshot Project URLs", description: "Batch-capture .screenshotsmcp/urls.json", command: "screenshotsmcp.runProjectUrls" },
+        { label: "$(checklist) Audit Project URLs", description: "Batch-audit .screenshotsmcp/urls.json", command: "screenshotsmcp.auditProjectUrls" },
+        { label: "$(edit) Edit Project URLs", description: "Open or create .screenshotsmcp/urls.json", command: "screenshotsmcp.editProjectUrls" },
         { label: "$(run-all) Open Workflow", description: "Pick a packaged skill workflow to preview", command: "screenshotsmcp.openWorkflow" },
         { label: "$(book) Create Skill", description: "Scaffold a new ~/.agents/skills/<name>", command: "screenshotsmcp.createSkill" },
         { label: "$(globe) Open Dashboard", description: getDashboardUrl(), command: "screenshotsmcp.openDashboard" },
@@ -870,6 +887,79 @@ async function runAudit(deps: CommandDependencies, url: string): Promise<void> {
     showOutputChannel();
     vscode.window.showErrorMessage(`Audit failed: ${message}`);
   }
+}
+
+async function runProjectUrlBatch(deps: CommandDependencies, mode: "screenshot" | "audit"): Promise<void> {
+  const loaded = await loadProjectUrls();
+  if (!loaded) {
+    const create = await vscode.window.showInformationMessage(
+      "No .screenshotsmcp/urls.json found. Create one?",
+      "Create",
+      "Cancel",
+    );
+    if (create !== "Create") return;
+    await vscode.commands.executeCommand("screenshotsmcp.editProjectUrls");
+    return;
+  }
+  const { entries, errors } = loaded.parsed;
+  for (const err of errors) {
+    logLine(`[project urls] ${err}`);
+  }
+  if (entries.length === 0) {
+    void vscode.window.showWarningMessage(`No valid URLs in ${loaded.uri.fsPath}. See the output channel.`);
+    showOutputChannel();
+    return;
+  }
+  const items = entries.map((entry) => ({
+    label: formatEntryLabel(entry),
+    description: entry.tags?.join(", "),
+    picked: true,
+    entry,
+  }));
+  const picked = await vscode.window.showQuickPick(items, {
+    canPickMany: true,
+    title: `${mode === "audit" ? "Audit" : "Screenshot"} which URLs?`,
+    placeHolder: `${entries.length} URL${entries.length === 1 ? "" : "s"} from ${loaded.uri.path.split("/").slice(-2).join("/")}`,
+  });
+  if (!picked || picked.length === 0) return;
+
+  const target: ProjectUrlEntry[] = picked.map((p) => p.entry);
+  deps.timelineStore.add({
+    title: `Project ${mode} batch started`,
+    detail: `${target.length} URL${target.length === 1 ? "" : "s"}`,
+    status: "info",
+    kind: mode === "audit" ? "audit" : "screenshot",
+  });
+
+  await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: `Running ${mode} on ${target.length} URL${target.length === 1 ? "" : "s"}`, cancellable: true },
+    async (progress, token) => {
+      const step = 100 / target.length;
+      let done = 0;
+      let failed = 0;
+      for (const entry of target) {
+        if (token.isCancellationRequested) break;
+        progress.report({ increment: step, message: entry.label ?? entry.url });
+        try {
+          if (mode === "audit") {
+            await runAudit(deps, entry.url);
+          } else {
+            await runScreenshot(deps, entry.url);
+          }
+          done++;
+        } catch (err) {
+          failed++;
+          logLine(`[project urls] ${entry.url}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+      deps.timelineStore.add({
+        title: `Project ${mode} batch complete`,
+        detail: `${done} ok · ${failed} failed${token.isCancellationRequested ? " · cancelled" : ""}`,
+        status: failed > 0 ? "error" : "success",
+        kind: mode === "audit" ? "audit" : "screenshot",
+      });
+    },
+  );
 }
 
 async function pickOrEnterUrl(title: string, suggestions: string[]): Promise<string | undefined> {

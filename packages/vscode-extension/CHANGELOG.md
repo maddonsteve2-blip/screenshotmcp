@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.0
+
+- **Project URL lists** — share a list of URLs with your team via `.screenshotsmcp/urls.json`
+  - Accepts `{ "urls": [...] }` with strings or `{ url, label?, tags? }` objects, or a bare array
+  - Up to 200 entries, invalid URLs skipped with output-channel warnings
+- New commands:
+  - `ScreenshotsMCP: Edit Project URLs` — open or auto-create the file with a sample
+  - `ScreenshotsMCP: Screenshot Project URLs` — multi-select + batch capture with progress + cancel
+  - `ScreenshotsMCP: Audit Project URLs` — same flow for audits
+- Quick Actions entries added · pure `urlList.ts` parser covered by 6 new tests (48 total)
+
 ## 0.10.0
 
 - **Visual diff** — compare two URLs pixel-by-pixel via the `screenshot_diff` MCP tool
