@@ -73,6 +73,22 @@ function buildLensesFor(match: MagicMatch, range: vscode.Range): vscode.CodeLens
       }),
     ];
   }
+  if (match.kind === "baseline") {
+    return [
+      new vscode.CodeLens(range, {
+        title: "\u{1F4CC} Capture baseline",
+        command: "screenshotsmcp.captureBaseline",
+        arguments: [url],
+        tooltip: `Capture and store a visual baseline for ${url}`,
+      }),
+      new vscode.CodeLens(range, {
+        title: "\u{1F50D} Diff vs baseline",
+        command: "screenshotsmcp.diffBaseline",
+        arguments: [url],
+        tooltip: `Re-capture ${url} and diff against the stored baseline`,
+      }),
+    ];
+  }
   // screenshot
   return [
     new vscode.CodeLens(range, {

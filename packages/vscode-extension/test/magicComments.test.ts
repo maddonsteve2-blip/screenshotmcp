@@ -57,6 +57,15 @@ test("findMagicComments skips @screenshot with no URL", () => {
   assert.deepEqual(findMagicComments(text), []);
 });
 
+test("findMagicComments picks up @baseline directives", () => {
+  const text = `// @baseline https://example.com\n# @baseline https://other.example.com`;
+  const matches = findMagicComments(text);
+  assert.equal(matches.length, 2);
+  assert.equal(matches[0].kind, "baseline");
+  assert.equal(matches[0].urls[0], "https://example.com");
+  assert.equal(matches[1].kind, "baseline");
+});
+
 test("findMagicComments returns multiple matches across lines", () => {
   const text = `
     // @screenshot https://a.com

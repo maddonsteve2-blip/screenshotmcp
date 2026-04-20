@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.21.0
+
+- **`@baseline` magic comment** — drop `// @baseline https://example.com` (or `#`/`<!-- -->`) and get two CodeLens actions inline:
+  - **Capture baseline** — stores the screenshot URL at `<workspace>/.screenshotsmcp/baselines/<sha>.json` (same format as the CLI's `screenshotsmcp baseline create`)
+  - **Diff vs baseline** — re-captures and diffs against the live page; shows the visual diff panel
+- New commands: `ScreenshotsMCP: Capture Baseline for URL`, `ScreenshotsMCP: Diff URL vs Stored Baseline`
+- Snippets bundled: `ssmcp-baseline<Tab>` (or `baseline<Tab>`) expands the directive in 15 languages
+- Pure parser test added (64 total)
+
 ## 0.20.0
 
 - **Open HTML Report** command — pick any `screenshotsmcp-report.html` file (e.g. CI build artifacts) and render it inline in a WebView instead of leaving the editor

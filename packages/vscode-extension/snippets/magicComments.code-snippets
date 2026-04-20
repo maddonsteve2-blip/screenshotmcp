@@ -23,6 +23,24 @@
     "description": "Insert a ScreenshotsMCP `// @screenshot` with width/height/fullPage/format options",
     "body": ["// @screenshot ${1:https://example.com} width=${2:1280} height=${3:800} fullPage=${4|true,false|} format=${5|png,jpeg,webp|}$0"]
   },
+  "ScreenshotsMCP: @baseline directive (//)": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,go,rust,java,csharp,php,c,cpp",
+    "prefix": ["ssmcp-baseline", "baseline"],
+    "description": "Insert a ScreenshotsMCP `// @baseline` directive (capture/diff CodeLens)",
+    "body": ["// @baseline ${1:https://example.com}$0"]
+  },
+  "ScreenshotsMCP: @baseline directive (#)": {
+    "scope": "python,ruby,yaml,shellscript,dockerfile,toml,powershell",
+    "prefix": ["ssmcp-baseline", "baseline"],
+    "description": "Insert a ScreenshotsMCP `# @baseline` directive",
+    "body": ["# @baseline ${1:https://example.com}$0"]
+  },
+  "ScreenshotsMCP: @baseline directive (HTML)": {
+    "scope": "html,markdown,xml",
+    "prefix": ["ssmcp-baseline", "baseline"],
+    "description": "Insert a ScreenshotsMCP `<!-- @baseline -->` directive",
+    "body": ["<!-- @baseline ${1:https://example.com} -->$0"]
+  },
   "ScreenshotsMCP: @screenshot directive (#)": {
     "scope": "python,ruby,yaml,shellscript,dockerfile,toml,powershell",
     "prefix": ["ssmcp", "screenshot"],

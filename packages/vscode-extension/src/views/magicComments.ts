@@ -11,7 +11,7 @@
  * Options are comma-less `key=value` pairs. Unknown keys are ignored.
  */
 
-export type MagicKind = "screenshot" | "audit" | "diff";
+export type MagicKind = "screenshot" | "audit" | "diff" | "baseline";
 
 export interface MagicMatch {
   kind: MagicKind;
@@ -31,7 +31,7 @@ export interface MagicOptions {
   format?: "png" | "jpeg" | "webp";
 }
 
-const DIRECTIVE_RE = /@(screenshot|audit|diff)\b([^\n]*)/i;
+const DIRECTIVE_RE = /@(screenshot|audit|diff|baseline)\b([^\n]*)/i;
 const URL_RE = /https?:\/\/[^\s)"'`,<>]+/g;
 const OPTION_RE = /\b(width|height|fullPage|delay|format)\s*=\s*([^\s]+)/g;
 

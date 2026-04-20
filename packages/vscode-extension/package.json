@@ -2,7 +2,7 @@
   "name": "screenshotsmcp-vscode",
   "displayName": "ScreenshotsMCP",
   "description": "VS Code extension for ScreenshotsMCP: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "publisher": "ScreenshotMCP",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
@@ -219,6 +219,14 @@
       {
         "command": "screenshotsmcp.openHtmlReport",
         "title": "ScreenshotsMCP: Open HTML Report"
+      },
+      {
+        "command": "screenshotsmcp.captureBaseline",
+        "title": "ScreenshotsMCP: Capture Baseline for URL"
+      },
+      {
+        "command": "screenshotsmcp.diffBaseline",
+        "title": "ScreenshotsMCP: Diff URL vs Stored Baseline"
       }
     ],
     "menus": {

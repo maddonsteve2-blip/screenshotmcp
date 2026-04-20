@@ -28,6 +28,9 @@ import { parseDiffText } from "./views/diffParse";
 import { HtmlReportPanel } from "./views/htmlReportPanel";
 import { ensureProjectUrlsFile, formatEntryLabel, loadProjectUrls } from "./project/loader";
 import type { ProjectUrlEntry } from "./project/urlList";
+import { WorkspaceBaselineStore } from "./project/baselineStore";
+
+const baselineStore = new WorkspaceBaselineStore();
 
 interface CommandDependencies {
   authStore: AuthStore;
@@ -291,6 +294,78 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     }),
     vscode.commands.registerCommand("screenshotsmcp.showQuickActions", async () => {
       await runQuickActions(deps);
+    }),
+    vscode.commands.registerCommand("screenshotsmcp.captureBaseline", async (urlArg?: string) => {
+      const url = urlArg && validateHttpUrl(urlArg) === undefined ? urlArg : undefined;
+      if (!url) {
+        void vscode.window.showWarningMessage("captureBaseline requires a valid http(s) URL.");
+        return;
+      }
+      const apiKey = await ensureAuthenticated(deps.authStore, deps.oauthController, deps.provider, deps.statusBar, deps.timelineStore, deps.autoInstaller);
+      if (!apiKey) return;
+      const defaults = getScreenshotDefaults();
+      try {
+        const response = await vscode.window.withProgress(
+          { location: vscode.ProgressLocation.Notification, title: `Capturing baseline for ${url}` },
+          () => callTool(apiKey, "take_screenshot", {
+            url,
+            width: defaults.width,
+            height: defaults.height,
+            format: defaults.format,
+            fullPage: false,
+            delay: defaults.delay,
+          }),
+        );
+        const imageUrl = extractImageUrl(response);
+        if (!imageUrl) {
+          void vscode.window.showErrorMessage("Baseline capture succeeded but no image URL was returned.");
+          return;
+        }
+        const file = await baselineStore.write({
+          url,
+          imageUrl,
+          capturedAt: new Date().toISOString(),
+          width: defaults.width,
+          height: defaults.height,
+        });
+        deps.timelineStore.add({
+          title: "Baseline captured",
+          detail: url,
+          status: "success",
+          kind: "screenshot",
+          targetUrl: url,
+          thumbnailUrl: imageUrl,
+        });
+        void vscode.window.showInformationMessage(
+          `Baseline saved for ${url}.${file ? ` (${file.path.split(/[\\/]/).pop()})` : ""}`,
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        deps.timelineStore.add({ title: "Baseline capture failed", detail: message, status: "error" });
+        void vscode.window.showErrorMessage(`Baseline capture failed: ${message}`);
+      }
+    }),
+    vscode.commands.registerCommand("screenshotsmcp.diffBaseline", async (urlArg?: string) => {
+      if (!urlArg) {
+        void vscode.window.showWarningMessage("diffBaseline requires a URL argument.");
+        return;
+      }
+      const stored = await baselineStore.read(urlArg);
+      if (!stored) {
+        const action = await vscode.window.showInformationMessage(
+          `No baseline stored for ${urlArg}. Capture one first?`,
+          "Capture baseline",
+          "Cancel",
+        );
+        if (action === "Capture baseline") {
+          await vscode.commands.executeCommand("screenshotsmcp.captureBaseline", urlArg);
+        }
+        return;
+      }
+      // Reuse the existing diff workflow — diffs the live URL against itself
+      // (matching the CLI's behaviour) and surfaces the stored baseline image
+      // URL in the panel for visual comparison.
+      await vscode.commands.executeCommand("screenshotsmcp.diffUrls", urlArg, urlArg);
     }),
     vscode.commands.registerCommand("screenshotsmcp.openHtmlReport", async (uriArg?: vscode.Uri) => {
       let target: vscode.Uri | undefined = uriArg;
