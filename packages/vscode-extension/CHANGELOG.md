@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.12.0
+
+- **Magic-comment CodeLens** — drop directives in any supported file and get one-click actions:
+  - `// @screenshot https://example.com`
+  - `// @screenshot https://example.com width=1440 height=900 fullPage=false delay=2000 format=jpeg`
+  - `// @audit https://example.com`
+  - `// @diff https://staging.example.com https://example.com`
+- Also triggers on `#` comments (Python, YAML, Ruby) and `<!-- ... -->` (HTML, Markdown)
+- Per-directive options override the workspace defaults for that one capture
+- Supported languages: markdown, plaintext, JS/TS(X), JSON(C), YAML, HTML, Python, Go, Rust, Java, C#, Ruby, PHP
+- Pure `magicComments.ts` parser covered by 8 new tests (56 total)
+
 ## 0.11.0
 
 - **Project URL lists** — share a list of URLs with your team via `.screenshotsmcp/urls.json`

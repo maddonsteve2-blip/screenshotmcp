@@ -228,7 +228,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       }
       await runScreenshot(deps, url);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.takeScreenshotAtUrl", async (url?: string) => {
+    vscode.commands.registerCommand("screenshotsmcp.takeScreenshotAtUrl", async (url?: string, overrides?: unknown) => {
       if (!url) {
         return;
       }
@@ -237,7 +237,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
         vscode.window.showErrorMessage(validationError);
         return;
       }
-      await runScreenshot(deps, url);
+      await runScreenshot(deps, url, sanitiseScreenshotOverrides(overrides));
     }),
     vscode.commands.registerCommand("screenshotsmcp.auditUrl", async (url?: string) => {
       if (!url) {
@@ -729,12 +729,12 @@ function toDisplayName(slug: string): string {
     .join(" ");
 }
 
-async function runScreenshot(deps: CommandDependencies, url: string): Promise<void> {
+async function runScreenshot(deps: CommandDependencies, url: string, overrides?: Partial<ReturnType<typeof getScreenshotDefaults>>): Promise<void> {
   const apiKey = await ensureAuthenticated(deps.authStore, deps.oauthController, deps.provider, deps.statusBar, deps.timelineStore, deps.autoInstaller);
   if (!apiKey) {
     return;
   }
-  const defaults = getScreenshotDefaults();
+  const defaults = { ...getScreenshotDefaults(), ...(overrides ?? {}) };
   logLine(`Capturing screenshot for ${url} (${defaults.width}x${defaults.height}, ${defaults.format}${defaults.fullPage ? ", fullPage" : ""}${defaults.delay ? `, delay=${defaults.delay}ms` : ""})`);
   deps.timelineStore.add({
     title: "Screenshot started",
@@ -887,6 +887,18 @@ async function runAudit(deps: CommandDependencies, url: string): Promise<void> {
     showOutputChannel();
     vscode.window.showErrorMessage(`Audit failed: ${message}`);
   }
+}
+
+function sanitiseScreenshotOverrides(raw: unknown): Partial<ReturnType<typeof getScreenshotDefaults>> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const obj = raw as Record<string, unknown>;
+  const result: Partial<ReturnType<typeof getScreenshotDefaults>> = {};
+  if (typeof obj.width === "number" && Number.isFinite(obj.width)) result.width = Math.min(3840, Math.max(320, Math.round(obj.width)));
+  if (typeof obj.height === "number" && Number.isFinite(obj.height)) result.height = Math.min(2160, Math.max(240, Math.round(obj.height)));
+  if (typeof obj.fullPage === "boolean") result.fullPage = obj.fullPage;
+  if (typeof obj.delay === "number" && Number.isFinite(obj.delay)) result.delay = Math.min(10000, Math.max(0, Math.round(obj.delay)));
+  if (obj.format === "png" || obj.format === "jpeg" || obj.format === "webp") result.format = obj.format;
+  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 async function runProjectUrlBatch(deps: CommandDependencies, mode: "screenshot" | "audit"): Promise<void> {

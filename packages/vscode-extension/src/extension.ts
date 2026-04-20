@@ -15,6 +15,7 @@ import { SidebarProvider } from "./views/sidebar";
 import { StatusBarController } from "./views/statusBar";
 import { TimelinePanelController } from "./views/timelinePanel";
 import { UrlCodeLensProvider } from "./views/urlCodeLens";
+import { MagicCommentCodeLensProvider } from "./views/magicCommentCodeLens";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const authStore = new AuthStore(context);
@@ -100,6 +101,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
     { dispose: () => codeLensDisposable?.dispose() },
+  );
+
+  // Magic-comment CodeLens is always on — it only fires for `// @screenshot`
+  // style directives, which are opt-in by definition.
+  const magicCommentProvider = new MagicCommentCodeLensProvider();
+  context.subscriptions.push(
+    magicCommentProvider,
+    vscode.languages.registerCodeLensProvider(MagicCommentCodeLensProvider.SELECTOR, magicCommentProvider),
   );
 
   const hasApiKey = await authStore.hasApiKey();
