@@ -36,6 +36,7 @@ import {
 import {
   uxReviewCommand, seoCommand, perfCommand, a11yCommand, ogPreviewCommand, breakpointsCommand,
 } from "./commands/review.js";
+import { checkCommand } from "./commands/check.js";
 import { installCommand } from "./commands/install.js";
 import { skillsCommand } from "./commands/skills.js";
 import { setupCommand } from "./commands/setup.js";
@@ -140,6 +141,9 @@ program.addCommand(perfCommand);
 program.addCommand(a11yCommand);
 program.addCommand(ogPreviewCommand);
 program.addCommand(breakpointsCommand);
+
+// CI / pre-commit
+program.addCommand(checkCommand);
 
 // Setup
 program.addCommand(installCommand);

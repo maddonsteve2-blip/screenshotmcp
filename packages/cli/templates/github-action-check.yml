@@ -1,0 +1,29 @@
+# Drop this into `.github/workflows/screenshotsmcp.yml` to run UX/SEO audits
+# on every pull request. Fails the build if thresholds are exceeded.
+name: ScreenshotsMCP Check
+
+on:
+  pull_request:
+    paths:
+      - ".screenshotsmcp/**"
+      - ".github/workflows/screenshotsmcp.yml"
+  workflow_dispatch: {}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install ScreenshotsMCP CLI
+        run: npm install -g screenshotsmcp
+      - name: Run audit against project URL list
+        env:
+          SCREENSHOTSMCP_API_KEY: ${{ secrets.SCREENSHOTSMCP_API_KEY }}
+        run: |
+          screenshotsmcp check \
+            --file .screenshotsmcp/urls.json \
+            --max-findings 10 \
+            --max-total 50
