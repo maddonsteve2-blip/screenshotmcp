@@ -43,6 +43,8 @@ import { doctorCommand } from "./commands/doctor.js";
 import { configCommand } from "./commands/config.js";
 import { upgradeCommand } from "./commands/upgrade.js";
 import { logsCommand } from "./commands/logs.js";
+import { shareCommand } from "./commands/share.js";
+import { budgetCommand } from "./commands/budget.js";
 import { installCommand } from "./commands/install.js";
 import { skillsCommand } from "./commands/skills.js";
 import { setupCommand } from "./commands/setup.js";
@@ -156,6 +158,8 @@ program.addCommand(doctorCommand);
 program.addCommand(configCommand);
 program.addCommand(upgradeCommand);
 program.addCommand(logsCommand);
+program.addCommand(shareCommand);
+program.addCommand(budgetCommand);
 
 // Setup
 program.addCommand(installCommand);
