@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- **Workflows section** in the sidebar — auto-discovers every `~/.agents/skills/<skill>/workflows/<id>/WORKFLOW.md` from installed skills
+- New **Workflow preview** WebView — renders the workflow markdown with **Copy as prompt** (wraps it in a "follow this runbook" prompt) and **Open file** actions
+- New command: `ScreenshotsMCP: Open Workflow` (palette + Quick Actions)
+- Extracted `discoverWorkflows` into a pure module covered by unit tests
+
 ## 0.4.0
 
 - **Timeline panel redesign** — events now show inline **screenshot thumbnails**, a **filter bar** (All · 📸 Screenshots · 🔍 Audits · Runs · Info), and **per-row actions** (Rerun, Re-audit, Open URL, Open image, View run, Clear)

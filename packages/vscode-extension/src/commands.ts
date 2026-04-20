@@ -16,6 +16,8 @@ import { validateHttpUrl } from "./utils/url";
 import { AuditPanel } from "./views/auditPanel";
 import { ScreenshotPanel } from "./views/screenshotPanel";
 import { SkillPreviewPanel } from "./views/skillPreviewPanel";
+import { WorkflowPanel } from "./views/workflowPanel";
+import { discoverWorkflows } from "./skills/discoverWorkflows";
 import { StatusBarController } from "./views/statusBar";
 import { TimelinePanelController } from "./views/timelinePanel";
 
@@ -280,6 +282,40 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     vscode.commands.registerCommand("screenshotsmcp.showQuickActions", async () => {
       await runQuickActions(deps);
     }),
+    vscode.commands.registerCommand("screenshotsmcp.openWorkflow", async (pathOrUndefined?: string) => {
+      const workflows = discoverWorkflows();
+      const match = pathOrUndefined
+        ? workflows.find((w) => w.path === pathOrUndefined)
+        : undefined;
+
+      if (match) {
+        WorkflowPanel.show(match);
+        return;
+      }
+
+      if (workflows.length === 0) {
+        void vscode.window.showWarningMessage(
+          "No workflows found. Install a skill that ships WORKFLOW.md files — e.g. run `ScreenshotsMCP: Sync Core Skill`.",
+        );
+        return;
+      }
+
+      const picked = await vscode.window.showQuickPick(
+        workflows.map((w) => ({
+          label: w.title,
+          description: w.skill,
+          detail: w.relativePath,
+          workflow: w,
+        })),
+        {
+          title: "Open workflow",
+          placeHolder: "Pick a workflow to preview",
+        },
+      );
+      if (picked) {
+        WorkflowPanel.show(picked.workflow);
+      }
+    }),
   );
 }
 
@@ -295,6 +331,7 @@ async function runQuickActions(deps: CommandDependencies): Promise<void> {
         { label: "$(device-camera) Take Screenshot", description: "Capture a URL", command: "screenshotsmcp.takeScreenshot" },
         { label: "$(search) Audit URL", description: "Run a UX review", command: "screenshotsmcp.takeScreenshot", args: [] },
         { label: "$(list-unordered) Open Timeline", description: "Recent runs and events", command: "screenshotsmcp.openTimeline" },
+        { label: "$(run-all) Open Workflow", description: "Pick a packaged skill workflow to preview", command: "screenshotsmcp.openWorkflow" },
         { label: "$(book) Create Skill", description: "Scaffold a new ~/.agents/skills/<name>", command: "screenshotsmcp.createSkill" },
         { label: "$(globe) Open Dashboard", description: getDashboardUrl(), command: "screenshotsmcp.openDashboard" },
         { label: "$(output) Show Output", description: "ScreenshotsMCP log channel", command: "screenshotsmcp.showOutput" },

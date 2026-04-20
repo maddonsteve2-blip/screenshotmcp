@@ -6,14 +6,20 @@ import { AuthStore } from "../auth/store";
 import { CatalogCache } from "../catalog/cache";
 import { EXTENSION_DISPLAY_NAME } from "../constants";
 import { getInstalledSkillsForSidebar, getAvailableSkillsForSidebar } from "../skills";
+import { discoverWorkflows, type DiscoveredWorkflow } from "../skills/discoverWorkflows";
 import { TimelineStore, type TimelineEvent, type TimelineEventStatus } from "../timeline/store";
 import { getApiUrl } from "../settings";
 
-type SidebarNode = StatusNode | ActionNode | SectionNode | EventNode | InstalledSkillNode | CatalogSkillNode;
+type SidebarNode = StatusNode | ActionNode | SectionNode | EventNode | InstalledSkillNode | CatalogSkillNode | WorkflowNode;
 
 interface BaseNode {
   id: string;
-  kind: "status" | "action" | "section" | "event" | "installed-skill" | "catalog-skill";
+  kind: "status" | "action" | "section" | "event" | "installed-skill" | "catalog-skill" | "workflow";
+}
+
+interface WorkflowNode extends BaseNode {
+  kind: "workflow";
+  workflow: DiscoveredWorkflow;
 }
 
 interface StatusNode extends BaseNode {
@@ -125,7 +131,36 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
       return this.getEventNodes();
     }
 
+    if (element.kind === "section" && element.id === "section-workflows") {
+      return this.getWorkflowNodes();
+    }
+
     return [];
+  }
+
+  private getWorkflowNodes(): SidebarNode[] {
+    const workflows = discoverWorkflows();
+    if (workflows.length === 0) {
+      return [
+        {
+          id: "workflow-empty",
+          kind: "event",
+          event: {
+            id: "workflow-empty",
+            title: "No workflows found",
+            detail: "Install a skill that ships WORKFLOW.md files (e.g. ScreenshotsMCP core).",
+            status: "info",
+            kind: "info",
+            occurredAt: new Date().toISOString(),
+          },
+        },
+      ];
+    }
+    return workflows.map((w) => ({
+      id: `workflow-${w.skill}-${w.id}`,
+      kind: "workflow" as const,
+      workflow: w,
+    }));
   }
 
   async getTreeItem(element: SidebarNode): Promise<vscode.TreeItem> {
@@ -161,7 +196,9 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
         ? "library"
         : element.id === "section-available-skills"
           ? "extensions"
-          : "history";
+          : element.id === "section-workflows"
+            ? "run-all"
+            : "history";
       item.iconPath = new vscode.ThemeIcon(sectionIcon);
       return item;
     }
@@ -185,6 +222,20 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
         command: "screenshotsmcp.previewSkill",
         title: `Preview ${element.displayName}`,
         arguments: [element.skillName],
+      };
+      return item;
+    }
+
+    if (element.kind === "workflow") {
+      const item = new vscode.TreeItem(element.workflow.title, vscode.TreeItemCollapsibleState.None);
+      item.id = element.id;
+      item.description = element.workflow.skill;
+      item.tooltip = `${element.workflow.title}\n${element.workflow.path}`;
+      item.iconPath = new vscode.ThemeIcon("run-all");
+      item.command = {
+        command: "screenshotsmcp.openWorkflow",
+        title: `Open ${element.workflow.title}`,
+        arguments: [element.workflow.path],
       };
       return item;
     }
@@ -254,6 +305,12 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
         id: "section-available-skills",
         kind: "section",
         label: "Available Skills",
+      },
+      {
+        id: "section-workflows",
+        kind: "section",
+        label: "Workflows",
+        description: "Packaged runbooks from installed skills",
       },
       {
         id: "action-browse-skills",
