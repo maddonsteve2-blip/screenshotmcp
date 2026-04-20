@@ -34,6 +34,20 @@ export class AuditDiagnostics implements vscode.Disposable {
     return total;
   }
 
+  /**
+   * Returns one entry per Uri currently holding diagnostics. Synthetic Uris
+   * use the `screenshotsmcp-audit:` scheme; their URL is the encoded path.
+   */
+  listGroupedByUri(): Array<{ uri: vscode.Uri; url?: string; diagnostics: readonly vscode.Diagnostic[] }> {
+    const out: Array<{ uri: vscode.Uri; url?: string; diagnostics: readonly vscode.Diagnostic[] }> = [];
+    this.collection.forEach((uri, diagnostics) => {
+      if (diagnostics.length === 0) return;
+      const url = uri.scheme === "screenshotsmcp-audit" ? safeDecode(uri.path) : undefined;
+      out.push({ uri, url, diagnostics });
+    });
+    return out.sort((a, b) => b.diagnostics.length - a.diagnostics.length);
+  }
+
   private emitChange(): void {
     this.changeEmitter.fire(this.totalCount());
   }
@@ -90,6 +104,14 @@ export class AuditDiagnostics implements vscode.Disposable {
 interface UrlLocation {
   uri: vscode.Uri;
   range: vscode.Range;
+}
+
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 function findFirstOccurrence(url: string): UrlLocation | undefined {

@@ -1,10 +1,11 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
 import { callTool, extractText } from "../api.js";
 import { loadBudgetFromCwd } from "../budget.js";
+import { renderGithubComment, renderShortSummary, type UrlReport } from "../report.js";
 
 /**
  * CI-friendly check command. Reads a URL list (default
@@ -21,6 +22,8 @@ export const checkCommand = new Command("check")
   .option("--max-total <n>", "Fail if total findings across all URLs exceed this", "50")
   .option("--json", "Emit the per-URL report as JSON on stdout")
   .option("--only <categories>", "Comma-separated categories to count (accessibility,performance,seo)")
+  .option("--report <format>", "Emit a formatted report: 'github-comment' (markdown), 'short' (one-line), 'json'")
+  .option("--report-out <path>", "Write the formatted report to this file (default: stdout)")
   .action(async (opts: Record<string, string | boolean>) => {
     const file = typeof opts.file === "string" ? opts.file : ".screenshotsmcp/urls.json";
     const { budget, path: budgetPath, errors: budgetErrors } = await loadBudgetFromCwd();
@@ -95,8 +98,36 @@ export const checkCommand = new Command("check")
     const anyFailed = report.some((r) => !r.ok);
     const exceedsTotal = totalFindings > maxTotal;
 
+    const pass = !anyFailed && !exceedsTotal;
+    const reportFmt = typeof opts.report === "string" ? opts.report.toLowerCase() : "";
+    const reportOut = typeof opts.reportOut === "string" ? opts.reportOut : undefined;
+    if (reportFmt) {
+      const ctx = { totalFindings, maxPer, maxTotal, pass, budgetSource: budgetPath };
+      const rendered = reportFmt === "github-comment"
+        ? renderGithubComment(report as UrlReport[], ctx)
+        : reportFmt === "short"
+          ? renderShortSummary(report as UrlReport[], ctx)
+          : reportFmt === "json"
+            ? JSON.stringify({ ...ctx, report }, null, 2)
+            : "";
+      if (!rendered) {
+        console.error(chalk.red(`Unknown --report format: ${opts.report as string}`));
+        process.exit(2);
+        return;
+      }
+      if (reportOut) {
+        await mkdir(dirname(resolve(process.cwd(), reportOut)), { recursive: true });
+        await writeFile(resolve(process.cwd(), reportOut), rendered, "utf8");
+        if (!jsonOnly) {
+          console.log(chalk.dim(`(report written to ${reportOut})`));
+        }
+      } else {
+        console.log(rendered);
+      }
+    }
+
     if (jsonOnly) {
-      console.log(JSON.stringify({ totalFindings, maxTotal, maxPer, pass: !anyFailed && !exceedsTotal, report }, null, 2));
+      console.log(JSON.stringify({ totalFindings, maxTotal, maxPer, pass, report }, null, 2));
     } else {
       console.log();
       console.log(chalk.bold(`Total findings: ${totalFindings} / max ${maxTotal}`));

@@ -20,10 +20,21 @@ jobs:
       - name: Install ScreenshotsMCP CLI
         run: npm install -g screenshotsmcp
       - name: Run audit against project URL list
+        id: audit
         env:
           SCREENSHOTSMCP_API_KEY: ${{ secrets.SCREENSHOTSMCP_API_KEY }}
         run: |
+          set +e
           screenshotsmcp check \
             --file .screenshotsmcp/urls.json \
-            --max-findings 10 \
-            --max-total 50
+            --report github-comment \
+            --report-out screenshotsmcp-report.md
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+      - name: Post PR comment
+        if: github.event_name == 'pull_request' && always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: screenshotsmcp-report.md
+      - name: Fail job if audit failed
+        if: steps.audit.outputs.exit_code != '0'
+        run: exit 1

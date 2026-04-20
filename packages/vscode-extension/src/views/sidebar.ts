@@ -6,16 +6,26 @@ import { AuthStore } from "../auth/store";
 import { CatalogCache } from "../catalog/cache";
 import { EXTENSION_DISPLAY_NAME } from "../constants";
 import { UrlHistoryStore } from "../history/store";
+import { AuditDiagnostics } from "./auditDiagnostics";
 import { getInstalledSkillsForSidebar, getAvailableSkillsForSidebar } from "../skills";
 import { discoverWorkflows, type DiscoveredWorkflow } from "../skills/discoverWorkflows";
 import { TimelineStore, type TimelineEvent, type TimelineEventStatus } from "../timeline/store";
 import { getApiUrl } from "../settings";
 
-type SidebarNode = StatusNode | ActionNode | SectionNode | EventNode | InstalledSkillNode | CatalogSkillNode | WorkflowNode | RecentUrlNode;
+type SidebarNode =
+  | StatusNode
+  | ActionNode
+  | SectionNode
+  | EventNode
+  | InstalledSkillNode
+  | CatalogSkillNode
+  | WorkflowNode
+  | RecentUrlNode
+  | FindingGroupNode;
 
 interface BaseNode {
   id: string;
-  kind: "status" | "action" | "section" | "event" | "installed-skill" | "catalog-skill" | "workflow" | "recent-url";
+  kind: "status" | "action" | "section" | "event" | "installed-skill" | "catalog-skill" | "workflow" | "recent-url" | "finding-group";
 }
 
 interface RecentUrlNode extends BaseNode {
@@ -23,6 +33,14 @@ interface RecentUrlNode extends BaseNode {
   url: string;
   count: number;
   lastSeen: string;
+}
+
+interface FindingGroupNode extends BaseNode {
+  kind: "finding-group";
+  uri: vscode.Uri;
+  url?: string;
+  count: number;
+  worstSeverity: vscode.DiagnosticSeverity;
 }
 
 interface WorkflowNode extends BaseNode {
@@ -78,16 +96,22 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
 
   private readonly catalogUnsubscribe: vscode.Disposable | undefined;
 
+  private readonly findingsUnsubscribe: vscode.Disposable | undefined;
+
   constructor(
     private readonly authStore: AuthStore,
     private readonly timelineStore: TimelineStore,
     private readonly catalogCache: CatalogCache,
     private readonly urlHistory: UrlHistoryStore,
+    private readonly auditDiagnostics: AuditDiagnostics,
   ) {
     this.unsubscribe = this.timelineStore.subscribe(() => {
       this.refresh();
     });
     this.catalogUnsubscribe = this.catalogCache.onChange(() => {
+      this.refresh();
+    });
+    this.findingsUnsubscribe = this.auditDiagnostics.onDidChangeCount(() => {
       this.refresh();
     });
     this.watchSkillsDir();
@@ -100,6 +124,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
   dispose(): void {
     this.unsubscribe?.();
     this.catalogUnsubscribe?.dispose();
+    this.findingsUnsubscribe?.dispose();
     this.skillsWatcher?.close();
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);
@@ -148,7 +173,42 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
       return this.getRecentUrlNodes();
     }
 
+    if (element.kind === "section" && element.id === "section-findings") {
+      return this.getFindingNodes();
+    }
+
     return [];
+  }
+
+  private getFindingNodes(): SidebarNode[] {
+    const groups = this.auditDiagnostics.listGroupedByUri();
+    if (groups.length === 0) {
+      return [
+        {
+          id: "finding-empty",
+          kind: "event",
+          event: {
+            id: "finding-empty",
+            title: "No audit findings",
+            detail: "Run an audit (\u2318\u21E7P \u2192 ScreenshotsMCP: Audit URL) to populate this list.",
+            status: "info",
+            kind: "info",
+            occurredAt: new Date().toISOString(),
+          },
+        },
+      ];
+    }
+    return groups.slice(0, 20).map((g, i) => ({
+      id: `finding-group-${i}-${g.uri.toString()}`,
+      kind: "finding-group" as const,
+      uri: g.uri,
+      url: g.url,
+      count: g.diagnostics.length,
+      worstSeverity: g.diagnostics.reduce<vscode.DiagnosticSeverity>(
+        (acc, d) => (d.severity < acc ? d.severity : acc),
+        vscode.DiagnosticSeverity.Hint,
+      ),
+    }));
   }
 
   private getRecentUrlNodes(): SidebarNode[] {
@@ -240,7 +300,9 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
             ? "run-all"
             : element.id === "section-recent-urls"
               ? "globe"
-              : "history";
+              : element.id === "section-findings"
+                ? "warning"
+                : "history";
       item.iconPath = new vscode.ThemeIcon(sectionIcon);
       return item;
     }
@@ -279,6 +341,25 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
         title: `Open ${element.workflow.title}`,
         arguments: [element.workflow.path],
       };
+      return item;
+    }
+
+    if (element.kind === "finding-group") {
+      const label = element.url ? shortenUrl(element.url) : element.uri.path.split(/[\\/]/).pop() ?? element.uri.toString();
+      const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
+      item.id = element.id;
+      item.description = `${element.count} finding${element.count === 1 ? "" : "s"}`;
+      item.tooltip = `${element.url ?? element.uri.toString()}\n${element.count} audit finding${element.count === 1 ? "" : "s"}\nClick to open the source.`;
+      item.iconPath = new vscode.ThemeIcon(
+        element.worstSeverity === vscode.DiagnosticSeverity.Error
+          ? "error"
+          : element.worstSeverity === vscode.DiagnosticSeverity.Warning
+            ? "warning"
+            : "info",
+      );
+      item.command = element.uri.scheme === "screenshotsmcp-audit"
+        ? { command: "workbench.actions.view.problems", title: "Open Problems" }
+        : { command: "vscode.open", title: "Open file", arguments: [element.uri] };
       return item;
     }
 
@@ -374,6 +455,12 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
         kind: "section",
         label: "Recent URLs",
         description: `${Math.min(this.urlHistory.listUrls().length, 10)} most-recent`,
+      },
+      {
+        id: "section-findings",
+        kind: "section",
+        label: "Audit Findings",
+        description: this.auditDiagnostics.totalCount() > 0 ? `${this.auditDiagnostics.totalCount()} active` : "no findings",
       },
       {
         id: "action-browse-skills",

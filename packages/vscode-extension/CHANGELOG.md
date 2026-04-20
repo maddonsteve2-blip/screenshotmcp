@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.18.0
+
+- **Audit Findings sidebar section** — new section in the activity-bar `ScreenshotsMCP` view groups current audit diagnostics by URL/file
+  - Up to 20 most-noisy URLs, sorted by finding count
+  - Worst-severity icon per row (`error` / `warning` / `info`)
+  - Click a file-backed row → opens the file at the URL; click a synthetic-URL row → opens the Problems tab
+  - Auto-refreshes when audits publish or clear
+
 ## 0.17.0
 
 - **Auth health check** — once per day on activation, the extension validates the stored API key against the API
