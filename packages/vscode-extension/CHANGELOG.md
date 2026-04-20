@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0
+
+- **Chat participant** `@screenshotsmcp` — works in Copilot Chat, Continue, or any client that supports the VS Code Chat API
+  - `/screenshot <url>` — capture a page with one click
+  - `/audit <url>` — run a UX/SEO/accessibility review
+  - `/workflow` — list packaged runbooks from installed skills
+  - `/timeline` — recent activity with a button to open the full panel
+  - Plain URLs also trigger screenshot + audit suggestions
+- Extracted pure `chat/parse.ts` intent detector covered by 7 new tests (32 total)
+
 ## 0.6.0
 
 - **Audit diagnostics** — UX review findings now surface as entries in the **Problems** tab, anchored to the audited URL's location when it appears in an open document (markdown, JS/TS, JSON, YAML, HTML). Fall back to a synthetic URI otherwise

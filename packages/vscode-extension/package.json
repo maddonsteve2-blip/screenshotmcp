@@ -2,7 +2,7 @@
   "name": "screenshotsmcp-vscode",
   "displayName": "ScreenshotsMCP",
   "description": "VS Code extension for ScreenshotsMCP: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "ScreenshotMCP",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
@@ -78,6 +78,33 @@
         }
       ]
     },
+    "chatParticipants": [
+      {
+        "id": "screenshotsmcp.chat",
+        "fullName": "ScreenshotsMCP",
+        "name": "screenshotsmcp",
+        "description": "Capture screenshots, run UX audits, and open packaged workflows.",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "screenshot",
+            "description": "Capture a screenshot of a URL (usage: /screenshot https://example.com)"
+          },
+          {
+            "name": "audit",
+            "description": "Run a UX/SEO/accessibility audit (usage: /audit https://example.com)"
+          },
+          {
+            "name": "workflow",
+            "description": "Open a packaged workflow from an installed skill"
+          },
+          {
+            "name": "timeline",
+            "description": "Show recent screenshots and audits"
+          }
+        ]
+      }
+    ],
     "commands": [
       {
         "command": "screenshotsmcp.signIn",

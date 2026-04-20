@@ -8,6 +8,7 @@ import { EditorMcpAutoInstaller } from "./mcp/autoInstaller";
 import { logLine } from "./output";
 import { ScreenshotsMcpServerProvider } from "./mcp/serverProvider";
 import { TimelineStore } from "./timeline/store";
+import { registerChatParticipant } from "./chat/participant";
 import { AuditDiagnostics } from "./views/auditDiagnostics";
 import { SidebarProvider } from "./views/sidebar";
 import { StatusBarController } from "./views/statusBar";
@@ -65,6 +66,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     timelinePanel,
     auditDiagnostics,
   });
+
+  registerChatParticipant(context, { timelineStore });
 
   // Kick off a background refresh of the hosted skill catalog. Errors fall back
   // to the in-code SKILL_CATALOG silently; the sidebar always has something to
