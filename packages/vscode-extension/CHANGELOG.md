@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.17.0
+
+- **Auth health check** — once per day on activation, the extension validates the stored API key against the API
+  - If validation fails, surfaces a one-time `Sign In` prompt and demotes the status bar to "Sign In" mode
+  - Network failures are silent (no spam on flaky networks)
+  - Throttled to one ping per calendar day per workspace install
+
 ## 0.16.0
 
 - **Shared audit budget** (`.screenshotsmcp/budget.json`) — single source of truth for both the extension's status-bar threshold and the CLI's `screenshotsmcp check` thresholds:

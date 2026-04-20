@@ -18,6 +18,7 @@ import { UrlCodeLensProvider } from "./views/urlCodeLens";
 import { MagicCommentCodeLensProvider } from "./views/magicCommentCodeLens";
 import { MagicCommentCompletionProvider } from "./views/magicCommentCompletion";
 import { loadAuditBudget } from "./project/budgetLoader";
+import { validateApiKey } from "./mcp/client";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const authStore = new AuthStore(context);
@@ -171,6 +172,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const apiKey = await authStore.getApiKey();
     if (apiKey) {
       await configureEditorAfterSignIn(apiKey, autoInstaller, timelineStore);
+      void pingApiKey(context, apiKey, statusBar, timelineStore);
     }
   } else {
     void oauthController.signIn({ automatic: true }).then(async (apiKey) => {
@@ -178,6 +180,50 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         await configureEditorAfterSignIn(apiKey, autoInstaller, timelineStore);
       }
     });
+  }
+}
+
+/**
+ * Validates the stored API key against the API on activation. If it fails,
+ * surfaces a one-time prompt offering to sign in again. Skipped on the same
+ * day to avoid noise on every window reload.
+ */
+async function pingApiKey(
+  context: vscode.ExtensionContext,
+  apiKey: string,
+  statusBar: StatusBarController,
+  timelineStore: TimelineStore,
+): Promise<void> {
+  const PING_KEY = "screenshotsmcp.lastPingDay";
+  const today = new Date().toISOString().slice(0, 10);
+  if (context.globalState.get<string>(PING_KEY) === today) {
+    return;
+  }
+  try {
+    const result = await validateApiKey(apiKey);
+    await context.globalState.update(PING_KEY, today);
+    if (result.ok) {
+      logLine("API key validated successfully on activation.");
+      return;
+    }
+    logLine(`API key validation failed: ${result.message}`);
+    statusBar.update(false);
+    timelineStore.add({
+      title: "API key validation failed",
+      detail: result.message,
+      status: "error",
+    });
+    const action = await vscode.window.showWarningMessage(
+      `ScreenshotsMCP couldn't validate your API key (${result.message}). Sign in again?`,
+      "Sign In",
+      "Dismiss",
+    );
+    if (action === "Sign In") {
+      await vscode.commands.executeCommand("screenshotsmcp.signIn");
+    }
+  } catch (err) {
+    // Network failures are non-fatal — don't bug the user about them.
+    logLine(`API key ping skipped: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
