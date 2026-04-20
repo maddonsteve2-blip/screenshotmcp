@@ -398,6 +398,42 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       const doc = await vscode.workspace.openTextDocument(uri);
       await vscode.window.showTextDocument(doc);
     }),
+    vscode.commands.registerCommand("screenshotsmcp.showStoredBaselines", async () => {
+      const baselines = await baselineStore.list();
+      if (baselines.length === 0) {
+        const action = await vscode.window.showInformationMessage(
+          "No baselines stored yet. Capture one with a `// @baseline <url>` directive.",
+          "Open Docs",
+        );
+        if (action === "Open Docs") {
+          await vscode.env.openExternal(vscode.Uri.parse("https://www.screenshotmcp.com/docs"));
+        }
+        return;
+      }
+      const picked = await vscode.window.showQuickPick(
+        baselines.map((b) => ({
+          label: b.url,
+          description: `$(calendar) ${b.capturedAt?.slice(0, 10) ?? "unknown"}`,
+          detail: b.imageUrl,
+          baseline: b,
+        })),
+        { title: `${baselines.length} stored baseline${baselines.length === 1 ? "" : "s"}` },
+      );
+      if (!picked) return;
+      const action = await vscode.window.showQuickPick(
+        [
+          { label: "$(diff) Diff against live page", id: "diff" },
+          { label: "$(globe) Open baseline image in browser", id: "open" },
+        ],
+        { title: `Baseline for ${picked.baseline.url}` },
+      );
+      if (!action) return;
+      if (action.id === "diff") {
+        await vscode.commands.executeCommand("screenshotsmcp.diffBaseline", picked.baseline.url);
+      } else {
+        await vscode.env.openExternal(vscode.Uri.parse(picked.baseline.imageUrl));
+      }
+    }),
     vscode.commands.registerCommand("screenshotsmcp.editProjectBudget", async () => {
       const uri = await ensureProjectBudgetFile();
       if (!uri) return;
@@ -519,6 +555,7 @@ async function runQuickActions(deps: CommandDependencies): Promise<void> {
         { label: "$(edit) Edit Project URLs", description: "Open or create .screenshotsmcp/urls.json", command: "screenshotsmcp.editProjectUrls" },
         { label: "$(gear) Edit Project Budget", description: "Open or create .screenshotsmcp/budget.json", command: "screenshotsmcp.editProjectBudget" },
         { label: "$(eye) Watch Project URLs", description: "Run `screenshotsmcp watch` in a terminal", command: "screenshotsmcp.watchProjectUrls" },
+        { label: "$(pin) Show Stored Baselines", description: "Pick a baseline to diff or open", command: "screenshotsmcp.showStoredBaselines" },
         { label: "$(file-code) Open HTML Report", description: "Render a screenshotsmcp-report.html file inline", command: "screenshotsmcp.openHtmlReport" },
         { label: "$(run-all) Open Workflow", description: "Pick a packaged skill workflow to preview", command: "screenshotsmcp.openWorkflow" },
         { label: "$(book) Create Skill", description: "Scaffold a new ~/.agents/skills/<name>", command: "screenshotsmcp.createSkill" },

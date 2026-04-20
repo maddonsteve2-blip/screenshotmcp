@@ -44,6 +44,38 @@ export class WorkspaceBaselineStore {
     return undefined;
   }
 
+  /**
+   * Enumerate every stored baseline by scanning `.screenshotsmcp/baselines/`.
+   * Invalid files are silently skipped so a partial write doesn't break the
+   * sidebar.
+   */
+  async list(): Promise<StoredBaseline[]> {
+    const folder = this.folder();
+    if (!folder) return [];
+    const dir = vscode.Uri.joinPath(folder, BASELINE_DIR);
+    let entries: [string, vscode.FileType][];
+    try {
+      entries = await vscode.workspace.fs.readDirectory(dir);
+    } catch {
+      return [];
+    }
+    const out: StoredBaseline[] = [];
+    for (const [name, type] of entries) {
+      if (type !== vscode.FileType.File || !name.endsWith(".json")) continue;
+      try {
+        const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(dir, name));
+        const parsed = JSON.parse(Buffer.from(bytes).toString("utf8")) as StoredBaseline;
+        if (parsed && typeof parsed.url === "string" && typeof parsed.imageUrl === "string") {
+          out.push(parsed);
+        }
+      } catch {
+        continue;
+      }
+    }
+    out.sort((a, b) => (b.capturedAt ?? "").localeCompare(a.capturedAt ?? ""));
+    return out;
+  }
+
   async write(baseline: StoredBaseline): Promise<vscode.Uri | undefined> {
     const file = this.fileFor(baseline.url);
     if (!file) return undefined;

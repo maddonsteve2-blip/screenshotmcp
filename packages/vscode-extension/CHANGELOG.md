@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.23.0
+
+- **Show Stored Baselines** command — browses every `.screenshotsmcp/baselines/*.json` file with a QuickPick (most-recent first) and offers "Diff against live page" or "Open baseline image" for each one
+- Also surfaced in Quick Actions
+
 ## 0.22.0
 
 - **Edit Project Budget** command — opens (or scaffolds) `.screenshotsmcp/budget.json` with sensible defaults

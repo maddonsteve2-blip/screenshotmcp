@@ -85,6 +85,8 @@ export const initCommand = new Command("init")
       }
     }
 
+    await patchGitignore(cwd, created, skipped);
+
     console.log("");
     if (created.length > 0) {
       console.log(chalk.green.bold(`Created ${created.length} file${created.length === 1 ? "" : "s"}:`));
@@ -107,6 +109,39 @@ function printNextSteps(includeWorkflow: boolean): void {
     console.log(`  4. Add ${chalk.cyan("SCREENSHOTSMCP_API_KEY")} to your GitHub repo secrets`);
     console.log(`  5. Push the workflow \u2014 PRs will get audited automatically`);
   }
+}
+
+const GITIGNORE_MARKER = "# screenshotsmcp";
+const GITIGNORE_BLOCK = `${GITIGNORE_MARKER}
+screenshotsmcp-report.html
+screenshotsmcp-report.md
+shots/
+*.diff.png
+`;
+
+/**
+ * Appends a small ignore block to `.gitignore` for transient artifacts
+ * (`check --report html` output, batch `save` folder, diff overlays).
+ * No-op when the marker is already present so re-running `init` is safe.
+ */
+async function patchGitignore(cwd: string, created: string[], skipped: string[]): Promise<void> {
+  const path = join(cwd, ".gitignore");
+  let existing = "";
+  try {
+    existing = await readFile(path, "utf8");
+  } catch {
+    // file absent — create it with just our block
+    await writeFile(path, GITIGNORE_BLOCK, "utf8");
+    created.push(path);
+    return;
+  }
+  if (existing.includes(GITIGNORE_MARKER)) {
+    skipped.push(path);
+    return;
+  }
+  const separator = existing.endsWith("\n") ? "\n" : "\n\n";
+  await writeFile(path, existing + separator + GITIGNORE_BLOCK, "utf8");
+  created.push(path);
 }
 
 function relative(cwd: string, file: string): string {

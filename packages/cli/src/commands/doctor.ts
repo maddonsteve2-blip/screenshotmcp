@@ -20,8 +20,17 @@ interface CheckResult {
 export const doctorCommand = new Command("doctor")
   .description("Diagnose common ScreenshotsMCP setup problems (API key, network, project files, GH workflow)")
   .option("--json", "Emit machine-readable results on stdout")
+  .option("--fix", "Auto-scaffold missing project files by running `init` before diagnosing")
   .action(async (opts: Record<string, boolean>) => {
     const jsonOnly = Boolean(opts.json);
+    if (opts.fix && !jsonOnly) {
+      // Run `init` in-process by invoking the same module so we scaffold the
+      // same files the user would get from `screenshotsmcp init`.
+      console.log(chalk.bold("\u{1F527} Running init to scaffold missing files\u2026\n"));
+      const { initCommand } = await import("./init.js");
+      await initCommand.parseAsync(["node", "init"]);
+      console.log("");
+    }
     const cwd = process.cwd();
     const results: CheckResult[] = [];
 
