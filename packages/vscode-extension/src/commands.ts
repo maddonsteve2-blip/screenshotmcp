@@ -20,6 +20,7 @@ import { WorkflowPanel } from "./views/workflowPanel";
 import { discoverWorkflows } from "./skills/discoverWorkflows";
 import { StatusBarController } from "./views/statusBar";
 import { TimelinePanelController } from "./views/timelinePanel";
+import { AuditDiagnostics, parseAuditFindings } from "./views/auditDiagnostics";
 
 interface CommandDependencies {
   authStore: AuthStore;
@@ -30,6 +31,7 @@ interface CommandDependencies {
   statusBar: StatusBarController;
   timelineStore: TimelineStore;
   timelinePanel: TimelinePanelController;
+  auditDiagnostics: AuditDiagnostics;
 }
 
 export function registerCommands(context: vscode.ExtensionContext, deps: CommandDependencies): void {
@@ -281,6 +283,13 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     }),
     vscode.commands.registerCommand("screenshotsmcp.showQuickActions", async () => {
       await runQuickActions(deps);
+    }),
+    vscode.commands.registerCommand("screenshotsmcp.clearAuditDiagnostics", () => {
+      deps.auditDiagnostics.clear();
+      deps.timelineStore.add({
+        title: "Audit diagnostics cleared",
+        status: "info",
+      });
     }),
     vscode.commands.registerCommand("screenshotsmcp.openWorkflow", async (pathOrUndefined?: string) => {
       const workflows = discoverWorkflows();
@@ -767,6 +776,17 @@ async function runAudit(deps: CommandDependencies, url: string): Promise<void> {
       targetUrl: url,
       runUrl: auditRunUrl,
     });
+    const findings = parseAuditFindings(text);
+    await deps.auditDiagnostics.publish(url, findings);
+    if (findings.length > 0) {
+      deps.timelineStore.add({
+        title: `Audit diagnostics published: ${findings.length}`,
+        detail: `${findings.length} finding(s) added to the Problems tab for ${url}`,
+        status: "info",
+        kind: "audit",
+        targetUrl: url,
+      });
+    }
     AuditPanel.show(
       {
         url,

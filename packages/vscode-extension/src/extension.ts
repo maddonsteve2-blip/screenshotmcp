@@ -8,6 +8,7 @@ import { EditorMcpAutoInstaller } from "./mcp/autoInstaller";
 import { logLine } from "./output";
 import { ScreenshotsMcpServerProvider } from "./mcp/serverProvider";
 import { TimelineStore } from "./timeline/store";
+import { AuditDiagnostics } from "./views/auditDiagnostics";
 import { SidebarProvider } from "./views/sidebar";
 import { StatusBarController } from "./views/statusBar";
 import { TimelinePanelController } from "./views/timelinePanel";
@@ -21,6 +22,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const timelineStore = new TimelineStore();
   const timelinePanel = new TimelinePanelController(context, timelineStore);
   const catalogCache = new CatalogCache(context);
+  const auditDiagnostics = new AuditDiagnostics();
   const sidebarProvider = new SidebarProvider(authStore, timelineStore, catalogCache);
   const oauthController = new OAuthController(context, authStore, provider, statusBar, timelineStore);
 
@@ -35,6 +37,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(timelinePanel);
   context.subscriptions.push(sidebarProvider);
   context.subscriptions.push(oauthController);
+  context.subscriptions.push(auditDiagnostics);
   context.subscriptions.push(vscode.window.createTreeView(SIDEBAR_VIEW_ID, {
     treeDataProvider: sidebarProvider,
     showCollapseAll: false,
@@ -60,6 +63,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     statusBar,
     timelineStore,
     timelinePanel,
+    auditDiagnostics,
   });
 
   // Kick off a background refresh of the hosted skill catalog. Errors fall back

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+
+- **Audit diagnostics** — UX review findings now surface as entries in the **Problems** tab, anchored to the audited URL's location when it appears in an open document (markdown, JS/TS, JSON, YAML, HTML). Fall back to a synthetic URI otherwise
+- Accessibility & performance findings map to Warnings; SEO / content / navigation / mobile map to Information; purely positive bullets are filtered out
+- New command: `ScreenshotsMCP: Clear Audit Diagnostics`
+- Pure `auditParse.ts` module extracted for unit testing — 5 new tests covering parsing, severity, positive-bullet filtering
+
 ## 0.5.0
 
 - **Workflows section** in the sidebar — auto-discovers every `~/.agents/skills/<skill>/workflows/<id>/WORKFLOW.md` from installed skills
