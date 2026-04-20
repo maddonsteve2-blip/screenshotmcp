@@ -20,6 +20,12 @@ test("inferCommand detects workflow and timeline", () => {
   assert.equal(inferCommand("recent activity"), "timeline");
 });
 
+test("inferCommand detects diff intent", () => {
+  assert.equal(inferCommand("diff https://a.com https://b.com"), "diff");
+  assert.equal(inferCommand("compare staging and prod"), "diff");
+  assert.equal(inferCommand("run a visual diff"), "diff");
+});
+
 test("inferCommand returns undefined for unrelated prompts", () => {
   assert.equal(inferCommand("hello world"), undefined);
   assert.equal(inferCommand(""), undefined);

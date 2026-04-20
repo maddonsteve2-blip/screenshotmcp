@@ -23,6 +23,8 @@ import { TimelinePanelController } from "./views/timelinePanel";
 import { AuditDiagnostics, parseAuditFindings } from "./views/auditDiagnostics";
 import { UrlHistoryStore } from "./history/store";
 import { UrlHistoryPanel } from "./views/historyPanel";
+import { DiffPanel } from "./views/diffPanel";
+import { parseDiffText } from "./views/diffParse";
 
 interface CommandDependencies {
   authStore: AuthStore;
@@ -287,6 +289,14 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     vscode.commands.registerCommand("screenshotsmcp.showQuickActions", async () => {
       await runQuickActions(deps);
     }),
+    vscode.commands.registerCommand("screenshotsmcp.diffUrls", async (urlAArg?: string, urlBArg?: string) => {
+      const urls = deps.urlHistory.listUrls().map((u) => u.url);
+      const urlA = urlAArg && validateHttpUrl(urlAArg) ? urlAArg : await pickOrEnterUrl("Compare A: pick or enter the 'before' URL", urls);
+      if (!urlA) return;
+      const urlB = urlBArg && validateHttpUrl(urlBArg) ? urlBArg : await pickOrEnterUrl(`Compare B: pick or enter the 'after' URL (A = ${urlA})`, urls.filter((u) => u !== urlA));
+      if (!urlB) return;
+      await runDiff(deps, urlA, urlB);
+    }),
     vscode.commands.registerCommand("screenshotsmcp.showUrlHistory", async (urlArg?: string) => {
       const resolved = await resolveUrlForHistory(deps, urlArg);
       if (!resolved) {
@@ -367,6 +377,7 @@ async function runQuickActions(deps: CommandDependencies): Promise<void> {
         { label: "$(search) Audit URL", description: "Run a UX review", command: "screenshotsmcp.takeScreenshot", args: [] },
         { label: "$(list-unordered) Open Timeline", description: "Recent runs and events", command: "screenshotsmcp.openTimeline" },
         { label: "$(history) Show URL History", description: "Past screenshots/audits grouped by URL", command: "screenshotsmcp.showUrlHistory" },
+        { label: "$(diff) Visual Diff", description: "Compare two URLs pixel-by-pixel", command: "screenshotsmcp.diffUrls" },
         { label: "$(run-all) Open Workflow", description: "Pick a packaged skill workflow to preview", command: "screenshotsmcp.openWorkflow" },
         { label: "$(book) Create Skill", description: "Scaffold a new ~/.agents/skills/<name>", command: "screenshotsmcp.createSkill" },
         { label: "$(globe) Open Dashboard", description: getDashboardUrl(), command: "screenshotsmcp.openDashboard" },
@@ -858,6 +869,80 @@ async function runAudit(deps: CommandDependencies, url: string): Promise<void> {
     });
     showOutputChannel();
     vscode.window.showErrorMessage(`Audit failed: ${message}`);
+  }
+}
+
+async function pickOrEnterUrl(title: string, suggestions: string[]): Promise<string | undefined> {
+  const MANUAL = "$(edit) Enter a URL manually\u2026";
+  if (suggestions.length > 0) {
+    const picked = await vscode.window.showQuickPick([MANUAL, ...suggestions], { title, placeHolder: "Pick from history or enter a URL" });
+    if (!picked) return undefined;
+    if (picked !== MANUAL) return picked;
+  }
+  const manual = await vscode.window.showInputBox({
+    title,
+    placeHolder: "https://example.com",
+    validateInput: (value) => (validateHttpUrl(value) ? undefined : "Must be a valid http(s) URL"),
+  });
+  return manual?.trim() || undefined;
+}
+
+async function runDiff(deps: CommandDependencies, urlA: string, urlB: string): Promise<void> {
+  const apiKey = await ensureAuthenticated(deps.authStore, deps.oauthController, deps.provider, deps.statusBar, deps.timelineStore, deps.autoInstaller);
+  if (!apiKey) return;
+
+  const defaults = getScreenshotDefaults();
+  logLine(`Running visual diff: ${urlA} vs ${urlB}`);
+  deps.timelineStore.add({
+    title: "Visual diff started",
+    detail: `${urlA} vs ${urlB}`,
+    status: "info",
+    kind: "info",
+  });
+  try {
+    const response = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: `Diffing ${urlA} vs ${urlB}` },
+      () => callTool(apiKey, "screenshot_diff", {
+        urlA,
+        urlB,
+        width: defaults.width,
+        height: defaults.height,
+        threshold: 0.1,
+      }),
+    );
+    const text = extractText(response);
+    const parsed = parseDiffText(text);
+    if (!parsed.diffUrl && !parsed.beforeUrl) {
+      deps.timelineStore.add({ title: "Visual diff failed", detail: text, status: "error" });
+      showOutputChannel();
+      void vscode.window.showWarningMessage("Diff did not return image URLs. See the output channel.");
+      return;
+    }
+    const summary = [
+      parsed.matchScore !== undefined ? `${parsed.matchScore.toFixed(1)}% match` : undefined,
+      parsed.changedPercent !== undefined ? `${parsed.changedPercent.toFixed(2)}% changed` : undefined,
+    ]
+      .filter(Boolean)
+      .join(" \u00b7 ");
+    deps.timelineStore.add({
+      title: "Visual diff complete",
+      detail: summary || `${urlA} vs ${urlB}`,
+      status: "success",
+      kind: "info",
+      thumbnailUrl: parsed.diffUrl,
+    });
+    DiffPanel.show(
+      { urlA, urlB, result: parsed, capturedAt: new Date().toLocaleString() },
+      () => {
+        void runDiff(deps, urlA, urlB);
+      },
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logLine(`Diff failed: ${message}`);
+    deps.timelineStore.add({ title: "Visual diff failed", detail: message, status: "error" });
+    showOutputChannel();
+    void vscode.window.showErrorMessage(`Diff failed: ${message}`);
   }
 }
 

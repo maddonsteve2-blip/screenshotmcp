@@ -48,6 +48,8 @@ export function registerChatParticipant(
           return handleWorkflow(stream);
         case "timeline":
           return handleTimeline(stream, deps);
+        case "diff":
+          return handleDiff(stream, request.prompt);
         default:
           return handleHelp(stream, request.prompt);
       }
@@ -139,6 +141,29 @@ function handleTimeline(stream: vscode.ChatResponseStream, deps: ChatParticipant
     stream.markdown("\n");
   }
   stream.button({ command: "screenshotsmcp.openTimeline", title: "Open full timeline" });
+}
+
+function handleDiff(stream: vscode.ChatResponseStream, prompt: string): void {
+  const urls = prompt.match(/https?:\/\/[^\s)"']+/gi) ?? [];
+  if (urls.length >= 2) {
+    const urlA = urls[0]!;
+    const urlB = urls[1]!;
+    if (!validateHttpUrl(urlA) || !validateHttpUrl(urlB)) {
+      stream.markdown("Both URLs must be valid http/https.");
+      return;
+    }
+    stream.markdown(`Ready to compare **${urlA}** vs **${urlB}**.\n\n`);
+    stream.button({
+      command: "screenshotsmcp.diffUrls",
+      title: "Run visual diff",
+      arguments: [urlA, urlB],
+    });
+    return;
+  }
+  stream.markdown(
+    "I need **two** URLs to run a diff. Try: `@screenshotsmcp /diff https://staging.example.com https://example.com`.\n\n",
+  );
+  stream.button({ command: "screenshotsmcp.diffUrls", title: "Pick two URLs\u2026" });
 }
 
 function handleHelp(stream: vscode.ChatResponseStream, prompt: string): void {

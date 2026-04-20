@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.10.0
+
+- **Visual diff** — compare two URLs pixel-by-pixel via the `screenshot_diff` MCP tool
+- New **Diff panel** WebView with:
+  - Before / After / Diff overlay side-by-side
+  - Verdict chip (Nearly identical · Small differences · Noticeable · Significant)
+  - Match score, changed pixel %, resolution
+  - Re-run button · open diff image in browser
+- New command `ScreenshotsMCP: Visual Diff (compare two URLs)` — picks from URL history or accepts manual entry
+- New chat slash command `/diff https://a https://b` on `@screenshotsmcp`
+- Quick Actions entry added · pure `diffParse.ts` covered by 5 new tests (42 total)
+
 ## 0.9.0
 
 - **Per-workspace screenshot defaults** — five new settings honoured by every extension-triggered capture:

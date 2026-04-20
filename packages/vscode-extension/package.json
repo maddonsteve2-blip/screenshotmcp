@@ -2,7 +2,7 @@
   "name": "screenshotsmcp-vscode",
   "displayName": "ScreenshotsMCP",
   "description": "VS Code extension for ScreenshotsMCP: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "publisher": "ScreenshotMCP",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
@@ -101,6 +101,10 @@
           {
             "name": "timeline",
             "description": "Show recent screenshots and audits"
+          },
+          {
+            "name": "diff",
+            "description": "Visual diff between two URLs (usage: /diff https://a https://b)"
           }
         ]
       }
@@ -193,6 +197,10 @@
       {
         "command": "screenshotsmcp.showHistoryForSelectedUrl",
         "title": "ScreenshotsMCP: Show History for Selected URL"
+      },
+      {
+        "command": "screenshotsmcp.diffUrls",
+        "title": "ScreenshotsMCP: Visual Diff (compare two URLs)"
       }
     ],
     "menus": {
