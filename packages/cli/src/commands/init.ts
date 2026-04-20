@@ -24,10 +24,17 @@ export const initCommand = new Command("init")
   .option("--force", "Overwrite existing files instead of skipping")
   .option("--no-agents", "Skip writing agents.json at the project root")
   .option("--no-github-action", "Skip writing .github/workflows/screenshotsmcp.yml")
+  .option("--next-steps-only", "Only print the post-setup checklist; don't scaffold any files")
   .action(async (opts: Record<string, boolean>) => {
     const force = Boolean(opts.force);
     const writeAgents = opts.agents !== false;
     const writeWorkflow = opts.githubAction !== false;
+    const stepsOnly = Boolean(opts.nextStepsOnly);
+
+    if (stepsOnly) {
+      printNextSteps(writeWorkflow);
+      return;
+    }
 
     const cwd = process.cwd();
     const created: string[] = [];
@@ -87,16 +94,20 @@ export const initCommand = new Command("init")
       console.log(chalk.yellow.bold(`\nSkipped ${skipped.length} existing file${skipped.length === 1 ? "" : "s"} (use --force to overwrite):`));
       for (const f of skipped) console.log(`  ${chalk.yellow("\u2207")} ${chalk.dim(relative(cwd, f))}`);
     }
-    console.log("");
-    console.log(chalk.bold("Next steps:"));
-    console.log(`  1. Edit ${chalk.cyan(".screenshotsmcp/urls.json")} with your real URLs`);
-    console.log(`  2. Tweak ${chalk.cyan(".screenshotsmcp/budget.json")} thresholds if needed`);
-    console.log(`  3. Run ${chalk.cyan("screenshotsmcp check")} locally to confirm`);
-    if (writeWorkflow) {
-      console.log(`  4. Add ${chalk.cyan("SCREENSHOTSMCP_API_KEY")} to your GitHub repo secrets`);
-      console.log(`  5. Push the workflow \u2014 PRs will get audited automatically`);
-    }
+    printNextSteps(writeWorkflow);
   });
+
+function printNextSteps(includeWorkflow: boolean): void {
+  console.log("");
+  console.log(chalk.bold("Next steps:"));
+  console.log(`  1. Edit ${chalk.cyan(".screenshotsmcp/urls.json")} with your real URLs`);
+  console.log(`  2. Tweak ${chalk.cyan(".screenshotsmcp/budget.json")} thresholds if needed`);
+  console.log(`  3. Run ${chalk.cyan("screenshotsmcp check")} locally to confirm`);
+  if (includeWorkflow) {
+    console.log(`  4. Add ${chalk.cyan("SCREENSHOTSMCP_API_KEY")} to your GitHub repo secrets`);
+    console.log(`  5. Push the workflow \u2014 PRs will get audited automatically`);
+  }
+}
 
 function relative(cwd: string, file: string): string {
   return file.startsWith(cwd) ? file.slice(cwd.length).replace(/^[\\/]+/, "") : file;

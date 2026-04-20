@@ -44,6 +44,7 @@ import { configCommand } from "./commands/config.js";
 import { upgradeCommand } from "./commands/upgrade.js";
 import { logsCommand } from "./commands/logs.js";
 import { shareCommand } from "./commands/share.js";
+import { saveCommand } from "./commands/save.js";
 import { budgetCommand } from "./commands/budget.js";
 import { watchCommand } from "./commands/watch.js";
 import { installCommand } from "./commands/install.js";
@@ -160,6 +161,7 @@ program.addCommand(configCommand);
 program.addCommand(upgradeCommand);
 program.addCommand(logsCommand);
 program.addCommand(shareCommand);
+program.addCommand(saveCommand);
 program.addCommand(budgetCommand);
 program.addCommand(watchCommand);
 
