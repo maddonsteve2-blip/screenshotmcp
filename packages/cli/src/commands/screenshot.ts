@@ -181,6 +181,7 @@ export const diffCommand = new Command("diff")
   .option("-w, --width <px>", "Viewport width", "1280")
   .option("-h, --height <px>", "Viewport height", "800")
   .option("-t, --threshold <n>", "Color difference threshold (0=exact, 1=lenient)", "0.1")
+  .option("--to <path>", "Download the diff overlay image to a local file")
   .action(async (urlA: string, urlB: string, opts: Record<string, string>) => {
     const spinner = ora(`Comparing ${urlA} vs ${urlB}...`).start();
     try {
@@ -193,14 +194,55 @@ export const diffCommand = new Command("diff")
       });
       spinner.stop();
       const text = extractText(res);
-      console.log(chalk.green("✓ Diff complete"));
+      console.log(chalk.green("\u2713 Diff complete"));
       console.log(text);
+      if (opts.to) {
+        const diffUrl = extractDiffOverlayUrl(text);
+        if (!diffUrl) {
+          console.error(chalk.yellow("\u26A0 Could not find a diff overlay URL to download."));
+          return;
+        }
+        const { mkdir, writeFile } = await import("node:fs/promises");
+        const { dirname, resolve } = await import("node:path");
+        const out = resolve(process.cwd(), opts.to);
+        const downloadSpinner = ora(`Downloading ${diffUrl}\u2026`).start();
+        const fetched = await fetch(diffUrl);
+        if (!fetched.ok) {
+          downloadSpinner.fail(`Download failed: HTTP ${fetched.status}`);
+          process.exit(1);
+          return;
+        }
+        const buffer = Buffer.from(await fetched.arrayBuffer());
+        await mkdir(dirname(out), { recursive: true });
+        await writeFile(out, buffer);
+        downloadSpinner.succeed(`Saved diff overlay`);
+        console.log(`  ${chalk.cyan(out)}  (${formatBytes(buffer.length)})`);
+      }
     } catch (err) {
       spinner.fail(chalk.red("Diff failed"));
       console.error(chalk.red(err instanceof Error ? err.message : String(err)));
       process.exit(1);
     }
   });
+
+/**
+ * Extracts the CDN URL of the diff overlay image from `screenshot_diff`
+ * response text. The tool returns three image URLs (before, after, diff);
+ * we prefer the one whose path mentions "diff", falling back to the last
+ * image URL seen.
+ */
+function extractDiffOverlayUrl(text: string): string | undefined {
+  const urls = text.match(/https?:\/\/[^\s)"'`<>]+\.(?:png|jpe?g|webp)(?:\?[^\s)"'`<>]*)?/gi) ?? [];
+  if (urls.length === 0) return undefined;
+  const diffUrl = urls.find((u) => /diff/i.test(u));
+  return diffUrl ?? urls[urls.length - 1];
+}
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+}
 
 export const pdfCommand = new Command("pdf")
   .description("Export a webpage as PDF")

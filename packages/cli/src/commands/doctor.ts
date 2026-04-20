@@ -117,16 +117,40 @@ export const doctorCommand = new Command("doctor")
       });
     }
 
-    // 8. Version available
+    // 8. Version available + latest on npm
+    let localVersion: string | undefined;
     try {
       const pkgPath = resolve(new URL(import.meta.url).pathname, "..", "..", "package.json").replace(/^\\/, "");
       const text = await readFile(pkgPath, "utf8");
       const pkg = JSON.parse(text) as { version?: string };
-      if (pkg.version) {
-        results.push({ name: "CLI version", status: "ok", detail: `screenshotsmcp@${pkg.version}` });
-      }
+      localVersion = pkg.version;
     } catch {
       // not fatal
+    }
+    if (localVersion) {
+      try {
+        const res = await fetch("https://registry.npmjs.org/screenshotsmcp", {
+          headers: { Accept: "application/vnd.npm.install-v1+json" },
+        });
+        if (res.ok) {
+          const json = (await res.json()) as { "dist-tags"?: { latest?: string } };
+          const latest = json["dist-tags"]?.latest;
+          if (latest && compareSemver(localVersion, latest) < 0) {
+            results.push({
+              name: "CLI version",
+              status: "warn",
+              detail: `screenshotsmcp@${localVersion} (latest: ${latest})`,
+              hint: "Run `screenshotsmcp upgrade` to update.",
+            });
+          } else {
+            results.push({ name: "CLI version", status: "ok", detail: `screenshotsmcp@${localVersion} (up to date)` });
+          }
+        } else {
+          results.push({ name: "CLI version", status: "ok", detail: `screenshotsmcp@${localVersion}` });
+        }
+      } catch {
+        results.push({ name: "CLI version", status: "ok", detail: `screenshotsmcp@${localVersion}` });
+      }
     }
 
     if (jsonOnly) {
@@ -192,4 +216,14 @@ async function checkJsonFile(path: string, label: string, optional = false): Pro
 
 function relativise(path: string): string {
   return path.startsWith(process.cwd()) ? path.slice(process.cwd().length).replace(/^[\\/]+/, "") : path;
+}
+
+function compareSemver(a: string, b: string): number {
+  const pa = a.split(".").map((n) => Number.parseInt(n, 10) || 0);
+  const pb = b.split(".").map((n) => Number.parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
 }
