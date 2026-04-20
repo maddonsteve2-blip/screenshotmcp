@@ -25,6 +25,7 @@ import { UrlHistoryStore } from "./history/store";
 import { UrlHistoryPanel } from "./views/historyPanel";
 import { DiffPanel } from "./views/diffPanel";
 import { parseDiffText } from "./views/diffParse";
+import { HtmlReportPanel } from "./views/htmlReportPanel";
 import { ensureProjectUrlsFile, formatEntryLabel, loadProjectUrls } from "./project/loader";
 import type { ProjectUrlEntry } from "./project/urlList";
 
@@ -291,6 +292,30 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
     vscode.commands.registerCommand("screenshotsmcp.showQuickActions", async () => {
       await runQuickActions(deps);
     }),
+    vscode.commands.registerCommand("screenshotsmcp.openHtmlReport", async (uriArg?: vscode.Uri) => {
+      let target: vscode.Uri | undefined = uriArg;
+      if (!target) {
+        const folder = vscode.workspace.workspaceFolders?.[0];
+        const defaultUri = folder ? vscode.Uri.joinPath(folder.uri, "screenshotsmcp-report.html") : undefined;
+        const picked = await vscode.window.showOpenDialog({
+          title: "Open ScreenshotsMCP HTML report",
+          openLabel: "Open report",
+          canSelectMany: false,
+          filters: { "HTML reports": ["html", "htm"] },
+          defaultUri,
+        });
+        if (!picked || picked.length === 0) return;
+        target = picked[0];
+      }
+      try {
+        const bytes = await vscode.workspace.fs.readFile(target);
+        const html = Buffer.from(bytes).toString("utf8");
+        HtmlReportPanel.show(target, html);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        void vscode.window.showErrorMessage(`Could not open report: ${message}`);
+      }
+    }),
     vscode.commands.registerCommand("screenshotsmcp.editProjectUrls", async () => {
       const uri = await ensureProjectUrlsFile();
       if (!uri) return;
@@ -395,6 +420,7 @@ async function runQuickActions(deps: CommandDependencies): Promise<void> {
         { label: "$(folder-library) Screenshot Project URLs", description: "Batch-capture .screenshotsmcp/urls.json", command: "screenshotsmcp.runProjectUrls" },
         { label: "$(checklist) Audit Project URLs", description: "Batch-audit .screenshotsmcp/urls.json", command: "screenshotsmcp.auditProjectUrls" },
         { label: "$(edit) Edit Project URLs", description: "Open or create .screenshotsmcp/urls.json", command: "screenshotsmcp.editProjectUrls" },
+        { label: "$(file-code) Open HTML Report", description: "Render a screenshotsmcp-report.html file inline", command: "screenshotsmcp.openHtmlReport" },
         { label: "$(run-all) Open Workflow", description: "Pick a packaged skill workflow to preview", command: "screenshotsmcp.openWorkflow" },
         { label: "$(book) Create Skill", description: "Scaffold a new ~/.agents/skills/<name>", command: "screenshotsmcp.createSkill" },
         { label: "$(globe) Open Dashboard", description: getDashboardUrl(), command: "screenshotsmcp.openDashboard" },

@@ -66,6 +66,16 @@ export const initCommand = new Command("init")
           skipped,
         );
       }
+      const baselinesTpl = await readTemplate("github-action-baselines.yml");
+      if (baselinesTpl) {
+        await ensureFile(
+          join(cwd, ".github/workflows/screenshotsmcp-baselines.yml"),
+          baselinesTpl,
+          force,
+          created,
+          skipped,
+        );
+      }
     }
 
     console.log("");

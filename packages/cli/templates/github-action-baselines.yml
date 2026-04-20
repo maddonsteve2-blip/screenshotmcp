@@ -1,0 +1,51 @@
+# Visual-regression workflow. Drop into `.github/workflows/screenshotsmcp-baselines.yml`
+# to re-diff every baseline stored under .screenshotsmcp/baselines/ on a schedule
+# and on PRs that touch project URLs.
+#
+# Fails the job (and PR check) when any URL changes more than `--max-changed`
+# percent of pixels vs its stored baseline.
+name: ScreenshotsMCP Visual Regression
+
+on:
+  pull_request:
+    paths:
+      - ".screenshotsmcp/baselines/**"
+      - ".screenshotsmcp/urls.json"
+      - ".github/workflows/screenshotsmcp-baselines.yml"
+  schedule:
+    # Daily at 09:00 UTC — change to your release cadence.
+    - cron: "0 9 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install ScreenshotsMCP CLI
+        run: npm install -g screenshotsmcp
+      - name: Verify baselines
+        id: verify
+        env:
+          SCREENSHOTSMCP_API_KEY: ${{ secrets.SCREENSHOTSMCP_API_KEY }}
+        run: |
+          set +e
+          screenshotsmcp baseline verify \
+            --threshold 0.1 \
+            --max-changed 5 \
+            --json > baselines-report.json
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baselines-report
+          path: baselines-report.json
+      - name: Fail job on drift
+        if: steps.verify.outputs.exit_code != '0'
+        run: |
+          echo "Baseline drift detected — see artifact 'baselines-report' for details."
+          exit 1

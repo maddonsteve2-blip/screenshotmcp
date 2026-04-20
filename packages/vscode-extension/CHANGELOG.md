@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.20.0
+
+- **Open HTML Report** command — pick any `screenshotsmcp-report.html` file (e.g. CI build artifacts) and render it inline in a WebView instead of leaving the editor
+- Defaults the file picker to `screenshotsmcp-report.html` at the workspace root
+- Added to Quick Actions
+
 ## 0.19.0
 
 - **JSON Schema validation** for `.screenshotsmcp/urls.json` and `.screenshotsmcp/budget.json`:
