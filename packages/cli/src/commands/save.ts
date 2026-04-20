@@ -23,6 +23,7 @@ export const saveCommand = new Command("save")
   .option("--fullPage", "Capture the entire scrollable page", false)
   .option("--delay <ms>", "Wait N ms after page load before capturing", "0")
   .option("--concurrency <n>", "Max parallel captures in batch mode", "3")
+  .option("--manifest <path>", "Batch mode: write a JSON manifest of every saved file to this path")
   .action(async (url: string | undefined, opts: Record<string, string | boolean>) => {
     const width = Number.parseInt(String(opts.width ?? "1280"), 10) || 1280;
     const height = Number.parseInt(String(opts.height ?? "800"), 10) || 800;
@@ -38,6 +39,7 @@ export const saveCommand = new Command("save")
         fullPage,
         delay,
         concurrency: Math.max(1, Number.parseInt(String(opts.concurrency ?? "3"), 10) || 3),
+        manifestPath: typeof opts.manifest === "string" && opts.manifest ? opts.manifest : undefined,
       });
       return;
     }
@@ -110,6 +112,16 @@ interface BatchOpts {
   fullPage: boolean;
   delay: number;
   concurrency: number;
+  manifestPath?: string;
+}
+
+interface ManifestEntry {
+  url: string;
+  file: string;
+  relativeFile: string;
+  bytes: number;
+  sourceUrl: string;
+  capturedAt: string;
 }
 
 async function runBatch(opts: BatchOpts): Promise<void> {
@@ -123,6 +135,7 @@ async function runBatch(opts: BatchOpts): Promise<void> {
   await mkdir(outDir, { recursive: true });
   console.log(chalk.bold(`Capturing ${entries.length} URL${entries.length === 1 ? "" : "s"} to ${chalk.cyan(outDir)}\n`));
 
+  const manifest: ManifestEntry[] = [];
   let index = 0;
   let successes = 0;
   let failures = 0;
@@ -157,6 +170,14 @@ async function runBatch(opts: BatchOpts): Promise<void> {
         await writeFile(out, buffer);
         console.log(`  ${chalk.green("\u2713")} ${entry.url} \u2192 ${chalk.dim(filename)} (${formatBytes(buffer.length)})`);
         successes++;
+        manifest.push({
+          url: entry.url,
+          file: out,
+          relativeFile: join(opts.outDir, filename).replace(/\\/g, "/"),
+          bytes: buffer.length,
+          sourceUrl: imageUrl,
+          capturedAt: new Date().toISOString(),
+        });
       } catch (err) {
         console.log(`  ${chalk.red("\u2717")} ${entry.url} \u2014 ${err instanceof Error ? err.message : String(err)}`);
         failures++;
@@ -165,6 +186,19 @@ async function runBatch(opts: BatchOpts): Promise<void> {
   };
   const workers = Array.from({ length: Math.min(opts.concurrency, entries.length) }, () => run());
   await Promise.all(workers);
+
+  if (opts.manifestPath) {
+    const manifestOut = resolve(process.cwd(), opts.manifestPath);
+    await mkdir(dirname(manifestOut), { recursive: true });
+    const payload = {
+      version: 1,
+      generatedAt: new Date().toISOString(),
+      outDir: opts.outDir,
+      captures: manifest.sort((a, b) => a.url.localeCompare(b.url)),
+    };
+    await writeFile(manifestOut, JSON.stringify(payload, null, 2) + "\n", "utf8");
+    console.log(`\nManifest written \u2192 ${chalk.cyan(manifestOut)}`);
+  }
 
   console.log("");
   if (failures === 0) {

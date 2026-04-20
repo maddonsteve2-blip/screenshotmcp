@@ -346,6 +346,25 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
         void vscode.window.showErrorMessage(`Baseline capture failed: ${message}`);
       }
     }),
+    vscode.commands.registerCommand("screenshotsmcp.promoteBaseline", async (urlArg?: string) => {
+      const url = urlArg && validateHttpUrl(urlArg) === undefined ? urlArg : undefined;
+      if (!url) {
+        void vscode.window.showWarningMessage("promoteBaseline requires a valid http(s) URL.");
+        return;
+      }
+      const existing = await baselineStore.read(url);
+      if (existing) {
+        const answer = await vscode.window.showWarningMessage(
+          `Replace stored baseline for ${url}?`,
+          { modal: true, detail: `Current capture: ${existing.capturedAt}\nThis will overwrite the existing image URL and cannot be undone.` },
+          "Promote",
+        );
+        if (answer !== "Promote") return;
+      }
+      // Re-use captureBaseline, which already handles auth, capture, and
+      // timeline. The store.write call inside overwrites whatever exists.
+      await vscode.commands.executeCommand("screenshotsmcp.captureBaseline", url);
+    }),
     vscode.commands.registerCommand("screenshotsmcp.diffBaseline", async (urlArg?: string) => {
       if (!urlArg) {
         void vscode.window.showWarningMessage("diffBaseline requires a URL argument.");

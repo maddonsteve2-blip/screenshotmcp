@@ -88,6 +88,53 @@ baselineCommand
   });
 
 baselineCommand
+  .command("promote <url>")
+  .description("Capture a fresh screenshot and overwrite the existing baseline for <url> (use after accepting an intentional visual change)")
+  .option("-w, --width <px>", "Viewport width", "1280")
+  .option("-h, --height <px>", "Viewport height", "800")
+  .option("--force", "Allow promoting when no baseline exists yet (equivalent to `create`)", false)
+  .action(async (url: string, opts: Record<string, string | boolean>) => {
+    const existing = await readBaseline(url);
+    if (!existing && !opts.force) {
+      console.error(chalk.red(`No baseline exists for ${url}.`));
+      console.error(chalk.dim(`Use \`screenshotsmcp baseline create ${url}\` for the first capture, or pass --force here.`));
+      process.exit(1);
+      return;
+    }
+    const width = Number.parseInt(String(opts.width ?? "1280"), 10) || existing?.width || 1280;
+    const height = Number.parseInt(String(opts.height ?? "800"), 10) || existing?.height || 800;
+    const spinner = ora(`Promoting baseline for ${url}\u2026`).start();
+    try {
+      const res = await callTool("take_screenshot", { url, width, height, fullPage: false });
+      const imageUrl = extractImageUrl(res);
+      if (!imageUrl) {
+        spinner.fail("Capture succeeded but no image URL returned.");
+        console.error(extractText(res));
+        process.exit(1);
+        return;
+      }
+      const baseline: Baseline = {
+        url,
+        imageUrl,
+        capturedAt: new Date().toISOString(),
+        width,
+        height,
+      };
+      const written = await writeBaseline(baseline);
+      spinner.succeed(existing ? `Baseline replaced \u2192 ${relative(process.cwd(), written)}` : `Baseline created \u2192 ${relative(process.cwd(), written)}`);
+      if (existing) {
+        console.log(`  ${chalk.dim("was:")}   ${chalk.dim(existing.imageUrl)}`);
+        console.log(`  ${chalk.green("now:")}   ${chalk.cyan(imageUrl)}`);
+      } else {
+        console.log(`  Image: ${chalk.cyan(imageUrl)}`);
+      }
+    } catch (err) {
+      spinner.fail(err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
+  });
+
+baselineCommand
   .command("list")
   .description("List every stored baseline in this workspace")
   .action(async () => {

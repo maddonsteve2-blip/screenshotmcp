@@ -87,6 +87,12 @@ function buildLensesFor(match: MagicMatch, range: vscode.Range): vscode.CodeLens
         arguments: [url],
         tooltip: `Re-capture ${url} and diff against the stored baseline`,
       }),
+      new vscode.CodeLens(range, {
+        title: "\u{2B06} Promote baseline",
+        command: "screenshotsmcp.promoteBaseline",
+        arguments: [url],
+        tooltip: `Overwrite the stored baseline for ${url} with a fresh capture`,
+      }),
     ];
   }
   // screenshot

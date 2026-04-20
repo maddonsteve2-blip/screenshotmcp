@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.24.0
+
+- **Promote Baseline** command — overwrites the stored baseline for a URL with a fresh capture after a modal confirm, so you can accept intentional visual changes without hand-editing JSON
+- New **Promote baseline** CodeLens on `// @baseline <url>` directives (alongside Capture and Diff)
+
 ## 0.23.0
 
 - **Show Stored Baselines** command — browses every `.screenshotsmcp/baselines/*.json` file with a QuickPick (most-recent first) and offers "Diff against live page" or "Open baseline image" for each one
