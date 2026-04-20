@@ -17,6 +17,7 @@ import { TimelinePanelController } from "./views/timelinePanel";
 import { UrlCodeLensProvider } from "./views/urlCodeLens";
 import { MagicCommentCodeLensProvider } from "./views/magicCommentCodeLens";
 import { MagicCommentCompletionProvider } from "./views/magicCommentCompletion";
+import { loadAuditBudget } from "./project/budgetLoader";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const authStore = new AuthStore(context);
@@ -124,10 +125,36 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const hasApiKey = await authStore.hasApiKey();
   statusBar.update(hasApiKey);
+
+  const refreshBudget = async () => {
+    const { budget, errors, fromDefaults } = await loadAuditBudget();
+    statusBar.setWarnThreshold(budget.warnThreshold);
+    if (!fromDefaults) {
+      logLine(`Loaded audit budget: maxPerUrl=${budget.maxFindingsPerUrl} maxTotal=${budget.maxTotalFindings} warnAt=${budget.warnThreshold}`);
+    }
+    for (const err of errors) {
+      logLine(`[budget] ${err}`);
+    }
+  };
+  await refreshBudget();
   statusBar.setFindingsCount(auditDiagnostics.totalCount());
   context.subscriptions.push(
     auditDiagnostics.onDidChangeCount((count) => statusBar.setFindingsCount(count)),
   );
+
+  // Re-read the budget when the file changes.
+  const folder = vscode.workspace.workspaceFolders?.[0];
+  if (folder) {
+    const watcher = vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(folder, "{.screenshotsmcp/budget.json,.screenshotsmcp.budget.json}"),
+    );
+    context.subscriptions.push(
+      watcher,
+      watcher.onDidChange(() => void refreshBudget()),
+      watcher.onDidCreate(() => void refreshBudget()),
+      watcher.onDidDelete(() => void refreshBudget()),
+    );
+  }
 
   // First-run: open the "Get started" walkthrough once per machine.
   const welcomedKey = "screenshotsmcp.welcomedAt";

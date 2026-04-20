@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.16.0
+
+- **Shared audit budget** (`.screenshotsmcp/budget.json`) — single source of truth for both the extension's status-bar threshold and the CLI's `screenshotsmcp check` thresholds:
+  ```json
+  { "maxFindingsPerUrl": 10, "maxTotalFindings": 50, "warnThreshold": 20 }
+  ```
+- The status-bar findings badge now turns red at the configured `warnThreshold` (default 20) instead of a hard-coded 20
+- Tooltip surfaces the active threshold (e.g. `…audit findings (12, budget threshold 20)`)
+- File watcher reloads the budget on save without restarting the extension
+- Pure `budget.ts` parser covered by 7 new tests (63 total)
+
 ## 0.15.0
 
 - **Snippet bundle** — type `ssmcp<Tab>` (or `screenshot`, `audit`, `diff`) in any supported comment to expand a ScreenshotsMCP magic-comment scaffold. Works in JS/TS(X), Python, Ruby, Go, Rust, Java, C#, PHP, HTML, Markdown, YAML, shellscript

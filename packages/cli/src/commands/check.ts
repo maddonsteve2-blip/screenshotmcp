@@ -4,6 +4,7 @@ import ora from "ora";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { callTool, extractText } from "../api.js";
+import { loadBudgetFromCwd } from "../budget.js";
 
 /**
  * CI-friendly check command. Reads a URL list (default
@@ -22,12 +23,29 @@ export const checkCommand = new Command("check")
   .option("--only <categories>", "Comma-separated categories to count (accessibility,performance,seo)")
   .action(async (opts: Record<string, string | boolean>) => {
     const file = typeof opts.file === "string" ? opts.file : ".screenshotsmcp/urls.json";
-    const maxPer = Number.parseInt(String(opts.maxFindings ?? "10"), 10) || 10;
-    const maxTotal = Number.parseInt(String(opts.maxTotal ?? "50"), 10) || 50;
-    const only = typeof opts.only === "string"
-      ? new Set(opts.only.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean))
-      : undefined;
+    const { budget, path: budgetPath, errors: budgetErrors } = await loadBudgetFromCwd();
+
+    // CLI flags override the budget file when explicitly passed.
+    const maxPer = opts.maxFindings !== undefined && opts.maxFindings !== "10"
+      ? Number.parseInt(String(opts.maxFindings), 10) || budget.maxFindingsPerUrl
+      : budget.maxFindingsPerUrl;
+    const maxTotal = opts.maxTotal !== undefined && opts.maxTotal !== "50"
+      ? Number.parseInt(String(opts.maxTotal), 10) || budget.maxTotalFindings
+      : budget.maxTotalFindings;
+    const flagOnly = typeof opts.only === "string" && opts.only.trim().length > 0;
+    const only = flagOnly
+      ? new Set((opts.only as string).split(",").map((s) => s.trim().toLowerCase()).filter(Boolean))
+      : budget.categories
+        ? new Set(budget.categories)
+        : undefined;
     const jsonOnly = Boolean(opts.json);
+
+    if (!jsonOnly && budgetPath) {
+      console.log(chalk.dim(`(using budget from ${budgetPath})`));
+    }
+    for (const err of budgetErrors) {
+      if (!jsonOnly) console.error(chalk.yellow(`[budget] ${err}`));
+    }
 
     const urls = await loadUrls(file);
     if (urls.length === 0) {

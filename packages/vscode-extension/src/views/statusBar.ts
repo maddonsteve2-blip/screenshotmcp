@@ -32,21 +32,39 @@ export class StatusBarController {
     this.item.show();
   }
 
+  private warnThreshold = 20;
+
+  /** Update the threshold above which the badge turns red. */
+  setWarnThreshold(threshold: number): void {
+    this.warnThreshold = Math.max(1, Math.round(threshold));
+    // Re-render with current count if there is one in DOM.
+    if (this.findingsItem.text) {
+      this.refreshBackground();
+    }
+  }
+
+  private currentTotal = 0;
+
   /**
    * Reflect the current audit-finding count. Hidden when total is zero or
    * the user is signed out (no findings will ever appear).
    */
   setFindingsCount(total: number): void {
+    this.currentTotal = total;
     if (!this.isAuthenticated || total <= 0) {
       this.findingsItem.hide();
       return;
     }
     this.findingsItem.text = `$(warning) ${total} audit finding${total === 1 ? "" : "s"}`;
-    this.findingsItem.tooltip = `ScreenshotsMCP audit findings in the Problems tab (${total}). Click to open.`;
-    this.findingsItem.backgroundColor = total >= 20
+    this.findingsItem.tooltip = `ScreenshotsMCP audit findings in the Problems tab (${total}, budget threshold ${this.warnThreshold}). Click to open.`;
+    this.refreshBackground();
+    this.findingsItem.show();
+  }
+
+  private refreshBackground(): void {
+    this.findingsItem.backgroundColor = this.currentTotal >= this.warnThreshold
       ? new vscode.ThemeColor("statusBarItem.errorBackground")
       : new vscode.ThemeColor("statusBarItem.warningBackground");
-    this.findingsItem.show();
   }
 
   dispose(): void {
