@@ -638,6 +638,8 @@ async function runScreenshot(deps: CommandDependencies, url: string): Promise<vo
     title: "Screenshot started",
     detail: url,
     status: "info",
+    kind: "screenshot",
+    targetUrl: url,
   });
   try {
     const response = await vscode.window.withProgress(
@@ -664,17 +666,22 @@ async function runScreenshot(deps: CommandDependencies, url: string): Promise<vo
       return;
     }
     logLine(`Screenshot complete: ${imageUrl}`);
+    const screenshotRunUrl = extractRunUrl(text, getDashboardUrl());
     deps.timelineStore.add({
       title: "Screenshot complete",
       detail: imageUrl,
       status: "success",
+      kind: "screenshot",
+      thumbnailUrl: imageUrl,
+      targetUrl: url,
+      runUrl: screenshotRunUrl,
     });
     ScreenshotPanel.show(
       {
         url,
         imageUrl,
         capturedAt: new Date().toLocaleString(),
-        runUrl: extractRunUrl(text, getDashboardUrl()),
+        runUrl: screenshotRunUrl,
       },
       () => {
         void runScreenshot(deps, url);
@@ -703,6 +710,8 @@ async function runAudit(deps: CommandDependencies, url: string): Promise<void> {
     title: "UX audit started",
     detail: url,
     status: "info",
+    kind: "audit",
+    targetUrl: url,
   });
   try {
     const response = await vscode.window.withProgress(
@@ -711,10 +720,15 @@ async function runAudit(deps: CommandDependencies, url: string): Promise<void> {
     );
     const text = extractText(response);
     const screenshotUrl = extractImageUrl(response) ?? undefined;
+    const auditRunUrl = extractRunUrl(text, getDashboardUrl());
     deps.timelineStore.add({
       title: "UX audit complete",
       detail: url,
       status: "success",
+      kind: "audit",
+      thumbnailUrl: screenshotUrl,
+      targetUrl: url,
+      runUrl: auditRunUrl,
     });
     AuditPanel.show(
       {
@@ -722,7 +736,7 @@ async function runAudit(deps: CommandDependencies, url: string): Promise<void> {
         reviewText: text,
         screenshotUrl,
         capturedAt: new Date().toLocaleString(),
-        runUrl: extractRunUrl(text, getDashboardUrl()),
+        runUrl: auditRunUrl,
       },
       () => {
         void runAudit(deps, url);

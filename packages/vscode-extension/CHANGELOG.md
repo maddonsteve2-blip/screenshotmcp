@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+- **Timeline panel redesign** — events now show inline **screenshot thumbnails**, a **filter bar** (All · 📸 Screenshots · 🔍 Audits · Runs · Info), and **per-row actions** (Rerun, Re-audit, Open URL, Open image, View run, Clear)
+- `TimelineEvent` now carries `kind`, `thumbnailUrl`, `targetUrl`, `runUrl` — screenshot and audit commands populate these automatically
+- Added `View run` deep-link to dashboard runs wherever a run id surfaces
+
 ## 0.3.0
 
 - New **Get started with ScreenshotsMCP** walkthrough (auto-opens on first install) — sign in → first screenshot → first audit → CodeLens → skills, in 5 clicks
