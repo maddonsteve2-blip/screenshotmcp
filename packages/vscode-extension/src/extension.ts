@@ -16,6 +16,7 @@ import { StatusBarController } from "./views/statusBar";
 import { TimelinePanelController } from "./views/timelinePanel";
 import { UrlCodeLensProvider } from "./views/urlCodeLens";
 import { MagicCommentCodeLensProvider } from "./views/magicCommentCodeLens";
+import { MagicCommentCompletionProvider } from "./views/magicCommentCompletion";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const authStore = new AuthStore(context);
@@ -109,6 +110,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     magicCommentProvider,
     vscode.languages.registerCodeLensProvider(MagicCommentCodeLensProvider.SELECTOR, magicCommentProvider),
+  );
+
+  // Completion for magic-comment option keys, values, and known URLs.
+  const magicCommentCompletions = new MagicCommentCompletionProvider(urlHistory);
+  context.subscriptions.push(
+    vscode.languages.registerCompletionItemProvider(
+      MagicCommentCompletionProvider.SELECTOR,
+      magicCommentCompletions,
+      ...MagicCommentCompletionProvider.TRIGGER_CHARS,
+    ),
   );
 
   const hasApiKey = await authStore.hasApiKey();

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.14.0
+
+- **IntelliSense inside magic comments** — typing inside `// @screenshot`, `// @audit`, or `// @diff`:
+  - Suggests recent URLs from your URL history (click to insert)
+  - Suggests option keys (`width=`, `height=`, `fullPage=`, `delay=`, `format=`) with snippet placeholders
+  - Auto-filters keys you've already used on the directive
+  - `format=` and `fullPage=` render as inline enum pickers
+  - Triggers on space, `=`, and `@`
+
 ## 0.13.0
 
 - **Recent URLs in the sidebar** — the activity-bar `ScreenshotsMCP` view now lists the 10 most recently captured/audited URLs
