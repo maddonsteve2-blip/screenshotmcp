@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ScreenshotsMCP Audit Budget",
+  "description": "Shared finding/perf thresholds used by both the VS Code extension's status-bar badge and the `screenshotsmcp check` CLI command.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "maxFindingsPerUrl": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000,
+      "default": 10,
+      "description": "Fail/flag when a single URL has more than this many findings."
+    },
+    "maxTotalFindings": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000,
+      "default": 50,
+      "description": "Fail/flag when total findings across all URLs exceed this."
+    },
+    "warnThreshold": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000,
+      "default": 20,
+      "description": "Status-bar badge background turns red at this finding count."
+    },
+    "categories": {
+      "type": "array",
+      "description": "Restrict counting to these audit categories (case-insensitive).",
+      "items": {
+        "type": "string",
+        "enum": [
+          "accessibility",
+          "performance",
+          "seo",
+          "navigation",
+          "content",
+          "mobile",
+          "mobile-friendliness"
+        ]
+      },
+      "uniqueItems": true
+    }
+  }
+}

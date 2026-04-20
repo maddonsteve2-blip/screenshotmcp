@@ -2,7 +2,7 @@
   "name": "screenshotsmcp-vscode",
   "displayName": "ScreenshotsMCP",
   "description": "VS Code extension for ScreenshotsMCP: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "publisher": "ScreenshotMCP",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
@@ -24,6 +24,7 @@
     "images/**",
     "media/**",
     "snippets/**",
+    "schemas/**",
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
@@ -308,6 +309,16 @@
             ]
           }
         ]
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": ["**/.screenshotsmcp/urls.json", ".screenshotsmcp.urls.json"],
+        "url": "./schemas/urls.schema.json"
+      },
+      {
+        "fileMatch": ["**/.screenshotsmcp/budget.json", ".screenshotsmcp.budget.json"],
+        "url": "./schemas/budget.schema.json"
       }
     ],
     "snippets": [

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.19.0
+
+- **JSON Schema validation** for `.screenshotsmcp/urls.json` and `.screenshotsmcp/budget.json`:
+  - Inline IntelliSense for every key (`maxFindingsPerUrl`, `categories` enum, `url` format checks, etc.)
+  - Squiggle errors for typos, out-of-range numbers, invalid URL protocols
+  - Hover tooltips with the field description from the schema
+- Schemas ship inside the VSIX (`schemas/urls.schema.json`, `schemas/budget.schema.json`)
+
 ## 0.18.0
 
 - **Audit Findings sidebar section** — new section in the activity-bar `ScreenshotsMCP` view groups current audit diagnostics by URL/file

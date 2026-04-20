@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ScreenshotsMCP Project URLs",
+  "description": "List of URLs that ScreenshotsMCP commands and CI checks should run against.",
+  "oneOf": [
+    {
+      "type": "array",
+      "items": { "$ref": "#/definitions/UrlEntry" },
+      "maxItems": 200
+    },
+    {
+      "type": "object",
+      "required": ["urls"],
+      "properties": {
+        "urls": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/UrlEntry" },
+          "maxItems": 200
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "UrlEntry": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        {
+          "type": "object",
+          "required": ["url"],
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https?://",
+              "description": "The page URL to capture or audit."
+            },
+            "label": {
+              "type": "string",
+              "description": "Friendly name used in pickers and PR comments."
+            },
+            "tags": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Optional tags for grouping (e.g. 'marketing', 'critical')."
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
