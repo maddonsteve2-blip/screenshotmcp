@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.0
+
+- **Capture from Clipboard URL** command — reads your clipboard, extracts the first http(s) URL it finds (so pasting a markdown line works), and captures it. Added to Quick Actions.
+
 ## 0.24.0
 
 - **Promote Baseline** command — overwrites the stored baseline for a URL with a fresh capture after a modal confirm, so you can accept intentional visual changes without hand-editing JSON

@@ -22,6 +22,8 @@ export const checkCommand = new Command("check")
   .option("--max-total <n>", "Fail if total findings across all URLs exceed this", "50")
   .option("--json", "Emit the per-URL report as JSON on stdout")
   .option("--only <categories>", "Comma-separated categories to count (accessibility,performance,seo)")
+  .option("--include <patterns>", "Comma-separated glob patterns; audit only URLs that match (e.g. '*/pricing*,*/docs/*')")
+  .option("--exclude <patterns>", "Comma-separated glob patterns; skip URLs that match")
   .option("--report <format>", "Emit a formatted report: 'github-comment' (markdown), 'html', 'short' (one-line), 'json'")
   .option("--report-out <path>", "Write the formatted report to this file (default: stdout)")
   .action(async (opts: Record<string, string | boolean>) => {
@@ -50,9 +52,22 @@ export const checkCommand = new Command("check")
       if (!jsonOnly) console.error(chalk.yellow(`[budget] ${err}`));
     }
 
-    const urls = await loadUrls(file);
+    const allUrls = await loadUrls(file);
+    const includePatterns = parseGlobList(opts.include);
+    const excludePatterns = parseGlobList(opts.exclude);
+    const urls = filterUrls(allUrls, includePatterns, excludePatterns);
+    if (!jsonOnly && (includePatterns.length > 0 || excludePatterns.length > 0)) {
+      const skipped = allUrls.length - urls.length;
+      console.log(chalk.dim(`(filtered: ${urls.length}/${allUrls.length} URLs${skipped > 0 ? `, ${skipped} skipped` : ""})`));
+    }
     if (urls.length === 0) {
-      if (!jsonOnly) console.error(chalk.yellow(`No URLs found in ${file}.`));
+      if (!jsonOnly) {
+        if (allUrls.length === 0) {
+          console.error(chalk.yellow(`No URLs found in ${file}.`));
+        } else {
+          console.error(chalk.yellow(`No URLs matched --include/--exclude filters (${allUrls.length} URLs in ${file}).`));
+        }
+      }
       process.exit(0);
       return;
     }
@@ -174,6 +189,39 @@ async function loadUrls(file: string): Promise<string[]> {
     }
   }
   return Array.from(new Set(urls));
+}
+
+/**
+ * Minimal glob matcher (supports `*` and `?`). Intentionally not pulling in
+ * `minimatch` to keep the CLI bundle small.
+ */
+function globToRegex(pattern: string): RegExp {
+  const escaped = pattern
+    .split("")
+    .map((ch) => {
+      if (ch === "*") return ".*";
+      if (ch === "?") return ".";
+      return /[.+^${}()|[\]\\]/.test(ch) ? `\\${ch}` : ch;
+    })
+    .join("");
+  return new RegExp(`^${escaped}$`, "i");
+}
+
+export function parseGlobList(value: unknown): RegExp[] {
+  if (typeof value !== "string" || !value.trim()) return [];
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map(globToRegex);
+}
+
+export function filterUrls(urls: string[], include: RegExp[], exclude: RegExp[]): string[] {
+  return urls.filter((url) => {
+    if (include.length > 0 && !include.some((re) => re.test(url))) return false;
+    if (exclude.length > 0 && exclude.some((re) => re.test(url))) return false;
+    return true;
+  });
 }
 
 function isHttp(value: string): boolean {

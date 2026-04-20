@@ -293,6 +293,22 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       });
       showOutputChannel();
     }),
+    vscode.commands.registerCommand("screenshotsmcp.captureFromClipboard", async () => {
+      const clipboard = (await vscode.env.clipboard.readText()).trim();
+      if (!clipboard) {
+        void vscode.window.showWarningMessage("Clipboard is empty. Copy a URL first.");
+        return;
+      }
+      // Extract the first http(s) URL in the clipboard (allows pasting a line
+      // of markdown or JS that happens to contain a URL, not just the bare URL).
+      const match = clipboard.match(/https?:\/\/[^\s"'`<>]+/);
+      const url = match?.[0]?.replace(/[.,;:!?)\]}>]+$/, "");
+      if (!url || validateHttpUrl(url)) {
+        void vscode.window.showWarningMessage(`No valid http(s) URL found in the clipboard (first 80 chars: "${clipboard.slice(0, 80)}").`);
+        return;
+      }
+      await vscode.commands.executeCommand("screenshotsmcp.takeScreenshotAtUrl", url);
+    }),
     vscode.commands.registerCommand("screenshotsmcp.showQuickActions", async () => {
       await runQuickActions(deps);
     }),
@@ -565,6 +581,7 @@ async function runQuickActions(deps: CommandDependencies): Promise<void> {
   const actions: QuickAction[] = hasApiKey
     ? [
         { label: "$(device-camera) Take Screenshot", description: "Capture a URL", command: "screenshotsmcp.takeScreenshot" },
+        { label: "$(clippy) Capture from Clipboard", description: "Screenshot the URL currently in your clipboard", command: "screenshotsmcp.captureFromClipboard" },
         { label: "$(search) Audit URL", description: "Run a UX review", command: "screenshotsmcp.takeScreenshot", args: [] },
         { label: "$(list-unordered) Open Timeline", description: "Recent runs and events", command: "screenshotsmcp.openTimeline" },
         { label: "$(history) Show URL History", description: "Past screenshots/audits grouped by URL", command: "screenshotsmcp.showUrlHistory" },

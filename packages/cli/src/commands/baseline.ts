@@ -218,10 +218,12 @@ baselineCommand
   .option("-t, --threshold <number>", "Color difference threshold (0=exact, 1=lenient)", "0.1")
   .option("--max-changed <pct>", "Fail if a single URL changed more than this percent of pixels", "5")
   .option("--json", "Emit per-URL results as JSON on stdout")
+  .option("--json-out <path>", "Also write the JSON report to this file (useful for CI artifacts)")
   .action(async (opts: Record<string, string | boolean>) => {
     const threshold = Number.parseFloat(String(opts.threshold ?? "0.1")) || 0.1;
     const maxChanged = Number.parseFloat(String(opts.maxChanged ?? "5")) || 5;
     const jsonOnly = Boolean(opts.json);
+    const jsonOutPath = typeof opts.jsonOut === "string" && opts.jsonOut ? opts.jsonOut : undefined;
     const dir = resolve(process.cwd(), BASELINE_DIR);
     let entries: string[];
     try {
@@ -282,8 +284,23 @@ baselineCommand
     }
 
     const failed = report.filter((r) => !r.ok).length;
+    const payload = {
+      pass: failed === 0,
+      threshold,
+      maxChanged,
+      generatedAt: new Date().toISOString(),
+      report,
+    };
+    if (jsonOutPath) {
+      const out = resolve(process.cwd(), jsonOutPath);
+      await mkdir(dirname(out), { recursive: true });
+      await writeFile(out, JSON.stringify(payload, null, 2) + "\n", "utf8");
+      if (!jsonOnly) {
+        console.log(`\nReport written \u2192 ${chalk.cyan(out)}`);
+      }
+    }
     if (jsonOnly) {
-      console.log(JSON.stringify({ pass: failed === 0, threshold, maxChanged, report }, null, 2));
+      console.log(JSON.stringify(payload, null, 2));
     } else {
       console.log("");
       if (failed === 0) {
