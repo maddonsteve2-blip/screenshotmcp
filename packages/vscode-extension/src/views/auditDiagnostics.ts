@@ -12,6 +12,9 @@ export type AuditFinding = PureAuditFinding;
  */
 export class AuditDiagnostics implements vscode.Disposable {
   private readonly collection: vscode.DiagnosticCollection;
+  private readonly changeEmitter = new vscode.EventEmitter<number>();
+  /** Fires whenever the total finding count changes. */
+  readonly onDidChangeCount = this.changeEmitter.event;
 
   constructor() {
     this.collection = vscode.languages.createDiagnosticCollection("screenshotsmcp.audit");
@@ -19,11 +22,26 @@ export class AuditDiagnostics implements vscode.Disposable {
 
   dispose(): void {
     this.collection.dispose();
+    this.changeEmitter.dispose();
+  }
+
+  /** Total audit findings currently in the collection. */
+  totalCount(): number {
+    let total = 0;
+    this.collection.forEach((_uri, diagnostics) => {
+      total += diagnostics.length;
+    });
+    return total;
+  }
+
+  private emitChange(): void {
+    this.changeEmitter.fire(this.totalCount());
   }
 
   /** Clear every diagnostic owned by this collection. */
   clear(): void {
     this.collection.clear();
+    this.emitChange();
   }
 
   /**
@@ -41,6 +59,7 @@ export class AuditDiagnostics implements vscode.Disposable {
     if (target) {
       const diagnostics = findings.map((f) => this.toDiagnostic(f, target.range));
       this.collection.set(target.uri, diagnostics);
+      this.emitChange();
       return;
     }
 
@@ -48,6 +67,7 @@ export class AuditDiagnostics implements vscode.Disposable {
     const range = new vscode.Range(0, 0, 0, Math.min(url.length, 120));
     const diagnostics = findings.map((f) => this.toDiagnostic(f, range, url));
     this.collection.set(syntheticUri, diagnostics);
+    this.emitChange();
   }
 
   private clearForUrl(url: string): void {
@@ -56,6 +76,7 @@ export class AuditDiagnostics implements vscode.Disposable {
       this.collection.delete(target.uri);
     }
     this.collection.delete(vscode.Uri.parse(`screenshotsmcp-audit:${encodeURIComponent(url)}`));
+    this.emitChange();
   }
 
   private toDiagnostic(finding: AuditFinding, range: vscode.Range, urlContext?: string): vscode.Diagnostic {

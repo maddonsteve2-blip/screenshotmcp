@@ -124,6 +124,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const hasApiKey = await authStore.hasApiKey();
   statusBar.update(hasApiKey);
+  statusBar.setFindingsCount(auditDiagnostics.totalCount());
+  context.subscriptions.push(
+    auditDiagnostics.onDidChangeCount((count) => statusBar.setFindingsCount(count)),
+  );
 
   // First-run: open the "Get started" walkthrough once per machine.
   const welcomedKey = "screenshotsmcp.welcomedAt";

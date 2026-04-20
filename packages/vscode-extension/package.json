@@ -2,7 +2,7 @@
   "name": "screenshotsmcp-vscode",
   "displayName": "ScreenshotsMCP",
   "description": "VS Code extension for ScreenshotsMCP: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "publisher": "ScreenshotMCP",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
@@ -23,6 +23,7 @@
     "dist/**",
     "images/**",
     "media/**",
+    "snippets/**",
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
@@ -308,6 +309,23 @@
           }
         ]
       }
+    ],
+    "snippets": [
+      { "language": "javascript", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "typescript", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "javascriptreact", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "typescriptreact", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "python", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "ruby", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "go", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "rust", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "java", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "csharp", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "php", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "html", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "markdown", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "yaml", "path": "./snippets/magicComments.code-snippets" },
+      { "language": "shellscript", "path": "./snippets/magicComments.code-snippets" }
     ],
     "configuration": {
       "title": "ScreenshotsMCP",

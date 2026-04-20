@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.15.0
+
+- **Snippet bundle** — type `ssmcp<Tab>` (or `screenshot`, `audit`, `diff`) in any supported comment to expand a ScreenshotsMCP magic-comment scaffold. Works in JS/TS(X), Python, Ruby, Go, Rust, Java, C#, PHP, HTML, Markdown, YAML, shellscript
+  - `ssmcp-full` expands the screenshot directive with all options pre-filled (`width=1280 height=800 fullPage=true format=png`)
+- **Status-bar findings badge** — a secondary status-bar item shows `$(warning) N audit findings` whenever the Problems tab contains ScreenshotsMCP audit diagnostics
+  - Background turns `errorBackground` at ≥20 findings
+  - Clicking opens the Problems tab
+  - Hidden automatically when findings clear or the user signs out
+
 ## 0.14.0
 
 - **IntelliSense inside magic comments** — typing inside `// @screenshot`, `// @audit`, or `// @diff`:
