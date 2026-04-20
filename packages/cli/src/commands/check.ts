@@ -3,7 +3,7 @@ import chalk from "chalk";
 import ora from "ora";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { callTool, extractText } from "../api.js";
+import { callTool, extractImageUrl, extractText } from "../api.js";
 import { loadBudgetFromCwd } from "../budget.js";
 import { renderGithubComment, renderShortSummary, type UrlReport } from "../report.js";
 
@@ -61,19 +61,14 @@ export const checkCommand = new Command("check")
       console.log(chalk.bold(`\n\u{1F4E6} ScreenshotsMCP check\u2014${urls.length} URL${urls.length === 1 ? "" : "s"} from ${file}\n`));
     }
 
-    const report: Array<{
-      url: string;
-      ok: boolean;
-      findings: number;
-      categories: Record<string, number>;
-      error?: string;
-    }> = [];
+    const report: UrlReport[] = [];
 
     for (const url of urls) {
       const spinner = jsonOnly ? undefined : ora(`Auditing ${url}\u2026`).start();
       try {
         const res = await callTool("ux_review", { url, width: 1280, height: 800 });
         const text = extractText(res);
+        const imageUrl = extractImageUrl(res) ?? undefined;
         const findings = parseFindings(text, only);
         const total = Object.values(findings).reduce((a, b) => a + b, 0);
         const ok = total <= maxPer;
@@ -86,7 +81,7 @@ export const checkCommand = new Command("check")
             .join(" \u00b7 ");
           console.log(`${status} ${url} \u2014 ${total} finding${total === 1 ? "" : "s"}${breakdown ? `  (${breakdown})` : ""}`);
         }
-        report.push({ url, ok, findings: total, categories: findings });
+        report.push({ url, ok, findings: total, categories: findings, imageUrl });
       } catch (err) {
         spinner?.fail(`${chalk.red("\u2717")} ${url}`);
         const message = err instanceof Error ? err.message : String(err);

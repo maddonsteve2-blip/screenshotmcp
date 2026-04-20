@@ -39,6 +39,7 @@ import {
 import { checkCommand } from "./commands/check.js";
 import { baselineCommand } from "./commands/baseline.js";
 import { initCommand } from "./commands/init.js";
+import { doctorCommand } from "./commands/doctor.js";
 import { installCommand } from "./commands/install.js";
 import { skillsCommand } from "./commands/skills.js";
 import { setupCommand } from "./commands/setup.js";
@@ -148,6 +149,7 @@ program.addCommand(breakpointsCommand);
 program.addCommand(initCommand);
 program.addCommand(checkCommand);
 program.addCommand(baselineCommand);
+program.addCommand(doctorCommand);
 
 // Setup
 program.addCommand(installCommand);

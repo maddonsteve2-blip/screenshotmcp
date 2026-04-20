@@ -10,6 +10,8 @@ export interface UrlReport {
   findings: number;
   categories: Record<string, number>;
   error?: string;
+  /** Public CDN URL of the hero screenshot returned by `ux_review`. */
+  imageUrl?: string;
 }
 
 export interface ReportContext {
@@ -36,13 +38,23 @@ export function renderGithubComment(report: UrlReport[], ctx: ReportContext): st
     lines.push(`- Budget loaded from \`${ctx.budgetSource}\``);
   }
   lines.push("");
-  lines.push("| URL | Status | Findings | Top categories |");
-  lines.push("| --- | ------ | -------- | -------------- |");
+  const anyImage = report.some((r) => r.imageUrl);
+  if (anyImage) {
+    lines.push("| URL | Status | Findings | Top categories | Preview |");
+    lines.push("| --- | ------ | -------- | -------------- | ------- |");
+  } else {
+    lines.push("| URL | Status | Findings | Top categories |");
+    lines.push("| --- | ------ | -------- | -------------- |");
+  }
   for (const row of report) {
     const status = row.error ? `\u26A0\uFE0F error` : row.ok ? "\u2705" : "\u274C";
     const top = topCategories(row.categories);
     const cellUrl = `[${shortenUrl(row.url)}](${row.url})`;
-    lines.push(`| ${cellUrl} | ${status} | ${row.findings} | ${top || "\u2014"} |`);
+    const cells = [cellUrl, status, String(row.findings), top || "\u2014"];
+    if (anyImage) {
+      cells.push(row.imageUrl ? `<a href="${row.imageUrl}"><img src="${row.imageUrl}" width="120" alt="preview" /></a>` : "\u2014");
+    }
+    lines.push(`| ${cells.join(" | ")} |`);
   }
   if (report.some((r) => r.error)) {
     lines.push("");
