@@ -34,6 +34,7 @@ import {
   type AnnotationColor,
   type AnnotationTool,
 } from "@/components/screenshot-annotations";
+import { ScreenshotShareDialog } from "@/components/screenshot-share-dialog";
 
 type ScreenshotViewerProps = {
   open: boolean;
@@ -148,6 +149,7 @@ export function ScreenshotViewerDialog({
   }, [annotations.length, updateAnnotations]);
 
   const enableAnnotations = Boolean(screenshotId);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Reset on open or src change.
   useEffect(() => {
@@ -481,6 +483,13 @@ export function ScreenshotViewerDialog({
           </div>
         </div>
       </DialogContent>
+      {screenshotId && (
+        <ScreenshotShareDialog
+          screenshotId={screenshotId}
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+        />
+      )}
     </Dialog>
   );
 }
