@@ -12,6 +12,7 @@ import { Clock3, ExternalLink, FileImage, FileText, FolderSearch, Globe, Link2, 
 import { LibraryTabs } from "@/components/library-tabs";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";
 import { PageContainer } from "@/components/page-container";
+import { ScreenshotViewerDialog } from "@/components/screenshot-viewer-dialog";
 
 type Screenshot = {
   id: string;
@@ -116,6 +117,7 @@ export default function ArtifactsPage() {
   const [query, setQuery] = useState("");
   const [kindFilter, setKindFilter] = useState<"all" | "capture" | "replay">("all");
   const [linkFilter, setLinkFilter] = useState<"all" | "linked" | "unlinked">("all");
+  const [viewerArtifact, setViewerArtifact] = useState<{ src: string; url: string; width?: number; height?: number } | null>(null);
   const [shareFilter, setShareFilter] = useState<"all" | "shared" | "private">("all");
 
   const handleSocketMessage = useCallback((message: { type: string; data?: { screenshots?: Screenshot[]; recordings?: Recording[] }; message?: string }) => {
@@ -434,12 +436,21 @@ export default function ArtifactsPage() {
                         Open shared run
                       </Link>
                     )}
-                    {artifact.href && (
+                    {artifact.href && artifact.kind === "capture" && !artifact.flags.pdf ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setViewerArtifact({ src: artifact.href!, url: artifact.title })}
+                      >
+                        <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                        View
+                      </Button>
+                    ) : artifact.href ? (
                       <Link href={artifact.href} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
                         <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                         Open artifact
                       </Link>
-                    )}
+                    ) : null}
                   </div>
                 </CardContent>
                 </div>
@@ -448,6 +459,16 @@ export default function ArtifactsPage() {
           })}
         </div>
       )}
+
+      <ScreenshotViewerDialog
+        open={viewerArtifact !== null}
+        onOpenChange={(open) => !open && setViewerArtifact(null)}
+        src={viewerArtifact?.src ?? ""}
+        capturedUrl={viewerArtifact?.url ?? null}
+        width={viewerArtifact?.width ?? null}
+        height={viewerArtifact?.height ?? null}
+        hideShare
+      />
     </PageContainer>
   );
 }

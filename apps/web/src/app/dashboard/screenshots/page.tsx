@@ -12,6 +12,7 @@ import { ExternalLink, Copy, Check, ImageOff, FileText, Search, Clock3, Link2, S
 import { LibraryTabs } from "@/components/library-tabs";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";
 import { PageContainer } from "@/components/page-container";
+import { ScreenshotViewerDialog } from "@/components/screenshot-viewer-dialog";
 
 type Screenshot = {
   id: string;
@@ -65,11 +66,13 @@ function CapturePreview({
   screenshot,
   copiedId,
   onCopy,
+  onView,
   previewHeightClass,
 }: {
   screenshot: Screenshot;
   copiedId: string | null;
   onCopy: (text: string, id: string) => Promise<void>;
+  onView: (screenshot: Screenshot) => void;
   previewHeightClass: string;
 }) {
   const pdf = isPdfCapture(screenshot);
@@ -110,10 +113,15 @@ function CapturePreview({
               loading="lazy"
             />
             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition-[background-color,opacity] group-hover:bg-black/20 group-hover:opacity-100">
-              <Link href={screenshot.publicUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ size: "sm", variant: "secondary" }), "gap-1")}>
-                <ExternalLink data-icon="inline-start" />
+              <Button
+                size="sm"
+                variant="secondary"
+                className="gap-1"
+                onClick={() => onView(screenshot)}
+              >
+                <ScanSearch data-icon="inline-start" />
                 View
-              </Link>
+              </Button>
               <Button
                 size="sm"
                 variant="secondary"
@@ -139,6 +147,7 @@ export default function ScreenshotsPage() {
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [viewerScreenshot, setViewerScreenshot] = useState<Screenshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -530,7 +539,7 @@ export default function ScreenshotsPage() {
                         {recentCompleted.map((screenshot) => (
                           <article key={screenshot.id} className="min-w-[320px] max-w-[360px] snap-start">
                             <Card className="overflow-hidden">
-                              <CapturePreview screenshot={screenshot} copiedId={copiedId} onCopy={copy} previewHeightClass="h-44" />
+                              <CapturePreview screenshot={screenshot} copiedId={copiedId} onCopy={copy} onView={setViewerScreenshot} previewHeightClass="h-44" />
                               <CardContent className="flex flex-col gap-3 p-4">
                                 <div className="min-w-0">
                                   <p className="truncate text-base font-medium" title={screenshot.url}>{screenshot.url}</p>
@@ -569,7 +578,7 @@ export default function ScreenshotsPage() {
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
                   {visibleCompletedScreenshots.map((screenshot) => (
                     <Card key={screenshot.id} className="overflow-hidden [contain-intrinsic-size:360px] [content-visibility:auto]">
-                      <CapturePreview screenshot={screenshot} copiedId={copiedId} onCopy={copy} previewHeightClass="h-48" />
+                      <CapturePreview screenshot={screenshot} copiedId={copiedId} onCopy={copy} onView={setViewerScreenshot} previewHeightClass="h-48" />
                       <CardContent className="flex flex-col gap-3 p-4">
                         <div className="min-w-0 flex flex-col gap-1">
                           <p className="truncate text-base font-medium" title={screenshot.url}>{screenshot.url}</p>
@@ -627,7 +636,7 @@ export default function ScreenshotsPage() {
                   {visibleAllScreenshots.map((screenshot) => (
                     <Card key={screenshot.id} className="overflow-hidden [contain-intrinsic-size:340px] [content-visibility:auto]">
                       {screenshot.status === "done" ? (
-                        <CapturePreview screenshot={screenshot} copiedId={copiedId} onCopy={copy} previewHeightClass="h-40" />
+                        <CapturePreview screenshot={screenshot} copiedId={copiedId} onCopy={copy} onView={setViewerScreenshot} previewHeightClass="h-40" />
                       ) : (
                         <div className="flex h-40 items-center justify-center bg-muted">
                           <div className="text-sm text-muted-foreground">{formatStatusLabel(screenshot.status)}…</div>
@@ -672,6 +681,16 @@ export default function ScreenshotsPage() {
           </TabsContent>
         </Tabs>
       )}
+
+      <ScreenshotViewerDialog
+        open={viewerScreenshot !== null}
+        onOpenChange={(open) => !open && setViewerScreenshot(null)}
+        src={viewerScreenshot?.publicUrl ?? ""}
+        capturedUrl={viewerScreenshot?.url ?? null}
+        width={viewerScreenshot?.width ?? null}
+        height={viewerScreenshot?.height ?? null}
+        hideShare
+      />
     </PageContainer>
   );
 }

@@ -136,8 +136,14 @@ export const screenshots = pgTable("screenshots", {
   prevUrl: text("prev_url"),
   pageTitle: text("page_title"),
   heading: text("heading"),
+  // Per-screenshot public share (v1.3 — mirrors runs.shareToken pattern)
+  shareToken: text("share_token").unique(),
+  sharedAt: timestamp("shared_at"),
+  // Annotation payload (v1.3 — Konva JSON serialization)
+  annotations: jsonb("annotations"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   completedAt: timestamp("completed_at"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const testInboxes = pgTable("test_inboxes", {
