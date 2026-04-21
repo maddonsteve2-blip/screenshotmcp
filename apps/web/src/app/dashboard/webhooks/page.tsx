@@ -303,7 +303,7 @@ export default function WebhooksPage() {
         </Card>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr,360px]">
+      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         <Card>
         <CardHeader>
           <CardTitle className="text-lg">Endpoints</CardTitle>

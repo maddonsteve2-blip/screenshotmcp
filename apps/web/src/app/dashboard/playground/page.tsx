@@ -191,7 +191,7 @@ export default function PlaygroundPage() {
 
       {/* Single Tab */}
       {tab === "single" && (
-        <div className="grid gap-6 lg:grid-cols-[360px,1fr]">
+        <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
           {/* Form column */}
           <Card className="h-fit lg:sticky lg:top-6">
             <CardContent className="flex flex-col gap-4 p-4">
