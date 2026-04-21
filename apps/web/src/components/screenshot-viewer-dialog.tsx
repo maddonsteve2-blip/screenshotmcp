@@ -378,8 +378,14 @@ export function ScreenshotViewerDialog({
               <ExternalLink className="h-3.5 w-3.5" />
               Raw
             </Link>
-            {!hideShare && onShareClick && (
-              <Button type="button" size="sm" variant="outline" onClick={onShareClick} className="gap-1.5">
+            {!hideShare && screenshotId && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => (onShareClick ? onShareClick() : setShareOpen(true))}
+                className="gap-1.5"
+              >
                 <Share2 className="h-3.5 w-3.5" />
                 Share
               </Button>
