@@ -67,6 +67,40 @@ function hostname(input?: string | null) {
   }
 }
 
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+      <div className="flex flex-wrap gap-1">{children}</div>
+    </div>
+  );
+}
+
+function FilterPill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-7 items-center rounded-full border px-2.5 text-xs font-medium transition-colors",
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-transparent text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed" | "failed">("all");
@@ -168,96 +202,81 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Filter runs</CardTitle>
-          <CardDescription>
-            Scan by status, execution mode, and evidence coverage without opening every session.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="relative w-full xl:max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by URL, title, status, or run ID"
-              className="pl-9"
-            />
+        <CardContent className="flex flex-col gap-3 py-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative w-full lg:max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search by URL, title, status, or run ID"
+                className="pl-9"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground lg:ml-auto">
+              Showing {filteredRuns.length} of {runs.length} runs
+            </p>
           </div>
 
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <FilterGroup label="Status">
               {(["all", "active", "completed", "failed"] as const).map((status) => (
-                <Button
+                <FilterPill
                   key={status}
-                  type="button"
-                  size="sm"
-                  variant={statusFilter === status ? "default" : "outline"}
+                  active={statusFilter === status}
                   onClick={() => setStatusFilter(status)}
-                  className="capitalize"
                 >
-                  {status}
-                </Button>
+                  <span className="capitalize">{status}</span>
+                </FilterPill>
               ))}
-            </div>
+            </FilterGroup>
 
-            <div className="flex flex-wrap gap-2">
+            <FilterGroup label="Mode">
               {modeOptions.map((mode) => (
-                <Button
+                <FilterPill
                   key={mode}
-                  type="button"
-                  size="sm"
-                  variant={modeFilter === mode ? "default" : "outline"}
+                  active={modeFilter === mode}
                   onClick={() => setModeFilter(mode)}
-                  className="capitalize"
                 >
-                  {mode === "all" ? "All modes" : mode}
-                </Button>
+                  <span className="capitalize">{mode === "all" ? "All" : mode}</span>
+                </FilterPill>
               ))}
-            </div>
+            </FilterGroup>
 
-            <div className="flex flex-wrap gap-2">
+            <FilterGroup label="Evidence">
               {([
-                ["all", "All runs"],
-                ["has-evidence", "Any evidence"],
+                ["all", "All"],
+                ["has-evidence", "Any"],
                 ["captures", "Captures"],
                 ["replays", "Replays"],
                 ["issues", "Issues"],
               ] as const).map(([value, label]) => (
-                <Button
+                <FilterPill
                   key={value}
-                  type="button"
-                  size="sm"
-                  variant={evidenceFilter === value ? "default" : "outline"}
+                  active={evidenceFilter === value}
                   onClick={() => setEvidenceFilter(value)}
                 >
                   {label}
-                </Button>
+                </FilterPill>
               ))}
-            </div>
+            </FilterGroup>
 
-            <div className="flex flex-wrap gap-2">
+            <FilterGroup label="Sharing">
               {([
-                ["all", "All sharing"],
+                ["all", "All"],
                 ["shared", "Shared"],
                 ["private", "Private"],
               ] as const).map(([value, label]) => (
-                <Button
+                <FilterPill
                   key={value}
-                  type="button"
-                  size="sm"
-                  variant={shareFilter === value ? "default" : "outline"}
+                  active={shareFilter === value}
                   onClick={() => setShareFilter(value)}
                 >
                   {label}
-                </Button>
+                </FilterPill>
               ))}
-            </div>
+            </FilterGroup>
           </div>
-
-          <p className="text-xs text-muted-foreground">
-            Showing {filteredRuns.length} of {runs.length} runs.
-          </p>
         </CardContent>
       </Card>
 

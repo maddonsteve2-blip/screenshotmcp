@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Camera, TrendingUp, CheckCircle, Calendar, Zap, ArrowUpRight, RefreshCw, Wifi, WifiOff, LayoutDashboard, ListVideo, FolderSearch } from "lucide-react";
+import { Camera, TrendingUp, CheckCircle, Calendar, Zap, ArrowUpRight, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-fetch";
 import { PageContainer } from "@/components/page-container";
@@ -220,46 +220,62 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="flex flex-col gap-4 py-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Keep review workflows summary-first</p>
-            <p className="text-sm text-muted-foreground">
-              Usage helps you spot volume trends and output mix. It should support, not replace, the main review flow through Overview, Runs, and Artifacts.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/dashboard">
-              <Button variant="outline" size="sm">
-                <LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />
-                Overview
-              </Button>
-            </Link>
-            <Link href="/dashboard/runs">
-              <Button variant="outline" size="sm">
-                <ListVideo className="mr-1.5 h-3.5 w-3.5" />
-                Runs
-              </Button>
-            </Link>
-            <Link href="/dashboard/artifacts">
-              <Button variant="outline" size="sm">
-                <FolderSearch className="mr-1.5 h-3.5 w-3.5" />
-                Artifacts
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2">
+              <Camera className="size-4" />
+              Total
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold tabular-nums">{stats.total.toLocaleString()}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2">
+              <Calendar className="size-4" />
+              This month
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold tabular-nums">{stats.thisMonth.toLocaleString()}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2">
+              <TrendingUp className="size-4" />
+              Today
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold tabular-nums">{stats.today.toLocaleString()}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-2">
+              <CheckCircle className="size-4" />
+              Success rate
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold tabular-nums">{stats.successRate}%</p>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Zap className="size-5 text-primary" />
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  Monthly Usage
-                  <Badge variant="secondary">{planInfo.label} Plan</Badge>
+                <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+                  Monthly usage
+                  <Badge variant="secondary">{planInfo.label} plan</Badge>
                 </CardTitle>
                 <CardDescription>
                   {plan.used.toLocaleString()} of {plan.screenshotsPerMonth > 100000 ? "unlimited" : plan.screenshotsPerMonth.toLocaleString()} screenshots this month
@@ -280,53 +296,6 @@ export default function AnalyticsPage() {
           <UsageBar used={plan.used} limit={plan.screenshotsPerMonth} />
         </CardContent>
       </Card>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <Camera className="size-4" />
-              Total
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{stats.total.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <Calendar className="size-4" />
-              This month
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{stats.thisMonth.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <TrendingUp className="size-4" />
-              Today
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{stats.today.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <CheckCircle className="size-4" />
-              Success rate
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{stats.successRate}%</p>
-          </CardContent>
-        </Card>
-      </div>
 
       <Card>
         <CardHeader>
@@ -469,17 +438,6 @@ export default function AnalyticsPage() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>How to use this page</CardTitle>
-          <CardDescription>Keep analytics in its supporting role inside the broader run-centric workflow.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>Use Overview to see what ran recently and what needs attention.</p>
-          <p>Use Runs to understand what happened inside a specific execution.</p>
-          <p>Use Artifacts to locate a specific screenshot or replay after you already know which run matters.</p>
-        </CardContent>
-      </Card>
     </PageContainer>
   );
 }

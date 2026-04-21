@@ -361,7 +361,7 @@ export default function ArtifactsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(420px,1fr))] gap-5">
           {filteredArtifacts.map((artifact) => {
             const sharedHref = artifact.shareToken ? `/shared/runs/${encodeURIComponent(artifact.shareToken)}` : null;
 

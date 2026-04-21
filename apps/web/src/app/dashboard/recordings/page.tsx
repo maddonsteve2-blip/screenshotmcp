@@ -381,7 +381,7 @@ export default function RecordingsPage() {
 
           {archiveRecordings.length > 0 ? (
             <>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
                 {visibleArchiveRecordings.map((rec) => (
                   <Card key={rec.id} className="overflow-hidden [contain-intrinsic-size:360px] [content-visibility:auto]">
                     <div className="flex h-48 items-center justify-center bg-black">

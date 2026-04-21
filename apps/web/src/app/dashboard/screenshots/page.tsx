@@ -386,7 +386,7 @@ export default function ScreenshotsPage() {
       </Card>
 
       {loading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-48 rounded-lg bg-muted animate-pulse" />
           ))}
@@ -435,7 +435,7 @@ export default function ScreenshotsPage() {
                       <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Failed captures</h3>
                       <p className="text-sm text-muted-foreground">Keep failures together so triage happens before you review successful proof.</p>
                     </div>
-                    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-4">
                       {failedScreenshots.map((screenshot) => (
                         <Card key={screenshot.id} className="border-red-200/80">
                           <CardContent className="flex flex-col gap-4 p-5">
@@ -566,7 +566,7 @@ export default function ScreenshotsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
                   {visibleCompletedScreenshots.map((screenshot) => (
                     <Card key={screenshot.id} className="overflow-hidden [contain-intrinsic-size:360px] [content-visibility:auto]">
                       <CapturePreview screenshot={screenshot} copiedId={copiedId} onCopy={copy} previewHeightClass="h-48" />
@@ -623,7 +623,7 @@ export default function ScreenshotsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
                   {visibleAllScreenshots.map((screenshot) => (
                     <Card key={screenshot.id} className="overflow-hidden [contain-intrinsic-size:340px] [content-visibility:auto]">
                       {screenshot.status === "done" ? (
