@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Camera, CheckCircle2, XCircle } from "lucide-react";
+import { Show } from "@clerk/nextjs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
@@ -89,6 +90,12 @@ export default async function StatusPage() {
             <Link href="/docs/quickstart" className="hover:text-white transition-colors">Docs</Link>
             <Link href="/changelog" className="hover:text-white transition-colors">Changelog</Link>
             <Link href="/security" className="hover:text-white transition-colors">Security</Link>
+            <Show when="signed-in">
+              <Link href="/dashboard" className="text-white hover:text-green-400 transition-colors">Dashboard</Link>
+            </Show>
+            <Show when="signed-out">
+              <Link href="/sign-in" className="hover:text-white transition-colors">Sign in</Link>
+            </Show>
           </nav>
         </div>
       </header>

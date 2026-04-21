@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Camera } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MarketingNavAuth } from "@/components/marketing-nav-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PLAN_DESCRIPTORS } from "@screenshotsmcp/types";
@@ -21,12 +22,7 @@ export default function PricingPage() {
             <Link href="/docs">
               <Button variant="ghost" className="text-[1.02rem] sm:text-lg">Docs</Button>
             </Link>
-            <Link href="/sign-in">
-              <Button variant="ghost" className="text-[1.02rem] sm:text-lg">Sign in</Button>
-            </Link>
-            <Link href="/sign-up">
-              <Button className="text-[1.02rem] sm:text-lg">Get started</Button>
-            </Link>
+            <MarketingNavAuth />
           </div>
         </div>
       </nav>

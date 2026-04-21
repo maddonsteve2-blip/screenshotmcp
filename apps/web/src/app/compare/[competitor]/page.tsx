@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Camera, ArrowRight, Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MarketingNavAuth } from "@/components/marketing-nav-auth";
 import { competitors, getCompetitor } from "@/lib/competitors";
 
 export const dynamicParams = false;
@@ -47,7 +48,7 @@ export default async function CompareCompetitorPage(
           <div className="flex items-center gap-4">
             <Link href="/docs"><Button variant="ghost">Docs</Button></Link>
             <Link href="/pricing"><Button variant="ghost">Pricing</Button></Link>
-            <Link href="/sign-up"><Button>Get started free</Button></Link>
+            <MarketingNavAuth signUpLabel="Get started free" />
           </div>
         </div>
       </nav>

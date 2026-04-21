@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MarketingNavAuth } from "@/components/marketing-nav-auth";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | ScreenshotsMCP",
@@ -81,9 +82,7 @@ export default function PrivacyPolicyPage() {
                 Terms
               </Button>
             </Link>
-            <Link href="/sign-in">
-              <Button className="bg-green-500 text-[1.02rem] font-semibold text-black hover:bg-green-400 sm:text-lg">Sign in</Button>
-            </Link>
+            <MarketingNavAuth variant="emerald" />
           </div>
         </div>
       </nav>

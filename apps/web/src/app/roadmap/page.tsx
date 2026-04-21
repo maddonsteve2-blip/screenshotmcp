@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Camera, CheckCircle2, Clock, Hammer, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MarketingNavAuth } from "@/components/marketing-nav-auth";
 
 export const metadata: Metadata = {
   title: "Roadmap — ScreenshotsMCP",
@@ -58,7 +59,7 @@ export default function RoadmapPage() {
           <div className="flex items-center gap-4">
             <Link href="/changelog"><Button variant="ghost">Changelog</Button></Link>
             <Link href="/docs"><Button variant="ghost">Docs</Button></Link>
-            <Link href="/sign-up"><Button>Get started</Button></Link>
+            <MarketingNavAuth />
           </div>
         </div>
       </nav>
