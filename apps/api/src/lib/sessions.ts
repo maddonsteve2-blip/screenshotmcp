@@ -176,6 +176,10 @@ async function persistRunDiagnostics(
 }
 
 export async function createSession(userId: string, viewport?: { width: number; height: number }, recordVideo?: boolean, outcomeContext?: RunOutcomeContext | null): Promise<string> {
+  // Default to ON: every session is recorded unless the caller explicitly
+  // passes `false`. Replays are the primary audit artifact for browser work
+  // and storage is cheap enough to make this the default rather than opt-in.
+  const shouldRecord = recordVideo === false ? false : true;
   const sessionId = nanoid();
   // Enforce max session limit — close oldest
   if (sessions.size >= MAX_SESSIONS) {
@@ -188,14 +192,14 @@ export async function createSession(userId: string, viewport?: { width: number; 
   const vp = viewport || { width: 1280, height: 800 };
   const { browser, release } = await browserPool.acquire();
 
-  // Video recording setup
-  const videoDir = recordVideo ? join(tmpdir(), `smcp-video-${sessionId}`) : undefined;
+  // Video recording setup — uses the resolved shouldRecord flag from above.
+  const videoDir = shouldRecord ? join(tmpdir(), `smcp-video-${sessionId}`) : undefined;
   const contextOpts: any = {
     userAgent: DEFAULT_USER_AGENT,
     viewport: vp,
     locale: "en-US",
   };
-  if (recordVideo && videoDir) {
+  if (shouldRecord && videoDir) {
     contextOpts.recordVideo = { dir: videoDir, size: vp };
   }
 
@@ -207,13 +211,13 @@ export async function createSession(userId: string, viewport?: { width: number; 
   const networkErrors: Session["networkErrors"] = [];
   const networkRequests: NetworkEntry[] = [];
 
-  const session: Session = { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors, networkRequests, recording: !!recordVideo, screenshotSeq: 0, videoDir, startTime: Date.now(), outcomeContext: normalizeOutcomeContext(outcomeContext) };
+  const session: Session = { browser, context, page, lastUsed: new Date(), userId, release, consoleLogs, networkErrors, networkRequests, recording: shouldRecord, screenshotSeq: 0, videoDir, startTime: Date.now(), outcomeContext: normalizeOutcomeContext(outcomeContext) };
   await db.insert(runs).values({
     id: sessionId,
     userId,
     status: "active",
     executionMode: "remote",
-    recordingEnabled: !!recordVideo,
+    recordingEnabled: shouldRecord,
     viewportWidth: vp.width,
     viewportHeight: vp.height,
     startedAt: new Date(),

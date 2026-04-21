@@ -834,7 +834,7 @@ server.tool(
       sessionId: z.string().optional().describe("Existing session ID to reuse. Omit to start a new browser session."),
       width: z.number().int().min(320).max(3840).optional().describe("Viewport width for new sessions (default 1280). Ignored if sessionId is provided."),
       height: z.number().int().min(240).max(2160).optional().describe("Viewport height for new sessions (default 800). Ignored if sessionId is provided."),
-      record_video: z.boolean().optional().default(false).describe("Record a video of the entire browser session. The .webm recording URL is returned when you call browser_close. Only applies to new sessions."),
+      record_video: z.boolean().optional().default(true).describe("Record a video of the entire browser session (default: true). The .webm recording URL is returned when you call browser_close. Only applies to new sessions. Pass false to disable for this session."),
       task_type: z.string().optional().describe("Optional task type for workflow-aware run outcomes, e.g. 'site_audit' or 'browser_review'."),
       user_goal: z.string().optional().describe("Plain-language user goal for the run outcome shown in the website UI."),
       workflow_name: z.string().optional().describe("Workflow name used for this run, e.g. 'sitewide-performance-audit'."),
@@ -1840,8 +1840,9 @@ server.tool(
       try {
         const origin = normalizeOrigin(args.loginUrl);
         const primaryInbox = await getPrimaryInbox(authResult.userId);
-        // Create a new session and navigate
-        const sessionId = await createSession(authResult.userId);
+        // Create a new session and navigate — record by default so login
+        // attempts always produce a replayable .webm for audit.
+        const sessionId = await createSession(authResult.userId, undefined, true);
         const session = await getSession(sessionId, authResult.userId);
         if (!session) return { content: [{ type: "text", text: "Failed to create browser session." }] };
         const page = session.page;

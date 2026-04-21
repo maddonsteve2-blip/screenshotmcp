@@ -51,10 +51,10 @@ export function ReplayTab({
           <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed p-8">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Video className="h-4 w-4 text-muted-foreground" />
-              Recording wasn&apos;t enabled for this run
+              Recording was disabled for this run
             </div>
             <p className="text-sm text-muted-foreground">
-              Replay videos are opt-in. Pass <code className="rounded bg-muted px-1.5 py-0.5 text-xs">record_video: true</code> to <code className="rounded bg-muted px-1.5 py-0.5 text-xs">browser_navigate</code> (MCP) or <code className="rounded bg-muted px-1.5 py-0.5 text-xs">--record</code> to <code className="rounded bg-muted px-1.5 py-0.5 text-xs">npx screenshotsmcp browser:start</code> (CLI) to capture the whole session as a .webm video.
+              Recording is on by default for every browser session. This run was explicitly opted out with <code className="rounded bg-muted px-1.5 py-0.5 text-xs">record_video: false</code>. Start a new session without that flag to capture a replayable .webm.
             </p>
             <p className="text-xs text-muted-foreground">
               Screenshots, console logs, and network activity are always captured — see the other tabs for that evidence.

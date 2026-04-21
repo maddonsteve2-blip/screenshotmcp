@@ -175,9 +175,9 @@ export default function RecordingsPage() {
           Replays
         </h1>
         <p className="text-muted-foreground">
-          Artifact library for replayable video evidence. Use Runs when you want the full session review with captures and replay together. Start recording by passing{" "}
-          <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">record_video: true</code>{" "}
-          to <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">browser_navigate</code>.
+          Artifact library for replayable video evidence. Use Runs when you want the full session review with captures and replay together. Every new session is recorded by default — pass{" "}
+          <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">record_video: false</code>{" "}
+          to <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">browser_navigate</code> if you want to opt out.
         </p>
         <LibraryTabs />
       </div>
@@ -291,8 +291,7 @@ export default function RecordingsPage() {
             <Video className="h-12 w-12 text-muted-foreground/30 mb-4" />
             <h3 className="text-lg font-medium mb-2">No recordings yet</h3>
             <p className="text-muted-foreground text-sm max-w-md">
-              Start a browser session with <code className="bg-muted px-1 py-0.5 rounded text-sm">record_video: true</code>{" "}
-              to capture a video of the entire session. The recording will appear here when the session is closed.
+              Start a new browser session with <code className="bg-muted px-1 py-0.5 rounded text-sm">browser_navigate</code> (recording is on by default). The replay will appear here when the session is closed.
             </p>
           </CardContent>
         </Card>
