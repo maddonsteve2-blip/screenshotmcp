@@ -261,7 +261,7 @@ export default function RunDetailTabs({
       </TabsContent>
 
       <TabsContent value="replay" className="flex flex-col gap-6">
-        <ReplayTab primaryRecording={primaryRecording} />
+        <ReplayTab primaryRecording={primaryRecording} recordingEnabled={run.recordingEnabled} />
       </TabsContent>
 
       <TabsContent value="console" className="flex flex-col gap-6">
