@@ -1,7 +1,7 @@
 "use client";
 
 import { nanoid } from "nanoid";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 /**
  * Annotation types stored as JSONB on screenshots.annotations.
@@ -88,7 +88,16 @@ export function AnnotationLayer({
   fontSize?: number;
   onChange: (next: Annotation[]) => void;
 }) {
+  // Use a ref for in-progress drag state so synthesized sequential
+  // pointer events (and React 18 event batching) see the current shape
+  // without waiting for re-render. We also mirror into state to drive
+  // the preview render.
+  const draggingRef = useRef<Annotation | null>(null);
   const [dragging, setDragging] = useState<Annotation | null>(null);
+  const setDrag = useCallback((next: Annotation | null) => {
+    draggingRef.current = next;
+    setDragging(next);
+  }, []);
   const [pendingText, setPendingText] = useState<{ x: number; y: number } | null>(null);
 
   // Convert a pointer event from screen space into natural image space.
@@ -115,49 +124,51 @@ export function AnnotationLayer({
 
     const id = nanoid(8);
     if (tool === "rect") {
-      setDragging({ id, type: "rect", color, x: p.x, y: p.y, w: 0, h: 0 });
+      setDrag({ id, type: "rect", color, x: p.x, y: p.y, w: 0, h: 0 });
     } else if (tool === "arrow") {
-      setDragging({ id, type: "arrow", color, x1: p.x, y1: p.y, x2: p.x, y2: p.y });
+      setDrag({ id, type: "arrow", color, x1: p.x, y1: p.y, x2: p.x, y2: p.y });
     } else if (tool === "pen") {
-      setDragging({ id, type: "path", color, points: [[p.x, p.y]] });
+      setDrag({ id, type: "path", color, points: [[p.x, p.y]] });
     }
   };
 
   const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!dragging) return;
+    const current = draggingRef.current;
+    if (!current) return;
     e.stopPropagation();
     const p = toImagePoint(e);
-    if (dragging.type === "rect") {
-      setDragging({ ...dragging, w: p.x - dragging.x, h: p.y - dragging.y });
-    } else if (dragging.type === "arrow") {
-      setDragging({ ...dragging, x2: p.x, y2: p.y });
-    } else if (dragging.type === "path") {
-      setDragging({ ...dragging, points: [...dragging.points, [p.x, p.y]] });
+    if (current.type === "rect") {
+      setDrag({ ...current, w: p.x - current.x, h: p.y - current.y });
+    } else if (current.type === "arrow") {
+      setDrag({ ...current, x2: p.x, y2: p.y });
+    } else if (current.type === "path") {
+      setDrag({ ...current, points: [...current.points, [p.x, p.y]] });
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!dragging) return;
+    const current = draggingRef.current;
+    if (!current) return;
     e.stopPropagation();
     // Discard zero-area drags to avoid accidental micro-shapes.
     let keep = true;
-    if (dragging.type === "rect" && Math.abs(dragging.w) < 4 && Math.abs(dragging.h) < 4) keep = false;
-    if (dragging.type === "arrow" &&
-        Math.hypot(dragging.x2 - dragging.x1, dragging.y2 - dragging.y1) < 4) keep = false;
-    if (dragging.type === "path" && dragging.points.length < 2) keep = false;
+    if (current.type === "rect" && Math.abs(current.w) < 4 && Math.abs(current.h) < 4) keep = false;
+    if (current.type === "arrow" &&
+        Math.hypot(current.x2 - current.x1, current.y2 - current.y1) < 4) keep = false;
+    if (current.type === "path" && current.points.length < 2) keep = false;
 
     if (keep) {
       // Normalize rect negative width/height.
-      if (dragging.type === "rect") {
-        const rect = { ...dragging };
+      if (current.type === "rect") {
+        const rect = { ...current };
         if (rect.w < 0) { rect.x = rect.x + rect.w; rect.w = -rect.w; }
         if (rect.h < 0) { rect.y = rect.y + rect.h; rect.h = -rect.h; }
         onChange([...annotations, rect]);
       } else {
-        onChange([...annotations, dragging]);
+        onChange([...annotations, current]);
       }
     }
-    setDragging(null);
+    setDrag(null);
   };
 
   const deleteAnnotation = (id: string) => {
