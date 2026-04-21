@@ -305,6 +305,19 @@ runsRouter.post("/", async (req, res) => {
     workflowUsed: typeof workflowName === "string" ? workflowName : null,
     verdict: "inconclusive",
   }).catch(() => { /* best-effort */ });
+
+  // Live update: a CLI-initiated run just appeared.
+  emitDashboardEvent({
+    type: "run.created",
+    userId: auth.userId,
+    runId,
+    payload: {
+      status: "active",
+      executionMode: "cli-local",
+      startUrl: typeof startUrl === "string" ? startUrl : null,
+    },
+  });
+
   res.json({ runId });
 });
 
@@ -387,6 +400,27 @@ runsRouter.post("/:id/steps", async (req, res) => {
     .set({ finalUrl: body.nextUrl ?? null, pageTitle: body.pageTitle ?? null, updatedAt: new Date() })
     .where(eq(runs.id, runId));
 
+  // Live update: new step screenshot in a CLI run. Pushes into captures tab,
+  // library list, dashboard overview — all without the client polling.
+  emitDashboardEvent({
+    type: "screenshot.completed",
+    userId: auth.userId,
+    runId,
+    payload: {
+      screenshotId,
+      url: body.nextUrl ?? "",
+      publicUrl,
+      stepIndex,
+      actionLabel: caption.actionLabel,
+    },
+  });
+  emitDashboardEvent({
+    type: "run.updated",
+    userId: auth.userId,
+    runId,
+    payload: { finalUrl: body.nextUrl ?? null, pageTitle: body.pageTitle ?? null },
+  });
+
   res.json({
     screenshotId,
     publicUrl,
@@ -414,6 +448,19 @@ runsRouter.patch("/:id", async (req, res) => {
       updatedAt: new Date(),
     })
     .where(and(eq(runs.id, runId), eq(runs.userId, auth.userId)));
+
+  // Live update: run finished or status changed.
+  emitDashboardEvent({
+    type: nextStatus === "completed" || nextStatus === "failed" ? "run.completed" : "run.updated",
+    userId: auth.userId,
+    runId,
+    payload: {
+      status: nextStatus ?? "active",
+      finalUrl: typeof finalUrl === "string" ? finalUrl : null,
+      pageTitle: typeof pageTitle === "string" ? pageTitle : null,
+    },
+  });
+
   res.json({ ok: true });
 });
 

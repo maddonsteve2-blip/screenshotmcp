@@ -1,19 +1,44 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { ExternalLink, Video } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useDashboardWs } from "@/lib/use-dashboard-ws";
 import { cn } from "@/lib/utils";
 import type { RecordingItem } from "../run-detail-types";
 
 export function ReplayTab({
+  runId,
   primaryRecording,
   recordingEnabled,
 }: {
+  runId: string;
   primaryRecording: RecordingItem | null;
   recordingEnabled?: boolean;
 }) {
+  const [liveRecording, setLiveRecording] = useState<RecordingItem | null>(primaryRecording);
+
+  useEffect(() => {
+    setLiveRecording(primaryRecording);
+  }, [primaryRecording]);
+
+  useDashboardWs<{ recordings: RecordingItem[] }>({
+    enabled: recordingEnabled !== false,
+    subscription: { channel: "recordings", runId },
+    onMessage: (message) => {
+      if (message.type !== "recordings") return;
+      if (!message.data || typeof message.data !== "object" || !("recordings" in message.data)) return;
+      const next = (message.data as { recordings: RecordingItem[] }).recordings;
+      if (Array.isArray(next)) {
+        setLiveRecording(next[0] ?? null);
+      }
+    },
+  });
+
+  const effectiveRecording = liveRecording;
+
   return (
     <Card>
       <CardHeader>
@@ -21,24 +46,24 @@ export function ReplayTab({
         <CardDescription>Recorded video evidence for this run.</CardDescription>
       </CardHeader>
       <CardContent>
-        {primaryRecording ? (
+        {effectiveRecording ? (
           <div className="flex flex-col gap-4">
             <video
-              src={primaryRecording.videoUrl}
+              src={effectiveRecording.videoUrl}
               controls
               className="aspect-video w-full rounded-lg border bg-black shadow-sm"
             />
             <div className="flex flex-wrap items-center gap-4 text-base text-muted-foreground">
               <span>
-                {primaryRecording.durationMs
-                  ? `${Math.floor(primaryRecording.durationMs / 1000)}s`
+                {effectiveRecording.durationMs
+                  ? `${Math.floor(effectiveRecording.durationMs / 1000)}s`
                   : "—"}
               </span>
               <span>
-                {primaryRecording.viewportWidth ?? "—"}×{primaryRecording.viewportHeight ?? "—"}
+                {effectiveRecording.viewportWidth ?? "—"}×{effectiveRecording.viewportHeight ?? "—"}
               </span>
               <Link
-                href={primaryRecording.videoUrl}
+                href={effectiveRecording.videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(buttonVariants({ variant: "ghost", size: "xs" }))}

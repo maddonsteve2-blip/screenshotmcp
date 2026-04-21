@@ -11,6 +11,7 @@ import { Camera, Download, ArrowRight, Video, ExternalLink, Globe, Image as Imag
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
 import { InstallDialog } from "@/components/install-dialog";
 import { PageContainer } from "@/components/page-container";
+import { useDashboardWs } from "@/lib/use-dashboard-ws";
 
 interface DashboardData {
   usage: number;
@@ -102,10 +103,73 @@ function hostname(input?: string | null) {
 
 export function DashboardClient({ data }: { data: DashboardData }) {
   const [showInstallDialog, setShowInstallDialog] = useState(false);
-  
-  const { usage, limit, keyCount, recordingCount, activeRunCount, failedRunCount, issueRunCount, sharedRunCount, plan, apiUrl, recentRuns, recentScreenshots, recentRecordings } = data;
+
+  const {
+    usage,
+    limit,
+    keyCount,
+    recordingCount,
+    activeRunCount,
+    failedRunCount,
+    issueRunCount,
+    sharedRunCount,
+    plan,
+    apiUrl,
+    recentRuns,
+    recentScreenshots,
+    recentRecordings,
+  } = data;
+
+  const [liveRecentRuns, setLiveRecentRuns] = useState<DashboardData["recentRuns"]>(recentRuns);
+  const [liveRunKpis, setLiveRunKpis] = useState({
+    activeRunCount,
+    failedRunCount,
+    issueRunCount,
+    sharedRunCount,
+  });
+
+  useDashboardWs<{ runs: any[] }>({
+    subscription: { channel: "runs" },
+    onMessage: (message) => {
+      if (message.type !== "runs") return;
+      if (!message.data || typeof message.data !== "object" || !("runs" in message.data)) return;
+      const next = (message.data as { runs: any[] }).runs;
+      if (!Array.isArray(next)) return;
+
+      setLiveRunKpis({
+        activeRunCount: next.filter((run) => run?.status === "active").length,
+        failedRunCount: next.filter((run) => run?.status === "failed").length,
+        issueRunCount: next.filter((run) => (run?.consoleErrorCount ?? 0) + (run?.networkErrorCount ?? 0) > 0).length,
+        sharedRunCount: next.filter((run) => Boolean(run?.shareToken)).length,
+      });
+
+      setLiveRecentRuns(
+        next.slice(0, 10).map((run) => ({
+          id: String(run.id),
+          status: String(run.status ?? "active"),
+          executionMode: String(run.executionMode ?? "unknown"),
+          startUrl: run.startUrl ?? null,
+          finalUrl: run.finalUrl ?? null,
+          pageTitle: run.pageTitle ?? null,
+          shareToken: run.shareToken ?? null,
+          sharedAt: run.sharedAt ?? null,
+          viewportWidth: run.viewportWidth ?? null,
+          viewportHeight: run.viewportHeight ?? null,
+          consoleErrorCount: run.consoleErrorCount ?? 0,
+          consoleWarningCount: run.consoleWarningCount ?? 0,
+          networkErrorCount: run.networkErrorCount ?? 0,
+          captureCount: run.captureCount ?? 0,
+          replayCount: run.replayCount ?? 0,
+          startedAt: run.startedAt ?? new Date().toISOString(),
+          endedAt: run.endedAt ?? null,
+        })),
+      );
+    },
+  });
   const isUnlimited = limit >= 999999;
   const pct = isUnlimited ? 0 : Math.min(100, Math.round((usage / limit) * 100));
+
+  const { activeRunCount: liveActiveRunCount, failedRunCount: liveFailedRunCount, issueRunCount: liveIssueRunCount, sharedRunCount: liveSharedRunCount } = liveRunKpis;
 
   return (
     <>
@@ -154,7 +218,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{issueRunCount.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{liveIssueRunCount.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">Runs with console or network failures surfaced in reporting</p>
             </CardContent>
           </Card>
@@ -165,7 +229,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{activeRunCount.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{liveActiveRunCount.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">Runs currently in progress or awaiting completion</p>
             </CardContent>
           </Card>
@@ -203,7 +267,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               <Globe className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{sharedRunCount.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{liveSharedRunCount.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">Runs currently exposed through a public review link</p>
             </CardContent>
           </Card>
@@ -221,12 +285,12 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               </Link>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              {recentRuns.length === 0 ? (
+              {liveRecentRuns.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                   No runs yet. Start a browser workflow and your recent sessions will show up here with their evidence and issues.
                 </div>
               ) : (
-                recentRuns.map((item) => {
+                liveRecentRuns.map((item) => {
                   const issueCount = item.consoleErrorCount + item.networkErrorCount;
                   const targetUrl = item.finalUrl ?? item.startUrl ?? "Managed browser session";
                   const title = item.pageTitle ?? hostname(targetUrl);
@@ -292,15 +356,15 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="rounded-lg border p-4">
                     <p className="text-xs text-muted-foreground">Failed runs</p>
-                    <p className="mt-1 text-2xl font-semibold">{failedRunCount}</p>
+                    <p className="mt-1 text-2xl font-semibold">{liveFailedRunCount}</p>
                   </div>
                   <div className="rounded-lg border p-4">
                     <p className="text-xs text-muted-foreground">Runs with issues</p>
-                    <p className="mt-1 text-2xl font-semibold">{issueRunCount}</p>
+                    <p className="mt-1 text-2xl font-semibold">{liveIssueRunCount}</p>
                   </div>
                 </div>
                 <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                  {failedRunCount > 0 || issueRunCount > 0
+                  {liveFailedRunCount > 0 || liveIssueRunCount > 0
                     ? "Open the Runs view to review failures, console errors, and network problems in one workflow."
                     : "Your recent runs are not showing failed or issue-marked sessions right now."}
                 </div>

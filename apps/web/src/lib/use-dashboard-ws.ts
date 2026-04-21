@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-type DashboardChannel = "screenshots" | "recordings" | "artifacts" | "run-live";
+type DashboardChannel = "runs" | "screenshots" | "recordings" | "artifacts" | "run-live";
 
 type DashboardSubscription = {
   channel: DashboardChannel;

@@ -878,11 +878,13 @@ server.tool(
         await setSessionStartUrl(sessionId, auth.userId, args.url);
         const img = await pageScreenshot(page);
         const vpSize = page.viewportSize();
+        const webAppUrl = (process.env.WEB_APP_URL || process.env.WEB_URL || "https://www.screenshotmcp.com").replace(/\/+$/, "");
+        const runUrl = `${webAppUrl}/dashboard/runs/${encodeURIComponent(sessionId)}`;
         const recordingNote = isRecording ? "\n🔴 Recording session — call browser_close to get the video URL" : "";
         const workflowNote = args.workflow_name || args.user_goal
           ? `\nRun outcome context: ${args.user_goal || args.task_type || "general browser task"}${args.workflow_name ? ` · workflow ${args.workflow_name}` : ""}`
           : "";
-        return { content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\nViewport: ${vpSize?.width}×${vpSize?.height}\n(Pass this sessionId to all browser_ tools)${recordingNote}${workflowNote}` }, img] };
+        return { content: [{ type: "text", text: `Navigated to ${args.url}\nSession ID: ${sessionId}\nRun URL: ${runUrl}\nViewport: ${vpSize?.width}×${vpSize?.height}\n(Pass this sessionId to all browser_ tools)${recordingNote}${workflowNote}` }, img] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error navigating: ${humanizeError(err instanceof Error ? err.message : String(err))}` }] };
       }
@@ -1117,19 +1119,23 @@ server.tool(
       const auth = await validateKey(apiKey);
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const result = await closeSession(args.sessionId);
+      const webAppUrl = (process.env.WEB_APP_URL || process.env.WEB_URL || "https://www.screenshotmcp.com").replace(/\/+$/, "");
+      const runUrl = `${webAppUrl}/dashboard/runs/${encodeURIComponent(args.sessionId)}`;
+      const [runRow] = await db.select({ shareToken: runs.shareToken }).from(runs).where(eq(runs.id, args.sessionId));
+      const shareUrl = runRow?.shareToken ? `${webAppUrl}/shared/runs/${encodeURIComponent(runRow.shareToken)}` : null;
       if (result.videoUrl) {
         if (result.finalizationError) {
-          return { content: [{ type: "text", text: `Session ${args.sessionId} closed.\n\n🎬 **Session Recording:** ${result.videoUrl}\n\n⚠️ Recording completed, but replay persistence reported an issue: ${result.finalizationError}` }] };
+          return { content: [{ type: "text", text: `Session ${args.sessionId} closed.\nRun URL: ${runUrl}${shareUrl ? `\nShare URL: ${shareUrl}` : ""}\n\n🎬 **Session Recording:** ${result.videoUrl}\n\n⚠️ Recording completed, but replay persistence reported an issue: ${result.finalizationError}` }] };
         }
         if (!result.recordingId) {
-          return { content: [{ type: "text", text: `Session ${args.sessionId} closed.\n\n🎬 **Session Recording:** ${result.videoUrl}\n\n⚠️ Recording uploaded, but no replay record was created.` }] };
+          return { content: [{ type: "text", text: `Session ${args.sessionId} closed.\nRun URL: ${runUrl}${shareUrl ? `\nShare URL: ${shareUrl}` : ""}\n\n🎬 **Session Recording:** ${result.videoUrl}\n\n⚠️ Recording uploaded, but no replay record was created.` }] };
         }
-        return { content: [{ type: "text", text: `Session ${args.sessionId} closed.\n\n🎬 **Session Recording:** ${result.videoUrl}\n\nThis .webm video shows everything that happened during the browser session. Share it with users or use it for debugging.` }] };
+        return { content: [{ type: "text", text: `Session ${args.sessionId} closed.\nRun URL: ${runUrl}${shareUrl ? `\nShare URL: ${shareUrl}` : ""}\n\n🎬 **Session Recording:** ${result.videoUrl}\n\nThis .webm video shows everything that happened during the browser session. Share it with users or use it for debugging.` }] };
       }
       if (result.finalizationError) {
-        return { content: [{ type: "text", text: `Session ${args.sessionId} closed, but recording finalization failed: ${result.finalizationError}` }] };
+        return { content: [{ type: "text", text: `Session ${args.sessionId} closed.\nRun URL: ${runUrl}${shareUrl ? `\nShare URL: ${shareUrl}` : ""}\n\nRecording finalization failed: ${result.finalizationError}` }] };
       }
-      return { content: [{ type: "text", text: `Session ${args.sessionId} closed.` }] };
+      return { content: [{ type: "text", text: `Session ${args.sessionId} closed.\nRun URL: ${runUrl}${shareUrl ? `\nShare URL: ${shareUrl}` : ""}` }] };
     }
   );
 

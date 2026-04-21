@@ -7,6 +7,7 @@ import { db } from "./db.js";
 import { recordings, runs, screenshots } from "@screenshotsmcp/db";
 import { persistInitialRunOutcome, persistRunOutcomeSnapshot, type RunOutcomeContext, normalizeOutcomeContext } from "./run-outcomes.js";
 import { emitWebhookEvent } from "./webhook-delivery.js";
+import { emitDashboardEvent } from "./dashboard-events.js";
 import { existsSync } from "fs";
 import { readFile, rm } from "fs/promises";
 import { tmpdir } from "os";
@@ -155,6 +156,24 @@ async function persistRunDiagnostics(
     .where(eq(runs.id, sessionId))
     .catch((err) => console.error(`[Sessions] Failed to persist run diagnostics for ${sessionId}:`, err));
 
+  // Live update: diagnostics just moved. For active runs this is how the
+  // runs list keeps counts fresh without the client polling the DB.
+  emitDashboardEvent({
+    type: status === "completed" ? "run.completed" : status === "failed" ? "run.completed" : "run.updated",
+    userId: session.userId,
+    runId: sessionId,
+    payload: {
+      status,
+      finalUrl,
+      pageTitle,
+      consoleLogCount: session.consoleLogs.length,
+      consoleErrorCount,
+      consoleWarningCount,
+      networkRequestCount: session.networkRequests.length,
+      networkErrorCount: session.networkErrors.length,
+    },
+  });
+
   await persistRunOutcomeSnapshot({
     runId: sessionId,
     userId: session.userId,
@@ -227,6 +246,21 @@ export async function createSession(userId: string, viewport?: { width: number; 
   attachPageListeners(page, session);
 
   sessions.set(sessionId, session);
+
+  // Live update: a new run just appeared in the user's dashboard. Push.
+  emitDashboardEvent({
+    type: "run.created",
+    userId,
+    runId: sessionId,
+    payload: {
+      status: "active",
+      executionMode: "remote",
+      recordingEnabled: shouldRecord,
+      viewportWidth: vp.width,
+      viewportHeight: vp.height,
+    },
+  });
+
   return sessionId;
 }
 
@@ -385,6 +419,30 @@ export async function closeSession(sessionId: string): Promise<{ videoUrl?: stri
 
   await persistRunDiagnostics(sessionId, session, "completed", endedAt, pageSnapshot);
 
+  // Live update: run finished. Push so lists and overview flip status.
+  emitDashboardEvent({
+    type: "run.completed",
+    userId: session.userId,
+    runId: sessionId,
+    payload: {
+      status: "completed",
+      finalUrl: pageSnapshot?.finalUrl ?? null,
+      pageTitle: pageSnapshot?.pageTitle ?? null,
+      recordingId: recordingId ?? null,
+      videoUrl: videoUrl ?? null,
+      finalizationError: finalizationError ?? null,
+    },
+  });
+
+  if (recordingId) {
+    emitDashboardEvent({
+      type: "recording.created",
+      userId: session.userId,
+      runId: sessionId,
+      payload: { recordingId, videoUrl: videoUrl ?? null },
+    });
+  }
+
   if (finalizationError) {
     await persistRunOutcomeSnapshot({
       runId: sessionId,
@@ -507,6 +565,21 @@ export async function pageScreenshot(
       heading: nextHeading,
       completedAt: new Date(),
     }).catch((err) => console.error(`[Sessions] Failed to persist session screenshot for ${sessionEntry.sessionId}:`, err));
+
+    // Live update: new step capture in an active run. Clients subscribed to
+    // `screenshots`, `artifacts`, or the run detail page get this instantly.
+    emitDashboardEvent({
+      type: "screenshot.completed",
+      userId: sessionEntry.session.userId,
+      runId: sessionEntry.sessionId,
+      payload: {
+        screenshotId,
+        url: nextUrl,
+        publicUrl,
+        stepIndex,
+        actionLabel: caption.actionLabel,
+      },
+    });
   }
   return { type: "image", data: Buffer.from(buf).toString("base64"), mimeType: "image/jpeg" };
 }

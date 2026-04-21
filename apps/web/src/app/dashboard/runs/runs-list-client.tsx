@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useDashboardWs } from "@/lib/use-dashboard-ws";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, ArrowRight, Clock, ExternalLink, Globe, Image as ImageIcon, Monitor, Network, Search, SquareTerminal, Video } from "lucide-react";
 
@@ -102,20 +103,31 @@ function FilterPill({
 }
 
 export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
+  const [liveRuns, setLiveRuns] = useState<RunListItem[]>(runs);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed" | "failed">("all");
   const [modeFilter, setModeFilter] = useState<string>("all");
   const [evidenceFilter, setEvidenceFilter] = useState<"all" | "has-evidence" | "captures" | "replays" | "issues">("all");
   const [shareFilter, setShareFilter] = useState<"all" | "shared" | "private">("all");
 
+  useDashboardWs<{ runs: RunListItem[] }>({
+    subscription: { channel: "runs" },
+    onMessage: (message) => {
+      if (message.type !== "runs") return;
+      if (!message.data || typeof message.data !== "object" || !("runs" in message.data)) return;
+      const next = (message.data as { runs: RunListItem[] }).runs;
+      if (Array.isArray(next)) setLiveRuns(next);
+    },
+  });
+
   const modeOptions = useMemo(
-    () => ["all", ...Array.from(new Set(runs.map((run) => run.executionMode).filter(Boolean))).sort()],
-    [runs],
+    () => ["all", ...Array.from(new Set(liveRuns.map((run) => run.executionMode).filter(Boolean))).sort()],
+    [liveRuns],
   );
 
   const filteredRuns = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return runs.filter((run) => {
+    return liveRuns.filter((run) => {
       const statusMatch = statusFilter === "all" || run.status === statusFilter;
       const modeMatch = modeFilter === "all" || run.executionMode === modeFilter;
       const shareMatch = shareFilter === "all"
@@ -142,17 +154,17 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
 
       return statusMatch && modeMatch && shareMatch && evidenceMatch && queryMatch;
     });
-  }, [evidenceFilter, modeFilter, query, runs, shareFilter, statusFilter]);
+  }, [evidenceFilter, liveRuns, modeFilter, query, shareFilter, statusFilter]);
 
   const counts = useMemo(() => ({
-    active: runs.filter((run) => run.status === "active").length,
-    failed: runs.filter((run) => run.status === "failed").length,
-    withEvidence: runs.filter((run) => run.captureCount > 0 || run.replayCount > 0).length,
-    withIssues: runs.filter((run) => run.consoleErrorCount > 0 || run.networkErrorCount > 0).length,
-    shared: runs.filter((run) => Boolean(run.shareToken)).length,
-  }), [runs]);
+    active: liveRuns.filter((run) => run.status === "active").length,
+    failed: liveRuns.filter((run) => run.status === "failed").length,
+    withEvidence: liveRuns.filter((run) => run.captureCount > 0 || run.replayCount > 0).length,
+    withIssues: liveRuns.filter((run) => run.consoleErrorCount > 0 || run.networkErrorCount > 0).length,
+    shared: liveRuns.filter((run) => Boolean(run.shareToken)).length,
+  }), [liveRuns]);
 
-  if (runs.length === 0) {
+  if (liveRuns.length === 0) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-3">

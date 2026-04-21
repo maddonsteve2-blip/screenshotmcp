@@ -2,11 +2,12 @@ import { Server as HttpServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { URL } from "url";
 import { createHash } from "crypto";
-import { and, desc, eq } from "drizzle-orm";
-import { apiKeys, recordings, runs, screenshots, users } from "@screenshotsmcp/db";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
+import { apiKeys, recordings, runOutcomes, runs, screenshots, users } from "@screenshotsmcp/db";
 import { db } from "../lib/db.js";
 import { getPresignedUrl } from "../lib/r2.js";
 import { getSession } from "../lib/sessions.js";
+import { DashboardEvent, subscribeDashboardEvents } from "../lib/dashboard-events.js";
 
 const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET || "").trim();
 
@@ -15,9 +16,10 @@ type AuthResult = {
 };
 
 type DashboardSubscription =
-  | { channel: "screenshots" }
-  | { channel: "recordings" }
+  | { channel: "screenshots"; runId?: string }
+  | { channel: "recordings"; runId?: string }
   | { channel: "artifacts" }
+  | { channel: "runs" }
   | { channel: "run-live"; runId: string };
 
 async function authenticateWs(req: { url?: string }): Promise<AuthResult | null> {
@@ -56,9 +58,10 @@ function parseSubscription(value: unknown): DashboardSubscription | null {
 
   const candidate = value as { channel?: string; runId?: string };
 
-  if (candidate.channel === "screenshots") return { channel: "screenshots" };
-  if (candidate.channel === "recordings") return { channel: "recordings" };
+  if (candidate.channel === "screenshots") return { channel: "screenshots", runId: candidate.runId?.trim() || undefined };
+  if (candidate.channel === "recordings") return { channel: "recordings", runId: candidate.runId?.trim() || undefined };
   if (candidate.channel === "artifacts") return { channel: "artifacts" };
+  if (candidate.channel === "runs") return { channel: "runs" };
   if (candidate.channel === "run-live" && candidate.runId?.trim()) {
     return { channel: "run-live", runId: candidate.runId.trim() };
   }
@@ -66,7 +69,7 @@ function parseSubscription(value: unknown): DashboardSubscription | null {
   return null;
 }
 
-async function getScreenshotsData(userId: string) {
+async function getScreenshotsData(userId: string, sessionId?: string) {
   const rows = await db
     .select({
       id: screenshots.id,
@@ -85,7 +88,11 @@ async function getScreenshotsData(userId: string) {
     })
     .from(screenshots)
     .leftJoin(runs, eq(screenshots.sessionId, runs.id))
-    .where(eq(screenshots.userId, userId))
+    .where(
+      sessionId
+        ? and(eq(screenshots.userId, userId), eq(screenshots.sessionId, sessionId))
+        : eq(screenshots.userId, userId),
+    )
     .orderBy(desc(screenshots.createdAt))
     .limit(100);
 
@@ -134,6 +141,92 @@ async function getRecordingsData(userId: string, sessionId?: string) {
   );
 
   return { recordings: items };
+}
+
+async function getRunsData(userId: string) {
+  const runRows = await db
+    .select({
+      id: runs.id,
+      status: runs.status,
+      executionMode: runs.executionMode,
+      startUrl: runs.startUrl,
+      finalUrl: runs.finalUrl,
+      pageTitle: runs.pageTitle,
+      recordingEnabled: runs.recordingEnabled,
+      shareToken: runs.shareToken,
+      sharedAt: runs.sharedAt,
+      viewportWidth: runs.viewportWidth,
+      viewportHeight: runs.viewportHeight,
+      consoleErrorCount: runs.consoleErrorCount,
+      consoleWarningCount: runs.consoleWarningCount,
+      networkRequestCount: runs.networkRequestCount,
+      networkErrorCount: runs.networkErrorCount,
+      startedAt: runs.startedAt,
+      endedAt: runs.endedAt,
+    })
+    .from(runs)
+    .where(eq(runs.userId, userId))
+    .orderBy(desc(runs.startedAt), desc(runs.createdAt))
+    .limit(50);
+
+  const sessionIds = runRows.map((row) => row.id);
+  if (sessionIds.length === 0) return { runs: [] };
+
+  const [screenshotCounts, recordingCounts, outcomeRows] = await Promise.all([
+    db
+      .select({ sessionId: screenshots.sessionId, count: count() })
+      .from(screenshots)
+      .where(and(eq(screenshots.userId, userId), inArray(screenshots.sessionId, sessionIds)))
+      .groupBy(screenshots.sessionId),
+    db
+      .select({ sessionId: recordings.sessionId, count: count() })
+      .from(recordings)
+      .where(and(eq(recordings.userId, userId), inArray(recordings.sessionId, sessionIds)))
+      .groupBy(recordings.sessionId),
+    db
+      .select({
+        runId: runOutcomes.runId,
+        verdict: runOutcomes.verdict,
+        summary: runOutcomes.summary,
+        userGoal: runOutcomes.userGoal,
+        workflowUsed: runOutcomes.workflowUsed,
+      })
+      .from(runOutcomes)
+      .where(and(eq(runOutcomes.userId, userId), inArray(runOutcomes.runId, sessionIds))),
+  ]);
+
+  const screenshotCountBySession = new Map(
+    screenshotCounts
+      .filter((row) => !!row.sessionId)
+      .map((row) => [row.sessionId as string, row.count]),
+  );
+  const recordingCountBySession = new Map(recordingCounts.map((row) => [row.sessionId, row.count]));
+  const outcomeBySession = new Map(outcomeRows.map((row) => [row.runId, row]));
+
+  return {
+    runs: runRows.map((run) => ({
+      outcome: outcomeBySession.get(run.id) ?? null,
+      id: run.id,
+      status: run.status,
+      executionMode: run.executionMode,
+      startUrl: run.startUrl,
+      finalUrl: run.finalUrl,
+      pageTitle: run.pageTitle,
+      recordingEnabled: run.recordingEnabled,
+      shareToken: run.shareToken,
+      sharedAt: run.sharedAt?.toISOString() ?? null,
+      viewportWidth: run.viewportWidth,
+      viewportHeight: run.viewportHeight,
+      startedAt: run.startedAt?.toISOString?.() ?? new Date().toISOString(),
+      endedAt: run.endedAt?.toISOString?.() ?? null,
+      captureCount: screenshotCountBySession.get(run.id) ?? 0,
+      replayCount: recordingCountBySession.get(run.id) ?? 0,
+      consoleErrorCount: run.consoleErrorCount ?? 0,
+      consoleWarningCount: run.consoleWarningCount ?? 0,
+      networkRequestCount: run.networkRequestCount ?? 0,
+      networkErrorCount: run.networkErrorCount ?? 0,
+    })),
+  };
 }
 
 async function getRunLiveData(userId: string, runId: string) {
@@ -202,10 +295,12 @@ async function getArtifactsData(userId: string) {
 
 async function getSubscriptionPayload(auth: AuthResult, subscription: DashboardSubscription) {
   switch (subscription.channel) {
+    case "runs":
+      return { type: "runs", data: await getRunsData(auth.userId) };
     case "screenshots":
-      return { type: "screenshots", data: await getScreenshotsData(auth.userId) };
+      return { type: "screenshots", data: await getScreenshotsData(auth.userId, subscription.runId) };
     case "recordings":
-      return { type: "recordings", data: await getRecordingsData(auth.userId) };
+      return { type: "recordings", data: await getRecordingsData(auth.userId, subscription.runId) };
     case "artifacts":
       return { type: "artifacts", data: await getArtifactsData(auth.userId) };
     case "run-live":
@@ -219,12 +314,52 @@ function sendJson(ws: WebSocket, payload: unknown) {
   }
 }
 
+function subscriptionShouldRefresh(subscription: DashboardSubscription, event: DashboardEvent): boolean {
+  if (subscription.channel === "runs") {
+    return (
+      event.type === "run.created" ||
+      event.type === "run.updated" ||
+      event.type === "run.completed" ||
+      event.type === "screenshot.completed" ||
+      event.type === "recording.created"
+    );
+  }
+
+  if (subscription.channel === "screenshots") {
+    if (event.type !== "screenshot.completed") return false;
+    if (!subscription.runId) return true;
+    return Boolean(event.runId && event.runId === subscription.runId);
+  }
+
+  if (subscription.channel === "recordings") {
+    if (event.type !== "recording.created") return false;
+    if (!subscription.runId) return true;
+    return Boolean(event.runId && event.runId === subscription.runId);
+  }
+
+  if (subscription.channel === "artifacts") {
+    return event.type === "screenshot.completed" || event.type === "recording.created";
+  }
+
+  if (subscription.channel === "run-live") {
+    if (!event.runId || event.runId !== subscription.runId) return false;
+    return true;
+  }
+
+  return false;
+}
+
 export function attachDashboardWs(server: HttpServer) {
   const wss = new WebSocketServer({ noServer: true });
 
   const handleConnection = (ws: WebSocket, auth: AuthResult) => {
     let subscription: DashboardSubscription | null = null;
     let refreshTimer: ReturnType<typeof setInterval> | null = null;
+    const unsubscribe = subscribeDashboardEvents(auth.userId, (event) => {
+      if (!subscription) return;
+      if (!subscriptionShouldRefresh(subscription, event)) return;
+      void pushCurrentSubscription();
+    });
 
     const clearRefreshTimer = () => {
       if (refreshTimer) {
@@ -305,6 +440,7 @@ export function attachDashboardWs(server: HttpServer) {
     ws.on("close", () => {
       clearInterval(ping);
       clearRefreshTimer();
+      unsubscribe();
     });
   };
 

@@ -6,11 +6,32 @@ import { Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScreenshotViewerDialog } from "@/components/screenshot-viewer-dialog";
+import { useDashboardWs } from "@/lib/use-dashboard-ws";
 import type { ScreenshotItem } from "../run-detail-types";
 
-export function CapturesTab({ screenshots }: { screenshots: ScreenshotItem[] }) {
+export function CapturesTab({ runId, screenshots }: { runId: string; screenshots: ScreenshotItem[] }) {
+  const [liveScreenshots, setLiveScreenshots] = useState<ScreenshotItem[]>(screenshots);
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
-  const active = activeIdx != null ? screenshots[activeIdx] : null;
+  const active = activeIdx != null ? liveScreenshots[activeIdx] : null;
+
+  useDashboardWs<{ screenshots: ScreenshotItem[] }>({
+    subscription: { channel: "screenshots", runId },
+    onMessage: (message) => {
+      if (message.type !== "screenshots") return;
+      if (!message.data || typeof message.data !== "object" || !("screenshots" in message.data)) return;
+      const next = (message.data as { screenshots: ScreenshotItem[] }).screenshots;
+      if (Array.isArray(next)) {
+        // Sort by step index then createdAt for the run detail view.
+        const sorted = [...next].sort((a, b) => {
+          const ai = typeof a.stepIndex === "number" ? a.stepIndex : Number.MAX_SAFE_INTEGER;
+          const bi = typeof b.stepIndex === "number" ? b.stepIndex : Number.MAX_SAFE_INTEGER;
+          if (ai !== bi) return ai - bi;
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
+        setLiveScreenshots(sorted);
+      }
+    },
+  });
 
   return (
     <Card>
@@ -19,13 +40,13 @@ export function CapturesTab({ screenshots }: { screenshots: ScreenshotItem[] }) 
         <CardDescription>Click any capture to open the full viewer, zoom, annotate, or share it.</CardDescription>
       </CardHeader>
       <CardContent>
-        {screenshots.length === 0 ? (
+        {liveScreenshots.length === 0 ? (
           <div className="rounded-lg border border-dashed p-8 text-sm text-muted-foreground">
             No captures were persisted for this run yet.
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            {screenshots.map((shot, idx) => (
+            {liveScreenshots.map((shot, idx) => (
               <Card key={shot.id} className="overflow-hidden">
                 <button
                   type="button"

@@ -257,11 +257,11 @@ export default function RunDetailTabs({
         />
       </TabsContent>
       <TabsContent value="captures" className="flex flex-col gap-6">
-        <CapturesTab screenshots={screenshots} />
+        <CapturesTab runId={run.id} screenshots={screenshots} />
       </TabsContent>
 
       <TabsContent value="replay" className="flex flex-col gap-6">
-        <ReplayTab primaryRecording={primaryRecording} recordingEnabled={run.recordingEnabled} />
+        <ReplayTab runId={run.id} primaryRecording={primaryRecording} recordingEnabled={run.recordingEnabled} />
       </TabsContent>
 
       <TabsContent value="console" className="flex flex-col gap-6">

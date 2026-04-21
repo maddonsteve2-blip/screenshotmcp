@@ -2,6 +2,7 @@ import { Job } from "bullmq";
 import { eq } from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { screenshots } from "@screenshotsmcp/db";
+import { emitDashboardEvent } from "../lib/dashboard-events.js";
 import { uploadScreenshot } from "../lib/r2.js";
 import { browserPool } from "../lib/browser-pool.js";
 import { STEALTH_SCRIPT, DEFAULT_USER_AGENT } from "../lib/stealth.js";
