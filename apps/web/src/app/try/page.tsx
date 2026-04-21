@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Camera, Loader2, ArrowRight, AlertCircle, Check } from "lucide-react";
+import { Show } from "@clerk/nextjs";
 
 type Trial = {
   hourRemaining: number;
@@ -221,16 +222,33 @@ export default function TryPage() {
         )}
 
         <div className="mt-12 rounded-xl border border-white/[0.06] bg-gradient-to-b from-green-500/[0.03] to-transparent p-6 text-center">
-          <p className="text-gray-400">
-            Sign up to unlock 46+ browser tools — full-page, mobile, diffs, auth testing, SEO audits, and more.
-          </p>
+          <Show when="signed-out">
+            <p className="text-gray-400">
+              Sign up to unlock 46+ browser tools — full-page, mobile, diffs, auth testing, SEO audits, and more.
+            </p>
+          </Show>
+          <Show when="signed-in">
+            <p className="text-gray-400">
+              You have full access to 46+ browser tools — full-page, mobile, diffs, auth testing, SEO audits, and more.
+            </p>
+          </Show>
           <div className="mt-4 flex items-center justify-center gap-3">
-            <Link href="/sign-up">
-              <Button className="gap-2 bg-green-500 text-black hover:bg-green-400">
-                Start free
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            <Show when="signed-out">
+              <Link href="/sign-up">
+                <Button className="gap-2 bg-green-500 text-black hover:bg-green-400">
+                  Start free
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </Show>
+            <Show when="signed-in">
+              <Link href="/dashboard">
+                <Button className="gap-2 bg-green-500 text-black hover:bg-green-400">
+                  Open dashboard
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </Show>
             <Link href="/docs">
               <Button
                 variant="outline"
