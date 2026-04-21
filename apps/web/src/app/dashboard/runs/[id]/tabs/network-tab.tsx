@@ -1,6 +1,7 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { useState } from "react";
+import { Check, Copy, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,30 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { formatBytes, formatEventTime } from "../run-detail-utils";
 import type { NetworkErrorEntry, NetworkRequestEntry } from "../run-detail-types";
+
+function CopyButton({ value, label = "Copy" }: { value: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <Button
+      type="button"
+      size="xs"
+      variant="ghost"
+      className="h-7 shrink-0 px-2"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(value);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        } catch {
+          /* no-op */
+        }
+      }}
+      aria-label={label}
+    >
+      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+    </Button>
+  );
+}
 
 export type NetworkScope = "all" | "failed";
 
@@ -85,74 +110,100 @@ export function NetworkTab({
           <span>{failedCount} failed</span>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[0.72fr_1.28fr] gap-6">
+        {networkErrors.length > 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle>Failed requests</CardTitle>
-              <CardDescription>High-signal failures captured for this run.</CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div>
+                <CardTitle>Failed requests</CardTitle>
+                <CardDescription>High-signal failures captured for this run.</CardDescription>
+              </div>
+              <CopyButton
+                value={networkErrors
+                  .slice()
+                  .sort((a, b) => b.ts - a.ts)
+                  .map((e) => `${e.status} ${e.statusText} — ${e.url}`)
+                  .join("\n")}
+                label="Copy all failures"
+              />
             </CardHeader>
             <CardContent>
-              {networkErrors.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                  No failed requests were persisted for this run.
-                </div>
-              ) : (
-                <div className="flex max-h-[640px] flex-col gap-3 overflow-auto">
-                  {networkErrors
-                    .slice()
-                    .sort((a, b) => b.ts - a.ts)
-                    .map((entry, index) => (
-                      <div key={`${entry.url}-${entry.ts}-${index}`} className="flex flex-col gap-2 rounded-lg border p-3">
-                        <div className="flex items-center justify-between gap-3">
+              <div className="flex max-h-[480px] flex-col gap-3 overflow-auto">
+                {networkErrors
+                  .slice()
+                  .sort((a, b) => b.ts - a.ts)
+                  .map((entry, index) => (
+                    <div key={`${entry.url}-${entry.ts}-${index}`} className="flex flex-col gap-2 rounded-lg border p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
                           <Badge variant="outline" className="border-destructive/30 text-destructive">{entry.status}</Badge>
-                          <span className="text-sm text-muted-foreground">{formatEventTime(entry.ts)}</span>
+                          <span className="text-sm font-medium">{entry.statusText}</span>
                         </div>
-                        <p className="text-sm font-medium">{entry.statusText}</p>
-                        <p className="text-sm text-muted-foreground break-all">{entry.url}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">{formatEventTime(entry.ts)}</span>
+                          <CopyButton value={entry.url} label="Copy URL" />
+                        </div>
                       </div>
-                    ))}
-                </div>
-              )}
+                      <p className="text-sm text-muted-foreground break-all">{entry.url}</p>
+                    </div>
+                  ))}
+              </div>
             </CardContent>
           </Card>
+        )}
 
-          <Card>
-            <CardHeader>
+        <Card>
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div>
               <CardTitle>Request activity</CardTitle>
-              <CardDescription>Filtered request traffic for this run.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {filteredRequests.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                  No request activity matched the current filters.
+              <CardDescription>Filtered request traffic for this run. Click the copy icon on any row to grab the URL.</CardDescription>
+            </div>
+            {filteredRequests.length > 0 && (
+              <CopyButton
+                value={filteredRequests
+                  .map((e) => `${e.method} ${e.status} ${e.resourceType.toUpperCase()} ${e.duration}ms ${formatBytes(e.size)} ${e.url}`)
+                  .join("\n")}
+                label="Copy all rows"
+              />
+            )}
+          </CardHeader>
+          <CardContent>
+            {filteredRequests.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                No request activity matched the current filters.
+              </div>
+            ) : (
+              <div className="rounded-lg border overflow-hidden">
+                <div className="hidden md:grid grid-cols-[70px_60px_80px_80px_80px_minmax(0,1fr)_44px] gap-3 border-b bg-muted/40 px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <span>Method</span>
+                  <span>Status</span>
+                  <span>Type</span>
+                  <span>Duration</span>
+                  <span>Size</span>
+                  <span>URL</span>
+                  <span className="text-right">Copy</span>
                 </div>
-              ) : (
-                <div className="rounded-lg border overflow-hidden">
-                  <div className="grid grid-cols-[90px_90px_90px_90px_90px_1fr] gap-3 border-b bg-muted/40 px-4 py-3 text-sm font-medium text-muted-foreground">
-                    <span>Method</span>
-                    <span>Status</span>
-                    <span>Type</span>
-                    <span>Duration</span>
-                    <span>Size</span>
-                    <span>URL</span>
-                  </div>
-                  <div className="max-h-[640px] overflow-auto divide-y">
-                    {filteredRequests.map((entry, index) => (
-                      <div key={`${entry.url}-${entry.ts}-${index}`} className="grid grid-cols-[90px_90px_90px_90px_90px_1fr] gap-3 px-4 py-3 text-sm">
-                        <span className="font-medium">{entry.method}</span>
-                        <span className={cn(entry.status >= 400 ? "text-destructive" : "text-foreground")}>{entry.status}</span>
-                        <span className="uppercase text-muted-foreground">{entry.resourceType}</span>
-                        <span>{entry.duration}ms</span>
-                        <span>{formatBytes(entry.size)}</span>
-                        <span className="truncate text-muted-foreground" title={entry.url}>{entry.url}</span>
+                <div className="max-h-[640px] overflow-auto divide-y">
+                  {filteredRequests.map((entry, index) => (
+                    <div
+                      key={`${entry.url}-${entry.ts}-${index}`}
+                      className="flex flex-col gap-1 px-4 py-3 text-sm md:grid md:grid-cols-[70px_60px_80px_80px_80px_minmax(0,1fr)_44px] md:items-center md:gap-3"
+                    >
+                      <span className="font-medium">{entry.method}</span>
+                      <span className={cn(entry.status >= 400 ? "text-destructive" : "text-foreground")}>{entry.status}</span>
+                      <span className="uppercase text-muted-foreground">{entry.resourceType}</span>
+                      <span className="text-muted-foreground">{entry.duration}ms</span>
+                      <span className="text-muted-foreground">{formatBytes(entry.size)}</span>
+                      <span className="min-w-0 break-all text-muted-foreground md:truncate" title={entry.url}>{entry.url}</span>
+                      <div className="md:flex md:justify-end">
+                        <CopyButton value={entry.url} label="Copy URL" />
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </CardContent>
     </Card>
   );

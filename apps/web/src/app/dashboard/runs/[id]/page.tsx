@@ -8,6 +8,8 @@ import { getInternalApiBase, getInternalApiHeaders } from "@/lib/internal-api";
 import { runOutcomes, runs, screenshots } from "@screenshotsmcp/db";
 import RunDetailTabs from "./run-detail-tabs";
 import RunShareDialog from "./run-share-dialog";
+import { RunCopyMarkdownButton } from "./run-copy-markdown-button";
+import { CopyInlineButton } from "./copy-inline-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Clock, Globe, Image as ImageIcon, Monitor, Network, SquareTerminal } from "lucide-react";
@@ -271,9 +273,41 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
                 Public review enabled{run.sharedAt ? ` · updated ${formatDate(run.sharedAt.toISOString())}` : ""}
               </p>
             )}
-            <p className="text-sm text-muted-foreground font-mono">Session ID: {run.id}</p>
+            <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground font-mono">
+              <span>Session ID: {run.id}</span>
+              <CopyInlineButton value={run.id} label="Copy session ID" />
+            </p>
           </div>
-          <RunShareDialog runId={run.id} />
+          <div className="flex flex-wrap items-center gap-2">
+            <RunCopyMarkdownButton
+              run={{
+                runId: run.id,
+                pageTitle: run.pageTitle,
+                startUrl: run.startUrl,
+                finalUrl: run.finalUrl,
+                status: run.status,
+                executionMode: run.executionMode,
+                recordingEnabled: run.recordingEnabled,
+                viewportWidth: run.viewportWidth,
+                viewportHeight: run.viewportHeight,
+                startedAt,
+                endedAt,
+                consoleLogCount: run.consoleLogCount,
+                consoleErrorCount: run.consoleErrorCount,
+                consoleWarningCount: run.consoleWarningCount,
+                networkRequestCount: run.networkRequestCount,
+                networkErrorCount: run.networkErrorCount,
+                captureCount: screenshotRowsForClient.length,
+                recordingCount: recordingsForRun.length,
+                shareUrl: run.shareToken
+                  ? `${process.env.NEXT_PUBLIC_APP_URL ?? "https://www.screenshotmcp.com"}/shared/runs/${run.shareToken}`
+                  : null,
+                outcomeSummary: outcomeForClient?.summary ?? null,
+                outcomeVerdict: outcomeForClient?.verdict ?? null,
+              }}
+            />
+            <RunShareDialog runId={run.id} />
+          </div>
         </div>
       </div>
 
