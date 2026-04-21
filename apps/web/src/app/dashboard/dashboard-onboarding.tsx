@@ -3,6 +3,7 @@ import { ArrowRight, Key, Download, Play, Sparkles } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { PageContainer } from "@/components/page-container";
 
 const steps = [
   {
@@ -36,7 +37,7 @@ const steps = [
 
 export function DashboardOnboarding({ firstName }: { firstName?: string | null }) {
   return (
-    <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
+    <PageContainer width="data" className="flex flex-col gap-8">
       <div className="flex flex-col gap-2 max-w-2xl">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary w-fit">
           <Sparkles className="h-3 w-3" aria-hidden="true" />
@@ -104,6 +105,6 @@ export function DashboardOnboarding({ firstName }: { firstName?: string | null }
           </Link>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

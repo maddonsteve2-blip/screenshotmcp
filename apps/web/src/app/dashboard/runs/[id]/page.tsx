@@ -11,6 +11,7 @@ import RunShareDialog from "./run-share-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Clock, Globe, Image as ImageIcon, Monitor, Network, SquareTerminal } from "lucide-react";
+import { PageContainer } from "@/components/page-container";
 
 function formatDate(dateStr?: string | null) {
   if (!dateStr) return "—";
@@ -246,7 +247,7 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
   };
 
   return (
-    <div className="max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:p-8">
+    <PageContainer width="data" className="space-y-8">
       <div className="space-y-4">
         <Link href="/dashboard/runs" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back to runs
@@ -352,6 +353,6 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
         initialNetworkRequests={networkRequests}
         outcome={outcomeForClient}
       />
-    </div>
+    </PageContainer>
   );
 }

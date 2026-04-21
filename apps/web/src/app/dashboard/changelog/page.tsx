@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { PageContainer } from "@/components/page-container";
 
 type Entry = {
   date: string;
@@ -89,7 +90,7 @@ const tagColors: Record<Entry["tag"], string> = {
 
 export default function DashboardChangelogPage() {
   return (
-    <div className="p-8 max-w-4xl">
+    <PageContainer width="text">
       <div className="mb-10">
         <h1 className="text-2xl font-bold">Changelog</h1>
         <p className="text-muted-foreground mt-1">Every update, fix, and new feature — in one place.</p>
@@ -124,6 +125,6 @@ export default function DashboardChangelogPage() {
           </div>
         ))}
       </div>
-    </div>
+    </PageContainer>
   );
 }

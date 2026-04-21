@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Clock3, ExternalLink, FileImage, FileText, FolderSearch, Globe, Link2, Search, Video } from "lucide-react";
 import { LibraryTabs } from "@/components/library-tabs";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";
+import { PageContainer } from "@/components/page-container";
 
 type Screenshot = {
   id: string;
@@ -218,7 +219,7 @@ export default function ArtifactsPage() {
   }), [artifacts]);
 
   return (
-    <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
+    <PageContainer width="data" className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
         <h1 className="text-2xl font-bold">Library</h1>
         <p className="text-muted-foreground">
@@ -447,6 +448,6 @@ export default function ArtifactsPage() {
           })}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { ExternalLink, Copy, Check, ImageOff, FileText, Search, Clock3, Link2, ScanSearch } from "lucide-react";
 import { LibraryTabs } from "@/components/library-tabs";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";
+import { PageContainer } from "@/components/page-container";
 
 type Screenshot = {
   id: string;
@@ -234,7 +235,7 @@ export default function ScreenshotsPage() {
     : activeView;
 
   return (
-    <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
+    <PageContainer width="data" className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
         <h1 className="text-2xl font-bold text-pretty">Captures</h1>
         <p className="text-muted-foreground">
@@ -671,6 +672,6 @@ export default function ScreenshotsPage() {
           </TabsContent>
         </Tabs>
       )}
-    </div>
+    </PageContainer>
   );
 }

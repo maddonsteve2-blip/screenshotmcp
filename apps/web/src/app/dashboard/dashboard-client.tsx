@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Camera, Download, ArrowRight, Video, ExternalLink, Globe, Image as ImageIcon, AlertTriangle, Activity, Clock3, Monitor, Network, SquareTerminal } from "lucide-react";
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
 import { InstallDialog } from "@/components/install-dialog";
+import { PageContainer } from "@/components/page-container";
 
 interface DashboardData {
   usage: number;
@@ -108,7 +109,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
 
   return (
     <>
-      <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
+      <PageContainer width="data" className="flex flex-col gap-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">Overview</h1>
@@ -471,7 +472,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </PageContainer>
 
       <InstallDialog 
         isOpen={showInstallDialog} 

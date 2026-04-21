@@ -11,6 +11,7 @@ import { confirmDialog } from "@/components/confirm-dialog";
 import { LibraryTabs } from "@/components/library-tabs";
 import { apiFetch } from "@/lib/api-fetch";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";
+import { PageContainer } from "@/components/page-container";
 
 interface Recording {
   id: string;
@@ -167,7 +168,7 @@ export default function RecordingsPage() {
   const visibleArchiveRecordings = archiveRecordings.slice(0, visibleRecordingsCount);
 
   return (
-    <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
+    <PageContainer width="data" className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-pretty">
           <Video className="h-6 w-6" aria-hidden="true" />
@@ -460,6 +461,6 @@ export default function RecordingsPage() {
           )}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Mail, ExternalLink, Check, AlertCircle, Trash2, Eye, EyeOff, Inbox, Copy, Clock } from "lucide-react";
 import { apiFetch } from "@/lib/api-fetch";
+import { PageContainer } from "@/components/page-container";
 
 export default function SettingsPage() {
   const [agentmailKey, setAgentmailKey] = useState("");
@@ -101,7 +102,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 px-4 py-6 sm:px-6 lg:p-8">
+    <PageContainer width="data" className="flex flex-col gap-8">
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Manage your integrations and preferences</p>
@@ -398,6 +399,6 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

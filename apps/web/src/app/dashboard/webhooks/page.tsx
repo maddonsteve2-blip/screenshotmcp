@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { PageContainer } from "@/components/page-container";
 import {
   Webhook,
   Plus,
@@ -251,7 +252,7 @@ export default function WebhooksPage() {
   );
 
   return (
-    <div className="space-y-6 p-6">
+    <PageContainer width="data" className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold">
@@ -498,6 +499,6 @@ export default function WebhooksPage() {
           })}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

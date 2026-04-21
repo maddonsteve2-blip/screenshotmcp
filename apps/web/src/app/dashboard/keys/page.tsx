@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, RefreshCw, Trash2, Key, AlertTriangle } from "lucide-react";
 import { apiFetch } from "@/lib/api-fetch";
+import { PageContainer } from "@/components/page-container";
 
 interface ActiveKey {
   id: string;
@@ -78,15 +79,15 @@ export default function KeysPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <PageContainer width="text">
         <h1 className="text-2xl font-bold mb-2">API Key</h1>
         <p className="text-muted-foreground text-sm">Loading...</p>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="p-8 space-y-6 max-w-2xl">
+    <PageContainer width="text" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">API Key</h1>
         <p className="text-muted-foreground mt-1">
@@ -206,6 +207,6 @@ export default function KeysPage() {
           <p><strong>Playground:</strong> Your key is automatically loaded — just go to Playground and start capturing.</p>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

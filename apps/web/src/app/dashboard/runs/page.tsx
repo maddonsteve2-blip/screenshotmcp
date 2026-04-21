@@ -5,6 +5,7 @@ import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
 import { recordings, runOutcomes, runs, screenshots } from "@screenshotsmcp/db";
 import RunsListClient from "@/app/dashboard/runs/runs-list-client";
+import { PageContainer } from "@/components/page-container";
 
 export default async function RunsPage() {
   const { userId: clerkId } = await auth();
@@ -107,7 +108,7 @@ export default async function RunsPage() {
   }));
 
   return (
-    <div className="max-w-6xl space-y-8 px-4 py-6 sm:px-6 lg:p-8">
+    <PageContainer width="data" className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Runs</h1>
         <p className="text-muted-foreground mt-1">
@@ -116,6 +117,6 @@ export default async function RunsPage() {
       </div>
 
       <RunsListClient runs={normalizedRuns} />
-    </div>
+    </PageContainer>
   );
 }

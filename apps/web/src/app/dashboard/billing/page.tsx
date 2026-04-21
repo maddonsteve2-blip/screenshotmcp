@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Zap } from "lucide-react";
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
+import { PageContainer } from "@/components/page-container";
 
 const plans = [
   { key: "free" as const, label: "Free", features: ["100 screenshots/mo", "REST API", "MCP server", "Community support"] },
@@ -37,7 +38,7 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <PageContainer width="data" className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Billing</h1>
@@ -86,6 +87,6 @@ export default function BillingPage() {
           </Card>
         ))}
       </div>
-    </div>
+    </PageContainer>
   );
 }

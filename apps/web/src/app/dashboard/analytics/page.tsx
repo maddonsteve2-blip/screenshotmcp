@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Camera, TrendingUp, CheckCircle, Calendar, Zap, ArrowUpRight, RefreshCw, Wifi, WifiOff, LayoutDashboard, ListVideo, FolderSearch } from "lucide-react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-fetch";
+import { PageContainer } from "@/components/page-container";
 
 type PlanData = {
   name: string;
@@ -180,7 +181,7 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:p-8">
+      <PageContainer width="data" className="flex flex-col gap-6">
         <div>
           <div className="h-7 w-32 bg-muted animate-pulse rounded mb-2" />
           <div className="h-4 w-56 bg-muted animate-pulse rounded" />
@@ -190,7 +191,7 @@ export default function AnalyticsPage() {
           {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-28 bg-muted animate-pulse rounded-lg" />)}
         </div>
         <div className="h-[300px] bg-muted animate-pulse rounded-lg" />
-      </div>
+      </PageContainer>
     );
   }
 
@@ -201,7 +202,7 @@ export default function AnalyticsPage() {
   const totalDaily = dailyChartData.reduce((a, b) => a + b.screenshots, 0);
 
   return (
-    <div className="flex max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:p-8">
+    <PageContainer width="data" className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Usage</h1>
@@ -479,6 +480,6 @@ export default function AnalyticsPage() {
           <p>Use Artifacts to locate a specific screenshot or replay after you already know which run matters.</p>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

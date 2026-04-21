@@ -18,6 +18,7 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import { PageContainer } from "@/components/page-container";
 import { apiFetch } from "@/lib/api-fetch";
 
 type Device = { label: string; width: number; height: number; icon: React.ElementType };
@@ -166,7 +167,7 @@ export default function PlaygroundPage() {
   }
 
   return (
-    <div className="p-8 space-y-6 max-w-5xl">
+    <PageContainer width="data" className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Playground</h1>
         <p className="text-muted-foreground mt-1">Capture screenshots interactively — no code required</p>
@@ -443,6 +444,6 @@ export default function PlaygroundPage() {
           )}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }

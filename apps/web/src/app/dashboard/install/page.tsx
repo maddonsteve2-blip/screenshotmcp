@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Check, Copy, ArrowLeft, ArrowRight, Key, Terminal, AlertCircle, Download, ExternalLink, Monitor, Smartphone, Globe, Code2, MessageSquare, Sparkles } from "lucide-react";
 import { apiFetch } from "@/lib/api-fetch";
+import { PageContainer } from "@/components/page-container";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
 const MCP_URL = `${API_BASE}/mcp`;
@@ -128,7 +129,7 @@ export default function InstallPage() {
   const mcpKeyUrl = `${MCP_URL}/${key}`;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:p-8">
+    <PageContainer width="text">
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -243,7 +244,7 @@ export default function InstallPage() {
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

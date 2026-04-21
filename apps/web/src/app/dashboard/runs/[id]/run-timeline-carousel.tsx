@@ -136,46 +136,57 @@ export default function RunTimelineCarousel({ steps }: { steps: TimelineStep[] }
       </div>
 
       <Dialog open={openIdx !== null} onOpenChange={(v) => !v && setOpenIdx(null)}>
-        <DialogContent className="max-w-5xl">
+        <DialogContent
+          aria-label="Step screenshot viewer"
+          className="flex h-[95vh] w-[98vw] max-w-[98vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-[98vw]"
+        >
           {openIdx !== null && steps[openIdx] && (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-baseline justify-between gap-4">
-                <div>
-                  <div className="text-sm font-semibold">
+            <>
+              <div className="flex shrink-0 items-center justify-between gap-4 border-b bg-background/95 px-5 py-3 backdrop-blur">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold">
                     Step #{steps[openIdx]!.stepIndex ?? openIdx + 1} · {steps[openIdx]!.actionLabel ?? "Screenshot"}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="truncate text-xs text-muted-foreground">
                     {steps[openIdx]!.outcome ?? "no visible change"}
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground font-mono">{steps[openIdx]!.toolName}</div>
+                <div className="shrink-0 font-mono text-xs text-muted-foreground">{steps[openIdx]!.toolName}</div>
               </div>
-              {steps[openIdx]!.publicUrl && (
-                <div className="overflow-hidden rounded-md border bg-muted">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+
+              <div className="flex-1 overflow-auto bg-muted/30">
+                {steps[openIdx]!.publicUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={steps[openIdx]!.publicUrl!}
                     alt={steps[openIdx]!.actionLabel ?? "screenshot"}
-                    className="w-full"
+                    className="mx-auto block max-w-none"
                   />
-                </div>
-              )}
-              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                <div className="break-all">
-                  <span className="font-medium text-foreground">URL:</span> {steps[openIdx]!.url}
-                </div>
-                {steps[openIdx]!.pageTitle && (
-                  <div>
-                    <span className="font-medium text-foreground">Title:</span> {steps[openIdx]!.pageTitle}
-                  </div>
-                )}
-                {steps[openIdx]!.agentNote && (
-                  <div>
-                    <span className="font-medium text-foreground">Agent note:</span> {steps[openIdx]!.agentNote}
+                ) : (
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                    No image for this step
                   </div>
                 )}
               </div>
-            </div>
+
+              <div className="shrink-0 border-t bg-background/95 px-5 py-2 backdrop-blur">
+                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  <div className="break-all">
+                    <span className="font-medium text-foreground">URL:</span> {steps[openIdx]!.url}
+                  </div>
+                  {steps[openIdx]!.pageTitle && (
+                    <div className="truncate">
+                      <span className="font-medium text-foreground">Title:</span> {steps[openIdx]!.pageTitle}
+                    </div>
+                  )}
+                  {steps[openIdx]!.agentNote && (
+                    <div className="line-clamp-2">
+                      <span className="font-medium text-foreground">Agent note:</span> {steps[openIdx]!.agentNote}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
