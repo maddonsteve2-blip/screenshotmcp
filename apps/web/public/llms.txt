@@ -370,10 +370,10 @@ Params: id
 
 ### Browser Session Tools
 
-Start with `browser_navigate` → get sessionId → pass to all tools → `browser_close` when done.
+Start with `browser_navigate` → get sessionId → pass to all tools → `browser_close` when done. **Both tools return a `Run URL` pointing to the live dashboard for this run (timeline + captures + replay + console + network). Always surface the Run URL to the user at the end of the task so they can review the evidence. If a `Share URL` is also returned, include it for teammates who don't have an account.**
 
 #### browser_navigate
-Open URL, returns screenshot + sessionId. Supports workflow-aware outcome context for run summaries.
+Open URL, returns screenshot + sessionId + `Run URL` (dashboard deep-link for this run). Surface the Run URL to the user at the end of the task. Supports workflow-aware outcome context for run summaries.
 Params: url, sessionId (optional), width, height, record_video, task_type, user_goal, workflow_name, workflow_required, auth_scope, tool_path, page_set, required_evidence
 
 #### browser_click
@@ -417,7 +417,7 @@ Resize viewport mid-session (e.g. desktop ↔ mobile).
 Params: sessionId, width, height
 
 #### browser_close
-Free resources. Always call when done.
+Free resources. Always call when done. Returns a `Run URL` pointing to the dashboard view of this run — you MUST include this Run URL in your final reply so the user can review the captured timeline, evidence, console, and network. Also returns a `Share URL` when one exists (public link for teammates).
 Params: sessionId
 
 #### browser_screenshot

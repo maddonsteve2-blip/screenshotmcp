@@ -828,7 +828,7 @@ server.tool(
 
   server.tool(
     "browser_navigate",
-    "Open a browser and navigate to a URL. Returns a screenshot of the loaded page. Use this to start a browser session — the returned sessionId must be passed to all subsequent browser_ tools. Pass width/height to start with a custom viewport (e.g. 393×852 for mobile). Set record_video to true to record the entire session as a video — the recording URL is returned when browser_close is called. When workflow metadata is provided, the resulting run can surface structured verdicts, summaries, and next actions in the dashboard.",
+    "Open a browser and navigate to a URL. Returns a screenshot of the loaded page plus a `Run URL` that deep-links to the live dashboard view of this run (timeline, captures, replay, console, network). Always surface the Run URL to the user at the end of the task so they can review the full evidence. The returned sessionId must be passed to all subsequent browser_ tools. Pass width/height to start with a custom viewport (e.g. 393×852 for mobile). Set record_video to true to record the entire session as a video — the recording URL is returned when browser_close is called. When workflow metadata is provided, the resulting run can surface structured verdicts, summaries, and next actions in the dashboard.",
     {
       url: z.string().url().describe("URL to navigate to"),
       sessionId: z.string().optional().describe("Existing session ID to reuse. Omit to start a new browser session."),
@@ -1111,7 +1111,7 @@ server.tool(
 
   server.tool(
     "browser_close",
-    "Close the browser session and free all resources. Always call this when the browser workflow is complete. If the session was started with record_video: true, the video recording URL is returned.",
+    "Close the browser session and free all resources. Always call this when the browser workflow is complete. Returns a `Run URL` pointing to the live dashboard view of this run — you MUST include this Run URL in your final reply to the user so they can review the captured timeline, evidence, console, and network. If the session was started with record_video: true, the video recording URL is also returned. If a Share URL is included, it's a public link that can be shared with teammates who don't have an account.",
     {
       sessionId: z.string().describe("Session ID to close"),
     },

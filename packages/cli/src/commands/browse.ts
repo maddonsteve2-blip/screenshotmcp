@@ -59,6 +59,10 @@ export const browseCommand = new Command("browse")
       if (sessionMatch) {
         console.log(`  Session: ${chalk.cyan(sessionMatch[1])}`);
       }
+      const runUrlMatch = text.match(/Run URL:\s*(\S+)/);
+      if (runUrlMatch) {
+        console.log(`  Run URL: ${chalk.cyan(runUrlMatch[1])}  ${chalk.dim("(share this with the user at the end of the task)")}`);
+      }
       const imageUrl = extractImageUrl(res);
       if (imageUrl) console.log(`  Screenshot: ${chalk.cyan(imageUrl)}`);
       if (opts.record) console.log(chalk.yellow("  🔴 Recording — use `smcp browse:close <sessionId>` to stop and get the video"));
@@ -241,6 +245,14 @@ export const browseCloseCommand = new Command("browse:close")
       spinner.stop();
       const text = extractText(res);
       console.log(chalk.green("✓ Session closed"));
+      const runUrlMatch = text.match(/Run URL:\s*(\S+)/);
+      if (runUrlMatch) {
+        console.log(`  Run URL: ${chalk.cyan(runUrlMatch[1])}  ${chalk.dim("(share this with the user)")}`);
+      }
+      const shareUrlMatch = text.match(/Share URL:\s*(\S+)/);
+      if (shareUrlMatch) {
+        console.log(`  Share URL: ${chalk.cyan(shareUrlMatch[1])}  ${chalk.dim("(public link for teammates)")}`);
+      }
       const videoUrl = text.match(/https?:\/\/[^\s"]+\.webm/i);
       if (videoUrl) {
         console.log(`  🎬 Video: ${chalk.cyan(videoUrl[0])}`);

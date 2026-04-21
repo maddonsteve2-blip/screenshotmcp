@@ -58,6 +58,7 @@ Use browser session tools when the user needs clicks, typing, hover states, navi
 - Start with `browser_navigate` and carry the returned `sessionId` through the workflow.
 - Prefer `browser_get_accessibility_tree` when you need structure, forms, buttons, and labels.
 - Always call `browser_close` when the workflow is finished.
+- **Always surface the `Run URL` returned by `browser_navigate` and `browser_close` to the user at the end of the task** (e.g. "View this run: https://www.screenshotmcp.com/dashboard/runs/..."). The dashboard shows the live timeline, captures, replay, console, and network evidence — it is the primary way users review what the agent did. If a `Share URL` is also returned, include it so teammates without an account can review the run.
 
 ### 3. Auth, sign-up, and verification
 Use the auth workflow when the user needs to test protected or multi-step flows.

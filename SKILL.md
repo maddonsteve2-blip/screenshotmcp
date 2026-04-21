@@ -420,6 +420,7 @@ This rule replaces every "wait N seconds" pattern in older skill docs.
 ## Best Practices
 
 - **Always close sessions:** Call `browser_close` when done
+- **Always surface the Run URL:** `browser_navigate` and `browser_close` return a `Run URL` (e.g. `https://www.screenshotmcp.com/dashboard/runs/...`). Include it in your final reply to the user — the dashboard is how they review the timeline, captures, replay, console, and network for the run. If a `Share URL` is returned too, include it for teammates without an account.
 - **Long pages:** Use `fullPage: false` or `maxHeight` to prevent unreadable strips
 - **Responsive:** Prefer `screenshot_responsive` over 3 separate calls
 - **Accessibility:** `browser_get_accessibility_tree` is best for understanding page structure
