@@ -1,23 +1,39 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
+  ArrowUpRight,
   Check,
   Copy,
   ExternalLink,
+  Loader2,
   Maximize2,
   Minus,
+  MousePointer2,
+  Pencil,
   Plus,
   RotateCcw,
+  Save,
   Share2,
+  Square,
+  Trash2,
+  Type,
   X,
 } from "lucide-react";
+import {
+  AnnotationLayer,
+  COLOR_HEX,
+  type Annotation,
+  type AnnotationColor,
+  type AnnotationTool,
+} from "@/components/screenshot-annotations";
 
 type ScreenshotViewerProps = {
   open: boolean;
@@ -35,6 +51,12 @@ type ScreenshotViewerProps = {
   onShareClick?: () => void;
   /** If true, hides the Share button. Default false. */
   hideShare?: boolean;
+  /**
+   * Screenshot id — when provided, annotations are loaded from
+   * `/api/screenshots/{id}/annotations` on open and saved via PUT.
+   * When omitted, the viewer is read-only (no annotation toolbar).
+   */
+  screenshotId?: string | null;
 };
 
 const MIN_ZOOM = 0.1;
@@ -51,6 +73,7 @@ export function ScreenshotViewerDialog({
   height,
   onShareClick,
   hideShare = false,
+  screenshotId = null,
 }: ScreenshotViewerProps) {
   // Viewport state — "fit" is the computed scale that fits the image; zoom=1 means 100%.
   const [zoom, setZoom] = useState(1);
@@ -64,6 +87,67 @@ export function ScreenshotViewerDialog({
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(
     width && height ? { w: width, h: height } : null,
   );
+
+  // Annotation state (only used when screenshotId is provided).
+  const [tool, setTool] = useState<AnnotationTool>("none");
+  const [color, setColor] = useState<AnnotationColor>("red");
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [annotationsDirty, setAnnotationsDirty] = useState(false);
+  const [savingAnnotations, setSavingAnnotations] = useState(false);
+  const [loadingAnnotations, setLoadingAnnotations] = useState(false);
+
+  // Load annotations when dialog opens for a given screenshotId.
+  useEffect(() => {
+    if (!open || !screenshotId) {
+      setAnnotations([]);
+      setAnnotationsDirty(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingAnnotations(true);
+    fetch(`/api/screenshots/${encodeURIComponent(screenshotId)}/annotations`, { cache: "no-store" })
+      .then((r) => r.ok ? r.json() : { annotations: [] })
+      .then((data) => {
+        if (cancelled) return;
+        setAnnotations(Array.isArray(data.annotations) ? data.annotations : []);
+        setAnnotationsDirty(false);
+      })
+      .catch(() => {
+        if (!cancelled) setAnnotations([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingAnnotations(false);
+      });
+    return () => { cancelled = true; };
+  }, [open, screenshotId]);
+
+  const updateAnnotations = useCallback((next: Annotation[]) => {
+    setAnnotations(next);
+    setAnnotationsDirty(true);
+  }, []);
+
+  const saveAnnotations = useCallback(async () => {
+    if (!screenshotId) return;
+    setSavingAnnotations(true);
+    try {
+      const res = await fetch(`/api/screenshots/${encodeURIComponent(screenshotId)}/annotations`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ annotations }),
+      });
+      if (res.ok) setAnnotationsDirty(false);
+    } finally {
+      setSavingAnnotations(false);
+    }
+  }, [annotations, screenshotId]);
+
+  const clearAnnotations = useCallback(() => {
+    if (annotations.length === 0) return;
+    if (!confirm("Clear all annotations?")) return;
+    updateAnnotations([]);
+  }, [annotations.length, updateAnnotations]);
+
+  const enableAnnotations = Boolean(screenshotId);
 
   // Reset on open or src change.
   useEffect(() => {
@@ -135,6 +219,9 @@ export function ScreenshotViewerDialog({
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
+    // Don't start panning when an annotation tool is active — the SVG layer
+    // handles its own pointer events.
+    if (tool !== "none") return;
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     panStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
     setIsPanning(true);
@@ -208,6 +295,74 @@ export function ScreenshotViewerDialog({
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1">
+            {enableAnnotations && (
+              <>
+                <div className="mr-1 flex items-center gap-0.5 rounded-md border bg-muted/40 p-0.5">
+                  <ToolButton active={tool === "none"} onClick={() => setTool("none")} label="Pan/select">
+                    <MousePointer2 className="h-3.5 w-3.5" />
+                  </ToolButton>
+                  <ToolButton active={tool === "rect"} onClick={() => setTool("rect")} label="Rectangle">
+                    <Square className="h-3.5 w-3.5" />
+                  </ToolButton>
+                  <ToolButton active={tool === "arrow"} onClick={() => setTool("arrow")} label="Arrow">
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </ToolButton>
+                  <ToolButton active={tool === "pen"} onClick={() => setTool("pen")} label="Freehand">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </ToolButton>
+                  <ToolButton active={tool === "text"} onClick={() => setTool("text")} label="Text">
+                    <Type className="h-3.5 w-3.5" />
+                  </ToolButton>
+                </div>
+                <div className="mr-1 flex items-center gap-0.5 rounded-md border bg-muted/40 p-1">
+                  {(Object.keys(COLOR_HEX) as AnnotationColor[]).map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      aria-label={`${c} color`}
+                      onClick={() => setColor(c)}
+                      className={cn(
+                        "h-5 w-5 rounded-full ring-2 ring-transparent transition-all",
+                        color === c && "ring-offset-2 ring-offset-background",
+                      )}
+                      style={{
+                        backgroundColor: COLOR_HEX[c],
+                        ringColor: color === c ? COLOR_HEX[c] : undefined,
+                        boxShadow: color === c ? `0 0 0 2px ${COLOR_HEX[c]}` : undefined,
+                      } as React.CSSProperties}
+                    />
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={clearAnnotations}
+                  disabled={annotations.length === 0}
+                  className="gap-1.5"
+                  aria-label="Clear all annotations"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Clear
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={annotationsDirty ? "default" : "ghost"}
+                  onClick={() => void saveAnnotations()}
+                  disabled={savingAnnotations || !annotationsDirty}
+                  className="gap-1.5"
+                >
+                  {savingAnnotations ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Save className="h-3.5 w-3.5" />
+                  )}
+                  {annotationsDirty ? "Save" : loadingAnnotations ? "Loading" : "Saved"}
+                </Button>
+                <div className="mx-1 h-5 w-px bg-border" />
+              </>
+            )}
             <Button type="button" size="sm" variant="ghost" onClick={copyUrl} className="gap-1.5">
               {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? "Copied" : "Copy URL"}
@@ -248,7 +403,11 @@ export function ScreenshotViewerDialog({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          style={{ cursor: isPanning ? "grabbing" : "grab" }}
+          style={{
+            cursor: tool !== "none"
+              ? "crosshair"
+              : isPanning ? "grabbing" : "grab",
+          }}
         >
           <div
             className="absolute left-1/2 top-1/2"
@@ -258,19 +417,31 @@ export function ScreenshotViewerDialog({
               transition: isPanning ? "none" : "transform 120ms ease-out",
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              ref={imgRef}
-              src={src}
-              alt={title ?? capturedUrl ?? "screenshot"}
-              draggable={false}
-              onLoad={(e) => {
-                const el = e.currentTarget;
-                setNaturalSize({ w: el.naturalWidth, h: el.naturalHeight });
-              }}
-              className="block max-w-none shadow-2xl"
-              style={{ willChange: "transform" }}
-            />
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                ref={imgRef}
+                src={src}
+                alt={title ?? capturedUrl ?? "screenshot"}
+                draggable={false}
+                onLoad={(e) => {
+                  const el = e.currentTarget;
+                  setNaturalSize({ w: el.naturalWidth, h: el.naturalHeight });
+                }}
+                className="block max-w-none shadow-2xl"
+                style={{ willChange: "transform" }}
+              />
+              {enableAnnotations && naturalSize && (
+                <AnnotationLayer
+                  width={naturalSize.w}
+                  height={naturalSize.h}
+                  annotations={annotations}
+                  tool={tool}
+                  color={color}
+                  onChange={updateAnnotations}
+                />
+              )}
+            </div>
           </div>
         </div>
 
@@ -311,5 +482,32 @@ export function ScreenshotViewerDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ToolButton({
+  active,
+  onClick,
+  label,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-7 w-7 items-center justify-center rounded transition-colors",
+        active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
   );
 }

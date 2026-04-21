@@ -689,6 +689,7 @@ export default function ScreenshotsPage() {
         capturedUrl={viewerScreenshot?.url ?? null}
         width={viewerScreenshot?.width ?? null}
         height={viewerScreenshot?.height ?? null}
+        screenshotId={viewerScreenshot?.id ?? null}
         hideShare
       />
     </PageContainer>
