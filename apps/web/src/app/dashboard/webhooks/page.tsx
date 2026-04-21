@@ -303,78 +303,15 @@ export default function WebhooksPage() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Add an endpoint</CardTitle>
-          <CardDescription>We&apos;ll POST signed JSON to this URL.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="webhook-url">URL</Label>
-              <Input
-                id="webhook-url"
-                placeholder="https://example.com/hooks/screenshotsmcp"
-                value={createUrl}
-                onChange={(e) => setCreateUrl(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="webhook-description">Description (optional)</Label>
-              <Input
-                id="webhook-description"
-                placeholder="Production prod hooks"
-                value={createDescription}
-                onChange={(e) => setCreateDescription(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Events</Label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => toggleCreateEvent("*")}
-                  className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                    createEvents.includes("*")
-                      ? "border-primary bg-primary/20 text-foreground"
-                      : "border-white/10 text-muted-foreground hover:border-white/30"
-                  }`}
-                >
-                  All events
-                </button>
-                {ALL_EVENTS.map((ev) => (
-                  <button
-                    key={ev}
-                    type="button"
-                    onClick={() => toggleCreateEvent(ev)}
-                    disabled={createEvents.includes("*")}
-                    className={`rounded-full border px-3 py-1 text-xs transition-colors disabled:opacity-40 ${
-                      createEvents.includes(ev)
-                        ? "border-primary bg-primary/20 text-foreground"
-                        : "border-white/10 text-muted-foreground hover:border-white/30"
-                    }`}
-                  >
-                    {ev}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Button type="submit" disabled={creating || !createUrl.trim()}>
-              <Plus className="h-4 w-4" /> {creating ? "Creating…" : "Create endpoint"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
+      <div className="grid gap-6 xl:grid-cols-[1fr,360px]">
+        <Card>
         <CardHeader>
           <CardTitle className="text-lg">Endpoints</CardTitle>
           <CardDescription>
             {loading
               ? "Loading…"
               : sortedEndpoints.length === 0
-                ? "No endpoints yet. Create one above to start receiving events."
+                ? "No endpoints yet. Create one using the form to start receiving events."
                 : `${sortedEndpoints.length} endpoint${sortedEndpoints.length === 1 ? "" : "s"}`}
           </CardDescription>
         </CardHeader>
@@ -498,7 +435,72 @@ export default function WebhooksPage() {
             );
           })}
         </CardContent>
-      </Card>
+        </Card>
+
+        <Card className="h-fit xl:sticky xl:top-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Add an endpoint</CardTitle>
+            <CardDescription>We&apos;ll POST signed JSON to this URL.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="webhook-url">URL</Label>
+                <Input
+                  id="webhook-url"
+                  placeholder="https://example.com/hooks/screenshotsmcp"
+                  value={createUrl}
+                  onChange={(e) => setCreateUrl(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="webhook-description">Description (optional)</Label>
+                <Input
+                  id="webhook-description"
+                  placeholder="Production prod hooks"
+                  value={createDescription}
+                  onChange={(e) => setCreateDescription(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Events</Label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleCreateEvent("*")}
+                    className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                      createEvents.includes("*")
+                        ? "border-primary bg-primary/20 text-foreground"
+                        : "border-white/10 text-muted-foreground hover:border-white/30"
+                    }`}
+                  >
+                    All events
+                  </button>
+                  {ALL_EVENTS.map((ev) => (
+                    <button
+                      key={ev}
+                      type="button"
+                      onClick={() => toggleCreateEvent(ev)}
+                      disabled={createEvents.includes("*")}
+                      className={`rounded-full border px-3 py-1 text-xs transition-colors disabled:opacity-40 ${
+                        createEvents.includes(ev)
+                          ? "border-primary bg-primary/20 text-foreground"
+                          : "border-white/10 text-muted-foreground hover:border-white/30"
+                      }`}
+                    >
+                      {ev}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Button type="submit" disabled={creating || !createUrl.trim()} className="w-full">
+                <Plus className="h-4 w-4" /> {creating ? "Creating…" : "Create endpoint"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </PageContainer>
   );
 }

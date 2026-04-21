@@ -34,7 +34,8 @@ export function PageContainer({
   return (
     <div
       className={cn(
-        "mx-auto w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8",
+        // pb-24 reserves safe area for the floating feedback button (see apps/web/src/app/dashboard/feedback-button.tsx).
+        "mx-auto w-full px-4 pt-6 pb-24 sm:px-6 lg:px-8 lg:pt-8",
         WIDTH_CLASS[width],
         className,
       )}
