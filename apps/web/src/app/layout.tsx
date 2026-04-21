@@ -65,7 +65,7 @@ export default function RootLayout({
             <RootProvider>
               {children}
               <ConfirmDialogHost />
-              <Toaster position="bottom-right" richColors closeButton theme="dark" />
+              <Toaster position="bottom-right" richColors closeButton theme="system" />
             </RootProvider>
           </TooltipProvider>
         </ClerkProvider>

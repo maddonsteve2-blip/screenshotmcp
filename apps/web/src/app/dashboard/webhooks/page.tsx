@@ -289,7 +289,7 @@ export default function WebhooksPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-2">
-              <code className="flex-1 truncate rounded bg-black/40 px-3 py-2 text-xs">
+              <code className="flex-1 truncate rounded bg-muted px-3 py-2 text-xs">
                 {revealedSecret.secret}
               </code>
               <Button size="sm" variant="outline" onClick={() => copySecret(revealedSecret.secret)}>
@@ -322,7 +322,7 @@ export default function WebhooksPage() {
               <div
                 key={ep.id}
                 className={`rounded-lg border p-4 transition-colors ${
-                  isSelected ? "border-primary/40 bg-primary/5" : "border-white/[0.06]"
+                  isSelected ? "border-primary/40 bg-primary/5" : "border-border"
                 }`}
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -342,7 +342,7 @@ export default function WebhooksPage() {
                       {ep.events.map((e) => (
                         <span
                           key={e}
-                          className="rounded-full bg-white/5 px-2 py-0.5 text-muted-foreground"
+                          className="rounded-full bg-muted/50 px-2 py-0.5 text-muted-foreground"
                         >
                           {e}
                         </span>
@@ -400,7 +400,7 @@ export default function WebhooksPage() {
                 </div>
 
                 {isSelected && (
-                  <div className="mt-4 border-t border-white/[0.06] pt-3">
+                  <div className="mt-4 border-t border-border pt-3">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Recent deliveries
                     </p>
@@ -413,7 +413,7 @@ export default function WebhooksPage() {
                         {deliveries.map((d) => (
                           <div
                             key={d.id}
-                            className="flex flex-wrap items-center gap-3 rounded border border-white/[0.04] bg-black/20 px-3 py-2 text-xs"
+                            className="flex flex-wrap items-center gap-3 rounded border bg-muted/40 px-3 py-2 text-xs"
                           >
                             <span className="font-mono">{d.eventType}</span>
                             <span className={statusTone(d.status)}>
@@ -472,7 +472,7 @@ export default function WebhooksPage() {
                     className={`rounded-full border px-3 py-1 text-xs transition-colors ${
                       createEvents.includes("*")
                         ? "border-primary bg-primary/20 text-foreground"
-                        : "border-white/10 text-muted-foreground hover:border-white/30"
+                        : "border-border text-muted-foreground hover:border-foreground/30"
                     }`}
                   >
                     All events
@@ -486,7 +486,7 @@ export default function WebhooksPage() {
                       className={`rounded-full border px-3 py-1 text-xs transition-colors disabled:opacity-40 ${
                         createEvents.includes(ev)
                           ? "border-primary bg-primary/20 text-foreground"
-                          : "border-white/10 text-muted-foreground hover:border-white/30"
+                          : "border-border text-muted-foreground hover:border-foreground/30"
                       }`}
                     >
                       {ev}

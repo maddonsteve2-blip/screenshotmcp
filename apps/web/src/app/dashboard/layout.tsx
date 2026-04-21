@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Separator } from "@/components/ui/separator";
 import DashboardSidebar from "./dashboard-sidebar";
 import FeedbackButton from "./feedback-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const inter = Inter({ subsets: ["latin"], variable: "--dashboard-font-sans" });
 
@@ -22,9 +23,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <DashboardSidebar />
         <Separator />
         <div className="mt-auto flex flex-col gap-3 p-4">
-          <div className="flex items-center gap-3">
-            <UserButton />
-            <span className="text-base text-muted-foreground">Account</span>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-3">
+              <UserButton />
+              <span className="truncate text-base text-muted-foreground">Account</span>
+            </div>
+            <ThemeToggle compact />
           </div>
           <SignOutButton>
             <Button variant="outline" className="w-full">Sign Out</Button>
@@ -53,9 +57,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <DashboardSidebar closeOnNavigate />
                 <Separator />
                 <div className="p-4">
-                  <div className="flex items-center gap-3">
-                    <UserButton />
-                    <span className="text-base text-muted-foreground">Account</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <UserButton />
+                      <span className="truncate text-base text-muted-foreground">Account</span>
+                    </div>
+                    <ThemeToggle compact />
                   </div>
                   <SignOutButton>
                     <Button variant="outline" className="mt-3 w-full">Sign Out</Button>
