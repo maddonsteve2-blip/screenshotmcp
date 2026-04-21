@@ -209,6 +209,18 @@ export function AnnotationLayer({
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
+        {/* Invisible hit-catcher so empty SVG areas receive pointer events.
+            Without this, transparent areas of the SVG pass clicks through
+            to the pan handler underneath and drawing never starts. */}
+        {tool !== "none" && (
+          <rect
+            x={0}
+            y={0}
+            width={width}
+            height={height}
+            fill="rgba(0,0,0,0.001)"
+          />
+        )}
         <defs>
           {(Object.keys(COLOR_HEX) as AnnotationColor[]).map((c) => (
             <marker

@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
+  ArrowLeft,
   ArrowUpRight,
   Check,
   Copy,
@@ -286,15 +287,28 @@ export function ScreenshotViewerDialog({
       >
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between gap-4 border-b bg-background px-4 py-3">
-          <div className="min-w-0 flex-1">
-            {title && (
-              <div className="truncate text-sm font-semibold">{title}</div>
-            )}
-            {capturedUrl && (
-              <div className="truncate text-xs text-muted-foreground" title={capturedUrl}>
-                {capturedUrl}
-              </div>
-            )}
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              className="shrink-0 gap-1.5"
+              aria-label="Back to gallery"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <div className="min-w-0 flex-1">
+              {title && (
+                <div className="truncate text-sm font-semibold">{title}</div>
+              )}
+              {capturedUrl && (
+                <div className="truncate text-xs text-muted-foreground" title={capturedUrl}>
+                  {capturedUrl}
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {enableAnnotations && (
