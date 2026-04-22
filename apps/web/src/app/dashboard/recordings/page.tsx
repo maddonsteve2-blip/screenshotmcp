@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { LibraryTabs } from "@/components/library-tabs";
 import { apiFetch } from "@/lib/api-fetch";
-import { useDashboardWs } from "@/lib/use-dashboard-ws";
 import { PageContainer } from "@/components/page-container";
 
 interface Recording {
@@ -25,7 +24,7 @@ interface Recording {
   videoUrl: string;
 }
 
-const PAGE_SIZE = 9;
+const PAGE_SIZE = 30;
 
 function formatDuration(ms: number | null): string {
   if (!ms) return "—";
@@ -71,31 +70,74 @@ function hostname(input: string | null) {
 
 export default function RecordingsPage() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
+  const [total, setTotal] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [visibleRecordingsCount, setVisibleRecordingsCount] = useState(PAGE_SIZE);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const fetchIdRef = useRef(0);
 
-  const handleSocketMessage = useCallback((message: { type: string; data?: { recordings?: Recording[] }; message?: string }) => {
-    if (message.type === "recordings") {
-      setRecordings(message.data?.recordings ?? []);
-      setError(null);
-      setLoading(false);
-      return;
+  // Debounce the search input so we don't requery on every keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const buildQueryString = useCallback((before?: string | null) => {
+    const params = new URLSearchParams();
+    if (debouncedQuery) params.set("q", debouncedQuery);
+    if (before) params.set("before", before);
+    params.set("limit", String(PAGE_SIZE));
+    return params.toString();
+  }, [debouncedQuery]);
+
+  const loadFirstPage = useCallback(async () => {
+    const myFetchId = ++fetchIdRef.current;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiFetch(`/api/recordings?${buildQueryString()}`);
+      if (!res.ok) throw new Error(`Failed to load replays (${res.status})`);
+      const data = await res.json();
+      if (myFetchId !== fetchIdRef.current) return;
+      setRecordings(Array.isArray(data.items) ? data.items : []);
+      setTotal(Number(data.total ?? 0));
+      setNextCursor(typeof data.nextCursor === "string" ? data.nextCursor : null);
+    } catch (err) {
+      if (myFetchId !== fetchIdRef.current) return;
+      setError(err instanceof Error ? err.message : "We couldn’t load your replays right now.");
+    } finally {
+      if (myFetchId === fetchIdRef.current) setLoading(false);
     }
+  }, [buildQueryString]);
 
-    if (message.type === "error") {
-      setError(message.message ?? "We couldn’t load your replays right now.");
-      setLoading(false);
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await apiFetch(`/api/recordings?${buildQueryString(nextCursor)}`);
+      if (!res.ok) throw new Error(`Failed to load more (${res.status})`);
+      const data = await res.json();
+      setRecordings((prev) => {
+        const seen = new Set(prev.map((r) => r.id));
+        const additions = (data.items ?? []).filter((r: Recording) => !seen.has(r.id));
+        return [...prev, ...additions];
+      });
+      setNextCursor(typeof data.nextCursor === "string" ? data.nextCursor : null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load more replays.");
+    } finally {
+      setLoadingMore(false);
     }
-  }, []);
+  }, [buildQueryString, loadingMore, nextCursor]);
 
-  useDashboardWs({
-    subscription: { channel: "recordings" },
-    onMessage: handleSocketMessage,
-  });
+  useEffect(() => {
+    void loadFirstPage();
+  }, [loadFirstPage]);
 
   async function handleDelete(id: string) {
     const ok = await confirmDialog({
@@ -165,7 +207,8 @@ export default function RecordingsPage() {
 
   const recentRecordings = filteredRecordings.slice(0, 6);
   const archiveRecordings = filteredRecordings.slice(6);
-  const visibleArchiveRecordings = archiveRecordings.slice(0, visibleRecordingsCount);
+  // Everything loaded is visible — "Load older" now pages via REST cursor.
+  const visibleArchiveRecordings = archiveRecordings;
 
   return (
     <PageContainer width="data" className="flex flex-col gap-8">
@@ -195,7 +238,8 @@ export default function RecordingsPage() {
         <Card>
           <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Total replays</p>
-            <p className="text-2xl font-semibold tabular-nums">{summary.total}</p>
+            <p className="text-2xl font-semibold tabular-nums">{total}</p>
+            <p className="text-xs text-muted-foreground">{recordings.length} loaded</p>
           </CardContent>
         </Card>
         <Card>
@@ -442,10 +486,14 @@ export default function RecordingsPage() {
                 ))}
               </div>
 
-              {archiveRecordings.length > visibleRecordingsCount && (
+              {nextCursor && (
                 <div className="flex justify-center">
-                  <Button variant="outline" onClick={() => setVisibleRecordingsCount((current) => current + PAGE_SIZE)}>
-                    Show 9 more
+                  <Button variant="outline" onClick={() => void loadMore()} disabled={loadingMore}>
+                    {loadingMore ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /> Loading older…</>
+                    ) : (
+                      <>Load {PAGE_SIZE} older</>
+                    )}
                   </Button>
                 </div>
               )}

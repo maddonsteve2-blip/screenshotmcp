@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, lt, or, sql, count } from "drizzle-orm";
 import { createHash } from "crypto";
 import { nanoid } from "nanoid";
 import { apiKeys, recordings, runOutcomes, runs, screenshots, users } from "@screenshotsmcp/db";
@@ -7,6 +7,7 @@ import { db } from "../lib/db.js";
 import { getSession } from "../lib/sessions.js";
 import { getPresignedUrl, uploadScreenshot } from "../lib/r2.js";
 import { deriveCaption } from "../lib/captions.js";
+import { emitDashboardEvent } from "../lib/dashboard-events.js";
 
 export const runsRouter = Router();
 const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET || "").trim();
@@ -57,6 +58,126 @@ async function resolveUser(req: any): Promise<{ userId: string } | null> {
 
   return null;
 }
+
+// GET /v1/runs — paginated library listing with search + status filter.
+//
+// Query params:
+//   q       free-text match on pageTitle, startUrl, finalUrl, id
+//   status  `active` | `completed` | `failed`
+//   before  ISO cursor — rows with createdAt < before (falls back to startedAt)
+//   limit   default 30, max 100
+// Response: { items, nextCursor, total }
+runsRouter.get("/", async (req, res) => {
+  const auth = await resolveUser(req);
+  if (!auth) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const status = typeof req.query.status === "string" ? req.query.status.trim() : "";
+  const rawLimit = Number.parseInt(String(req.query.limit ?? "30"), 10);
+  const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 30;
+  const beforeRaw = typeof req.query.before === "string" ? req.query.before.trim() : "";
+  const before = beforeRaw ? new Date(beforeRaw) : null;
+
+  const filters = [eq(runs.userId, auth.userId)];
+  if (q) {
+    const like = `%${q}%`;
+    filters.push(
+      or(
+        ilike(runs.pageTitle, like),
+        ilike(runs.startUrl, like),
+        ilike(runs.finalUrl, like),
+        ilike(runs.id, like),
+      )!,
+    );
+  }
+  if (status === "active" || status === "completed" || status === "failed") {
+    filters.push(eq(runs.status, status));
+  }
+
+  const whereForTotal = and(...filters);
+  const whereForPage = before && !Number.isNaN(before.getTime())
+    ? and(...filters, lt(runs.createdAt, before))
+    : whereForTotal;
+
+  const [rows, totalRows] = await Promise.all([
+    db
+      .select({
+        id: runs.id,
+        status: runs.status,
+        executionMode: runs.executionMode,
+        startUrl: runs.startUrl,
+        finalUrl: runs.finalUrl,
+        pageTitle: runs.pageTitle,
+        recordingEnabled: runs.recordingEnabled,
+        shareToken: runs.shareToken,
+        sharedAt: runs.sharedAt,
+        viewportWidth: runs.viewportWidth,
+        viewportHeight: runs.viewportHeight,
+        consoleErrorCount: runs.consoleErrorCount,
+        consoleWarningCount: runs.consoleWarningCount,
+        networkRequestCount: runs.networkRequestCount,
+        networkErrorCount: runs.networkErrorCount,
+        startedAt: runs.startedAt,
+        endedAt: runs.endedAt,
+        createdAt: runs.createdAt,
+      })
+      .from(runs)
+      .where(whereForPage)
+      .orderBy(desc(runs.createdAt))
+      .limit(limit + 1),
+    db.select({ value: count() }).from(runs).where(whereForTotal),
+  ]);
+
+  const hasMore = rows.length > limit;
+  const pageRows = hasMore ? rows.slice(0, limit) : rows;
+  const ids = pageRows.map((r) => r.id);
+
+  // Enrich the page with outcome + capture/replay counts so the list UI can
+  // show verdict badges and evidence pills without a follow-up query per row.
+  const [outcomeRows, captureCountRows, replayCountRows] = ids.length
+    ? await Promise.all([
+        db
+          .select({
+            runId: runOutcomes.runId,
+            verdict: runOutcomes.verdict,
+            summary: runOutcomes.summary,
+            userGoal: runOutcomes.userGoal,
+            workflowUsed: runOutcomes.workflowUsed,
+          })
+          .from(runOutcomes)
+          .where(and(eq(runOutcomes.userId, auth.userId), inArray(runOutcomes.runId, ids))),
+        db
+          .select({ sessionId: screenshots.sessionId, value: count() })
+          .from(screenshots)
+          .where(and(eq(screenshots.userId, auth.userId), inArray(screenshots.sessionId, ids)))
+          .groupBy(screenshots.sessionId),
+        db
+          .select({ sessionId: recordings.sessionId, value: count() })
+          .from(recordings)
+          .where(and(eq(recordings.userId, auth.userId), inArray(recordings.sessionId, ids)))
+          .groupBy(recordings.sessionId),
+      ])
+    : [[], [], []];
+
+  const outcomeByRun = new Map(outcomeRows.map((row) => [row.runId, row]));
+  const captureCountByRun = new Map(captureCountRows.map((row) => [row.sessionId as string, Number(row.value)]));
+  const replayCountByRun = new Map(replayCountRows.map((row) => [row.sessionId, Number(row.value)]));
+
+  const items = pageRows.map((run) => ({
+    ...run,
+    outcome: outcomeByRun.get(run.id) ?? null,
+    captureCount: captureCountByRun.get(run.id) ?? 0,
+    replayCount: replayCountByRun.get(run.id) ?? 0,
+  }));
+
+  const nextCursor = hasMore ? items[items.length - 1].createdAt?.toISOString() ?? null : null;
+  const total = Number(totalRows[0]?.value ?? 0);
+
+  res.json({ items, nextCursor, total });
+});
 
 runsRouter.get("/:id/live", async (req, res) => {
   const auth = await resolveUser(req);
@@ -203,6 +324,7 @@ runsRouter.get("/shared/:token", async (req, res) => {
       userGoal: runOutcomes.userGoal,
       workflowUsed: runOutcomes.workflowUsed,
       verdict: runOutcomes.verdict,
+      problem: runOutcomes.problem,
       summary: runOutcomes.summary,
       contract: runOutcomes.contract,
       findings: runOutcomes.findings,
@@ -501,6 +623,21 @@ runsRouter.post("/:id/outcome", async (req, res) => {
       ...patch,
     });
   }
+
+  // Live update: Summary tab, run detail header, and (soon) shared run pages
+  // reflect verdict/summary/findings the moment the CLI or MCP writes them.
+  emitDashboardEvent({
+    type: "outcome.updated",
+    userId: auth.userId,
+    runId,
+    payload: {
+      verdict: typeof verdict === "string" ? verdict : undefined,
+      hasSummary: typeof summary === "string" && summary.length > 0,
+      findingsCount: Array.isArray(findings) ? findings.length : undefined,
+      nextActionsCount: Array.isArray(nextActions) ? nextActions.length : undefined,
+    },
+  });
+
   res.json({ ok: true });
 });
 

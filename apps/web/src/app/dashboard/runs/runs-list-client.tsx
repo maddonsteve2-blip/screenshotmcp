@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useDashboardWs } from "@/lib/use-dashboard-ws";
+import { apiFetch } from "@/lib/api-fetch";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, ArrowRight, Clock, ExternalLink, Globe, Image as ImageIcon, Monitor, Network, Search, SquareTerminal, Video } from "lucide-react";
+import { AlertTriangle, ArrowRight, Clock, ExternalLink, Globe, Image as ImageIcon, Loader2, Monitor, Network, Search, SquareTerminal, Video } from "lucide-react";
+
+const PAGE_SIZE = 30;
 
 type RunListItem = {
   outcome: {
@@ -102,23 +104,114 @@ function FilterPill({
   );
 }
 
-export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
-  const [liveRuns, setLiveRuns] = useState<RunListItem[]>(runs);
+export default function RunsListClient() {
+  const [liveRuns, setLiveRuns] = useState<RunListItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed" | "failed">("all");
   const [modeFilter, setModeFilter] = useState<string>("all");
   const [evidenceFilter, setEvidenceFilter] = useState<"all" | "has-evidence" | "captures" | "replays" | "issues">("all");
   const [shareFilter, setShareFilter] = useState<"all" | "shared" | "private">("all");
+  const fetchIdRef = useRef(0);
 
-  useDashboardWs<{ runs: RunListItem[] }>({
-    subscription: { channel: "runs" },
-    onMessage: (message) => {
-      if (message.type !== "runs") return;
-      if (!message.data || typeof message.data !== "object" || !("runs" in message.data)) return;
-      const next = (message.data as { runs: RunListItem[] }).runs;
-      if (Array.isArray(next)) setLiveRuns(next);
-    },
-  });
+  // Debounce the search text so we don't spam the API on each keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const buildQueryString = useCallback((before?: string | null) => {
+    const params = new URLSearchParams();
+    if (debouncedQuery) params.set("q", debouncedQuery);
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    if (before) params.set("before", before);
+    params.set("limit", String(PAGE_SIZE));
+    return params.toString();
+  }, [debouncedQuery, statusFilter]);
+
+  const normalizeRun = useCallback((raw: Record<string, unknown>): RunListItem => {
+    // The server returns ISO dates on some fields and the `createdAt` cursor
+    // on others. Normalise to the shape the card renderer expects.
+    const startedAt = typeof raw.startedAt === "string" ? raw.startedAt
+      : raw.startedAt ? new Date(String(raw.startedAt)).toISOString() : null;
+    const endedAt = typeof raw.endedAt === "string" ? raw.endedAt
+      : raw.endedAt ? new Date(String(raw.endedAt)).toISOString() : null;
+    const sharedAt = typeof raw.sharedAt === "string" ? raw.sharedAt
+      : raw.sharedAt ? new Date(String(raw.sharedAt)).toISOString() : null;
+    return {
+      outcome: (raw.outcome as RunListItem["outcome"]) ?? null,
+      id: String(raw.id),
+      status: String(raw.status ?? ""),
+      executionMode: String(raw.executionMode ?? ""),
+      startUrl: (raw.startUrl as string) ?? null,
+      finalUrl: (raw.finalUrl as string) ?? null,
+      pageTitle: (raw.pageTitle as string) ?? null,
+      recordingEnabled: Boolean(raw.recordingEnabled),
+      shareToken: (raw.shareToken as string) ?? null,
+      sharedAt,
+      viewportWidth: (raw.viewportWidth as number) ?? null,
+      viewportHeight: (raw.viewportHeight as number) ?? null,
+      startedAt: startedAt ?? new Date().toISOString(),
+      endedAt,
+      captureCount: Number(raw.captureCount ?? 0),
+      replayCount: Number(raw.replayCount ?? 0),
+      consoleErrorCount: Number(raw.consoleErrorCount ?? 0),
+      consoleWarningCount: Number(raw.consoleWarningCount ?? 0),
+      networkErrorCount: Number(raw.networkErrorCount ?? 0),
+      networkRequestCount: Number(raw.networkRequestCount ?? 0),
+    };
+  }, []);
+
+  const loadFirstPage = useCallback(async () => {
+    const myFetchId = ++fetchIdRef.current;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiFetch(`/api/runs?${buildQueryString()}`);
+      if (!res.ok) throw new Error(`Failed to load runs (${res.status})`);
+      const data = await res.json();
+      if (myFetchId !== fetchIdRef.current) return;
+      setLiveRuns(Array.isArray(data.items) ? data.items.map(normalizeRun) : []);
+      setTotal(Number(data.total ?? 0));
+      setNextCursor(typeof data.nextCursor === "string" ? data.nextCursor : null);
+    } catch (err) {
+      if (myFetchId !== fetchIdRef.current) return;
+      setError(err instanceof Error ? err.message : "We couldn’t load your runs right now.");
+    } finally {
+      if (myFetchId === fetchIdRef.current) setLoading(false);
+    }
+  }, [buildQueryString, normalizeRun]);
+
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await apiFetch(`/api/runs?${buildQueryString(nextCursor)}`);
+      if (!res.ok) throw new Error(`Failed to load more (${res.status})`);
+      const data = await res.json();
+      setLiveRuns((prev) => {
+        const seen = new Set(prev.map((r) => r.id));
+        const additions = (data.items ?? [])
+          .map(normalizeRun)
+          .filter((r: RunListItem) => !seen.has(r.id));
+        return [...prev, ...additions];
+      });
+      setNextCursor(typeof data.nextCursor === "string" ? data.nextCursor : null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load more runs.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [buildQueryString, loadingMore, nextCursor, normalizeRun]);
+
+  useEffect(() => {
+    void loadFirstPage();
+  }, [loadFirstPage]);
 
   const modeOptions = useMemo(
     () => ["all", ...Array.from(new Set(liveRuns.map((run) => run.executionMode).filter(Boolean))).sort()],
@@ -164,7 +257,32 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
     shared: liveRuns.filter((run) => Boolean(run.shareToken)).length,
   }), [liveRuns]);
 
-  if (liveRuns.length === 0) {
+  if (loading && liveRuns.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading runs…
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error && liveRuns.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-3">
+          <AlertTriangle className="h-6 w-6 text-destructive" />
+          <p className="font-medium">{error}</p>
+          <Button variant="outline" onClick={() => void loadFirstPage()}>Try again</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Only treat it as "zero runs ever" when nothing matches and the user
+  // hasn't narrowed the view themselves.
+  const isPristine = debouncedQuery === "" && statusFilter === "all";
+  if (liveRuns.length === 0 && total === 0 && isPristine) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-3">
@@ -183,8 +301,9 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <Card>
           <CardContent className="flex flex-col gap-1 p-4">
-            <p className="text-xs text-muted-foreground">Active runs</p>
-            <p className="text-2xl font-semibold">{counts.active}</p>
+            <p className="text-xs text-muted-foreground">Total matching</p>
+            <p className="text-2xl font-semibold">{total}</p>
+            <p className="text-[11px] text-muted-foreground">{liveRuns.length} loaded</p>
           </CardContent>
         </Card>
         <Card>
@@ -225,9 +344,11 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
                 className="pl-9"
               />
             </div>
-            <p className="text-xs text-muted-foreground lg:ml-auto">
-              Showing {filteredRuns.length} of {runs.length} runs
-            </p>
+            <div className="flex items-center gap-3 lg:ml-auto">
+              <p className="text-xs text-muted-foreground">
+                Showing {filteredRuns.length} of {total} matching · {liveRuns.length} loaded
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -387,6 +508,18 @@ export default function RunsListClient({ runs }: { runs: RunListItem[] }) {
               </Card>
             );
           })
+        )}
+
+        {nextCursor && (
+          <div className="flex justify-center pt-2">
+            <Button variant="outline" onClick={() => void loadMore()} disabled={loadingMore}>
+              {loadingMore ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Loading older…</>
+              ) : (
+                <>Load {PAGE_SIZE} older</>
+              )}
+            </Button>
+          </div>
         )}
       </div>
     </div>

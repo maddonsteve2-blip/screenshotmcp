@@ -8,6 +8,7 @@ import { webhookRouter } from "./routes/webhook.js";
 import { webhooksOutboundRouter } from "./routes/webhooks-outbound.js";
 import { recordingsRouter } from "./routes/recordings.js";
 import { runsRouter } from "./routes/runs.js";
+import { screenshotsRouter } from "./routes/screenshots.js";
 import { mcpRouter } from "./mcp/server.js";
 import { errorHandler } from "./middleware/error.js";
 import { requestId } from "./middleware/requestId.js";
@@ -188,6 +189,7 @@ app.post("/oauth/token", express.urlencoded({ extended: false }), (req, res) => 
 });
 
 app.use("/v1/screenshot", screenshotRouter);
+app.use("/v1/screenshots", screenshotsRouter);
 app.use("/v1/webhooks", webhooksOutboundRouter);
 app.use("/webhooks", webhookRouter);
 app.use("/v1/recordings", recordingsRouter);

@@ -1,16 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { ExternalLink, Copy, Check, ImageOff, FileText, Search, Clock3, Link2, ScanSearch } from "lucide-react";
+import { ExternalLink, Copy, Check, ImageOff, FileText, Search, Clock3, Link2, ScanSearch, Loader2, RefreshCw } from "lucide-react";
 import { LibraryTabs } from "@/components/library-tabs";
-import { useDashboardWs } from "@/lib/use-dashboard-ws";
+import { apiFetch } from "@/lib/api-fetch";
 import { PageContainer } from "@/components/page-container";
 import { ScreenshotViewerDialog } from "@/components/screenshot-viewer-dialog";
 
@@ -29,9 +29,10 @@ type Screenshot = {
 };
 
 type StatusFilter = "all" | "done" | "attention" | "failed";
+type ArtifactFilter = "all" | "linked" | "pdf" | "full-page";
 type LibraryView = "attention" | "completed" | "all";
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 50;
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -145,35 +146,84 @@ function CapturePreview({
 
 export default function ScreenshotsPage() {
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
+  const [total, setTotal] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [viewerScreenshot, setViewerScreenshot] = useState<Screenshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [artifactFilter, setArtifactFilter] = useState<"all" | "linked" | "pdf" | "full-page">("all");
+  const [artifactFilter, setArtifactFilter] = useState<ArtifactFilter>("all");
   const [activeView, setActiveView] = useState<LibraryView>("attention");
-  const [visibleCompletedCount, setVisibleCompletedCount] = useState(PAGE_SIZE);
-  const [visibleAllCount, setVisibleAllCount] = useState(PAGE_SIZE);
+  // Track which fetch is currently authoritative so a slow response from an
+  // earlier query never overwrites a newer one (classic race on search input).
+  const fetchIdRef = useRef(0);
 
-  const handleSocketMessage = useCallback((message: { type: string; data?: { screenshots?: Screenshot[] }; message?: string }) => {
-    if (message.type === "screenshots") {
-      setScreenshots(message.data?.screenshots ?? []);
-      setError(null);
-      setLoading(false);
-      return;
+  // Debounce the user's search input so we don't hammer the API on every keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const buildQueryString = useCallback((before?: string | null) => {
+    const params = new URLSearchParams();
+    if (debouncedQuery) params.set("q", debouncedQuery);
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    if (artifactFilter !== "all") params.set("artifact", artifactFilter);
+    if (before) params.set("before", before);
+    params.set("limit", String(PAGE_SIZE));
+    return params.toString();
+  }, [debouncedQuery, statusFilter, artifactFilter]);
+
+  const loadFirstPage = useCallback(async () => {
+    const myFetchId = ++fetchIdRef.current;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiFetch(`/api/screenshots?${buildQueryString()}`);
+      if (!res.ok) throw new Error(`Failed to load captures (${res.status})`);
+      const data = await res.json();
+      // Only apply the response if this is still the latest in-flight request.
+      if (myFetchId !== fetchIdRef.current) return;
+      setScreenshots(Array.isArray(data.items) ? data.items : []);
+      setTotal(Number(data.total ?? 0));
+      setNextCursor(typeof data.nextCursor === "string" ? data.nextCursor : null);
+    } catch (err) {
+      if (myFetchId !== fetchIdRef.current) return;
+      setError(err instanceof Error ? err.message : "We couldn’t load your captures right now.");
+    } finally {
+      if (myFetchId === fetchIdRef.current) setLoading(false);
     }
+  }, [buildQueryString]);
 
-    if (message.type === "error") {
-      setError(message.message ?? "We couldn’t load your captures right now.");
-      setLoading(false);
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await apiFetch(`/api/screenshots?${buildQueryString(nextCursor)}`);
+      if (!res.ok) throw new Error(`Failed to load more (${res.status})`);
+      const data = await res.json();
+      setScreenshots((prev) => {
+        // Guard against duplicates if live refresh happened between pages.
+        const seen = new Set(prev.map((s) => s.id));
+        const additions = (data.items ?? []).filter((s: Screenshot) => !seen.has(s.id));
+        return [...prev, ...additions];
+      });
+      setNextCursor(typeof data.nextCursor === "string" ? data.nextCursor : null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load more captures.");
+    } finally {
+      setLoadingMore(false);
     }
-  }, []);
+  }, [buildQueryString, loadingMore, nextCursor]);
 
-  useDashboardWs({
-    subscription: { channel: "screenshots" },
-    onMessage: handleSocketMessage,
-  });
+  // Refetch whenever search or filters change.
+  useEffect(() => {
+    void loadFirstPage();
+  }, [loadFirstPage]);
 
   async function copy(text: string, id: string) {
     await navigator.clipboard.writeText(text);
@@ -223,8 +273,9 @@ export default function ScreenshotsPage() {
   const failedScreenshots = attentionScreenshots.filter((s) => s.status === "failed");
   const activeScreenshots = attentionScreenshots.filter((s) => s.status !== "failed");
   const recentCompleted = completedScreenshots.slice(0, 6);
-  const visibleCompletedScreenshots = completedScreenshots.slice(0, visibleCompletedCount);
-  const visibleAllScreenshots = filteredScreenshots.slice(0, visibleAllCount);
+  // Everything loaded is shown — "Load older" is now server-paginated via nextCursor.
+  const visibleCompletedScreenshots = completedScreenshots;
+  const visibleAllScreenshots = filteredScreenshots;
   const statusFilterLabel = {
     all: "All statuses",
     done: "Completed",
@@ -265,32 +316,37 @@ export default function ScreenshotsPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Card>
           <CardContent className="flex flex-col gap-1 p-4">
-            <p className="text-sm text-muted-foreground">Total captures</p>
-            <p className="text-2xl font-semibold tabular-nums">{counts.total}</p>
+            <p className="text-sm text-muted-foreground">Total matching</p>
+            <p className="text-2xl font-semibold tabular-nums">{total}</p>
+            <p className="text-xs text-muted-foreground">{screenshots.length} loaded</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Needs attention</p>
             <p className="text-2xl font-semibold tabular-nums">{counts.attention}</p>
+            <p className="text-xs text-muted-foreground">in loaded</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Failed captures</p>
             <p className="text-2xl font-semibold tabular-nums">{counts.failed}</p>
+            <p className="text-xs text-muted-foreground">in loaded</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">Linked to runs</p>
             <p className="text-2xl font-semibold tabular-nums">{counts.linked}</p>
+            <p className="text-xs text-muted-foreground">in loaded</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex flex-col gap-1 p-4">
             <p className="text-sm text-muted-foreground">PDF exports</p>
             <p className="text-2xl font-semibold tabular-nums">{counts.pdfs}</p>
+            <p className="text-xs text-muted-foreground">in loaded</p>
           </CardContent>
         </Card>
       </div>
@@ -602,10 +658,14 @@ export default function ScreenshotsPage() {
                   ))}
                 </div>
 
-                {completedScreenshots.length > visibleCompletedCount && (
+                {nextCursor && (
                   <div className="flex justify-center">
-                    <Button variant="outline" onClick={() => setVisibleCompletedCount((current) => current + PAGE_SIZE)}>
-                      Show 12 more
+                    <Button variant="outline" onClick={() => void loadMore()} disabled={loadingMore}>
+                      {loadingMore ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Loading older…</>
+                      ) : (
+                        <>Load {PAGE_SIZE} older</>
+                      )}
                     </Button>
                   </div>
                 )}
@@ -669,10 +729,14 @@ export default function ScreenshotsPage() {
                   ))}
                 </div>
 
-                {filteredScreenshots.length > visibleAllCount && (
+                {nextCursor && (
                   <div className="flex justify-center">
-                    <Button variant="outline" onClick={() => setVisibleAllCount((current) => current + PAGE_SIZE)}>
-                      Show 12 more
+                    <Button variant="outline" onClick={() => void loadMore()} disabled={loadingMore}>
+                      {loadingMore ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Loading older…</>
+                      ) : (
+                        <>Load {PAGE_SIZE} older</>
+                      )}
                     </Button>
                   </div>
                 )}
