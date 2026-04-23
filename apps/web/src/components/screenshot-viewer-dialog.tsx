@@ -36,6 +36,7 @@ import {
   type AnnotationTool,
 } from "@/components/screenshot-annotations";
 import { ScreenshotShareDialog } from "@/components/screenshot-share-dialog";
+import { toast } from "sonner";
 
 type ScreenshotViewerProps = {
   open: boolean;
@@ -137,7 +138,23 @@ export function ScreenshotViewerDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ annotations }),
       });
-      if (res.ok) setAnnotationsDirty(false);
+      if (res.ok) {
+        setAnnotationsDirty(false);
+        toast.success(annotations.length === 0 ? "Annotations cleared" : "Annotations saved");
+      } else {
+        // Surface the real reason so the user stops retrying silently. Save
+        // previously swallowed every failure — users reported "it never saves"
+        // because the button flashed back to "Saved" regardless of outcome.
+        const body = await res.text().catch(() => "");
+        const detail = body ? ` — ${body.slice(0, 200)}` : "";
+        toast.error(`Couldn't save annotations (${res.status})${detail}`);
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? `Couldn't save annotations: ${err.message}`
+          : "Couldn't save annotations",
+      );
     } finally {
       setSavingAnnotations(false);
     }

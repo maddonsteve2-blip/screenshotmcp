@@ -117,7 +117,14 @@ export default function ArtifactsPage() {
   const [query, setQuery] = useState("");
   const [kindFilter, setKindFilter] = useState<"all" | "capture" | "replay">("all");
   const [linkFilter, setLinkFilter] = useState<"all" | "linked" | "unlinked">("all");
-  const [viewerArtifact, setViewerArtifact] = useState<{ src: string; url: string; width?: number; height?: number } | null>(null);
+  const [viewerArtifact, setViewerArtifact] = useState<{
+    src: string;
+    url: string;
+    width?: number;
+    height?: number;
+    /** Capture id — enables the annotation toolbar in the viewer. */
+    id?: string | null;
+  } | null>(null);
   const [shareFilter, setShareFilter] = useState<"all" | "shared" | "private">("all");
 
   const handleSocketMessage = useCallback((message: { type: string; data?: { screenshots?: Screenshot[]; recordings?: Recording[] }; message?: string }) => {
@@ -440,7 +447,7 @@ export default function ArtifactsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setViewerArtifact({ src: artifact.href!, url: artifact.title })}
+                        onClick={() => setViewerArtifact({ src: artifact.href!, url: artifact.title, id: artifact.kind === "capture" ? artifact.id : null })}
                       >
                         <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                         View
@@ -467,6 +474,7 @@ export default function ArtifactsPage() {
         capturedUrl={viewerArtifact?.url ?? null}
         width={viewerArtifact?.width ?? null}
         height={viewerArtifact?.height ?? null}
+        screenshotId={viewerArtifact?.id ?? null}
         hideShare
       />
     </PageContainer>
