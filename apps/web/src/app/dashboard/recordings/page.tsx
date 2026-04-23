@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Video, Trash2, ExternalLink, Clock, Globe, Monitor, Loader2, Search, HardDrive, Link2, ScanSearch } from "lucide-react";
+import { Video, Trash2, ExternalLink, Clock, Globe, Monitor, Loader2, Search, HardDrive, Link2, ScanSearch, Play } from "lucide-react";
 import { toast } from "sonner";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { LibraryTabs } from "@/components/library-tabs";
@@ -66,6 +66,51 @@ function hostname(input: string | null) {
   } catch {
     return input;
   }
+}
+
+// Video poster-frame preview with a play overlay. Uses the `#t=0.1` URL
+// fragment so browsers seek to the first real frame and paint it while the
+// video is paused — no server-side thumbnail generation needed.
+function ReplayPreview({
+  rec,
+  playing,
+  onPlay,
+  className,
+}: {
+  rec: Recording;
+  playing: boolean;
+  onPlay: () => void;
+  className?: string;
+}) {
+  if (playing) {
+    return (
+      <div className={`flex items-center justify-center bg-black ${className ?? ""}`}>
+        <video src={rec.videoUrl} controls autoPlay className="h-full w-full" />
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      aria-label={`Play replay for ${hostname(rec.pageUrl)}`}
+      onClick={onPlay}
+      className={`group relative flex items-center justify-center overflow-hidden bg-black ${className ?? ""}`}
+    >
+      <video
+        src={`${rec.videoUrl}#t=0.1`}
+        preload="metadata"
+        muted
+        playsInline
+        aria-hidden="true"
+        tabIndex={-1}
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/0 to-black/20" />
+      <div className="relative flex size-16 items-center justify-center rounded-full bg-white/15 text-white shadow-lg backdrop-blur transition-transform group-hover:scale-105 group-hover:bg-white/25">
+        <Play className="h-7 w-7 fill-white" />
+      </div>
+    </button>
+  );
 }
 
 export default function RecordingsPage() {
@@ -364,23 +409,12 @@ export default function RecordingsPage() {
                   {recentRecordings.map((rec) => (
                     <article key={rec.id} className="min-w-[320px] max-w-[360px] snap-start">
                       <Card className="overflow-hidden">
-                        <div className="flex h-44 items-center justify-center bg-black">
-                          {playingId === rec.id ? (
-                            <video src={rec.videoUrl} controls autoPlay className="h-full w-full" />
-                          ) : (
-                            <button
-                              type="button"
-                              aria-label={`Play replay for ${hostname(rec.pageUrl)}`}
-                              onClick={() => setPlayingId(rec.id)}
-                              className="flex h-full w-full flex-col items-center justify-center gap-3 p-8 text-white/70 transition-colors hover:text-white"
-                            >
-                              <div className="flex size-16 items-center justify-center rounded-full bg-white/10 backdrop-blur">
-                                <Video className="h-7 w-7" />
-                              </div>
-                              <span className="text-sm">Click to play</span>
-                            </button>
-                          )}
-                        </div>
+                        <ReplayPreview
+                          rec={rec}
+                          playing={playingId === rec.id}
+                          onPlay={() => setPlayingId(rec.id)}
+                          className="h-44 w-full"
+                        />
                         <CardContent className="flex flex-col gap-3 p-4">
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
@@ -427,23 +461,12 @@ export default function RecordingsPage() {
               <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
                 {visibleArchiveRecordings.map((rec) => (
                   <Card key={rec.id} className="overflow-hidden [contain-intrinsic-size:360px] [content-visibility:auto]">
-                    <div className="flex h-48 items-center justify-center bg-black">
-                      {playingId === rec.id ? (
-                        <video src={rec.videoUrl} controls autoPlay className="h-full w-full" />
-                      ) : (
-                        <button
-                          type="button"
-                          aria-label={`Play replay for ${hostname(rec.pageUrl)}`}
-                          onClick={() => setPlayingId(rec.id)}
-                          className="flex h-full w-full flex-col items-center justify-center gap-3 p-8 text-white/70 transition-colors hover:text-white"
-                        >
-                          <div className="flex size-16 items-center justify-center rounded-full bg-white/10 backdrop-blur">
-                            <Video className="h-7 w-7" />
-                          </div>
-                          <span className="text-sm">Click to play</span>
-                        </button>
-                      )}
-                    </div>
+                    <ReplayPreview
+                      rec={rec}
+                      playing={playingId === rec.id}
+                      onPlay={() => setPlayingId(rec.id)}
+                      className="h-48 w-full"
+                    />
                     <CardContent className="flex flex-col gap-3 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
