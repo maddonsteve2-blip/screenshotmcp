@@ -125,12 +125,11 @@ function ReplayPreview({
         tabIndex={-1}
         className="absolute inset-0 h-full w-full object-cover"
       />
-      {/* Strong gradient + dim scrim so the white play button stays legible
-          on light frames (the previous overlay got lost on pale thumbnails). */}
-      <div className="absolute inset-0 bg-black/25" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/40" />
-      <div className="relative flex size-16 items-center justify-center rounded-full bg-white/20 text-white shadow-lg backdrop-blur-sm ring-1 ring-white/30 transition-transform group-hover:scale-105 group-hover:bg-white/30">
-        <Play className="h-7 w-7 fill-white" />
+      {/* YouTube-style centered play button in the brand primary colour.
+          No full-frame scrim — the button's solid fill + shadow carry the
+          affordance even on pale thumbnails. */}
+      <div className="relative flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_24px_rgba(0,0,0,0.35)] ring-1 ring-black/10 transition-transform group-hover:scale-110">
+        <Play className="h-7 w-7 translate-x-[1px] fill-current" />
       </div>
     </button>
   );
