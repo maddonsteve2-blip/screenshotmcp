@@ -68,9 +68,10 @@ function hostname(input: string | null) {
   }
 }
 
-// Video poster-frame preview with a play overlay. Uses the `#t=0.1` URL
-// fragment so browsers seek to the first real frame and paint it while the
-// video is paused — no server-side thumbnail generation needed.
+// Video poster-frame preview with a play overlay. Seeks ~25% into the
+// recording (capped at 2s) on `loadedmetadata` so we skip past Playwright's
+// initial blank viewport — which is why #t=0.1 gave us all-white thumbnails.
+// No server-side thumbnail generation needed.
 function ReplayPreview({
   rec,
   playing,
@@ -82,6 +83,24 @@ function ReplayPreview({
   onPlay: () => void;
   className?: string;
 }) {
+  const previewRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const video = previewRef.current;
+    if (!video || playing) return;
+    const seekTarget = Math.min(2, Math.max(0.5, (rec.durationMs ?? 0) / 1000 * 0.25));
+    const handleLoaded = () => {
+      try {
+        video.currentTime = seekTarget;
+      } catch {
+        // Safari sometimes throws if metadata isn't fully ready — fine, the
+        // browser will fall back to frame 0.
+      }
+    };
+    video.addEventListener("loadedmetadata", handleLoaded);
+    return () => video.removeEventListener("loadedmetadata", handleLoaded);
+  }, [rec.durationMs, playing]);
+
   if (playing) {
     return (
       <div className={`flex items-center justify-center bg-black ${className ?? ""}`}>
@@ -97,7 +116,8 @@ function ReplayPreview({
       className={`group relative flex items-center justify-center overflow-hidden bg-black ${className ?? ""}`}
     >
       <video
-        src={`${rec.videoUrl}#t=0.1`}
+        ref={previewRef}
+        src={rec.videoUrl}
         preload="metadata"
         muted
         playsInline
@@ -105,8 +125,11 @@ function ReplayPreview({
         tabIndex={-1}
         className="absolute inset-0 h-full w-full object-cover"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/0 to-black/20" />
-      <div className="relative flex size-16 items-center justify-center rounded-full bg-white/15 text-white shadow-lg backdrop-blur transition-transform group-hover:scale-105 group-hover:bg-white/25">
+      {/* Strong gradient + dim scrim so the white play button stays legible
+          on light frames (the previous overlay got lost on pale thumbnails). */}
+      <div className="absolute inset-0 bg-black/25" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/40" />
+      <div className="relative flex size-16 items-center justify-center rounded-full bg-white/20 text-white shadow-lg backdrop-blur-sm ring-1 ring-white/30 transition-transform group-hover:scale-105 group-hover:bg-white/30">
         <Play className="h-7 w-7 fill-white" />
       </div>
     </button>
