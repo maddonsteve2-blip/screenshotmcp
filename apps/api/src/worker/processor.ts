@@ -240,6 +240,19 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
       .from(screenshots)
       .where(eq(screenshots.id, id));
     if (row) {
+      emitDashboardEvent({
+        type: "screenshot.completed",
+        userId: row.userId,
+        payload: {
+          screenshotId: id,
+          url: row.url,
+          publicUrl,
+          format: row.format,
+          status: "done",
+          width: dimensions?.width ?? null,
+          height: dimensions?.height ?? null,
+        },
+      });
       void emitWebhookEvent({
         userId: row.userId,
         eventType: "screenshot.completed",
@@ -265,6 +278,16 @@ export async function processScreenshotJob(job: Job<ScreenshotJob>) {
       .from(screenshots)
       .where(eq(screenshots.id, id));
     if (row) {
+      emitDashboardEvent({
+        type: "screenshot.failed",
+        userId: row.userId,
+        payload: {
+          screenshotId: id,
+          url: row.url,
+          status: "failed",
+          errorMessage: message,
+        },
+      });
       void emitWebhookEvent({
         userId: row.userId,
         eventType: "screenshot.failed",

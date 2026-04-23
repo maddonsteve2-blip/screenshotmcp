@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode } from "react";
-import { AlertTriangle, CheckCircle2, ExternalLink, Globe, Image as ImageIcon, RefreshCw, Video } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ExternalLink, Globe, Image as ImageIcon, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,7 +65,6 @@ type Props = {
   liveSnapshot: LiveSnapshotResponse | null;
   liveState: LiveState;
   liveBadge: LiveBadge;
-  onRefresh: () => void;
   onNavigate: (tab: TabValue) => void;
   outcomeLabel: string;
   outcomeClassName: string;
@@ -100,7 +99,6 @@ export function SummaryTab({
   liveSnapshot,
   liveState,
   liveBadge,
-  onRefresh,
   onNavigate,
   outcomeLabel,
   outcomeClassName,
@@ -191,27 +189,30 @@ export function SummaryTab({
       )}
 
       <Card>
-        <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className={cn("capitalize", liveBadge.className)}>{liveBadge.label}</Badge>
-              {pollingEnabled && <Badge variant="outline">Auto-refresh every 5s</Badge>}
-            </div>
-            <p className="text-sm font-medium">
-              {pollingEnabled
-                ? "This run is still active. Live console and network diagnostics will refresh automatically."
-                : "This run is no longer active. Diagnostics below reflect the latest persisted snapshot."}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Last snapshot: {formatDate(liveState.snapshotAt ?? run.createdAt)}
-              {liveSnapshot?.lastUsedAt ? ` · last browser activity ${formatDate(liveSnapshot.lastUsedAt)}` : ""}
-            </p>
-            {liveState.error && <p className="text-sm text-destructive">{liveState.error}</p>}
+        <CardContent className="flex flex-col gap-2 p-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className={cn("capitalize", liveBadge.className)}>
+              {liveState.state === "live" && (
+                <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              )}
+              {liveBadge.label}
+            </Badge>
+            {pollingEnabled && (
+              <Badge variant="outline" className="border-primary/30 text-primary">
+                Streaming
+              </Badge>
+            )}
           </div>
-          <Button variant="outline" size="sm" onClick={onRefresh}>
-            <RefreshCw data-icon="inline-start" className={cn(liveState.state === "refreshing" && "animate-spin")} />
-            Refresh now
-          </Button>
+          <p className="text-sm font-medium">
+            {pollingEnabled
+              ? "This run is still active. Console, network, and outcome updates stream in real time."
+              : "This run is no longer active. Diagnostics below reflect the latest persisted snapshot."}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Last snapshot: {formatDate(liveState.snapshotAt ?? run.createdAt)}
+            {liveSnapshot?.lastUsedAt ? ` · last browser activity ${formatDate(liveSnapshot.lastUsedAt)}` : ""}
+          </p>
+          {liveState.error && <p className="text-sm text-destructive">{liveState.error}</p>}
         </CardContent>
       </Card>
 

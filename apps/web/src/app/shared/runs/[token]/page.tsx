@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Camera, CheckCircle2, Clock, ExternalLink, Globe, Monitor, Network, PlayCircle, SquareTerminal } from "lucide-react";
+import { SharedRunLiveRefresh } from "./shared-run-live-refresh";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
 
@@ -179,7 +180,10 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
             </div>
           </div>
           <div className="flex flex-col gap-3 text-base text-muted-foreground lg:items-end">
-            <p>Shared {formatDate(run.sharedAt)}</p>
+            <div className="flex items-center gap-3">
+              <SharedRunLiveRefresh shareToken={token} />
+              <p>Shared {formatDate(run.sharedAt)}</p>
+            </div>
             <Link href="/" className="inline-flex items-center gap-2 text-foreground hover:text-primary">
               Open ScreenshotsMCP
               <ExternalLink className="h-4 w-4" />

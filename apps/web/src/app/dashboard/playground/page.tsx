@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { PageContainer } from "@/components/page-container";
 import { apiFetch } from "@/lib/api-fetch";
+import { watchScreenshot } from "./watch-screenshot";
 
 type Device = { label: string; width: number; height: number; icon: React.ElementType };
 type Format = "png" | "jpeg" | "webp" | "pdf";
@@ -38,7 +39,8 @@ const FORMATS: { value: Format; label: string }[] = [
   { value: "pdf", label: "PDF" },
 ];
 
-// Playground proxies through Next.js API routes — no API key needed (auth via Clerk session)
+// Playground proxies through Next.js API routes — no API key needed (auth via Clerk session).
+// The result arrives via a dedicated `screenshot-live` WebSocket; no polling.
 async function captureScreenshot(params: {
   url: string;
   width: number;
@@ -68,25 +70,13 @@ async function captureScreenshot(params: {
 
   const job = await res.json();
   const jobId: string = job.id ?? job.jobId;
+  if (!jobId) return { error: "API did not return a job ID" };
 
-  // Poll for result via proxy
-  for (let i = 0; i < 30; i++) {
-    await new Promise((r) => setTimeout(r, 2000));
-    const poll = await apiFetch(`/api/playground/screenshot/${jobId}`);
-    if (!poll.ok) continue;
-    const data = await poll.json();
-    if (data.status === "done" && (data.url || data.publicUrl)) {
-      return {
-        publicUrl: data.url ?? data.publicUrl,
-        width: data.width ?? params.width,
-        height: data.height ?? params.height,
-        format: data.format ?? params.format,
-        elapsed: data.elapsed ?? "?",
-      };
-    }
-    if (data.status === "failed") return { error: data.error ?? data.errorMessage ?? "Screenshot failed" };
-  }
-  return { error: "Timed out after 60s" };
+  return watchScreenshot(jobId, {
+    width: params.width,
+    height: params.height,
+    format: params.format,
+  });
 }
 
 export default function PlaygroundPage() {

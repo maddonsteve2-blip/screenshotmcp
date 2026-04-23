@@ -10,26 +10,13 @@ import RunDetailTabs from "./run-detail-tabs";
 import RunShareDialog from "./run-share-dialog";
 import { RunCopyMarkdownButton } from "./run-copy-markdown-button";
 import { CopyInlineButton } from "./copy-inline-button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Clock, Globe, Image as ImageIcon, Monitor, Network, SquareTerminal } from "lucide-react";
+import { RunDetailHeaderLive } from "./run-detail-header-live";
+import { ArrowLeft } from "lucide-react";
 import { PageContainer } from "@/components/page-container";
 
 function formatDate(dateStr?: string | null) {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleString();
-}
-
-function formatDuration(startedAt?: string | null, endedAt?: string | null) {
-  if (!startedAt) return "—";
-  if (!endedAt) return "In progress";
-  const ms = new Date(endedAt).getTime() - new Date(startedAt).getTime();
-  if (ms <= 0) return "—";
-  const secs = Math.floor(ms / 1000);
-  if (secs < 60) return `${secs}s`;
-  const mins = Math.floor(secs / 60);
-  const remainSecs = secs % 60;
-  return `${mins}m ${remainSecs}s`;
 }
 
 function prettyHost(input?: string | null) {
@@ -257,22 +244,8 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold">{run.pageTitle || prettyHost(run.startUrl)}</h1>
-              <Badge variant={run.status === "completed" ? "secondary" : "outline"} className="capitalize">
-                {run.status}
-              </Badge>
-              <Badge variant="outline" className="capitalize">{run.executionMode}</Badge>
-              {run.recordingEnabled && <Badge variant="outline">Recording enabled</Badge>}
-              {run.shareToken && <Badge variant="outline" className="border-emerald-200 text-emerald-700">Shared</Badge>}
-            </div>
+            <h1 className="text-2xl font-bold">{run.pageTitle || prettyHost(run.startUrl)}</h1>
             <p className="text-base text-muted-foreground break-all">{run.finalUrl ?? run.startUrl ?? "Managed browser session"}</p>
-            {run.shareToken && (
-              <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Globe className="h-3.5 w-3.5" />
-                Public review enabled{run.sharedAt ? ` · updated ${formatDate(run.sharedAt.toISOString())}` : ""}
-              </p>
-            )}
             <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground font-mono">
               <span>Session ID: {run.id}</span>
               <CopyInlineButton value={run.id} label="Copy session ID" />
@@ -311,72 +284,24 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-7 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Started</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm font-medium">{formatDate(startedAt)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Duration</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm font-medium">{formatDuration(startedAt, endedAt)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Viewport</CardTitle>
-            <Monitor className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm font-medium">{run.viewportWidth ?? "—"}×{run.viewportHeight ?? "—"}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Evidence</CardTitle>
-            <ImageIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm font-medium">{screenshotRows.length} captures · {recordingsForRun.length} replays</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Requests</CardTitle>
-            <Network className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm font-medium">{run.networkRequestCount} total · {run.networkErrorCount} failed</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Console</CardTitle>
-            <SquareTerminal className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm font-medium">{run.consoleLogCount} events · {run.consoleErrorCount} errors</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Sharing</CardTitle>
-            <Globe className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm font-medium">{run.shareToken ? "Public review enabled" : "Private"}</div>
-            <div className="text-xs text-muted-foreground">{run.shareToken && run.sharedAt ? `Updated ${formatDate(run.sharedAt.toISOString())}` : "Only invited reviewers can access via share link."}</div>
-          </CardContent>
-        </Card>
-      </div>
+      <RunDetailHeaderLive
+        runId={run.id}
+        initialStatus={run.status}
+        executionMode={run.executionMode}
+        recordingEnabled={run.recordingEnabled}
+        startedAt={startedAt}
+        endedAt={endedAt}
+        viewportWidth={run.viewportWidth}
+        viewportHeight={run.viewportHeight}
+        shareToken={run.shareToken}
+        sharedAt={run.sharedAt?.toISOString() ?? null}
+        initialCaptureCount={screenshotRows.length}
+        initialRecordingCount={recordingsForRun.length}
+        initialConsoleLogCount={run.consoleLogCount}
+        initialConsoleErrorCount={run.consoleErrorCount}
+        initialNetworkRequestCount={run.networkRequestCount}
+        initialNetworkErrorCount={run.networkErrorCount}
+      />
 
       <RunDetailTabs
         run={runForClient}

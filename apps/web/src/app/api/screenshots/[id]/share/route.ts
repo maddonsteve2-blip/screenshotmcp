@@ -6,14 +6,26 @@ import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
 import { screenshots } from "@screenshotsmcp/db";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.screenshotmcp.com";
-
-function buildShareUrl(token: string) {
-  return `${APP_URL}/shared/screenshots/${encodeURIComponent(token)}`;
+function buildShareUrl(req: NextRequest, token: string) {
+  // Prefer the request origin so we always use the canonical domain
+  const origin = req.headers.get("origin") || req.headers.get("x-forwarded-host");
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  
+  if (origin) {
+    // If we got an origin header, use it directly (it includes protocol)
+    if (origin.startsWith("http://") || origin.startsWith("https://")) {
+      return `${origin}/shared/screenshots/${encodeURIComponent(token)}`;
+    }
+    // Otherwise construct from host + protocol
+    return `${proto}://${origin}/shared/screenshots/${encodeURIComponent(token)}`;
+  }
+  
+  // Fallback to canonical domain
+  return `https://www.screenshotmcp.com/shared/screenshots/${encodeURIComponent(token)}`;
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { userId: clerkId } = await auth();
@@ -38,7 +50,7 @@ export async function GET(
   return NextResponse.json({
     shareToken: row.shareToken,
     sharedAt: row.sharedAt?.toISOString() ?? null,
-    shareUrl: row.shareToken ? buildShareUrl(row.shareToken) : null,
+    shareUrl: row.shareToken ? buildShareUrl(req, row.shareToken) : null,
   });
 }
 
@@ -75,7 +87,7 @@ export async function POST(
 
   return NextResponse.json({
     shareToken,
-    shareUrl: buildShareUrl(shareToken),
+    shareUrl: buildShareUrl(req, shareToken),
     sharedAt: new Date().toISOString(),
   });
 }

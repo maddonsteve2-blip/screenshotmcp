@@ -88,19 +88,35 @@ export default function RunDetailTabs({
     }
   }, []);
 
-  const { refresh: requestLiveRefresh } = useDashboardWs<LiveSnapshotResponse>({
+  useDashboardWs<LiveSnapshotResponse>({
     subscription: { channel: "run-live", runId: run.id },
     onMessage: handleLiveSocketMessage,
   });
 
-  const refreshLiveSnapshot = useCallback(() => {
-    setLiveState((current) => ({ ...current, state: "refreshing", error: null }));
-    requestLiveRefresh();
-  }, [requestLiveRefresh]);
-
   const effectiveConsoleLogs = liveSnapshot?.consoleLogs ?? initialConsoleLogs;
   const effectiveNetworkErrors = liveSnapshot?.networkErrors ?? initialNetworkErrors;
   const effectiveNetworkRequests = liveSnapshot?.networkRequests ?? initialNetworkRequests;
+  // Prefer the live outcome payload when available (so the Summary tab updates
+  // the verdict and summary as soon as `outcome.updated` is emitted server-side).
+  const effectiveOutcome = liveSnapshot?.outcome
+    ? {
+        ...(outcome ?? {
+          problem: null,
+          contract: {},
+          findings: [],
+          proofCoverage: {},
+          validity: {},
+        }),
+        verdict: liveSnapshot.outcome.verdict ?? outcome?.verdict ?? "inconclusive",
+        summary: liveSnapshot.outcome.summary ?? outcome?.summary ?? null,
+        taskType: liveSnapshot.outcome.taskType ?? outcome?.taskType ?? null,
+        userGoal: liveSnapshot.outcome.userGoal ?? outcome?.userGoal ?? null,
+        workflowUsed: liveSnapshot.outcome.workflowUsed ?? outcome?.workflowUsed ?? null,
+        nextActions: liveSnapshot.outcome.nextActions?.length
+          ? liveSnapshot.outcome.nextActions
+          : outcome?.nextActions ?? [],
+      }
+    : outcome;
   const effectiveFinalUrl = liveSnapshot?.currentUrl ?? run.finalUrl ?? run.startUrl;
   const effectivePageTitle = liveSnapshot?.pageTitle ?? run.pageTitle;
   const effectiveViewportWidth = liveSnapshot?.viewport?.width ?? run.viewportWidth;
@@ -117,8 +133,8 @@ export default function RunDetailTabs({
   const hasPersistedEvidence = evidenceItemCount > 0;
   const outcomeLabel = pollingEnabled
     ? "Active"
-    : outcome?.verdict
-    ? outcome.verdict.replace(/_/g, " ")
+    : effectiveOutcome?.verdict
+    ? effectiveOutcome.verdict.replace(/_/g, " ")
     : run.status === "failed"
     ? "Failed"
     : pollingEnabled
@@ -128,11 +144,11 @@ export default function RunDetailTabs({
         : "Healthy";
   const outcomeClassName = pollingEnabled
     ? "border-primary/30 text-primary"
-    : outcome?.verdict === "failed"
+    : effectiveOutcome?.verdict === "failed"
     ? "border-destructive/30 text-destructive"
-    : outcome?.verdict === "needs_review"
+    : effectiveOutcome?.verdict === "needs_review"
       ? "border-border text-foreground"
-      : outcome?.verdict === "inconclusive"
+      : effectiveOutcome?.verdict === "inconclusive"
         ? "border-amber-300 text-amber-700"
         : run.status === "failed"
     ? "border-destructive/30 text-destructive"
@@ -141,8 +157,8 @@ export default function RunDetailTabs({
       : totalIssueCount > 0
         ? "border-border text-foreground"
         : "border-primary/20 text-primary";
-  const outcomeMessage = outcome?.summary
-    ? outcome.summary
+  const outcomeMessage = effectiveOutcome?.summary
+    ? effectiveOutcome.summary
     : run.status === "failed"
     ? "The run ended in a failed state and should be reviewed before retrying or sharing outcomes."
     : pollingEnabled
@@ -150,8 +166,8 @@ export default function RunDetailTabs({
       : totalIssueCount > 0
         ? `The run completed, but ${totalIssueCount} high-priority issue${totalIssueCount === 1 ? " was" : "s were"} captured across console and network diagnostics.`
         : "The run completed without high-priority console or network failures in the persisted snapshot.";
-  const attentionMessage = outcome?.nextActions?.[0]
-    ? outcome.nextActions[0]
+  const attentionMessage = effectiveOutcome?.nextActions?.[0]
+    ? effectiveOutcome.nextActions[0]
     : run.status === "failed"
     ? "Prioritize this run for review: it failed before completion and may need a retry or workflow fix."
     : totalIssueCount > 0
@@ -227,12 +243,11 @@ export default function RunDetailTabs({
           recordings={recordings}
           primaryRecording={primaryRecording}
           latestScreenshot={latestScreenshot}
-          outcome={outcome}
+          outcome={effectiveOutcome}
           pollingEnabled={pollingEnabled}
           liveSnapshot={liveSnapshot}
           liveState={liveState}
           liveBadge={liveBadge}
-          onRefresh={() => void refreshLiveSnapshot()}
           onNavigate={setActiveTab}
           outcomeLabel={outcomeLabel}
           outcomeClassName={outcomeClassName}

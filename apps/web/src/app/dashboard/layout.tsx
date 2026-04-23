@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Separator } from "@/components/ui/separator";
 import DashboardSidebar from "./dashboard-sidebar";
 import FeedbackButton from "./feedback-button";
+import { LiveEventToaster } from "./live-event-toaster";
+import { LiveTabIndicator } from "./live-tab-indicator";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const inter = Inter({ subsets: ["latin"], variable: "--dashboard-font-sans" });
@@ -77,6 +79,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       <FeedbackButton />
+      <LiveEventToaster />
+      <LiveTabIndicator />
     </div>
   );
 }

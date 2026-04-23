@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { PageContainer } from "@/components/page-container";
 import {
@@ -14,6 +14,7 @@ import {
   Power,
   AlertTriangle,
   RefreshCw,
+  Radio,
 } from "lucide-react";
 import { toast } from "sonner";
 import { confirmDialog } from "@/components/confirm-dialog";
@@ -29,6 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useDashboardWs } from "@/lib/use-dashboard-ws";
 
 interface Endpoint {
   id: string;
@@ -76,6 +78,25 @@ function statusTone(status: string): string {
   return "text-muted-foreground";
 }
 
+type LiveDeliveryPayload = {
+  deliveries: Array<{
+    id: string;
+    endpointId: string;
+    eventType: string;
+    status: string;
+    attempt: number;
+    responseCode: number | null;
+    errorMessage: string | null;
+    createdAt: string | null;
+    deliveredAt: string | null;
+  }>;
+  endpointStats: Array<{
+    id: string;
+    lastDeliveredAt: string | null;
+    lastFailureAt: string | null;
+  }>;
+};
+
 export default function WebhooksPage() {
   const [endpoints, setEndpoints] = useState<Endpoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,7 +110,8 @@ export default function WebhooksPage() {
   const [createEvents, setCreateEvents] = useState<string[]>(["*"]);
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-  const [loadingDeliveries, setLoadingDeliveries] = useState(false);
+  const [liveConnected, setLiveConnected] = useState(false);
+  const prevStatusRef = useRef<Map<string, string>>(new Map());
 
   async function loadEndpoints() {
     setLoading(true);
@@ -114,21 +136,68 @@ export default function WebhooksPage() {
     void loadEndpoints();
   }, []);
 
-  async function loadDeliveries(endpointId: string) {
-    setSelectedEndpoint(endpointId);
-    setLoadingDeliveries(true);
-    try {
-      const res = await apiFetch(`/api/outbound-webhooks/${endpointId}/deliveries?limit=50`, {
-        cache: "no-store",
+  const handleLiveMessage = useCallback(
+    (message: { type: string; data?: LiveDeliveryPayload; message?: string }) => {
+      if (message.type === "error") {
+        console.warn("[webhooks-ws]", message.message);
+        return;
+      }
+      if (message.type !== "webhook-deliveries" || !message.data) return;
+
+      const next = message.data.deliveries as Delivery[];
+      const prev = prevStatusRef.current;
+      const updated = new Map<string, string>();
+      for (const d of next) {
+        const prior = prev.get(d.id);
+        updated.set(d.id, d.status);
+        if (prior && prior !== d.status) {
+          if (d.status === "exhausted") {
+            toast.error(`Webhook delivery exhausted: ${d.eventType}`, {
+              description: d.errorMessage ?? `Gave up after ${d.attempt} attempts`,
+            });
+          } else if (d.status === "failed") {
+            toast.error(`Webhook delivery failed: ${d.eventType}`, {
+              description: d.errorMessage ?? "Delivery failed",
+            });
+          }
+        }
+      }
+      prevStatusRef.current = updated;
+      setDeliveries(next);
+
+      // Patch endpoint last-delivered/last-failure in-place so rows stay fresh
+      // without a full REST reload.
+      setEndpoints((current) => {
+        if (current.length === 0) return current;
+        const statsById = new Map(message.data!.endpointStats.map((s) => [s.id, s]));
+        let dirty = false;
+        const patched = current.map((ep) => {
+          const stats = statsById.get(ep.id);
+          if (!stats) return ep;
+          if (
+            stats.lastDeliveredAt === ep.lastDeliveredAt &&
+            stats.lastFailureAt === ep.lastFailureAt
+          ) {
+            return ep;
+          }
+          dirty = true;
+          return {
+            ...ep,
+            lastDeliveredAt: stats.lastDeliveredAt ?? ep.lastDeliveredAt,
+            lastFailureAt: stats.lastFailureAt ?? ep.lastFailureAt,
+          };
+        });
+        return dirty ? patched : current;
       });
-      const data = await res.json();
-      setDeliveries(data.deliveries ?? []);
-    } catch {
-      setDeliveries([]);
-    } finally {
-      setLoadingDeliveries(false);
-    }
-  }
+    },
+    [],
+  );
+
+  useDashboardWs<LiveDeliveryPayload>({
+    subscription: { channel: "webhook-deliveries" },
+    onMessage: handleLiveMessage,
+    onConnectionChange: setLiveConnected,
+  });
 
   function toggleCreateEvent(event: string) {
     setCreateEvents((current) => {
@@ -192,7 +261,8 @@ export default function WebhooksPage() {
     setBusyId(id);
     try {
       await apiFetch(`/api/outbound-webhooks/${id}/test`, { method: "POST" });
-      await loadDeliveries(id);
+      setSelectedEndpoint(id);
+      toast.success("Test ping sent — watch the deliveries feed for the result");
     } finally {
       setBusyId(null);
     }
@@ -266,9 +336,22 @@ export default function WebhooksPage() {
             .
           </p>
         </div>
-        <Button variant="outline" onClick={() => void loadEndpoints()} disabled={loading}>
-          <RefreshCw className={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"} /> Refresh
-        </Button>
+        <div className="flex items-center gap-3">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${
+              liveConnected
+                ? "border-emerald-500/30 text-emerald-500"
+                : "border-border text-muted-foreground"
+            }`}
+            title={liveConnected ? "Receiving real-time delivery updates" : "Reconnecting to live feed…"}
+          >
+            <Radio className={liveConnected ? "h-3 w-3 animate-pulse" : "h-3 w-3 opacity-50"} />
+            {liveConnected ? "Live" : "Offline"}
+          </span>
+          <Button variant="outline" onClick={() => void loadEndpoints()} disabled={loading}>
+            <RefreshCw className={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"} /> Refresh
+          </Button>
+        </div>
       </header>
 
       {error && (
@@ -356,8 +439,8 @@ export default function WebhooksPage() {
                   <div className="flex flex-wrap gap-2">
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => void loadDeliveries(ep.id)}
+                      variant={isSelected ? "default" : "outline"}
+                      onClick={() => setSelectedEndpoint(isSelected ? null : ep.id)}
                       disabled={busyId === ep.id}
                     >
                       Deliveries
@@ -399,18 +482,18 @@ export default function WebhooksPage() {
                   </div>
                 </div>
 
-                {isSelected && (
+                {isSelected && (() => {
+                  const endpointDeliveries = deliveries.filter((d) => d.endpointId === ep.id);
+                  return (
                   <div className="mt-4 border-t border-border pt-3">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Recent deliveries
                     </p>
-                    {loadingDeliveries ? (
-                      <p className="text-xs text-muted-foreground">Loading…</p>
-                    ) : deliveries.length === 0 ? (
+                    {endpointDeliveries.length === 0 ? (
                       <p className="text-xs text-muted-foreground">No deliveries yet.</p>
                     ) : (
                       <div className="space-y-1">
-                        {deliveries.map((d) => (
+                        {endpointDeliveries.map((d) => (
                           <div
                             key={d.id}
                             className="flex flex-wrap items-center gap-3 rounded border bg-muted/40 px-3 py-2 text-xs"
@@ -430,7 +513,8 @@ export default function WebhooksPage() {
                       </div>
                     )}
                   </div>
-                )}
+                  );
+                })()}
               </div>
             );
           })}

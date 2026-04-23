@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,8 @@ import { LibraryTabs } from "@/components/library-tabs";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";
 import { PageContainer } from "@/components/page-container";
 import { ScreenshotViewerDialog } from "@/components/screenshot-viewer-dialog";
+import { ScreenshotAnnotatedPreview } from "@/components/screenshot-annotated-preview";
+import type { Annotation } from "@/components/screenshot-annotations";
 
 type Screenshot = {
   id: string;
@@ -126,6 +128,45 @@ export default function ArtifactsPage() {
     id?: string | null;
   } | null>(null);
   const [shareFilter, setShareFilter] = useState<"all" | "shared" | "private">("all");
+  const [annotationsMap, setAnnotationsMap] = useState<Record<string, Annotation[]>>({});
+
+  // Fetch annotations for all screenshots when they change
+  const fetchAnnotationsForScreenshots = useCallback(async (screenshotList: Screenshot[]) => {
+    const screenshotIds = screenshotList.map(s => s.id);
+    if (screenshotIds.length === 0) return;
+
+    try {
+      const promises = screenshotIds.map(async (id) => {
+        try {
+          const res = await fetch(`/api/screenshots/${encodeURIComponent(id)}/annotations`, { cache: "no-store" });
+          if (res.ok) {
+            const data = await res.json();
+            return { id, annotations: Array.isArray(data.annotations) ? data.annotations : [] };
+          }
+        } catch {
+          // Ignore errors, fall back to empty annotations
+        }
+        return { id, annotations: [] };
+      });
+
+      const results = await Promise.all(promises);
+      const map: Record<string, Annotation[]> = {};
+      results.forEach(({ id, annotations }) => {
+        map[id] = annotations;
+      });
+      setAnnotationsMap(map);
+    } catch (err) {
+      console.error("Failed to fetch annotations:", err);
+    }
+  }, []);
+
+  // Fetch annotations when screenshots change
+  const fetchAnnotationsRef = useRef(fetchAnnotationsForScreenshots);
+  fetchAnnotationsRef.current = fetchAnnotationsForScreenshots;
+
+  useEffect(() => {
+    void fetchAnnotationsRef.current(screenshots);
+  }, [screenshots]);
 
   const handleSocketMessage = useCallback((message: { type: string; data?: { screenshots?: Screenshot[]; recordings?: Recording[] }; message?: string }) => {
     if (message.type === "artifacts") {
@@ -380,7 +421,14 @@ export default function ArtifactsPage() {
                 <div className="relative flex h-56 w-full items-center justify-center border-b bg-muted md:h-auto md:w-72 lg:w-80 md:border-b-0 md:border-r">
                   {artifact.kind === "capture" ? (
                     artifact.previewUrl ? (
-                      <Image src={artifact.previewUrl} alt={artifact.title} fill unoptimized sizes="(min-width: 1280px) 20rem, (min-width: 768px) 18rem, 100vw" className="h-full w-full object-cover object-top" />
+                      <ScreenshotAnnotatedPreview
+                        src={artifact.previewUrl}
+                        alt={artifact.title}
+                        width={screenshots.find(s => s.id === artifact.id)?.width ?? 0}
+                        height={screenshots.find(s => s.id === artifact.id)?.height ?? null}
+                        annotations={annotationsMap[artifact.id] ?? []}
+                        className="h-full w-full"
+                      />
                     ) : artifact.flags.pdf ? (
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <FileText className="h-8 w-8" />

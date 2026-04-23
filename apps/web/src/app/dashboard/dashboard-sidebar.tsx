@@ -2,9 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { BarChart3, CreditCard, Download, FileText, Library, type LucideIcon, Image, Key, LayoutDashboard, ListVideo, Play, ScrollText, Settings, Video, Webhook } from "lucide-react";
 import { DialogClose } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useDashboardWs } from "@/lib/use-dashboard-ws";
+
+type RunSummary = { status?: string };
 
 type NavChild = {
   href: string;
@@ -86,6 +90,18 @@ function childMatchesPath(pathname: string, child: NavChild) {
 
 export default function DashboardSidebar({ closeOnNavigate = false }: { closeOnNavigate?: boolean }) {
   const pathname = usePathname();
+  const [activeRunCount, setActiveRunCount] = useState<number | null>(null);
+
+  useDashboardWs<{ runs: RunSummary[] }>({
+    subscription: { channel: "runs" },
+    onMessage: (message) => {
+      if (message.type !== "runs" || !message.data) return;
+      const next = message.data.runs;
+      if (Array.isArray(next)) {
+        setActiveRunCount(next.filter((run) => run?.status === "active").length);
+      }
+    },
+  });
 
   return (
     <nav className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -97,6 +113,8 @@ export default function DashboardSidebar({ closeOnNavigate = false }: { closeOnN
           <div className="space-y-1">
             {group.items.map((item) => {
               const active = matchesPath(pathname, item);
+              const isRunsItem = item.href === "/dashboard/runs";
+              const showActiveBadge = isRunsItem && activeRunCount !== null && activeRunCount > 0;
               const itemLink = (
                 <Link
                   href={item.href}
@@ -110,6 +128,18 @@ export default function DashboardSidebar({ closeOnNavigate = false }: { closeOnN
                 >
                   <item.icon className="h-4 w-4" />
                   <span className="flex-1">{item.label}</span>
+                  {showActiveBadge && (
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400"
+                      title={`${activeRunCount} run${activeRunCount === 1 ? "" : "s"} currently active`}
+                    >
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      </span>
+                      {activeRunCount}
+                    </span>
+                  )}
                 </Link>
               );
 

@@ -90,20 +90,38 @@ export type RunOutcome = {
   nextActions: string[];
 };
 
+export type LiveOutcome = {
+  verdict: string | null;
+  summary: string | null;
+  taskType: string | null;
+  userGoal: string | null;
+  workflowUsed: string | null;
+  nextActions: string[];
+};
+
 export type LiveSnapshotResponse = {
   runId: string;
   status: string;
   live: boolean;
   snapshotAt: string;
   startedAt: string | null;
+  endedAt: string | null;
   lastUsedAt: string | null;
   recordingEnabled: boolean;
-  currentUrl: string | null;
+  executionMode?: string | null;
+  startUrl?: string | null;
+  finalUrl?: string | null;
   pageTitle: string | null;
+  shareToken?: string | null;
+  sharedAt?: string | null;
+  captureCount?: number;
+  recordingCount?: number;
+  outcome?: LiveOutcome | null;
+  currentUrl: string | null;
   viewport: { width: number; height: number } | null;
-  consoleLogs: ConsoleEntry[];
-  networkErrors: NetworkErrorEntry[];
-  networkRequests: NetworkRequestEntry[];
+  consoleLogs?: ConsoleEntry[];
+  networkErrors?: NetworkErrorEntry[];
+  networkRequests?: NetworkRequestEntry[];
   consoleLogCount: number;
   consoleErrorCount: number;
   consoleWarningCount: number;

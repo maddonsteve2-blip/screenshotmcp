@@ -17,7 +17,11 @@ export type DashboardEventType =
   | "run.updated"
   | "run.completed"
   | "screenshot.completed"
-  | "recording.created";
+  | "screenshot.failed"
+  | "recording.created"
+  | "recording.deleted"
+  | "outcome.updated"
+  | "webhook.delivery.updated";
 
 export interface DashboardEvent {
   type: DashboardEventType;

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Camera, Download, ArrowRight, Video, ExternalLink, Globe, Image as ImageIcon, AlertTriangle, Activity, Clock3, Monitor, Network, SquareTerminal } from "lucide-react";
+import { Camera, Download, ArrowRight, Video, ExternalLink, Globe, Image as ImageIcon, AlertTriangle, Activity, Clock3, Monitor, Network, Radio, SquareTerminal } from "lucide-react";
 import { PLAN_LIMITS } from "@screenshotsmcp/types";
 import { InstallDialog } from "@/components/install-dialog";
 import { PageContainer } from "@/components/page-container";
@@ -121,15 +121,19 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   } = data;
 
   const [liveRecentRuns, setLiveRecentRuns] = useState<DashboardData["recentRuns"]>(recentRuns);
+  const [liveRecentScreenshots, setLiveRecentScreenshots] = useState<DashboardData["recentScreenshots"]>(recentScreenshots);
+  const [liveRecentRecordings, setLiveRecentRecordings] = useState<DashboardData["recentRecordings"]>(recentRecordings);
   const [liveRunKpis, setLiveRunKpis] = useState({
     activeRunCount,
     failedRunCount,
     issueRunCount,
     sharedRunCount,
   });
+  const [runsConnected, setRunsConnected] = useState(false);
 
   useDashboardWs<{ runs: any[] }>({
     subscription: { channel: "runs" },
+    onConnectionChange: setRunsConnected,
     onMessage: (message) => {
       if (message.type !== "runs") return;
       if (!message.data || typeof message.data !== "object" || !("runs" in message.data)) return;
@@ -166,6 +170,24 @@ export function DashboardClient({ data }: { data: DashboardData }) {
       );
     },
   });
+  useDashboardWs<{ screenshots: DashboardData["recentScreenshots"] }>({
+    subscription: { channel: "screenshots" },
+    onMessage: (message) => {
+      if (message.type !== "screenshots" || !message.data) return;
+      const next = message.data.screenshots;
+      if (Array.isArray(next)) setLiveRecentScreenshots(next.slice(0, 5));
+    },
+  });
+
+  useDashboardWs<{ recordings: DashboardData["recentRecordings"] }>({
+    subscription: { channel: "recordings" },
+    onMessage: (message) => {
+      if (message.type !== "recordings" || !message.data) return;
+      const next = message.data.recordings;
+      if (Array.isArray(next)) setLiveRecentRecordings(next.slice(0, 5));
+    },
+  });
+
   const isUnlimited = limit >= 999999;
   const pct = isUnlimited ? 0 : Math.min(100, Math.round((usage / limit) * 100));
 
@@ -180,6 +202,17 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             <p className="text-muted-foreground">Recent runs, issues that need attention, and the evidence your browser workflows produced.</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${
+                runsConnected
+                  ? "border-emerald-500/30 text-emerald-500"
+                  : "border-border text-muted-foreground"
+              }`}
+              title={runsConnected ? "Runs, captures, and replays are streaming live" : "Reconnecting to live feed…"}
+            >
+              <Radio className={runsConnected ? "h-3 w-3 animate-pulse" : "h-3 w-3 opacity-50"} />
+              {runsConnected ? "Live" : "Offline"}
+            </span>
             <Link href="/dashboard/runs" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
               Open runs
             </Link>
@@ -419,12 +452,12 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               </Link>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              {recentScreenshots.length === 0 ? (
+              {liveRecentScreenshots.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                   No screenshots yet. Run a browser task and your recent evidence will show up here.
                 </div>
               ) : (
-                recentScreenshots.map((item) => (
+                liveRecentScreenshots.map((item) => (
                   <div key={item.id} className="flex items-start justify-between gap-4 rounded-lg border p-3">
                     <div className="min-w-0 flex flex-col gap-1">
                       <div className="flex items-center gap-2">
@@ -468,12 +501,12 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               </Link>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              {recentRecordings.length === 0 ? (
+              {liveRecentRecordings.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                   No recordings yet. Start a managed browser run with recording enabled to build replayable evidence.
                 </div>
               ) : (
-                recentRecordings.map((item) => (
+                liveRecentRecordings.map((item) => (
                   <div key={item.id} className="flex items-start justify-between gap-4 rounded-lg border p-3">
                     <div className="min-w-0 flex flex-col gap-1">
                       <div className="flex items-center gap-2">

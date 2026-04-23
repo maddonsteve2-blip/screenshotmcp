@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "./db.js";
 import { webhookEndpoints, webhookDeliveries } from "@screenshotsmcp/db";
 import { getRedis } from "./redis.js";
+import { emitDashboardEvent } from "./dashboard-events.js";
 
 /**
  * Outbound webhook delivery system.
@@ -164,6 +165,21 @@ export async function emitWebhookEvent(input: EmitWebhookInput): Promise<void> {
         attempt: 0,
         status: "pending",
       });
+      emitDashboardEvent({
+        type: "webhook.delivery.updated",
+        userId: input.userId,
+        payload: {
+          deliveryId,
+          endpointId: endpoint.id,
+          eventType: input.eventType,
+          status: "pending",
+          attempt: 0,
+          responseCode: null,
+          errorMessage: null,
+          createdAt: new Date().toISOString(),
+          deliveredAt: null,
+        },
+      });
       const jobOpts: Parameters<Queue["add"]>[2] = {
         attempts: MAX_ATTEMPTS,
         // `custom` triggers the worker-level backoffStrategy below, which
@@ -209,6 +225,21 @@ async function processWebhookDelivery(job: Job<DeliveryJobData>): Promise<void> 
       .update(webhookDeliveries)
       .set({ status: "failed", errorMessage: "Endpoint missing or disabled" })
       .where(eq(webhookDeliveries.id, delivery.id));
+    emitDashboardEvent({
+      type: "webhook.delivery.updated",
+      userId: delivery.userId,
+      payload: {
+        deliveryId: delivery.id,
+        endpointId: delivery.endpointId,
+        eventType: delivery.eventType,
+        status: "failed",
+        attempt: delivery.attempt ?? 0,
+        responseCode: null,
+        errorMessage: "Endpoint missing or disabled",
+        createdAt: delivery.createdAt?.toISOString?.() ?? new Date().toISOString(),
+        deliveredAt: null,
+      },
+    });
     return;
   }
 
@@ -240,6 +271,7 @@ async function processWebhookDelivery(job: Job<DeliveryJobData>): Promise<void> 
     responseCode = res.status;
     responseBody = (await res.text().catch(() => "")).slice(0, 4000);
     if (res.status >= 200 && res.status < 300) {
+      const deliveredAt = new Date();
       await db
         .update(webhookDeliveries)
         .set({
@@ -248,13 +280,29 @@ async function processWebhookDelivery(job: Job<DeliveryJobData>): Promise<void> 
           responseCode,
           responseBody,
           errorMessage: null,
-          deliveredAt: new Date(),
+          deliveredAt,
         })
         .where(eq(webhookDeliveries.id, delivery.id));
       await db
         .update(webhookEndpoints)
-        .set({ lastDeliveredAt: new Date(), updatedAt: new Date() })
+        .set({ lastDeliveredAt: deliveredAt, updatedAt: new Date() })
         .where(eq(webhookEndpoints.id, endpoint.id));
+      emitDashboardEvent({
+        type: "webhook.delivery.updated",
+        userId: delivery.userId,
+        payload: {
+          deliveryId: delivery.id,
+          endpointId: endpoint.id,
+          eventType: delivery.eventType,
+          status: "success",
+          attempt,
+          responseCode,
+          errorMessage: null,
+          createdAt: delivery.createdAt?.toISOString?.() ?? new Date().toISOString(),
+          deliveredAt: deliveredAt.toISOString(),
+          endpointLastDeliveredAt: deliveredAt.toISOString(),
+        },
+      });
       return;
     }
     errorMessage = `HTTP ${res.status}`;
@@ -265,10 +313,12 @@ async function processWebhookDelivery(job: Job<DeliveryJobData>): Promise<void> 
   }
 
   const isFinalAttempt = attempt >= MAX_ATTEMPTS;
+  const failureAt = new Date();
+  const finalStatus = isFinalAttempt ? "exhausted" : "pending";
   await db
     .update(webhookDeliveries)
     .set({
-      status: isFinalAttempt ? "exhausted" : "pending",
+      status: finalStatus,
       attempt,
       responseCode,
       responseBody: responseBody || null,
@@ -277,8 +327,24 @@ async function processWebhookDelivery(job: Job<DeliveryJobData>): Promise<void> 
     .where(eq(webhookDeliveries.id, delivery.id));
   await db
     .update(webhookEndpoints)
-    .set({ lastFailureAt: new Date(), updatedAt: new Date() })
+    .set({ lastFailureAt: failureAt, updatedAt: new Date() })
     .where(eq(webhookEndpoints.id, endpoint.id));
+  emitDashboardEvent({
+    type: "webhook.delivery.updated",
+    userId: delivery.userId,
+    payload: {
+      deliveryId: delivery.id,
+      endpointId: endpoint.id,
+      eventType: delivery.eventType,
+      status: finalStatus,
+      attempt,
+      responseCode,
+      errorMessage,
+      createdAt: delivery.createdAt?.toISOString?.() ?? new Date().toISOString(),
+      deliveredAt: null,
+      endpointLastFailureAt: failureAt.toISOString(),
+    },
+  });
 
   if (!isFinalAttempt) {
     const nextDelay = RETRY_DELAYS_MS[attempt - 1] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];

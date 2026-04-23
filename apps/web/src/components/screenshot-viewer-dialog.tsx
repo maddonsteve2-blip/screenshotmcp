@@ -27,6 +27,11 @@ import {
   Trash2,
   Type,
   X,
+  Undo,
+  Redo,
+  Download,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import {
   AnnotationLayer,
@@ -98,12 +103,18 @@ export function ScreenshotViewerDialog({
   const [annotationsDirty, setAnnotationsDirty] = useState(false);
   const [savingAnnotations, setSavingAnnotations] = useState(false);
   const [loadingAnnotations, setLoadingAnnotations] = useState(false);
+  
+  // Undo/redo history
+  const [history, setHistory] = useState<Annotation[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Load annotations when dialog opens for a given screenshotId.
   useEffect(() => {
     if (!open || !screenshotId) {
       setAnnotations([]);
       setAnnotationsDirty(false);
+      setHistory([]);
+      setHistoryIndex(-1);
       return;
     }
     let cancelled = false;
@@ -112,11 +123,19 @@ export function ScreenshotViewerDialog({
       .then((r) => r.ok ? r.json() : { annotations: [] })
       .then((data) => {
         if (cancelled) return;
-        setAnnotations(Array.isArray(data.annotations) ? data.annotations : []);
+        const loadedAnnotations = Array.isArray(data.annotations) ? data.annotations : [];
+        setAnnotations(loadedAnnotations);
         setAnnotationsDirty(false);
+        // Initialize history with the loaded annotations
+        setHistory([loadedAnnotations]);
+        setHistoryIndex(0);
       })
       .catch(() => {
-        if (!cancelled) setAnnotations([]);
+        if (!cancelled) {
+          setAnnotations([]);
+          setHistory([[]]);
+          setHistoryIndex(0);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoadingAnnotations(false);
@@ -127,7 +146,36 @@ export function ScreenshotViewerDialog({
   const updateAnnotations = useCallback((next: Annotation[]) => {
     setAnnotations(next);
     setAnnotationsDirty(true);
-  }, []);
+    // Add to history (remove any future states after current index)
+    setHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(next);
+      // Keep history size reasonable (max 50 states)
+      if (newHistory.length > 50) {
+        return newHistory.slice(-50);
+      }
+      return newHistory;
+    });
+    setHistoryIndex(prev => Math.min(prev + 1, 49));
+  }, [historyIndex]);
+
+  const undo = useCallback(() => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setAnnotations(history[newIndex]);
+      setHistoryIndex(newIndex);
+      setAnnotationsDirty(true);
+    }
+  }, [history, historyIndex]);
+
+  const redo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setAnnotations(history[newIndex]);
+      setHistoryIndex(newIndex);
+      setAnnotationsDirty(true);
+    }
+  }, [history, historyIndex]);
 
   const saveAnnotations = useCallback(async () => {
     if (!screenshotId) return;
@@ -366,6 +414,28 @@ export function ScreenshotViewerDialog({
                     />
                   ))}
                 </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={undo}
+                  disabled={historyIndex <= 0}
+                  className="gap-1.5"
+                  aria-label="Undo"
+                >
+                  <Undo className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={redo}
+                  disabled={historyIndex >= history.length - 1}
+                  className="gap-1.5"
+                  aria-label="Redo"
+                >
+                  <Redo className="h-3.5 w-3.5" />
+                </Button>
                 <Button
                   type="button"
                   size="sm"

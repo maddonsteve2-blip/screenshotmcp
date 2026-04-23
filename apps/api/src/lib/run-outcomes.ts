@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
 import { runOutcomes } from "@screenshotsmcp/db";
+import { emitDashboardEvent } from "./dashboard-events.js";
 
 export type WorkflowAuthScope = "in" | "out" | "mixed" | "unknown";
 export type WorkflowToolPath = "mcp" | "cli" | "unknown";
@@ -315,11 +316,29 @@ async function upsertRunOutcome(runId: string, userId: string, outcome: RunOutco
   });
 }
 
+function emitOutcomeEvent(runId: string, userId: string, outcome: RunOutcomeRecord): void {
+  emitDashboardEvent({
+    type: "outcome.updated",
+    userId,
+    runId,
+    payload: {
+      runId,
+      verdict: outcome.verdict,
+      summary: outcome.summary,
+      taskType: outcome.taskType,
+      userGoal: outcome.userGoal,
+      workflowUsed: outcome.workflowUsed,
+      nextActions: outcome.nextActions,
+      findings: outcome.findings,
+    },
+  });
+}
+
 export async function persistInitialRunOutcome(runId: string, userId: string, outcomeContext?: RunOutcomeContext | null): Promise<void> {
   const context = normalizeOutcomeContext(outcomeContext);
   const contract = buildOutcomeContract(context);
   if (!contract.workflowRequired && !context?.userGoal && !context?.taskType) return;
-  await upsertRunOutcome(runId, userId, {
+  const record: RunOutcomeRecord = {
     taskType: context?.taskType ?? null,
     userGoal: context?.userGoal ?? null,
     workflowUsed: context?.workflowUsed ?? null,
@@ -347,9 +366,13 @@ export async function persistInitialRunOutcome(runId: string, userId: string, ou
       ]),
     },
     nextActions: ["Complete the run so the final verdict and supporting findings can be generated."],
-  });
+  };
+  await upsertRunOutcome(runId, userId, record);
+  emitOutcomeEvent(runId, userId, record);
 }
 
 export async function persistRunOutcomeSnapshot(input: OutcomeSnapshotInput): Promise<void> {
-  await upsertRunOutcome(input.runId, input.userId, buildRunOutcomeRecord(input));
+  const record = buildRunOutcomeRecord(input);
+  await upsertRunOutcome(input.runId, input.userId, record);
+  emitOutcomeEvent(input.runId, input.userId, record);
 }
