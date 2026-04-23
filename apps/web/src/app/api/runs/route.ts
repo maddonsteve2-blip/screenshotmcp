@@ -22,7 +22,23 @@ export async function GET(req: NextRequest) {
       headers: getInternalApiHeaders(user.id),
       cache: "no-store",
     });
-    const data = await res.json();
+    // Upstream may return HTML on 404/502 (Railway edge, missing route during
+    // deploys). Parse defensively so the dashboard shows a useful error
+    // instead of crashing to a generic 500.
+    const text = await res.text();
+    let data: unknown;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      const snippet = text.slice(0, 200).replace(/\s+/g, " ").trim();
+      return NextResponse.json(
+        {
+          error: `Captures service is temporarily unavailable (upstream ${res.status}).`,
+          detail: snippet || undefined,
+        },
+        { status: res.status === 200 ? 502 : res.status },
+      );
+    }
     return NextResponse.json(data, { status: res.status });
   } catch (error) {
     return NextResponse.json(

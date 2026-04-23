@@ -2,11 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-type DashboardChannel = "runs" | "screenshots" | "recordings" | "artifacts" | "run-live";
+type DashboardChannel =
+  | "runs"
+  | "screenshots"
+  | "recordings"
+  | "artifacts"
+  | "run-live"
+  | "webhook-deliveries"
+  | "screenshot-live"
+  | "events";
 
 type DashboardSubscription = {
   channel: DashboardChannel;
   runId?: string;
+  endpointId?: string;
+  jobId?: string;
 };
 
 type DashboardSocketMessage<TData> = {
@@ -34,10 +44,32 @@ export function useDashboardWs<TData>({
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
   const closedManuallyRef = useRef(false);
+  // Exponential backoff so a dead server doesn't create a reconnect storm
+  // (previously it hammered every 3s → "WebSocket is closed before the
+  // connection is established" floods in the console).
+  const retryCountRef = useRef(0);
   const [connected, setConnected] = useState(false);
+  // Hold the latest callbacks in refs so callers can pass inline functions
+  // without invalidating the socket on every render. Previously these were
+  // deps of `connect`, which caused a reconnect loop whenever a consumer
+  // passed an unstable `onMessage` (runaway close-before-open storm).
+  const onMessageRef = useRef(onMessage);
+  const onConnectionChangeRef = useRef(onConnectionChange);
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+  useEffect(() => {
+    onConnectionChangeRef.current = onConnectionChange;
+  }, [onConnectionChange]);
+
   const stableSubscription = useMemo(
-    () => ({ channel: subscription.channel, runId: subscription.runId }),
-    [subscription.channel, subscription.runId],
+    () => ({
+      channel: subscription.channel,
+      runId: subscription.runId,
+      endpointId: subscription.endpointId,
+      jobId: subscription.jobId,
+    }),
+    [subscription.channel, subscription.runId, subscription.endpointId, subscription.jobId],
   );
 
   const clearReconnectTimer = useCallback(() => {
@@ -54,8 +86,8 @@ export function useDashboardWs<TData>({
       socketRef.current = null;
     }
     setConnected(false);
-    onConnectionChange?.(false);
-  }, [clearReconnectTimer, onConnectionChange]);
+    onConnectionChangeRef.current?.(false);
+  }, [clearReconnectTimer]);
 
   const connect = useCallback(async () => {
     if (!enabled) return;
@@ -71,16 +103,17 @@ export function useDashboardWs<TData>({
       socketRef.current = socket;
 
       socket.onopen = () => {
+        retryCountRef.current = 0;
         setConnected(true);
-        onConnectionChange?.(true);
+        onConnectionChangeRef.current?.(true);
         socket.send(JSON.stringify({ type: "subscribe", ...stableSubscription }));
       };
 
       socket.onmessage = (event) => {
         try {
-          onMessage(JSON.parse(event.data) as DashboardSocketMessage<TData>);
+          onMessageRef.current(JSON.parse(event.data) as DashboardSocketMessage<TData>);
         } catch {
-          onMessage({ type: "error", message: "Invalid dashboard socket payload" });
+          onMessageRef.current({ type: "error", message: "Invalid dashboard socket payload" });
         }
       };
 
@@ -91,31 +124,33 @@ export function useDashboardWs<TData>({
       socket.onclose = () => {
         socketRef.current = null;
         setConnected(false);
-        onConnectionChange?.(false);
+        onConnectionChangeRef.current?.(false);
 
         if (closedManuallyRef.current || !enabled) {
           return;
         }
 
         clearReconnectTimer();
+        const delay = computeBackoffMs(reconnectDelayMs, retryCountRef.current++);
         reconnectTimerRef.current = window.setTimeout(() => {
           void connect();
-        }, reconnectDelayMs);
+        }, delay);
       };
     } catch (error) {
-      onMessage({
+      onMessageRef.current({
         type: "error",
         message: error instanceof Error ? error.message : "Unable to connect dashboard socket",
       });
 
       if (!closedManuallyRef.current && enabled) {
         clearReconnectTimer();
+        const delay = computeBackoffMs(reconnectDelayMs, retryCountRef.current++);
         reconnectTimerRef.current = window.setTimeout(() => {
           void connect();
-        }, reconnectDelayMs);
+        }, delay);
       }
     }
-  }, [clearReconnectTimer, enabled, onConnectionChange, onMessage, reconnectDelayMs, stableSubscription]);
+  }, [clearReconnectTimer, enabled, reconnectDelayMs, stableSubscription]);
 
   useEffect(() => {
     closedManuallyRef.current = false;
@@ -134,4 +169,13 @@ export function useDashboardWs<TData>({
   }, []);
 
   return { connected, refresh, close: closeSocket };
+}
+
+// Exponential backoff with jitter, capped at 30s. Keeps noisy reconnects off
+// the console when the API is down or the auth token endpoint is rejecting.
+function computeBackoffMs(baseMs: number, attempt: number): number {
+  const capped = Math.min(attempt, 5);
+  const exponential = baseMs * Math.pow(2, capped);
+  const jitter = Math.random() * 0.3 * exponential;
+  return Math.min(30_000, exponential + jitter);
 }
