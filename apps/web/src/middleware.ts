@@ -25,6 +25,7 @@ const isPublicRoute = createRouteMatcher([
   // Public API surfaces — these hand-check their own auth (or are fully public).
   "/api/webhooks/(.*)",
   "/api/try-screenshot(.*)",
+  "/api/shared/(.*)",
   "/api/docs-markdown(.*)",
 ]);
 

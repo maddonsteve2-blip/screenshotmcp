@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { Camera } from "lucide-react";
 import { SharedScreenshotViewer } from "./shared-screenshot-viewer";
@@ -16,8 +17,16 @@ type SharedScreenshot = {
   sharedAt: string | null;
 };
 
+async function resolveBaseUrl() {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  return host ? `${proto}://${host}` : "https://www.screenshotmcp.com";
+}
+
 async function getShared(token: string): Promise<SharedScreenshot | null> {
-  const res = await fetch(`/api/shared/screenshots/${encodeURIComponent(token)}`, {
+  const base = await resolveBaseUrl();
+  const res = await fetch(`${base}/api/shared/screenshots/${encodeURIComponent(token)}`, {
     cache: "no-store",
   }).catch(() => null);
   if (!res || res.status === 404) return null;
