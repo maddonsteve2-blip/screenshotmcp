@@ -56,6 +56,11 @@ GROUP BY day ORDER BY day;
 
 ## Deploying
 - **API**: Run `railway up` from repo root (NOT git push)
+  - Railway account: `maddonsteve2@gmail.com` (GitHub: `maddonsteeve2-blip`)
+  - Railway project: `screenshotsmcp-api`
+  - Railway service: `screenshotsmcp-api`
+  - Railway environment: `production`
+  - If `railway up` says "Unauthorized", run `railway login --browserless` with the **maddonsteve2** account, then `railway link` and select `screenshotsmcp-api`.
 - **Web**: Auto-deploys via Vercel on `git push`, or manually with `npx vercel --prod`
 - **CLI**: `cd packages/cli && npm version patch && npm publish --access public`
 
@@ -89,7 +94,7 @@ After any feature/tool change, update ALL of these:
 5. Docs — `apps/web/content/docs/`
 6. Install page — `apps/web/src/app/dashboard/install/page.tsx`
 
-Current tool count: 47+ MCP tools, 38 CLI commands.
+Current tool count: 47+ MCP tools, 39 CLI commands.
 
 ## Audit Workflow Gate
 - For any request involving a site audit, performance audit, SEO audit, UX audit, full audit, or another repeatable multi-page website review, read `workflows/sitewide-performance-audit/WORKFLOW.md` before opening browser sessions, running audit tools, or drafting findings.

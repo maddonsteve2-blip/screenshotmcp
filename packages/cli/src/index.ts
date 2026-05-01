@@ -34,7 +34,7 @@ import {
   webhooksDeleteCommand,
 } from "./commands/webhooks.js";
 import {
-  uxReviewCommand, seoCommand, perfCommand, a11yCommand, ogPreviewCommand, breakpointsCommand,
+  uxReviewCommand, seoCommand, perfCommand, a11yCommand, ogPreviewCommand, ocrCommand, breakpointsCommand,
 } from "./commands/review.js";
 import { checkCommand } from "./commands/check.js";
 import { baselineCommand } from "./commands/baseline.js";
@@ -150,6 +150,7 @@ program.addCommand(seoCommand);
 program.addCommand(perfCommand);
 program.addCommand(a11yCommand);
 program.addCommand(ogPreviewCommand);
+program.addCommand(ocrCommand);
 program.addCommand(breakpointsCommand);
 
 // CI / pre-commit

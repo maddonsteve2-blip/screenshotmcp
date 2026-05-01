@@ -162,6 +162,8 @@ screenshotsmcp review <url>              # AI UX review (standalone, no Run crea
 screenshotsmcp seo <url>                 # SEO metadata, run-backed (shows verdict + summary in /dashboard/runs)
 screenshotsmcp perf <url>                # Core Web Vitals, run-backed against sitewide-performance-audit workflow
 screenshotsmcp a11y <url>                # Accessibility tree (standalone)
+screenshotsmcp ocr <imageUrl>            # Extract text from image via AI vision (OCR)
+screenshotsmcp ocr --session <id>        # OCR from browser session screenshot
 screenshotsmcp breakpoints <url>         # Responsive breakpoints (standalone)
 ```
 

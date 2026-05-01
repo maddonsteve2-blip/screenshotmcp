@@ -133,6 +133,34 @@ export const ogPreviewCommand = new Command("og-preview")
     }
   });
 
+export const ocrCommand = new Command("ocr")
+  .description("Extract text from an image using AI vision (OCR)")
+  .argument("[imageUrl]", "Public URL of the image to extract text from")
+  .option("--session <sessionId>", "Use a browser session screenshot instead of a URL")
+  .option("-s, --selector <css>", "CSS selector to screenshot a specific element (requires --session)")
+  .option("-p, --prompt <text>", "Custom prompt for the vision model")
+  .action(async (imageUrl: string | undefined, opts: Record<string, string>) => {
+    if (!imageUrl && !opts.session) {
+      console.error(chalk.red("Provide an image URL or --session <sessionId>"));
+      process.exit(1);
+    }
+    const spinner = ora("Extracting text from image...").start();
+    try {
+      const res = await callTool("extract_text_from_image", {
+        image_url: imageUrl,
+        sessionId: opts.session,
+        selector: opts.selector,
+        prompt: opts.prompt,
+      });
+      spinner.stop();
+      console.log(chalk.green("✓ OCR complete\n"));
+      console.log(extractText(res));
+    } catch (err) {
+      spinner.fail(chalk.red("OCR failed"));
+      console.error(chalk.red(err instanceof Error ? err.message : String(err)));
+    }
+  });
+
 export const breakpointsCommand = new Command("breakpoints")
   .description("Detect responsive layout breakpoints")
   .argument("<url>", "URL to analyze")
