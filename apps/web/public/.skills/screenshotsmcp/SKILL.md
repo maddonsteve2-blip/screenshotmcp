@@ -73,7 +73,7 @@ Use the auth workflow when the user needs to test protected or multi-step flows.
 
 - Start with `auth_test_assist` for website auth work. It is the primary auth entrypoint: it reuses the saved inbox/password, checks remembered auth history for the site's origin, and returns recommended auth path, account-exists confidence, likely auth method, and expected follow-up.
 - Treat the helper's reusable strategy as the default cross-site guidance, and treat per-site hints as evidence rather than universal rules.
-- Find the login page with `find_login_page` when the URL is not known.
+- Find the login page with `find_login_page` when the URL is not known. After finding the URL, use `auth_test_assist` to plan the auth flow, or `smart_login` to attempt sign-in directly.
 - Ask the user for credentials before using `smart_login`. Never guess passwords.
 - If `smart_login` is uncertain on Clerk or multi-step auth UIs, fall back to `browser_fill`, `browser_press_key`, `browser_evaluate`, and inspect `browser_network_requests` or `browser_console_logs` before concluding the login failed.
 - Use `create_test_inbox` only when you explicitly need a fresh inbox or a standalone inbox workflow.
@@ -91,12 +91,14 @@ Use audit and debug tools when the user wants findings, not just screenshots.
 - Ask a blocking clarification question only when the base URL is missing or when protected-page scope is essential and still ambiguous.
 - Before tool use, explicitly state that you read the workflow, the page set you will audit, whether authenticated pages are in scope, and whether you will use MCP or CLI first.
 - If you start a generic live audit before reading the workflow, the audit is invalid and must be restarted from the workflow.
-- Use `browser_perf_metrics` for Core Web Vitals and network weight.
+- Use `browser_perf_metrics` for Core Web Vitals and network weight. For the full request waterfall with timing data, use `browser_network_requests`.
 - For repeatable public-page performance audits in MCP, run `browser_navigate` and `browser_perf_metrics` sequentially page by page instead of fanning out multiple new sessions at once.
 - If the CLI path would need approval and MCP is already available, begin with MCP instead of stalling mid-audit.
 - Use `browser_seo_audit` for metadata, heading structure, and structured data.
 - Use `browser_console_logs` and `browser_network_errors` to investigate failures.
-- Use `ux_review` when the user wants a broader product or UX assessment.
+- Use `ux_review` when the user wants a broader product or UX assessment. For deeper checks, follow up with `accessibility_audit` (WCAG compliance), `responsive_audit` (overflow, touch targets, font sizes), or `browser_perf_metrics` (Core Web Vitals).
+- Use `accessibility_audit` for a standalone WCAG 2.1 AA compliance audit on any URL (no browser session needed).
+- Use `seo_batch_compare` to compare SEO metadata across 2–10 URLs in one call — catches duplicate titles, descriptions, and OG tags across pages.
 
 ## Default operating style
 
@@ -117,7 +119,8 @@ Use audit and debug tools when the user wants findings, not just screenshots.
 - Read the matching workflow first for repeatable multi-page audits (performance, SEO, UX/accessibility, or responsive — see Available workflows above).
 - If the user gives you a site URL but no page list, infer the public page set and proceed instead of asking permission to start.
 - Use `browser_navigate`.
-- Gather `browser_get_accessibility_tree`, `browser_perf_metrics`, `browser_seo_audit`, `browser_console_logs`, and `browser_network_errors`.
+- Gather `browser_get_accessibility_tree`, `browser_perf_metrics`, `browser_seo_audit`, `accessibility_audit`, `browser_console_logs`, and `browser_network_errors`.
+- Use `seo_batch_compare` to compare metadata across multiple pages in one call.
 - Summarize the highest-impact issues first.
 
 ### Login or sign-up test

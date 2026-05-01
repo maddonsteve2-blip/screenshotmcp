@@ -353,7 +353,7 @@ Chromium + Firefox + WebKit simultaneously.
 Params: url, width, height, fullPage
 
 #### screenshot_diff
-Pixel-diff two URLs. Returns diff image + percentage changed + match score.
+Pixel-diff two URLs. Returns diff image + percentage changed + match score. To capture multiple URLs for comparison, use screenshot_batch.
 Params: urlA, urlB, width, height, threshold
 
 #### find_breakpoints
@@ -446,6 +446,10 @@ Params: sessionId, interestingOnly, maxDepth
 A11y tree for any URL without a session.
 Params: url, interestingOnly, maxDepth
 
+#### accessibility_audit
+Run a real WCAG 2.1 AA compliance audit on a URL. Checks landmarks, skip links, focus indicators, heading hierarchy, image alt text, aria-hidden on decorative SVGs, color contrast ratios, form labels, touch targets, and reduced-motion handling. Returns categorized PASS/FAIL results with WCAG criteria references. For element-level responsive checks (overflow culprits, touch target sizes, font sizes), use responsive_audit in a browser session.
+Params: url, width, height
+
 #### browser_evaluate
 Run JavaScript, return result.
 Params: sessionId, script
@@ -455,7 +459,7 @@ Params: sessionId, script
 ### Performance & SEO
 
 #### browser_perf_metrics
-Core Web Vitals: LCP, FCP, CLS, TTFB, DOM size, resource counts.
+Core Web Vitals: LCP, FCP, CLS, TTFB, DOM size, resource counts. For the full request waterfall with timing data, use browser_network_requests.
 Good thresholds: TTFB < 800ms, FCP < 1.8s, LCP < 2.5s, CLS < 0.1
 Params: sessionId
 
@@ -467,8 +471,12 @@ Params: sessionId, resourceType, minDuration, limit
 Meta, OG, Twitter cards, headings, JSON-LD, alt text, structured data.
 Params: sessionId
 
+#### seo_batch_compare
+Compare SEO metadata across 2–10 URLs in one call. Returns a comparison table showing which meta fields are duplicated across pages — catches identical titles, descriptions, OG tags, and canonical issues that single-page tools miss. No browser session needed. For deeper single-page analysis, use browser_seo_audit in a browser session. For social card previews, use og_preview.
+Params: urls (array of 2–10 URLs)
+
 #### og_preview
-Preview how a URL will look when shared on social media. Extracts all OG and Twitter Card meta tags from the rendered page, validates them, screenshots the og:image, and generates a social card mockup. Works with JS-rendered pages (SPAs). No browser session needed.
+Preview how a URL will look when shared on social media. Extracts all OG and Twitter Card meta tags from the rendered page, validates them, screenshots the og:image, and generates a social card mockup. Works with JS-rendered pages (SPAs). No browser session needed. For full SEO metadata (headings, structured data, robots), use browser_seo_audit. To compare OG tags across multiple pages, use seo_batch_compare.
 Params: url (required), platform (twitter|facebook|linkedin|slack|all, default: all)
 
 ---
@@ -500,7 +508,7 @@ Start here for website login, sign-up, and verification testing. Reuses the save
 Params: url, action, intent, loginUrl, outcome, verification_required, username, display_name, force_new_inbox, notes
 
 #### find_login_page
-Discover login pages via sitemap.xml + common paths.
+Discover login pages via sitemap.xml + common paths. After finding the login URL, use auth_test_assist to plan the auth flow, or smart_login to attempt sign-in directly.
 Params: url
 
 #### smart_login
@@ -552,11 +560,11 @@ Params: sender (optional), subject_keyword (optional), max_age_minutes
 ### AI-Powered Analysis
 
 #### ux_review
-AI-powered UX review using vision. Returns actionable feedback across Accessibility, SEO, Performance, Navigation, Content, and Mobile-friendliness.
+AI-powered UX review using vision. Returns actionable feedback across Accessibility, SEO, Performance, Navigation, Content, and Mobile-friendliness. For deeper checks, follow up with accessibility_audit (WCAG compliance), responsive_audit (overflow, touch targets, font sizes), or browser_perf_metrics (Core Web Vitals).
 Params: url, width, height
 
 #### extract_text_from_image
-Extract text from an image using AI vision (OCR). Works on screenshots, photos of text, infographics, social cards, Canva graphics, and any image with embedded text.
+Extract text from an image using AI vision (OCR). Works on screenshots, photos of text, infographics, social cards, Canva graphics, and any image with embedded text. If you need a screenshot URL first, use take_screenshot or browser_screenshot.
 Params: image_url (optional — public URL of image), sessionId (optional — screenshot current page), selector (optional — OCR a specific element), prompt (optional — custom extraction prompt)
 Requires either image_url or sessionId. Use when page text is embedded in images rather than DOM.
 

@@ -1432,7 +1432,7 @@ server.tool(
 
   server.tool(
     "browser_perf_metrics",
-    "Get Core Web Vitals and performance metrics for the current page. Returns LCP, FCP, CLS, TTFB, DOM size, resource counts, and total transfer size. Essential for performance audits.",
+    "Get Core Web Vitals and performance metrics for the current page. Returns LCP, FCP, CLS, TTFB, DOM size, resource counts, and total transfer size. Essential for performance audits. For the full request waterfall with timing data, use browser_network_requests.",
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
     },
@@ -1890,7 +1890,7 @@ server.tool(
 
   server.tool(
     "find_login_page",
-    "Discover login/sign-in pages for a website. Checks the site's sitemap.xml and probes common login URL paths. Returns a list of candidate login URLs found. Use this before attempting to log in to a site.",
+    "Discover login/sign-in pages for a website. Checks the site's sitemap.xml and probes common login URL paths. Returns a list of candidate login URLs found. Use this before attempting to log in to a site. After finding the login URL, use auth_test_assist to plan the auth flow, or smart_login to attempt sign-in directly.",
     {
       url: z.string().url().describe("Base URL of the site to find login pages for (e.g. https://myapp.com)"),
     },
@@ -2344,7 +2344,7 @@ server.tool(
   // @ts-ignore - TS2589
   server.tool(
     "accessibility_audit",
-    "Run a real WCAG 2.1 AA compliance audit on a URL. Checks landmarks, skip links, focus indicators, heading hierarchy, image alt text, aria-hidden on decorative SVGs, color contrast ratios, form labels, touch targets, and reduced-motion handling. Returns categorized PASS/FAIL results with WCAG criteria references — not a raw tree dump.",
+    "Run a real WCAG 2.1 AA compliance audit on a URL. Checks landmarks, skip links, focus indicators, heading hierarchy, image alt text, aria-hidden on decorative SVGs, color contrast ratios, form labels, touch targets, and reduced-motion handling. Returns categorized PASS/FAIL results with WCAG criteria references — not a raw tree dump. For element-level responsive checks (overflow culprits, touch target sizes, font sizes), use responsive_audit in a browser session.",
     {
       url: z.string().url().describe("URL to audit"),
       width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width"),
@@ -2567,7 +2567,7 @@ server.tool(
   // ── Visual Diff ──────────────────────────────────────────────
   server.tool(
     "screenshot_diff",
-    "Compare two URLs pixel-by-pixel and return a diff overlay image showing exactly what changed. Returns the diff image URL, percentage of pixels changed, total changed pixel count, and a match score.",
+    "Compare two URLs pixel-by-pixel and return a diff overlay image showing exactly what changed. Returns the diff image URL, percentage of pixels changed, total changed pixel count, and a match score. To capture multiple URLs for comparison, use screenshot_batch.",
     {
       urlA: z.string().url().describe("First URL (before)"),
       urlB: z.string().url().describe("Second URL (after)"),
@@ -3297,7 +3297,7 @@ server.tool(
   // ── AI UX Review (Kimi k2.5 Vision) ───────────────────────
   server.tool(
     "ux_review",
-    "Run an AI-powered UX review on any URL. Captures a screenshot and analyzes it along with accessibility tree, SEO metadata, and performance metrics using Kimi k2.5 vision. Returns actionable UX feedback across categories: Accessibility, SEO, Performance, Navigation, Content, and Mobile-friendliness.",
+    "Run an AI-powered UX review on any URL. Captures a screenshot and analyzes it along with accessibility tree, SEO metadata, and performance metrics using Kimi k2.5 vision. Returns actionable UX feedback across categories: Accessibility, SEO, Performance, Navigation, Content, and Mobile-friendliness. For deeper checks, follow up with accessibility_audit (WCAG compliance), responsive_audit (overflow, touch targets, font sizes), or browser_perf_metrics (Core Web Vitals).",
     {
       url: z.string().url().describe("The URL to review"),
       width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width"),
@@ -4614,7 +4614,7 @@ CRITICAL RULES:
   // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
     "og_preview",
-    "Preview how a URL will look when shared on social media. Extracts all Open Graph and Twitter Card meta tags from the rendered page, validates them, screenshots the og:image, and generates a social card mockup. Works with JS-rendered pages (SPAs). No browser session needed.",
+    "Preview how a URL will look when shared on social media. Extracts all Open Graph and Twitter Card meta tags from the rendered page, validates them, screenshots the og:image, and generates a social card mockup. Works with JS-rendered pages (SPAs). No browser session needed. For full SEO metadata (headings, structured data, robots), use browser_seo_audit. To compare OG tags across multiple pages, use seo_batch_compare.",
     {
       url: z.string().url().describe("URL to preview Open Graph tags for"),
       platform: z.enum(["twitter", "facebook", "linkedin", "slack", "all"]).default("all").describe("Social platform to generate mockup for (default: all)"),
@@ -4888,7 +4888,7 @@ CRITICAL RULES:
 
   server.tool(
     "seo_batch_compare",
-    "Compare SEO metadata across 2–10 URLs in one call. Returns a comparison table showing which meta fields are duplicated across pages — catches identical titles, descriptions, OG tags, and canonical issues that single-page tools miss. No browser session needed.",
+    "Compare SEO metadata across 2–10 URLs in one call. Returns a comparison table showing which meta fields are duplicated across pages — catches identical titles, descriptions, OG tags, and canonical issues that single-page tools miss. No browser session needed. For deeper single-page analysis, use browser_seo_audit in a browser session. For social card previews, use og_preview.",
     {
       urls: z.array(z.string().url()).min(2).max(10).describe("Array of 2–10 URLs to compare SEO metadata across"),
     },
@@ -5027,7 +5027,7 @@ CRITICAL RULES:
 
   server.tool(
     "extract_text_from_image",
-    "Extract text from an image using AI vision (OCR). Works on screenshots, photos of text, infographics, social cards, Canva graphics, and any image with embedded text. Pass an image URL or use within a browser session to extract text from the current page screenshot or a specific element.",
+    "Extract text from an image using AI vision (OCR). Works on screenshots, photos of text, infographics, social cards, Canva graphics, and any image with embedded text. Pass an image URL or use within a browser session to extract text from the current page screenshot or a specific element. If you need a screenshot URL first, use take_screenshot or browser_screenshot.",
     {
       image_url: z.string().optional().describe("Public URL of the image to extract text from. If omitted, sessionId is required and a screenshot of the current page (or element) will be used."),
       sessionId: z.string().optional().describe("Browser session ID. If provided (without image_url), a screenshot of the current page is used for OCR."),
