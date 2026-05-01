@@ -1598,15 +1598,80 @@ server.tool(
           };
         });
 
+        // Semantic validation warnings
+        const seoWarnings: string[] = [];
+        const pageUrlNorm = seo.url.replace(/\/$/, "");
+
+        // Canonical mismatch detection
+        if (seo.canonical) {
+          const canonicalNorm = seo.canonical.replace(/\/$/, "");
+          if (canonicalNorm !== pageUrlNorm) {
+            seoWarnings.push(`⚠️ CANONICAL MISMATCH: canonical (${seo.canonical}) does not match page URL (${seo.url}) — Google may treat this page as a duplicate of ${seo.canonical}`);
+          }
+        }
+
+        // og:url mismatch detection
+        if (seo.og.url) {
+          const ogUrlNorm = seo.og.url.replace(/\/$/, "");
+          if (ogUrlNorm !== pageUrlNorm) {
+            seoWarnings.push(`⚠️ og:url MISMATCH: og:url (${seo.og.url}) does not match page URL (${seo.url}) — social shares will link to the wrong page`);
+          }
+        }
+
+        // Structured data summary
+        let structuredDataSummary = "None found";
+        if (seo.jsonLd && seo.jsonLd.length > 0) {
+          const types = seo.jsonLd.map((ld: any) => ld["@type"] || "Unknown").filter(Boolean);
+          structuredDataSummary = `${seo.jsonLd.length} schema(s): ${types.join(", ")}`;
+        }
+
+        // robots.txt check — fetch from same origin
+        let robotsTxtNote = "";
+        try {
+          const origin = new URL(seo.url).origin;
+          const robotsResp = await session.page.evaluate(async (robotsUrl: string) => {
+            try {
+              const r = await fetch(robotsUrl);
+              if (!r.ok) return { status: r.status, text: "" };
+              return { status: r.status, text: await r.text() };
+            } catch { return { status: 0, text: "" }; }
+          }, `${origin}/robots.txt`);
+          if (robotsResp.status === 200 && robotsResp.text) {
+            const sitemapMatch = robotsResp.text.match(/Sitemap:\s*(.+)/i);
+            if (sitemapMatch) {
+              const sitemapUrl = sitemapMatch[1].trim();
+              const sitemapOrigin = new URL(sitemapUrl).origin;
+              if (sitemapOrigin !== origin) {
+                seoWarnings.push(`⚠️ robots.txt SITEMAP MISMATCH: Sitemap URL (${sitemapUrl}) points to a different domain than the site (${origin})`);
+              }
+              robotsTxtNote = `Sitemap in robots.txt: ${sitemapUrl}`;
+            } else {
+              robotsTxtNote = "robots.txt exists but contains no Sitemap directive";
+            }
+            if (robotsResp.text.includes("Disallow: /")) {
+              const lines = robotsResp.text.split("\n");
+              const disallowAll = lines.some((l: string) => l.trim() === "Disallow: /");
+              if (disallowAll) seoWarnings.push("⚠️ robots.txt contains 'Disallow: /' — entire site may be blocked from crawling");
+            }
+          } else {
+            robotsTxtNote = `robots.txt returned status ${robotsResp.status}`;
+          }
+        } catch {
+          robotsTxtNote = "Could not check robots.txt";
+        }
+
         const lines = [
           `SEO Audit: ${seo.url}`,
           ``,
+          // Semantic warnings at the top for visibility
+          ...(seoWarnings.length > 0 ? [`## ⚠️ Critical Warnings`, ...seoWarnings, ``] : []),
           `Title: ${seo.title || "MISSING"} (${seo.titleLength} chars${seo.titleLength > 60 ? " ⚠️ too long" : seo.titleLength < 30 ? " ⚠️ too short" : " ✓"})`,
           `Description: ${seo.metaDescription?.slice(0, 100) || "MISSING"} (${seo.metaDescriptionLength} chars${seo.metaDescriptionLength > 160 ? " ⚠️ too long" : seo.metaDescriptionLength < 50 ? " ⚠️ too short" : " ✓"})`,
           `Canonical: ${seo.canonical || "MISSING"}`,
           `Robots: ${seo.robots || "not set"}`,
           `Language: ${seo.lang || "MISSING"}`,
           `Viewport: ${seo.viewport || "MISSING"}`,
+          ...(robotsTxtNote ? [`robots.txt: ${robotsTxtNote}`] : []),
           ``,
           `Open Graph:`,
           ...Object.entries(seo.og).map(([k, v]) => `  og:${k}: ${v || "missing"}`),
@@ -1621,6 +1686,8 @@ server.tool(
           ...(seo.images.missingAlt.length > 0 ? [`  Missing alt: ${seo.images.missingAlt.join(", ")}`] : []),
           ``,
           `Links: ${seo.links.total} total (${seo.links.internal} internal, ${seo.links.external} external)`,
+          ``,
+          `Structured Data: ${structuredDataSummary}`,
           ...(seo.jsonLd ? [`\nStructured Data (JSON-LD):\n${JSON.stringify(seo.jsonLd, null, 2).slice(0, 2000)}`] : []),
         ];
 
@@ -4080,7 +4147,24 @@ server.tool(
         }
 
         if (!meta.canonical) warnings.push("⚠️ canonical URL is missing");
-        else passes.push(`✅ canonical: ${meta.canonical}`);
+        else {
+          const pageUrlNorm = meta.pageUrl.replace(/\/$/, "");
+          const canonicalNorm = meta.canonical.replace(/\/$/, "");
+          if (canonicalNorm !== pageUrlNorm) {
+            issues.push(`❌ CANONICAL MISMATCH: canonical (${meta.canonical}) does not match page URL (${meta.pageUrl}) — Google may treat this page as a duplicate`);
+          } else {
+            passes.push(`✅ canonical: ${meta.canonical}`);
+          }
+        }
+
+        // og:url mismatch detection
+        if (meta.og.url) {
+          const pageUrlNorm = meta.pageUrl.replace(/\/$/, "");
+          const ogUrlNorm = meta.og.url.replace(/\/$/, "");
+          if (ogUrlNorm !== pageUrlNorm) {
+            issues.push(`❌ og:url MISMATCH: og:url (${meta.og.url}) does not match page URL (${meta.pageUrl}) — social shares will link to the wrong page`);
+          }
+        }
 
         // Screenshot the og:image if it exists
         let ogImageScreenshot: { type: "image"; data: string; mimeType: string } | null = null;
