@@ -11,9 +11,11 @@ description: Every update, fix, and new feature — in one place.
 - **`extract_text_from_image` (OCR) tool** — AI-powered text extraction from screenshots, photos, infographics, and any image with embedded text. Works standalone with a URL or within a browser session. Powered by Kimi k2.5 vision.
 - **`seo_batch_compare` tool** — Compare SEO metadata across 2–10 URLs in one call. Returns a comparison table showing duplicated titles, descriptions, OG tags, and canonical issues across pages.
 - **OCR CLI command** — `npx screenshotsmcp ocr <url>` extracts text from any image via the command line (CLI v1.20.1).
+- **`responsive_audit` tool** — One-call responsive design audit within a browser session. Detects horizontal overflow with culprit elements (tag, class, bounding rect), checks touch targets (≥44×44px), finds text below 16px, verifies viewport meta tag, checks input font sizes for iOS zoom prevention, and reports tightly-spaced interactive elements. Returns a structured pass/fail report.
 
 **Improved**
 
+- **`find_breakpoints` enriched** — Now returns a structured width table with overflow status (✅/❌), height, and scrollWidth at each of 23 viewport widths (320–1920px). Also reports which widths start/stop overflowing and extracts CSS @media breakpoints.
 - **`browser_seo_audit` semantic validation** — Now detects canonical/og:url mismatches, robots.txt sitemap cross-domain issues, `Disallow: /` blocking, and cross-page duplicate titles/descriptions/OG tags within the same browser session.
 - **`og_preview` enhanced** — Social card previews now include semantic validation warnings for OG tag mismatches.
 - **`browser_perf_metrics` LCP fix** — LCP now uses a PerformanceObserver with 5s timeout instead of a synchronous check. No more "N/A" on pages with lazy-loaded LCP elements.

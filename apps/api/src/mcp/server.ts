@@ -593,7 +593,9 @@ When the user asks you to test a flow that requires authentication (login, sign-
 - **accessibility_snapshot** returns the raw accessibility tree without needing a session.
 - **accessibility_audit** is the WCAG compliance tool — use it when users ask to "audit accessibility" or "check WCAG compliance". It returns pass/fail results with criteria references.
 - **browser_console_logs** and **browser_network_errors** capture errors automatically from the moment the session starts.
-- When the user says "take a screenshot", use take_screenshot. When they say "check responsive", use screenshot_responsive.
+- When the user says "take a screenshot", use take_screenshot. When they say "check responsive", use screenshot_responsive + responsive_audit.
+- **responsive_audit** runs in an active browser session and checks: horizontal overflow with culprit elements, touch target sizes, text below 16px, viewport meta, input zoom risk, and interactive element spacing. Use it after browser_navigate at mobile/tablet viewport.
+- **find_breakpoints** scans 23 widths from 320px–1920px and returns a structured table with overflow status, height, and scrollWidth per width — plus detected layout shifts and CSS media query breakpoints.
 - When the user says "audit this site" or "check UX", use browser_navigate + browser_get_accessibility_tree + browser_console_logs.
 - When the user says "audit accessibility" or "check WCAG", use **accessibility_audit** — it runs real checks and returns categorized pass/fail results.
 - When the user says "check OG tags", "how will this look on Twitter/Facebook", or "preview social card", use **og_preview** — it works standalone (no session needed).
@@ -2956,7 +2958,7 @@ server.tool(
   // ── Responsive Breakpoint Detection ────────────────────────
   server.tool(
     "find_breakpoints",
-    "Detect responsive layout breakpoints for a URL. Scans viewport widths from 320px to 1920px and identifies where significant layout changes occur (large height jumps, content reflows). Returns a list of detected breakpoint widths.",
+    "Detect responsive layout breakpoints for a URL. Scans 23 viewport widths from 320px to 1920px and returns a structured width table showing height, scrollWidth, and overflow status (✅/❌) at each width. Also identifies significant layout shifts (>15% height change) and extracts CSS @media breakpoints from stylesheets.",
     {
       url: z.string().url().describe("The URL to analyze"),
     },
@@ -3034,6 +3036,12 @@ server.tool(
           }
         }
 
+        // Build structured width table
+        const widthTable = measurements.map((m) => {
+          const overflow = m.scrollWidth > m.width;
+          return `  ${String(m.width).padStart(5)}px | height: ${String(m.bodyHeight).padStart(6)}px | scrollWidth: ${String(m.scrollWidth).padStart(5)}px | ${overflow ? `❌ OVERFLOW (+${m.scrollWidth - m.width}px)` : "✅ OK"}`;
+        });
+
         return {
           content: [{
             type: "text",
@@ -3043,6 +3051,9 @@ server.tool(
               breakpoints.length > 0
                 ? `Detected Layout Shifts (${breakpoints.length}):` + "\n" + breakpoints.map((b) => `  • ${b.description}`).join("\n")
                 : `No significant layout shifts detected across ${widths.length} viewport widths.`,
+              ``,
+              `Width Table:`,
+              ...widthTable,
               ``,
               cssBreakpoints.length > 0
                 ? `CSS Media Query Breakpoints: ${cssBreakpoints.join("px, ")}px`
@@ -3056,6 +3067,229 @@ server.tool(
         return { content: [{ type: "text", text: `Error: ${humanizeError(err instanceof Error ? err.message : String(err))}` }] };
       } finally {
         await release();
+      }
+    }
+  );
+
+  // ── Responsive Audit ──────────────────────────────────────
+  server.tool(
+    "responsive_audit",
+    "Run a comprehensive responsive design audit on a browser session. Detects horizontal overflow and identifies culprit elements, checks touch target sizes (≥44×44px), finds text below 16px, verifies viewport meta tag, checks input font sizes for zoom prevention, and reports interactive element spacing. Returns a structured pass/fail report. Must have an active browser session.",
+    {
+      sessionId: z.string().describe("Session ID from browser_navigate"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      const session = await getSession(args.sessionId, auth.userId);
+      if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+
+      try {
+        const audit = await session.page.evaluate(() => {
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+          const bodyScrollW = document.body.scrollWidth;
+          const hasOverflow = bodyScrollW > vw;
+
+          // 1. Overflow culprits
+          const overflowCulprits: { tag: string; cls: string; right: number; width: number; text: string }[] = [];
+          if (hasOverflow) {
+            const all = document.querySelectorAll("*");
+            for (let i = 0; i < all.length; i++) {
+              const el = all[i] as HTMLElement;
+              const rect = el.getBoundingClientRect();
+              if (rect.right > vw + 2 && rect.width > 0) {
+                const tag = el.tagName;
+                if (tag === "HTML" || tag === "BODY") continue;
+                overflowCulprits.push({
+                  tag,
+                  cls: el.className?.toString?.()?.slice(0, 80) || "",
+                  right: Math.round(rect.right),
+                  width: Math.round(rect.width),
+                  text: el.textContent?.trim()?.slice(0, 40) || "",
+                });
+              }
+            }
+            overflowCulprits.sort((a, b) => b.right - a.right);
+            overflowCulprits.splice(15);
+          }
+
+          // 2. Touch targets (interactive elements < 44x44)
+          const smallTargets: { tag: string; text: string; w: number; h: number }[] = [];
+          const interactive = document.querySelectorAll("a, button, input, select, textarea, [role='button'], [tabindex]");
+          for (let i = 0; i < interactive.length; i++) {
+            const el = interactive[i] as HTMLElement;
+            const style = getComputedStyle(el);
+            if (style.display === "none" || style.visibility === "hidden") continue;
+            const rect = el.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0 && (rect.width < 44 || rect.height < 44)) {
+              smallTargets.push({
+                tag: el.tagName,
+                text: (el.textContent?.trim() || el.getAttribute("aria-label") || "")?.slice(0, 30),
+                w: Math.round(rect.width),
+                h: Math.round(rect.height),
+              });
+            }
+          }
+          smallTargets.splice(15);
+
+          // 3. Small text (< 16px)
+          const smallText: { tag: string; fontSize: string; text: string }[] = [];
+          const textEls = document.querySelectorAll("p, span, a, li, td, th, label, div");
+          for (let i = 0; i < textEls.length; i++) {
+            const el = textEls[i] as HTMLElement;
+            const style = getComputedStyle(el);
+            if (style.display === "none") continue;
+            const fs = parseFloat(style.fontSize);
+            if (fs > 0 && fs < 16 && el.textContent?.trim()) {
+              const existing = smallText.find(s => s.fontSize === style.fontSize);
+              if (!existing) {
+                smallText.push({
+                  tag: el.tagName,
+                  fontSize: style.fontSize,
+                  text: el.textContent.trim().slice(0, 40),
+                });
+              }
+            }
+          }
+          smallText.splice(10);
+
+          // 4. Viewport meta tag
+          const viewportMeta = document.querySelector('meta[name="viewport"]')?.getAttribute("content") || null;
+
+          // 5. Input font sizes (< 16px causes zoom on iOS)
+          const inputsWithSmallFont: { type: string; fontSize: string; name: string }[] = [];
+          const inputs = document.querySelectorAll("input, textarea, select");
+          for (let i = 0; i < inputs.length; i++) {
+            const el = inputs[i] as HTMLInputElement;
+            const fs = parseFloat(getComputedStyle(el).fontSize);
+            if (fs > 0 && fs < 16) {
+              inputsWithSmallFont.push({
+                type: el.type || el.tagName.toLowerCase(),
+                fontSize: getComputedStyle(el).fontSize,
+                name: el.name || el.id || "",
+              });
+            }
+          }
+
+          // 6. Closely spaced interactive elements
+          const tooClose: { el1: string; el2: string; gap: number }[] = [];
+          const interactiveArr = Array.from(interactive) as HTMLElement[];
+          for (let i = 0; i < Math.min(interactiveArr.length, 50); i++) {
+            const a = interactiveArr[i];
+            const rectA = a.getBoundingClientRect();
+            if (rectA.width === 0 || rectA.height === 0) continue;
+            for (let j = i + 1; j < Math.min(interactiveArr.length, 50); j++) {
+              const b = interactiveArr[j];
+              const rectB = b.getBoundingClientRect();
+              if (rectB.width === 0 || rectB.height === 0) continue;
+              const gapX = Math.max(0, Math.max(rectA.left, rectB.left) - Math.min(rectA.right, rectB.right));
+              const gapY = Math.max(0, Math.max(rectA.top, rectB.top) - Math.min(rectA.bottom, rectB.bottom));
+              const gap = Math.min(gapX, gapY);
+              if (gap >= 0 && gap < 8 && gapX + gapY < 16) {
+                tooClose.push({
+                  el1: (a.textContent?.trim()?.slice(0, 20) || a.tagName),
+                  el2: (b.textContent?.trim()?.slice(0, 20) || b.tagName),
+                  gap: Math.round(Math.max(gapX, gapY)),
+                });
+                if (tooClose.length >= 10) break;
+              }
+            }
+            if (tooClose.length >= 10) break;
+          }
+
+          return {
+            viewport: { width: vw, height: vh },
+            overflow: { hasOverflow, bodyScrollWidth: bodyScrollW, overflowAmount: bodyScrollW - vw, culprits: overflowCulprits },
+            touchTargets: { total: interactive.length, tooSmall: smallTargets.length, items: smallTargets },
+            textSize: { belowMinimum: smallText.length, items: smallText },
+            viewportMeta,
+            inputZoom: { riskyInputs: inputsWithSmallFont.length, items: inputsWithSmallFont },
+            spacing: { tooClose: tooClose.length, items: tooClose },
+          };
+        });
+
+        // Build report
+        const lines: string[] = [];
+        lines.push(`Responsive Audit — ${await session.page.url()}`);
+        lines.push(`Viewport: ${audit.viewport.width}×${audit.viewport.height}`);
+        lines.push(``);
+
+        // Overflow
+        if (audit.overflow.hasOverflow) {
+          lines.push(`❌ HORIZONTAL OVERFLOW: body is ${audit.overflow.bodyScrollWidth}px (${audit.overflow.overflowAmount}px wider than viewport)`);
+          lines.push(`   Culprit elements (${audit.overflow.culprits.length}):`);
+          for (const c of audit.overflow.culprits) {
+            lines.push(`     ${c.tag} .${c.cls.split(" ")[0] || "(no class)"} — extends to ${c.right}px (${c.right - audit.viewport.width}px past viewport) "${c.text}"`);
+          }
+        } else {
+          lines.push(`✅ No horizontal overflow`);
+        }
+        lines.push(``);
+
+        // Touch targets
+        if (audit.touchTargets.tooSmall > 0) {
+          lines.push(`⚠️ TOUCH TARGETS: ${audit.touchTargets.tooSmall} of ${audit.touchTargets.total} interactive elements below 44×44px minimum`);
+          for (const t of audit.touchTargets.items) {
+            lines.push(`     ${t.tag} "${t.text}" — ${t.w}×${t.h}px`);
+          }
+        } else {
+          lines.push(`✅ All ${audit.touchTargets.total} interactive elements meet 44×44px touch target minimum`);
+        }
+        lines.push(``);
+
+        // Text size
+        if (audit.textSize.belowMinimum > 0) {
+          lines.push(`⚠️ SMALL TEXT: ${audit.textSize.belowMinimum} text size(s) below 16px`);
+          for (const t of audit.textSize.items) {
+            lines.push(`     ${t.tag} at ${t.fontSize} — "${t.text}"`);
+          }
+        } else {
+          lines.push(`✅ All text ≥ 16px`);
+        }
+        lines.push(``);
+
+        // Viewport meta
+        if (audit.viewportMeta) {
+          const hasWidthDevice = audit.viewportMeta.includes("width=device-width");
+          const hasInitialScale = audit.viewportMeta.includes("initial-scale=1");
+          if (hasWidthDevice && hasInitialScale) {
+            lines.push(`✅ Viewport meta: ${audit.viewportMeta}`);
+          } else {
+            lines.push(`⚠️ Viewport meta may be incomplete: ${audit.viewportMeta}`);
+            if (!hasWidthDevice) lines.push(`     Missing: width=device-width`);
+            if (!hasInitialScale) lines.push(`     Missing: initial-scale=1`);
+          }
+        } else {
+          lines.push(`❌ NO VIEWPORT META TAG — page will not render correctly on mobile`);
+        }
+        lines.push(``);
+
+        // Input zoom
+        if (audit.inputZoom.riskyInputs > 0) {
+          lines.push(`⚠️ INPUT ZOOM RISK: ${audit.inputZoom.riskyInputs} input(s) with font-size < 16px (causes auto-zoom on iOS)`);
+          for (const inp of audit.inputZoom.items) {
+            lines.push(`     ${inp.type} "${inp.name}" at ${inp.fontSize}`);
+          }
+        } else if (audit.inputZoom.riskyInputs === 0) {
+          const hasInputs = audit.touchTargets.total > 0;
+          lines.push(hasInputs ? `✅ All inputs ≥ 16px (no iOS zoom risk)` : `✅ No form inputs on page`);
+        }
+        lines.push(``);
+
+        // Spacing
+        if (audit.spacing.tooClose > 0) {
+          lines.push(`⚠️ TIGHT SPACING: ${audit.spacing.tooClose} pairs of interactive elements < 8px apart`);
+          for (const s of audit.spacing.items) {
+            lines.push(`     "${s.el1}" ↔ "${s.el2}" — ${s.gap}px gap`);
+          }
+        } else {
+          lines.push(`✅ Interactive element spacing looks adequate`);
+        }
+
+        return { content: [{ type: "text", text: lines.join("\n") }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
       }
     }
   );
