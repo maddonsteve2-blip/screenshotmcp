@@ -7,8 +7,10 @@ export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="max-w-md w-full text-center space-y-6">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <Eye className="h-4 w-4 text-primary" aria-hidden="true" />
+        <Link href="/" className="inline-flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors group">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 transition-colors group-hover:bg-primary/15">
+            <Eye className="h-3.5 w-3.5 text-primary" strokeWidth={2.5} aria-hidden="true" />
+          </div>
           <span className="font-semibold">DeepSyte</span>
         </Link>
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">

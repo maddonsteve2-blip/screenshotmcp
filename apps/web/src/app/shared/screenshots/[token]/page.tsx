@@ -66,7 +66,10 @@ export default async function SharedScreenshotPage({
       <header className="border-b border-white/[0.06]">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2 text-sm font-semibold">
-            <Eye className="h-4 w-4" /> DeepSyte
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
+              <Eye className="h-3.5 w-3.5 text-primary" strokeWidth={2.5} />
+            </div>
+            DeepSyte
           </Link>
           <div className="flex items-center gap-4 text-sm">
             <Link href="/try" className="text-neutral-400 hover:text-white">Try it</Link>

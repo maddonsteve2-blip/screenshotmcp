@@ -17,8 +17,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className={`dashboard-theme ${inter.variable} flex min-h-screen bg-background`}>
       <aside className="sticky top-0 hidden h-screen w-60 border-r lg:flex lg:flex-col">
-        <div className="p-6 flex items-center gap-2">
-          <Eye className="h-5 w-5 text-primary" />
+        <div className="p-6 flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+            <Eye className="h-[18px] w-[18px] text-primary" strokeWidth={2.5} />
+          </div>
           <span className="text-[1.08rem] font-semibold">DeepSyte</span>
         </div>
         <Separator />
@@ -40,8 +42,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur lg:hidden">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Eye className="h-4 w-4 text-primary" />
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
+              <Eye className="h-[15px] w-[15px] text-primary" strokeWidth={2.5} />
+            </div>
             <span className="text-base font-semibold">DeepSyte</span>
           </Link>
 

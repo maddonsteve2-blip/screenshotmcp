@@ -5,7 +5,7 @@ import { Show } from "@clerk/nextjs";
 import { getNpxSetupCommand } from "@screenshotsmcp/types";
 import { Button } from "@/components/ui/button";
 import Script from "next/script";
-import { Camera, Eye, MonitorSmartphone, Search, Lock, Diff, Layers, Terminal, Copy, Check, ArrowRight, Zap, Shield, X, Sparkles, Menu } from "lucide-react";
+import { Camera, Eye, MonitorSmartphone, Search, Lock, Diff, Layers, Terminal, Copy, Check, ArrowRight, Zap, Shield, X, Menu } from "lucide-react";
 
 const HERO_VIDEO_URL = "https://pub-79ded844355643e1a17a61cb64962257.r2.dev/assets/hero-video.mp4";
 
@@ -330,23 +330,14 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Urgency Banner */}
-      <div className="bg-gradient-to-r from-green-500/10 via-green-500/20 to-green-500/10 border-b border-green-500/20">
-        <div className="mx-auto max-w-6xl px-6 py-2.5 text-center">
-          <p className="text-[1.02rem] font-medium text-green-300 sm:text-lg">
-            <Sparkles className="h-4 w-4 inline mr-1.5 -mt-0.5" aria-hidden="true" />
-            AI-powered website auditing for developers, store owners, and everyone in between.
-            <Sparkles className="h-4 w-4 inline ml-1.5 -mt-0.5" aria-hidden="true" />
-          </p>
-        </div>
-      </div>
-
       {/* Nav */}
       <header>
       <nav className="border-b border-white/[0.06] relative z-10 sticky top-0 bg-[#07070b]/80 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <Eye className="h-5 w-5 text-green-400" aria-hidden="true" />
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg shadow-green-500/20 transition-shadow group-hover:shadow-green-500/40">
+              <Eye className="h-[18px] w-[18px] text-white" strokeWidth={2.5} aria-hidden="true" />
+            </div>
             <span className="font-[var(--font-heading)] text-[1.35rem] font-bold tracking-tight">DeepSyte</span>
           </Link>
           {/* Mobile hamburger */}
@@ -417,9 +408,9 @@ export default function HomePage() {
       <section className="relative bg-radial-hero bg-grid-subtle overflow-hidden">
         <div className="mx-auto max-w-5xl px-6 pt-24 pb-20 text-center relative z-10">
           <div className="animate-fade-in-up">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/5 px-4 py-1.5 text-[0.96rem] text-green-400 sm:text-base">
-              <Zap className="h-3.5 w-3.5" aria-hidden="true" />
-              AI-powered website auditing for everyone
+            <div className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-green-500/20 bg-green-500/5 px-4 py-1.5 text-[0.96rem] text-green-400 sm:text-base">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+              46+ AI inspection tools · Free forever
             </div>
           </div>
 
@@ -429,13 +420,8 @@ export default function HomePage() {
             <span className="text-gradient">is really doing.</span>
           </h1>
 
-          <p className="animate-fade-in-up delay-200 mx-auto mb-4 max-w-2xl text-[1.15rem] leading-relaxed text-gray-400 sm:text-[1.35rem]">
-            DeepSyte uses AI to inspect, audit, and verify your website &mdash; catching broken pages, SEO issues, performance problems, and UX failures before your customers do.
-          </p>
           <p className="animate-fade-in-up delay-200 mx-auto mb-10 max-w-2xl text-[1.15rem] leading-relaxed text-gray-400 sm:text-[1.35rem]">
-            Whether you run a Shopify store, a SaaS app, or a marketing site &mdash; DeepSyte sees what you can&apos;t.
-            <br />
-            <span className="text-white font-medium">Your website has stories to tell.</span>
+            DeepSyte audits your entire website with AI &mdash; catching SEO gaps, performance issues, broken pages, and accessibility failures before your customers find them.
           </p>
 
           <div className="animate-fade-in-up delay-300 flex items-center justify-center gap-4 flex-wrap">
@@ -445,13 +431,8 @@ export default function HomePage() {
                 Audit my site free
               </Button>
             </Link>
-            <Link href="/sign-up">
-              <Button size="lg" variant="outline" className="h-12 gap-2 border-white/15 bg-white/[0.03] text-gray-100 hover:border-white/25 hover:bg-white/[0.08] hover:text-white text-base">
-                Start free
-              </Button>
-            </Link>
             <Link href="/docs">
-              <Button size="lg" variant="ghost" className="h-12 gap-2 text-gray-400 hover:bg-white/5 hover:text-white text-base">
+              <Button size="lg" variant="outline" className="h-12 gap-2 border-white/15 bg-white/[0.03] text-gray-100 hover:border-white/25 hover:bg-white/[0.08] hover:text-white text-base">
                 How it works
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
@@ -742,8 +723,10 @@ export default function HomePage() {
         <div className="mx-auto max-w-5xl px-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Eye className="h-4 w-4 text-green-400/50" aria-hidden="true" />
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-green-400/15 to-emerald-600/15 border border-green-500/10">
+                  <Eye className="h-3.5 w-3.5 text-green-400" aria-hidden="true" />
+                </div>
                 <span className="font-[var(--font-heading)] text-base font-bold">DeepSyte</span>
               </div>
               <p className="text-sm text-gray-400 sm:text-base">See deeper.</p>

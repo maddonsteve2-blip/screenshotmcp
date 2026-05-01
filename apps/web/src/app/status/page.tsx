@@ -83,8 +83,11 @@ export default async function StatusPage() {
     <div className="min-h-screen bg-black text-white">
       <header className="border-b border-white/[0.06] py-6">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
-            <Eye className="h-5 w-5" /> DeepSyte
+          <Link href="/" className="flex items-center gap-3 text-lg font-semibold group">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg shadow-green-500/20 transition-shadow group-hover:shadow-green-500/40">
+              <Eye className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
+            </div>
+            DeepSyte
           </Link>
           <nav className="flex gap-4 text-sm text-gray-400">
             <Link href="/docs/quickstart" className="hover:text-white transition-colors">Docs</Link>

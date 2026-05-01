@@ -98,8 +98,10 @@ export default function ChangelogPage() {
     <div className="min-h-screen bg-background">
       <nav className="border-b">
         <div className="mx-auto max-w-4xl px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-[1.2rem] font-semibold">
-            <Eye className="h-5 w-5 text-primary" />
+          <Link href="/" className="flex items-center gap-3 text-[1.2rem] font-semibold group">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/15">
+              <Eye className="h-[18px] w-[18px] text-primary" strokeWidth={2.5} />
+            </div>
             DeepSyte
           </Link>
           <div className="flex gap-4 text-[1.02rem] text-muted-foreground sm:text-lg">

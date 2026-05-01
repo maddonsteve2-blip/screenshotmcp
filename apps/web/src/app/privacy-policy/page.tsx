@@ -72,8 +72,10 @@ export default function PrivacyPolicyPage() {
     <div className="min-h-screen bg-[#07070b] text-gray-100">
       <nav className="border-b border-white/[0.06] bg-[#07070b]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Eye className="h-5 w-5 text-green-400" />
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg shadow-green-500/20 transition-shadow group-hover:shadow-green-500/40">
+              <Eye className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
+            </div>
             <span className="font-[var(--font-heading)] text-[1.35rem] font-bold tracking-tight">DeepSyte</span>
           </Link>
           <div className="flex items-center gap-3">

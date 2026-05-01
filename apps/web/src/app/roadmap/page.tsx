@@ -52,8 +52,10 @@ export default function RoadmapPage() {
     <div className="min-h-screen bg-background text-foreground">
       <nav className="border-b">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Eye className="h-5 w-5 text-primary" />
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/15">
+              <Eye className="h-[18px] w-[18px] text-primary" strokeWidth={2.5} />
+            </div>
             <span className="text-[1.35rem] font-semibold">DeepSyte</span>
           </Link>
           <div className="flex items-center gap-4">
