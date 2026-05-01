@@ -225,6 +225,15 @@
 
 .animate-fade-in-up { animation: fade-in-up 0.7s ease-out both; }
 .animate-fade-in { animation: fade-in 0.7s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-fade-in,
+  .animate-ticker,
+  .glow-green-pulse {
+    animation: none !important;
+  }
+}
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }
 .delay-300 { animation-delay: 300ms; }
@@ -286,6 +295,12 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Visible focus indicator for keyboard navigation — WCAG 2.4.7 */
+*:focus-visible {
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
 }
 
 @layer base {

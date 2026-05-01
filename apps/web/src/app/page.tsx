@@ -201,7 +201,7 @@ function CopyButton({ text }: { text: string }) {
       aria-label="Copy command"
       title="Copy to clipboard"
     >
-      {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5 text-gray-500" />}
+      {copied ? <Check className="h-3.5 w-3.5 text-green-400" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5 text-gray-400" aria-hidden="true" />}
     </button>
   );
 }
@@ -215,7 +215,7 @@ function QuickStartSection() {
     <section className="relative text-white">
       <div className="mx-auto max-w-3xl px-6 py-20">
         <h2 className="mb-8 flex items-center gap-3 font-[var(--font-heading)] text-3xl font-bold tracking-[-0.02em] sm:text-4xl md:text-[2.7rem]">
-          <Terminal className="h-6 w-6 text-green-400" />
+          <Terminal className="h-6 w-6 text-green-400" aria-hidden="true" />
           Up and running in 30 seconds
         </h2>
 
@@ -244,7 +244,7 @@ function QuickStartSection() {
           </div>
 
           <div className="space-y-2 p-5 font-mono text-[0.95rem] leading-7 sm:text-base">
-            {tab.comment && <div className="text-sm text-gray-500">{tab.comment}</div>}
+            {tab.comment && <div className="text-sm text-gray-400">{tab.comment}</div>}
             {tab.commands.map((cmd, i) => (
               <div key={i} className="flex items-center justify-between group">
                 <div>
@@ -272,7 +272,7 @@ function QuickStartSection() {
                   ))}
                 </div>
                 {(tab.subCommands as Record<string, { text: string; comment?: boolean; copyable?: boolean }[]> | undefined)?.[activeSubTab]?.map((cmd, i) => (
-                  <div key={i} className={`flex items-center justify-between group ${cmd.comment ? "text-sm text-gray-500" : ""}`}>
+                  <div key={i} className={`flex items-center justify-between group ${cmd.comment ? "text-sm text-gray-400" : ""}`}>
                     <div>
                       {!cmd.comment && <span className="text-green-400 mr-2">$</span>}
                       <span className={cmd.comment ? "" : "text-white font-semibold"}>{cmd.text}</span>
@@ -285,7 +285,7 @@ function QuickStartSection() {
           </div>
         </div>
 
-        <p className="mt-4 text-center text-base text-gray-500">
+        <p className="mt-4 text-center text-base text-gray-400">
           Works on macOS, Linux, and Windows. Requires Node.js 18+.
         </p>
       </div>
@@ -303,14 +303,14 @@ function MidPageCTA() {
         <div className="flex items-center justify-center gap-4 flex-wrap">
           <Link href="/sign-up">
             <Button size="lg" className="bg-green-500 hover:bg-green-400 text-black font-semibold gap-2 glow-green-pulse h-12 text-base">
-              <Camera className="h-4 w-4" />
+              <Camera className="h-4 w-4" aria-hidden="true" />
               Install free
             </Button>
           </Link>
           <Link href="/docs">
             <Button size="lg" variant="outline" className="h-12 gap-2 border-white/15 bg-white/[0.03] text-gray-100 hover:border-white/25 hover:bg-white/[0.08] hover:text-white text-base">
               See the docs
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </Link>
         </div>
@@ -322,6 +322,7 @@ function MidPageCTA() {
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#07070b] text-gray-100">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-green-500 focus:px-4 focus:py-2 focus:text-black focus:font-semibold">Skip to content</a>
       <Script
         id="json-ld"
         type="application/ld+json"
@@ -332,18 +333,19 @@ export default function HomePage() {
       <div className="bg-gradient-to-r from-green-500/10 via-green-500/20 to-green-500/10 border-b border-green-500/20">
         <div className="mx-auto max-w-6xl px-6 py-2.5 text-center">
           <p className="text-[1.02rem] font-medium text-green-300 sm:text-lg">
-            <Sparkles className="h-4 w-4 inline mr-1.5 -mt-0.5" />
+            <Sparkles className="h-4 w-4 inline mr-1.5 -mt-0.5" aria-hidden="true" />
             Remote when public. Local when realism matters. Proof included.
-            <Sparkles className="h-4 w-4 inline ml-1.5 -mt-0.5" />
+            <Sparkles className="h-4 w-4 inline ml-1.5 -mt-0.5" aria-hidden="true" />
           </p>
         </div>
       </div>
 
       {/* Nav */}
+      <header>
       <nav className="border-b border-white/[0.06] relative z-10 sticky top-0 bg-[#07070b]/80 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <Camera className="h-5 w-5 text-green-400" />
+            <Camera className="h-5 w-5 text-green-400" aria-hidden="true" />
             <span className="font-[var(--font-heading)] text-[1.35rem] font-bold tracking-tight">ScreenshotsMCP</span>
           </Link>
           <div className="flex items-center gap-3">
@@ -371,13 +373,15 @@ export default function HomePage() {
           </div>
         </div>
       </nav>
+      </header>
 
+      <main id="main">
       {/* Hero */}
       <section className="relative bg-radial-hero bg-grid-subtle overflow-hidden">
         <div className="mx-auto max-w-5xl px-6 pt-24 pb-20 text-center relative z-10">
           <div className="animate-fade-in-up">
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/5 px-4 py-1.5 text-[0.96rem] text-green-400 sm:text-base">
-              <Zap className="h-3.5 w-3.5" />
+              <Zap className="h-3.5 w-3.5" aria-hidden="true" />
               Browser truth for AI agents and developers
             </div>
           </div>
@@ -400,7 +404,7 @@ export default function HomePage() {
           <div className="animate-fade-in-up delay-300 flex items-center justify-center gap-4 flex-wrap">
             <Link href="/try">
               <Button size="lg" className="bg-green-500 hover:bg-green-400 text-black font-semibold gap-2 glow-green-pulse px-7 h-12 text-base">
-                <Camera className="h-4 w-4" />
+                <Camera className="h-4 w-4" aria-hidden="true" />
                 Try it — no signup
               </Button>
             </Link>
@@ -412,11 +416,11 @@ export default function HomePage() {
             <Link href="/docs">
               <Button size="lg" variant="ghost" className="h-12 gap-2 text-gray-400 hover:bg-white/5 hover:text-white text-base">
                 See docs
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
             </Link>
           </div>
-          <p className="animate-fade-in-up delay-300 mt-4 text-sm text-gray-500 sm:text-base">No credit card. No signup to try. Free plan after that.</p>
+          <p className="animate-fade-in-up delay-300 mt-4 text-sm text-gray-400 sm:text-base">No credit card. No signup to try. Free plan after that.</p>
 
           {/* Hero video */}
           <div className="animate-fade-in-up delay-400 mt-14 mx-auto max-w-4xl rounded-xl overflow-hidden border border-white/10 shadow-2xl shadow-green-500/5">
@@ -427,7 +431,7 @@ export default function HomePage() {
 
           {/* Works with */}
           <div className="animate-fade-in delay-500 mt-14 flex items-center justify-center gap-3 flex-wrap">
-            <span className="mr-2 text-sm font-medium tracking-widest text-gray-500 uppercase">Works with</span>
+            <span className="mr-2 text-sm font-medium tracking-widest text-gray-400 uppercase">Works with</span>
             {["Cursor", "Windsurf", "VS Code", "Claude Desktop", "Claude Code", "n8n"].map((ide) => (
               <span key={ide} className="rounded-full border border-white/8 bg-white/[0.02] px-3.5 py-1 text-[0.96rem] text-gray-400 sm:text-base">
                 {ide}
@@ -441,7 +445,7 @@ export default function HomePage() {
       <section className="border-t border-white/[0.06] overflow-hidden py-5">
         <div className="animate-ticker flex gap-8 whitespace-nowrap">
           {[...proofPoints, ...proofPoints].map((point, i) => (
-            <span key={i} className="flex shrink-0 items-center gap-2 text-[0.96rem] text-gray-500 sm:text-base">
+            <span key={i} className="flex shrink-0 items-center gap-2 text-[0.96rem] text-gray-400 sm:text-base">
               <span className="h-1 w-1 rounded-full bg-green-400/50" />
               {point}
             </span>
@@ -462,13 +466,13 @@ export default function HomePage() {
             {/* Old Way */}
             <div className="rounded-xl border border-red-500/20 bg-red-500/[0.03] p-7">
               <div className="flex items-center gap-2 mb-6">
-                <X className="h-5 w-5 text-red-400" />
+                <X className="h-5 w-5 text-red-400" aria-hidden="true" />
                 <h3 className="font-[var(--font-heading)] font-bold text-xl text-red-400">The old way</h3>
               </div>
               <ul className="space-y-3.5">
                 {oldWay.map((item) => (
                   <li key={item} className="flex items-start gap-3 text-base text-gray-400">
-                    <X className="h-4 w-4 text-red-500/50 shrink-0 mt-1" />
+                    <X className="h-4 w-4 text-red-500/50 shrink-0 mt-1" aria-hidden="true" />
                     {item}
                   </li>
                 ))}
@@ -477,13 +481,13 @@ export default function HomePage() {
             {/* New Way */}
             <div className="rounded-xl border border-green-500/20 bg-green-500/[0.03] p-7">
               <div className="flex items-center gap-2 mb-6">
-                <Zap className="h-5 w-5 text-green-400" />
+                <Zap className="h-5 w-5 text-green-400" aria-hidden="true" />
                 <h3 className="font-[var(--font-heading)] font-bold text-xl text-green-400">With ScreenshotsMCP</h3>
               </div>
               <ul className="space-y-3.5">
                 {newWay.map((item) => (
                   <li key={item} className="flex items-start gap-3 text-base text-gray-300">
-                    <Check className="h-4 w-4 text-green-400 shrink-0 mt-1" />
+                    <Check className="h-4 w-4 text-green-400 shrink-0 mt-1" aria-hidden="true" />
                     {item}
                   </li>
                 ))}
@@ -532,13 +536,13 @@ export default function HomePage() {
               <Link href="/sign-up">
                 <Button className="bg-green-500 hover:bg-green-400 text-black font-semibold gap-2">
                   Try it free
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </Link>
             </div>
             <div className="space-y-5 rounded-xl border border-white/10 bg-white/[0.02] p-6 font-mono text-[0.96rem] leading-7 sm:text-base">
               <div className="flex gap-3">
-                <span className="text-gray-500 shrink-0">You:</span>
+                <span className="text-gray-400 shrink-0">You:</span>
                 <span className="text-gray-200">Open my staging app, test checkout, and capture proof if anything fails</span>
               </div>
               <div className="flex gap-3">
@@ -590,7 +594,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {features.map((f) => (
               <div key={f.title} className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-6 transition-all duration-300 hover:border-green-500/20 hover:bg-green-500/[0.02] group">
-                <f.icon className="h-7 w-7 text-green-400/70 mb-4 group-hover:text-green-400 transition-colors" />
+                <f.icon className="h-7 w-7 text-green-400/70 mb-4 group-hover:text-green-400 transition-colors" aria-hidden="true" />
                 <h3 className="font-[var(--font-heading)] font-bold text-xl mb-2">{f.title}</h3>
                 <p className="text-base text-gray-400 leading-relaxed">{f.description}</p>
               </div>
@@ -602,7 +606,7 @@ export default function HomePage() {
       {/* Guarantee Section */}
       <section className="border-t border-white/[0.06] bg-gradient-to-b from-green-500/[0.04] to-transparent">
         <div className="mx-auto max-w-3xl px-6 py-24 text-center">
-          <Shield className="h-12 w-12 text-green-400 mx-auto mb-6" />
+          <Shield className="h-12 w-12 text-green-400 mx-auto mb-6" aria-hidden="true" />
           <h2 className="font-[var(--font-heading)] text-4xl sm:text-5xl font-bold mb-5 tracking-[-0.03em]">
             Start free. Keep the proof.
           </h2>
@@ -647,12 +651,12 @@ export default function HomePage() {
                 <h3 className="font-[var(--font-heading)] font-bold text-xl">{p.name}</h3>
                 <div className="flex items-baseline gap-1 mt-2 mb-4">
                   <span className="text-5xl font-bold tracking-tight">{p.price}</span>
-                  <span className="text-gray-500 text-base">{p.period}</span>
+                  <span className="text-gray-400 text-base">{p.period}</span>
                 </div>
                 <ul className="space-y-2.5 mb-8 flex-1">
                   {p.features.map((feat) => (
                     <li key={feat} className="flex items-center gap-2.5 text-base text-gray-400">
-                      <Check className="h-4 w-4 text-green-400/70 shrink-0" />
+                      <Check className="h-4 w-4 text-green-400/70 shrink-0" aria-hidden="true" />
                       {feat}
                     </li>
                   ))}
@@ -688,12 +692,13 @@ export default function HomePage() {
           </p>
           <Link href="/sign-up">
             <Button size="lg" className="bg-green-500 hover:bg-green-400 text-black font-semibold gap-2 glow-green-pulse px-8 h-12 text-base">
-              <Camera className="h-4 w-4" />
+              <Camera className="h-4 w-4" aria-hidden="true" />
               Install free
             </Button>
           </Link>
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-white/[0.06] py-10">
@@ -701,12 +706,12 @@ export default function HomePage() {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Camera className="h-4 w-4 text-green-400/50" />
+                <Camera className="h-4 w-4 text-green-400/50" aria-hidden="true" />
                 <span className="font-[var(--font-heading)] text-base font-bold">ScreenshotsMCP</span>
               </div>
-              <p className="text-sm text-gray-500 sm:text-base">Give your AI a real browser — and proof.</p>
+              <p className="text-sm text-gray-400 sm:text-base">Give your AI a real browser — and proof.</p>
             </div>
-            <div className="flex gap-8 text-[0.96rem] text-gray-500 sm:text-base">
+            <div className="flex gap-8 text-[0.96rem] text-gray-400 sm:text-base">
               <Link href="/docs" className="hover:text-gray-300 transition-colors">Docs</Link>
               <Link href="#pricing" className="hover:text-gray-300 transition-colors">Pricing</Link>
               <Link href="/docs/quickstart" className="hover:text-gray-300 transition-colors">Quick Start</Link>
@@ -718,7 +723,7 @@ export default function HomePage() {
               <Link href="/terms-of-service" className="hover:text-gray-300 transition-colors">Terms</Link>
             </div>
           </div>
-          <div className="mt-8 border-t border-white/[0.06] pt-6 text-sm text-gray-500">
+          <div className="mt-8 border-t border-white/[0.06] pt-6 text-sm text-gray-400">
             &copy; 2026 ScreenshotsMCP. All rights reserved.
           </div>
         </div>
