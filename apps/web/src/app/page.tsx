@@ -386,7 +386,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <h1 className="animate-fade-in-up delay-100 font-[var(--font-heading)] text-5xl sm:text-6xl lg:text-[4.5rem] xl:text-[5rem] font-extrabold tracking-[-0.04em] mb-7 leading-[1.05]">
+          <h1 className="font-[var(--font-heading)] text-5xl sm:text-6xl lg:text-[4.5rem] xl:text-[5rem] font-extrabold tracking-[-0.04em] mb-7 leading-[1.05]">
             Give your AI{" "}
             <br />
             <span className="text-gradient">a real browser — and proof.</span>
@@ -424,7 +424,7 @@ export default function HomePage() {
 
           {/* Hero video */}
           <div className="animate-fade-in-up delay-400 mt-14 mx-auto max-w-4xl rounded-xl overflow-hidden border border-white/10 shadow-2xl shadow-green-500/5">
-            <video autoPlay loop muted playsInline preload="auto" className="w-full h-auto">
+            <video autoPlay loop muted playsInline preload="auto" poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'%3E%3Crect fill='%23111' width='1920' height='1080'/%3E%3C/svg%3E" className="w-full h-auto">
               <source src={HERO_VIDEO_URL} type="video/mp4" />
             </video>
           </div>
