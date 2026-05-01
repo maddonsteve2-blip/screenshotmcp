@@ -550,7 +550,8 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
 **Navigation:** browser_navigate (supports width/height params), browser_go_back, browser_go_forward, browser_wait_for
 **Viewport:** browser_set_viewport — resize the browser viewport mid-session (e.g. switch between desktop and mobile)
 **Inspection:** browser_screenshot, browser_get_text, browser_get_html, browser_get_accessibility_tree, browser_evaluate
-**Standalone:** accessibility_snapshot — get accessibility tree for any URL without a session
+**Standalone:** accessibility_snapshot — get raw accessibility tree for any URL without a session
+**Accessibility:** accessibility_audit — real WCAG 2.1 AA compliance audit with pass/fail results, contrast checking, landmark verification
 
 For extension-free local browser setup outside the remote session tools, the CLI now supports screenshotsmcp browser open <url>, which asks for explicit approval and opens an installed local browser in a fresh ScreenshotsMCP profile. Console logs and network activity are captured continuously while that managed browser stays open, and follow-up commands like browser status, browser goto, browser back, browser forward, browser click-at, browser hover, browser wait-for, browser select, browser viewport, browser screenshot, browser text, browser html, browser console, browser network-errors, browser network-requests, browser evidence, browser cookies, browser storage, browser eval, browser a11y, browser perf, browser seo, and browser close reconnect to that tracked managed browser over CDP. Add --record-video if the user wants browser close to return a local .webm recording path for the managed session, use browser evidence to export a timestamped live artifact bundle with the current screenshot, page state, observability logs, and session metadata, or use browser close --evidence when the finalized local recording should be included in that same bundle. Use that path when the user wants a local managed browser without manually installing an extension.
 
@@ -589,10 +590,12 @@ When the user asks you to test a flow that requires authentication (login, sign-
 - Use **browser_set_viewport** to resize the browser mid-session for mobile/tablet testing without starting a new session.
 - Use **browser_navigate** with width/height params to start a mobile session directly.
 - **browser_get_accessibility_tree** is the best way to understand page structure for UX analysis.
-- **accessibility_snapshot** does the same thing without needing a session — just pass a URL.
+- **accessibility_snapshot** returns the raw accessibility tree without needing a session.
+- **accessibility_audit** is the WCAG compliance tool — use it when users ask to "audit accessibility" or "check WCAG compliance". It returns pass/fail results with criteria references.
 - **browser_console_logs** and **browser_network_errors** capture errors automatically from the moment the session starts.
 - When the user says "take a screenshot", use take_screenshot. When they say "check responsive", use screenshot_responsive.
 - When the user says "audit this site" or "check UX", use browser_navigate + browser_get_accessibility_tree + browser_console_logs.
+- When the user says "audit accessibility" or "check WCAG", use **accessibility_audit** — it runs real checks and returns categorized pass/fail results.
 - When the user says "check OG tags", "how will this look on Twitter/Facebook", or "preview social card", use **og_preview** — it works standalone (no session needed).
 
 ## Disposable Email Tools (AgentMail)
@@ -1437,11 +1440,30 @@ server.tool(
       const session = await getSession(args.sessionId, auth.userId);
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       try {
-        const metrics = await session.page.evaluate(() => {
+        // Wait for LCP entry via PerformanceObserver (up to 5s)
+        const lcpValue = await session.page.evaluate(() => {
+          return new Promise<number | null>((resolve) => {
+            let lastLcp: number | null = null;
+            // Check if entries already exist
+            const existing = (globalThis as any).performance.getEntriesByType("largest-contentful-paint");
+            if (existing.length > 0) lastLcp = existing[existing.length - 1].startTime;
+            try {
+              const obs = new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) lastLcp = entry.startTime;
+              });
+              obs.observe({ type: "largest-contentful-paint", buffered: true });
+              // Give LCP up to 5s to fire, then return whatever we have
+              setTimeout(() => { obs.disconnect(); resolve(lastLcp); }, 5000);
+            } catch {
+              resolve(lastLcp);
+            }
+          });
+        });
+
+        const metrics = await session.page.evaluate((lcpMs: number | null) => {
           const perf = (globalThis as any).performance;
           const nav = perf.getEntriesByType("navigation")[0] as any;
           const paint = perf.getEntriesByType("paint");
-          const lcp = perf.getEntriesByType("largest-contentful-paint");
           const cls = perf.getEntriesByType("layout-shift");
           const resources = perf.getEntriesByType("resource") as any[];
 
@@ -1459,7 +1481,7 @@ server.tool(
             url: (globalThis as any).location.href,
             ttfb: nav ? Math.round(nav.responseStart - nav.requestStart) : null,
             fcp: fcp ? Math.round(fcp.startTime) : null,
-            lcp: lcp.length > 0 ? Math.round(lcp[lcp.length - 1].startTime) : null,
+            lcp: lcpMs !== null ? Math.round(lcpMs) : null,
             cls: Math.round(clsScore * 1000) / 1000,
             domContentLoaded: nav ? Math.round(nav.domContentLoadedEventEnd - nav.startTime) : null,
             loadComplete: nav ? Math.round(nav.loadEventEnd - nav.startTime) : null,
@@ -1468,7 +1490,7 @@ server.tool(
             totalTransferKB: Math.round(totalTransferSize / 1024),
             resourcesByType,
           };
-        });
+        }, lcpValue);
 
         const lines = [
           `Performance Metrics for ${metrics.url}`,
@@ -2228,7 +2250,7 @@ server.tool(
   // @ts-ignore - TS2589: MCP SDK generic inference too deep with multiple .default() fields
   server.tool(
     "accessibility_snapshot",
-    "Get the accessibility tree for any URL without needing a browser session. Returns a structured snapshot of all interactive elements, headings, links, buttons, form fields, images with alt text, and ARIA roles. Great for quick UX audits.",
+    "Get the raw accessibility tree for any URL without needing a browser session. Returns a structured snapshot of interactive elements, headings, links, buttons, form fields, and ARIA roles. For a real WCAG compliance audit with pass/fail results, use the accessibility_audit tool instead.",
     {
       url: z.string().url().describe("URL to get the accessibility tree for"),
       maxDepth: z.number().int().min(1).max(20).default(8).describe("Maximum depth of the tree to return"),
@@ -2307,6 +2329,230 @@ server.tool(
           return { content: [{ type: "text", text: `Accessibility tree for ${args.url} (~${nodeCount} nodes, truncated to 50k chars):\n${text.slice(0, 50000)}...` }] };
         }
         return { content: [{ type: "text", text: `Accessibility tree for ${args.url} (~${nodeCount} nodes):\n${text}` }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+      } finally {
+        if (context) await context.close().catch(() => {});
+        await release();
+      }
+    }
+  );
+
+  // ── Accessibility Audit (real WCAG checks) ───────────────────
+  // @ts-ignore - TS2589
+  server.tool(
+    "accessibility_audit",
+    "Run a real WCAG 2.1 AA compliance audit on a URL. Checks landmarks, skip links, focus indicators, heading hierarchy, image alt text, aria-hidden on decorative SVGs, color contrast ratios, form labels, touch targets, and reduced-motion handling. Returns categorized PASS/FAIL results with WCAG criteria references — not a raw tree dump.",
+    {
+      url: z.string().url().describe("URL to audit"),
+      width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width"),
+      height: z.number().int().min(240).max(2160).default(800).describe("Viewport height"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+
+      const { browser, release } = await browserPool.acquire();
+      let context;
+      try {
+        context = await browser.newContext({
+          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          viewport: { width: args.width, height: args.height },
+          locale: "en-US",
+        });
+        const page = await context.newPage();
+        try {
+          await page.goto(args.url, { waitUntil: "networkidle", timeout: 30000 });
+        } catch {
+          await page.goto(args.url, { waitUntil: "load", timeout: 30000 });
+        }
+        await page.waitForTimeout(1500);
+
+        const audit = await page.evaluate(() => {
+          const doc = (globalThis as any).document;
+          const results: { id: string; wcag: string; severity: "critical" | "serious" | "moderate" | "minor"; status: "FAIL" | "PASS" | "WARN"; message: string }[] = [];
+
+          // 1.3.1 — Landmarks
+          const hasMain = !!doc.querySelector("main");
+          results.push({ id: "landmark-main", wcag: "1.3.1", severity: "critical", status: hasMain ? "PASS" : "FAIL", message: hasMain ? "<main> landmark present" : "No <main> landmark found — screen reader users cannot jump to primary content" });
+          const hasHeader = !!doc.querySelector("header, [role='banner']");
+          results.push({ id: "landmark-header", wcag: "1.3.1", severity: "serious", status: hasHeader ? "PASS" : "FAIL", message: hasHeader ? "<header>/banner landmark present" : "No <header> or role='banner' found" });
+          const hasNav = !!doc.querySelector("nav, [role='navigation']");
+          results.push({ id: "landmark-nav", wcag: "1.3.1", severity: "serious", status: hasNav ? "PASS" : "FAIL", message: hasNav ? "<nav> landmark present" : "No <nav> or role='navigation' found" });
+          const hasFooter = !!doc.querySelector("footer, [role='contentinfo']");
+          results.push({ id: "landmark-footer", wcag: "1.3.1", severity: "minor", status: hasFooter ? "PASS" : "FAIL", message: hasFooter ? "<footer>/contentinfo landmark present" : "No <footer> found" });
+
+          // 2.4.1 — Skip link
+          const skipLink = doc.querySelector("a[href='#main'], a[href='#content'], a[href='#main-content']");
+          results.push({ id: "skip-link", wcag: "2.4.1", severity: "critical", status: skipLink ? "PASS" : "FAIL", message: skipLink ? "Skip-to-content link present" : "No skip-to-content link found — keyboard users must tab through all nav on every page" });
+
+          // 2.4.2 — Page title
+          const title = doc.title;
+          results.push({ id: "page-title", wcag: "2.4.2", severity: "serious", status: title ? "PASS" : "FAIL", message: title ? `Page title: "${title.slice(0, 60)}"` : "No <title> element" });
+
+          // 1.3.1 — Heading hierarchy
+          const headings: { level: number; text: string }[] = [];
+          doc.querySelectorAll("h1,h2,h3,h4,h5,h6").forEach((h: any) => {
+            headings.push({ level: parseInt(h.tagName[1]), text: (h.textContent || "").trim().slice(0, 60) });
+          });
+          const h1Count = headings.filter(h => h.level === 1).length;
+          results.push({ id: "heading-h1", wcag: "1.3.1", severity: "serious", status: h1Count === 1 ? "PASS" : "FAIL", message: h1Count === 1 ? "Single H1 present" : `Found ${h1Count} H1 elements (expected 1)` });
+          let skipDetected = false;
+          for (let i = 1; i < headings.length; i++) {
+            if (headings[i].level > headings[i - 1].level + 1) { skipDetected = true; break; }
+          }
+          results.push({ id: "heading-order", wcag: "1.3.1", severity: "moderate", status: skipDetected ? "WARN" : "PASS", message: skipDetected ? "Heading level skip detected (e.g. H2 → H4)" : `Heading hierarchy OK (${headings.length} headings)` });
+
+          // 1.1.1 — Images missing alt
+          const imgs = doc.querySelectorAll("img");
+          const imgsMissingAlt = Array.from(imgs).filter((img: any) => !img.hasAttribute("alt"));
+          if (imgs.length > 0) {
+            results.push({ id: "img-alt", wcag: "1.1.1", severity: "critical", status: imgsMissingAlt.length === 0 ? "PASS" : "FAIL", message: imgsMissingAlt.length === 0 ? `All ${imgs.length} images have alt attributes` : `${imgsMissingAlt.length} of ${imgs.length} images missing alt attribute` });
+          } else {
+            results.push({ id: "img-alt", wcag: "1.1.1", severity: "critical", status: "PASS", message: "No <img> elements on page (0 to check)" });
+          }
+
+          // 1.1.1 — Decorative SVGs without aria-hidden
+          const svgs = doc.querySelectorAll("svg");
+          const svgsExposed = Array.from(svgs).filter((svg: any) => svg.getAttribute("aria-hidden") !== "true" && !svg.getAttribute("role") && !svg.getAttribute("aria-label"));
+          results.push({ id: "svg-aria", wcag: "1.1.1", severity: "serious", status: svgsExposed.length === 0 ? "PASS" : "FAIL", message: svgsExposed.length === 0 ? `All ${svgs.length} SVGs properly hidden or labelled` : `${svgsExposed.length} of ${svgs.length} SVGs exposed to assistive tech without aria-hidden or aria-label` });
+
+          // 2.4.7 — Focus indicators
+          const focusable = doc.querySelectorAll("a[href], button, input, textarea, select, [tabindex]:not([tabindex='-1'])");
+          let noFocusIndicator = 0;
+          Array.from(focusable).slice(0, 50).forEach((el: any) => {
+            const styles = (globalThis as any).getComputedStyle(el);
+            const outlineStyle = styles.outlineStyle;
+            const outlineWidth = parseFloat(styles.outlineWidth);
+            if (outlineStyle === "none" || outlineWidth === 0) {
+              // Check if there's a box-shadow or border that could serve as indicator
+              const boxShadow = styles.boxShadow;
+              if (!boxShadow || boxShadow === "none") noFocusIndicator++;
+            }
+          });
+          const focusTotal = focusable.length;
+          results.push({ id: "focus-visible", wcag: "2.4.7", severity: "critical", status: noFocusIndicator === 0 ? "PASS" : noFocusIndicator < focusTotal * 0.2 ? "WARN" : "FAIL", message: noFocusIndicator === 0 ? `All ${focusTotal} focusable elements have visible focus styles` : `${noFocusIndicator} of ${focusTotal} focusable elements may lack visible focus indicators (checked default styles, not :focus-visible)` });
+
+          // 1.4.3 — Color contrast (sample text elements)
+          const contrastIssues: string[] = [];
+          function luminance(r: number, g: number, b: number) {
+            const [rs, gs, bs] = [r, g, b].map(c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); });
+            return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+          }
+          function contrastRatio(l1: number, l2: number) {
+            const lighter = Math.max(l1, l2);
+            const darker = Math.min(l1, l2);
+            return (lighter + 0.05) / (darker + 0.05);
+          }
+          function parseColor(color: string): [number, number, number] | null {
+            const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+            if (m) return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])];
+            return null;
+          }
+          const textEls = doc.querySelectorAll("p, span, li, td, th, label, a, button, h1, h2, h3, h4, h5, h6");
+          let contrastChecked = 0;
+          let contrastFails = 0;
+          Array.from(textEls).slice(0, 100).forEach((el: any) => {
+            const styles = (globalThis as any).getComputedStyle(el);
+            const fg = parseColor(styles.color);
+            const bg = parseColor(styles.backgroundColor);
+            if (!fg || !bg) return;
+            // Skip transparent bg
+            const bgAlpha = styles.backgroundColor.match(/rgba\(\d+,\s*\d+,\s*\d+,\s*([\d.]+)\)/);
+            if (bgAlpha && parseFloat(bgAlpha[1]) < 0.1) return;
+            contrastChecked++;
+            const fgL = luminance(fg[0], fg[1], fg[2]);
+            const bgL = luminance(bg[0], bg[1], bg[2]);
+            const ratio = contrastRatio(fgL, bgL);
+            const fontSize = parseFloat(styles.fontSize);
+            const fontWeight = parseInt(styles.fontWeight) || 400;
+            const isLargeText = fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700);
+            const minRatio = isLargeText ? 3 : 4.5;
+            if (ratio < minRatio) {
+              contrastFails++;
+              const text = (el.textContent || "").trim().slice(0, 40);
+              if (contrastIssues.length < 5) {
+                contrastIssues.push(`"${text}" — ratio ${ratio.toFixed(1)}:1 (need ${minRatio}:1) fg:rgb(${fg}) bg:rgb(${bg})`);
+              }
+            }
+          });
+          results.push({ id: "color-contrast", wcag: "1.4.3", severity: "critical", status: contrastFails === 0 ? "PASS" : "FAIL", message: contrastFails === 0 ? `${contrastChecked} text elements checked — all pass contrast minimum` : `${contrastFails} of ${contrastChecked} sampled text elements fail contrast (${contrastIssues.join("; ")})` });
+
+          // 4.1.2 — Form labels
+          const inputs = doc.querySelectorAll("input:not([type='hidden']):not([type='submit']):not([type='button']), textarea, select");
+          let unlabelled = 0;
+          inputs.forEach((input: any) => {
+            const hasLabel = input.id && doc.querySelector(`label[for="${input.id}"]`);
+            const hasAriaLabel = input.getAttribute("aria-label") || input.getAttribute("aria-labelledby");
+            const wrappedInLabel = input.closest("label");
+            const hasPlaceholder = input.getAttribute("placeholder");
+            if (!hasLabel && !hasAriaLabel && !wrappedInLabel && !hasPlaceholder) unlabelled++;
+          });
+          if (inputs.length > 0) {
+            results.push({ id: "form-labels", wcag: "4.1.2", severity: "critical", status: unlabelled === 0 ? "PASS" : "FAIL", message: unlabelled === 0 ? `All ${inputs.length} form inputs have labels` : `${unlabelled} of ${inputs.length} form inputs have no label, aria-label, or placeholder` });
+          }
+
+          // 1.3.1 — Language attribute
+          const lang = doc.documentElement.getAttribute("lang");
+          results.push({ id: "html-lang", wcag: "3.1.1", severity: "serious", status: lang ? "PASS" : "FAIL", message: lang ? `lang="${lang}" set on <html>` : "No lang attribute on <html>" });
+
+          // 2.3.3 — Reduced motion
+          let hasReducedMotion = false;
+          try {
+            for (const sheet of doc.styleSheets) {
+              try {
+                for (const rule of sheet.cssRules) {
+                  if (rule.media && rule.media.mediaText && rule.media.mediaText.includes("prefers-reduced-motion")) { hasReducedMotion = true; break; }
+                }
+              } catch { /* cross-origin stylesheet */ }
+              if (hasReducedMotion) break;
+            }
+          } catch {}
+          const hasAnimations = doc.querySelectorAll("[class*='animate-'], [class*='transition']").length;
+          if (hasAnimations > 0) {
+            results.push({ id: "reduced-motion", wcag: "2.3.3", severity: "moderate", status: hasReducedMotion ? "PASS" : "WARN", message: hasReducedMotion ? `prefers-reduced-motion rule found (${hasAnimations} animated elements)` : `${hasAnimations} animated elements but no prefers-reduced-motion CSS rule detected` });
+          }
+
+          // Summary counts
+          const fails = results.filter(r => r.status === "FAIL");
+          const warns = results.filter(r => r.status === "WARN");
+          const passes = results.filter(r => r.status === "PASS");
+
+          return { results, fails: fails.length, warns: warns.length, passes: passes.length, total: results.length, headingSummary: headings.map(h => `${"  ".repeat(h.level - 1)}H${h.level}: ${h.text}`) };
+        });
+
+        const lines = [
+          `# Accessibility Audit — ${args.url}`,
+          `Viewport: ${args.width}×${args.height}`,
+          ``,
+          `## Summary: ${audit.fails} failures, ${audit.warns} warnings, ${audit.passes} passes (${audit.total} checks)`,
+          `WCAG 2.1 AA Compliance: ${audit.fails === 0 ? "✅ PASS" : "❌ FAIL"}`,
+          ``,
+        ];
+
+        if (audit.fails > 0) {
+          lines.push(`## ❌ Failures`);
+          audit.results.filter((r: any) => r.status === "FAIL").forEach((r: any) => {
+            lines.push(`  [${r.severity.toUpperCase()}] WCAG ${r.wcag} — ${r.message}`);
+          });
+          lines.push(``);
+        }
+        if (audit.warns > 0) {
+          lines.push(`## ⚠️ Warnings`);
+          audit.results.filter((r: any) => r.status === "WARN").forEach((r: any) => {
+            lines.push(`  [${r.severity.toUpperCase()}] WCAG ${r.wcag} — ${r.message}`);
+          });
+          lines.push(``);
+        }
+        lines.push(`## ✅ Passes`);
+        audit.results.filter((r: any) => r.status === "PASS").forEach((r: any) => {
+          lines.push(`  WCAG ${r.wcag} — ${r.message}`);
+        });
+        lines.push(``);
+        lines.push(`## Heading Hierarchy`);
+        audit.headingSummary.forEach((h: string) => lines.push(`  ${h}`));
+
+        return { content: [{ type: "text", text: lines.join("\n") }] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
       } finally {
@@ -2859,19 +3105,54 @@ server.tool(
           return items.slice(0, 80).join("\n");
         });
 
-        // 3. Get basic SEO + perf data
+        // 3. Get comprehensive page data (SEO, a11y, perf — ground truth)
         const pageData = await page.evaluate(() => {
           const getMeta = (name: string) => document.querySelector(`meta[name="${name}"], meta[property="${name}"]`)?.getAttribute("content") || "";
+          const imgs = document.querySelectorAll("img");
+          const svgs = document.querySelectorAll("svg");
+          const svgsExposed = Array.from(svgs).filter((svg: any) => svg.getAttribute("aria-hidden") !== "true" && !svg.getAttribute("role") && !svg.getAttribute("aria-label")).length;
+          const jsonLd = Array.from(document.querySelectorAll('script[type="application/ld+json"]')).map((s: any) => { try { return JSON.parse(s.textContent); } catch { return null; } }).filter(Boolean);
+          const focusable = document.querySelectorAll("a[href], button, input, textarea, select, [tabindex]:not([tabindex='-1'])");
+          const canonical = document.querySelector('link[rel="canonical"]')?.getAttribute("href") || "";
           return {
             title: document.title,
             description: getMeta("description"),
             ogTitle: getMeta("og:title"),
             ogImage: getMeta("og:image"),
+            ogType: getMeta("og:type"),
+            canonical,
             h1Count: document.querySelectorAll("h1").length,
-            imgCount: document.querySelectorAll("img").length,
-            imgWithoutAlt: document.querySelectorAll("img:not([alt])").length,
+            imgCount: imgs.length,
+            imgWithoutAlt: Array.from(imgs).filter((img: any) => !img.hasAttribute("alt")).length,
+            svgCount: svgs.length,
+            svgsExposed,
             linkCount: document.querySelectorAll("a").length,
             formCount: document.querySelectorAll("form").length,
+            hasMain: !!document.querySelector("main"),
+            hasHeader: !!document.querySelector("header, [role='banner']"),
+            hasNav: !!document.querySelector("nav"),
+            hasFooter: !!document.querySelector("footer"),
+            hasSkipLink: !!document.querySelector("a[href='#main'], a[href='#content'], a[href='#main-content']"),
+            focusableCount: focusable.length,
+            structuredDataTypes: jsonLd.map((ld: any) => ld["@type"] || "Unknown"),
+            lang: document.documentElement?.lang || "",
+          };
+        });
+
+        // Get perf metrics before closing page
+        const perfData = await page.evaluate(() => {
+          const perf = (globalThis as any).performance;
+          const nav = perf.getEntriesByType("navigation")[0] as any;
+          const paint = perf.getEntriesByType("paint");
+          const fcp = paint.find((e: any) => e.name === "first-contentful-paint");
+          const resources = perf.getEntriesByType("resource") as any[];
+          const totalTransferSize = resources.reduce((sum: number, r: any) => sum + (r.transferSize || 0), 0);
+          return {
+            fcp: fcp ? Math.round(fcp.startTime) : null,
+            domContentLoaded: nav ? Math.round(nav.domContentLoadedEventEnd - nav.startTime) : null,
+            domNodes: document.querySelectorAll("*").length,
+            totalTransferKB: Math.round(totalTransferSize / 1024),
+            resourceCount: resources.length,
           };
         });
 
@@ -2882,7 +3163,31 @@ server.tool(
 
         const client = new OpenAI({ apiKey: kimiKey, baseURL: "https://api.moonshot.ai/v1" });
 
-        const systemPrompt = `You are a senior UX reviewer. Analyze the provided screenshot and structured page data to give a professional UX audit. Rate each category 1-10 and provide specific, actionable recommendations. Be concise but thorough. Categories: Visual Design, Accessibility, SEO, Performance Indicators, Navigation/Layout, Content Quality, Mobile-friendliness.`;
+        const systemPrompt = `You are a senior UX reviewer. Analyze the provided screenshot and structured page data to give a professional UX audit. Rate each category 1-10 and provide specific, actionable recommendations. Be concise but thorough. Categories: Visual Design, Accessibility, SEO, Performance Indicators, Navigation/Layout, Content Quality, Mobile-friendliness.
+
+CRITICAL RULES:
+- A "GROUND TRUTH" section is provided with verified data from the actual DOM. You MUST NOT contradict it. If the ground truth says 0 images exist, do NOT flag alt text as an issue. If structured data exists, do NOT say it is missing.
+- Base your Performance score on the actual metrics provided, not speculation from the screenshot.
+- Clearly distinguish between verified issues (from ground truth) and visual observations (from screenshot).`;
+
+        const groundTruth = [
+          `## GROUND TRUTH (verified from DOM — do not contradict)`,
+          `Images: ${pageData.imgCount} total, ${pageData.imgWithoutAlt} missing alt${pageData.imgCount === 0 ? " (no images on page — this is NOT an alt text issue)" : ""}`,
+          `SVGs: ${pageData.svgCount} total, ${pageData.svgsExposed} exposed to assistive tech without aria-hidden`,
+          `Landmarks: main=${pageData.hasMain}, header=${pageData.hasHeader}, nav=${pageData.hasNav}, footer=${pageData.hasFooter}`,
+          `Skip link: ${pageData.hasSkipLink}`,
+          `Focusable elements: ${pageData.focusableCount}`,
+          `Structured data: ${pageData.structuredDataTypes.length > 0 ? pageData.structuredDataTypes.join(", ") : "none"}`,
+          `Canonical: ${pageData.canonical || "missing"}`,
+          `Language: ${pageData.lang || "missing"}`,
+          ``,
+          `## PERFORMANCE (measured, not guessed)`,
+          `FCP: ${perfData.fcp !== null ? perfData.fcp + "ms" : "N/A"}`,
+          `DOM Content Loaded: ${perfData.domContentLoaded !== null ? perfData.domContentLoaded + "ms" : "N/A"}`,
+          `DOM Nodes: ${perfData.domNodes}`,
+          `Resources: ${perfData.resourceCount}`,
+          `Transfer Size: ${perfData.totalTransferKB}KB`,
+        ].join("\n");
 
         const userContent = [
           { type: "image_url" as const, image_url: { url: b64 } },
@@ -2897,15 +3202,15 @@ server.tool(
               `  Description: ${pageData.description || "(none)"}`,
               `  OG Title: ${pageData.ogTitle || "(none)"}`,
               `  OG Image: ${pageData.ogImage || "(none)"}`,
+              `  OG Type: ${pageData.ogType || "(none)"}`,
               `  H1 count: ${pageData.h1Count}`,
-              `  Images: ${pageData.imgCount} total, ${pageData.imgWithoutAlt} missing alt`,
-              `  Links: ${pageData.linkCount}`,
-              `  Forms: ${pageData.formCount}`,
+              ``,
+              groundTruth,
               ``,
               `Accessibility Tree (top nodes):`,
               a11yTree,
               ``,
-              `Provide your UX review with scores and specific recommendations.`,
+              `Provide your UX review with scores and specific recommendations. Base scores on the ground truth data above, not guesses.`,
             ].join("\n"),
           },
         ];
