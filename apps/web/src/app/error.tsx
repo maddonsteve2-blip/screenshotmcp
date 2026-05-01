@@ -48,8 +48,8 @@ export default function GlobalError({
         </div>
         <p className="text-xs text-muted-foreground">
           Need help? Email{" "}
-          <a href="mailto:support@screenshotmcp.com" className="underline underline-offset-2">
-            support@screenshotmcp.com
+          <a href="mailto:support@deepsyte.com" className="underline underline-offset-2">
+            support@deepsyte.com
           </a>
           {error.digest ? ` with the error ID above.` : "."}
         </p>

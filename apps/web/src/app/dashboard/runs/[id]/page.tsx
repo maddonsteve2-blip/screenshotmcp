@@ -273,7 +273,7 @@ export default async function RunDetailPage({ params }: { params: Promise<{ id: 
                 captureCount: screenshotRowsForClient.length,
                 recordingCount: recordingsForRun.length,
                 shareUrl: run.shareToken
-                  ? `${process.env.NEXT_PUBLIC_APP_URL ?? "https://www.screenshotmcp.com"}/shared/runs/${run.shareToken}`
+                  ? `${process.env.NEXT_PUBLIC_APP_URL ?? "https://www.deepsyte.com"}/shared/runs/${run.shareToken}`
                   : null,
                 outcomeSummary: outcomeForClient?.summary ?? null,
                 outcomeVerdict: outcomeForClient?.verdict ?? null,

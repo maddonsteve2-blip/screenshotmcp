@@ -37,7 +37,7 @@ The sitekey is embedded in the path after `/turnstile/f/ov2/av0/rch/{slot}/`.
 2. Give the user:
    - The sign-up URL you paused on.
    - The disposable inbox email.
-   - The command to check it: `screenshotsmcp inbox:check --inbox-id <email>`.
+   - The command to check it: `deepsyte inbox:check --inbox-id <email>`.
 3. Ask them to click the Turnstile checkbox and submit. Typically 10 seconds.
 
 ## After the human click

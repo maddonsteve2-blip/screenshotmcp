@@ -1,86 +1,86 @@
 ---
 title: Installation
-description: Configure ScreenshotsMCP so your AI can inspect, test, and verify websites with real browser execution and proof.
+description: Configure DeepSyte so your AI can inspect, test, and verify websites with real browser execution and proof.
 ---
 
 ## CLI Install (Fastest)
 
-The quickest way to set up ScreenshotsMCP for a new agent is with the CLI. Use the one-command onboarding flow:
+The quickest way to set up DeepSyte for a new agent is with the CLI. Use the one-command onboarding flow:
 
 ```bash
-npx screenshotsmcp setup --client cursor    # or: vscode, windsurf, claude, claude-code
+npx deepsyte setup --client cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
 This will:
 1. Open your browser to authenticate via OAuth if needed
 2. Configure the MCP server in your chosen client
-3. Install or repair the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`
+3. Install or repair the managed core DeepSyte skill in `~/.agents/skills/deepsyte`, including `workflows/sitewide-performance-audit/WORKFLOW.md`
 
 Use this path when you want the fastest way to get browser truth into a fresh IDE, CLI, or MCP workflow.
 
 If you prefer to do onboarding in two steps, you can still run:
 
 ```bash
-npx screenshotsmcp login
-npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
+npx deepsyte login
+npx deepsyte install cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
 That two-step path reaches the same result as `setup --client <client>` for most clients. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
 
-The first packaged workflow is `~/.agents/skills/screenshotsmcp/workflows/sitewide-performance-audit/WORKFLOW.md` for repeatable multi-page performance audits.
+The first packaged workflow is `~/.agents/skills/deepsyte/workflows/sitewide-performance-audit/WORKFLOW.md` for repeatable multi-page performance audits.
 
-`screenshotsmcp skills ...` only manages that local core ScreenshotsMCP skill. To discover or install community skills from the wider agent ecosystem, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...`.
+`deepsyte skills ...` only manages that local core DeepSyte skill. To discover or install community skills from the wider agent ecosystem, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...`.
 
 You can also install it globally for ongoing use:
 
 ```bash
-npm install -g screenshotsmcp
-screenshotsmcp --help
+npm install -g deepsyte
+deepsyte --help
 ```
 
 For public sites, the CLI now mirrors the MCP remote browser workflow directly. Start a remote session, keep the returned `sessionId`, and continue with `browse:*` commands:
 
 ```bash
-screenshotsmcp browse https://example.com
-screenshotsmcp browse:click <sessionId> "Sign in"
-screenshotsmcp browse:console <sessionId> --level error
-screenshotsmcp browse:network-errors <sessionId>
-screenshotsmcp browse:a11y <sessionId>
-screenshotsmcp browse:perf <sessionId>
-screenshotsmcp browse:seo <sessionId>
-screenshotsmcp browse:close <sessionId>
-screenshotsmcp auth:test https://example.com
-screenshotsmcp auth:find-login https://example.com
-screenshotsmcp auth:smart-login https://example.com/sign-in --username user@example.com --password secret
+deepsyte browse https://example.com
+deepsyte browse:click <sessionId> "Sign in"
+deepsyte browse:console <sessionId> --level error
+deepsyte browse:network-errors <sessionId>
+deepsyte browse:a11y <sessionId>
+deepsyte browse:perf <sessionId>
+deepsyte browse:seo <sessionId>
+deepsyte browse:close <sessionId>
+deepsyte auth:test https://example.com
+deepsyte auth:find-login https://example.com
+deepsyte auth:smart-login https://example.com/sign-in --username user@example.com --password secret
 ```
 
-For extension-free local browser workflows, you can also launch an installed browser in a dedicated ScreenshotsMCP profile:
+For extension-free local browser workflows, you can also launch an installed browser in a dedicated DeepSyte profile:
 
 ```bash
-screenshotsmcp browser open https://example.com
-screenshotsmcp browser open https://example.com --record-video
-screenshotsmcp browser status
-screenshotsmcp browser goto https://example.org
-screenshotsmcp browser back
-screenshotsmcp browser forward
-screenshotsmcp browser click-at 320 480
-screenshotsmcp browser hover ".menu-trigger"
-screenshotsmcp browser wait-for ".results-loaded" --timeout 8000
-screenshotsmcp browser select "select[name=country]" "Australia"
-screenshotsmcp browser viewport 393 852
-screenshotsmcp browser screenshot
-screenshotsmcp browser console --level error
-screenshotsmcp browser network-errors
-screenshotsmcp browser network-requests --resource-type fetch --min-duration 200
-screenshotsmcp browser evidence --label checkout-bug
-screenshotsmcp browser close --evidence --label checkout-bug
-screenshotsmcp browser cookies get
-screenshotsmcp browser storage getAll --type localStorage
-screenshotsmcp browser eval "document.title"
-screenshotsmcp browser a11y --max-depth 6
-screenshotsmcp browser perf
-screenshotsmcp browser seo
-screenshotsmcp browser close
+deepsyte browser open https://example.com
+deepsyte browser open https://example.com --record-video
+deepsyte browser status
+deepsyte browser goto https://example.org
+deepsyte browser back
+deepsyte browser forward
+deepsyte browser click-at 320 480
+deepsyte browser hover ".menu-trigger"
+deepsyte browser wait-for ".results-loaded" --timeout 8000
+deepsyte browser select "select[name=country]" "Australia"
+deepsyte browser viewport 393 852
+deepsyte browser screenshot
+deepsyte browser console --level error
+deepsyte browser network-errors
+deepsyte browser network-requests --resource-type fetch --min-duration 200
+deepsyte browser evidence --label checkout-bug
+deepsyte browser close --evidence --label checkout-bug
+deepsyte browser cookies get
+deepsyte browser storage getAll --type localStorage
+deepsyte browser eval "document.title"
+deepsyte browser a11y --max-depth 6
+deepsyte browser perf
+deepsyte browser seo
+deepsyte browser close
 ```
 
 The CLI explains why local access is needed, asks for explicit approval before it opens the browser, continuously captures console logs and network activity while that managed browser stays open, and then reconnects to that tracked session for follow-up local actions including history navigation, coordinate clicks, hover states, wait conditions, dropdown selection, viewport changes, cookies/storage inspection, script evaluation, accessibility inspection, performance metrics, SEO auditing, and timestamped evidence bundle export. Use `browser evidence` for a live proof snapshot, or `browser close --evidence` when you want the finalized local `.webm` included in the same bundle after recording finishes.
@@ -91,28 +91,28 @@ Use remote browser workflows for public sites. Escalate to the managed local bro
 
 ## VS Code Extension Preview
 
-A native ScreenshotsMCP VS Code extension is now being developed in the monorepo for a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, API key fallback, command palette actions, output logs, a live activity timeline panel, and native MCP registration.
+A native DeepSyte VS Code extension is now being developed in the monorepo for a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, API key fallback, command palette actions, output logs, a live activity timeline panel, and native MCP registration.
 
 Current preview commands include:
 
-- `ScreenshotsMCP: Sign In`
-- `ScreenshotsMCP: Check Status`
-- `ScreenshotsMCP: Take Screenshot`
-- `ScreenshotsMCP: Open Timeline`
-- `ScreenshotsMCP: Configure Editor Integration`
-- `ScreenshotsMCP: Sync Core Skill`
+- `DeepSyte: Sign In`
+- `DeepSyte: Check Status`
+- `DeepSyte: Take Screenshot`
+- `DeepSyte: Open Timeline`
+- `DeepSyte: Configure Editor Integration`
+- `DeepSyte: Sync Core Skill`
 
-The sidebar also surfaces quick actions and recent activity directly inside VS Code, and the extension opens the browser sign-in flow automatically when no credentials are stored. After sign-in, the extension also configures the matching MCP integration automatically when needed and repairs the managed core skill in `~/.agents/skills/screenshotsmcp`.
+The sidebar also surfaces quick actions and recent activity directly inside VS Code, and the extension opens the browser sign-in flow automatically when no credentials are stored. After sign-in, the extension also configures the matching MCP integration automatically when needed and repairs the managed core skill in `~/.agents/skills/deepsyte`.
 
-Until the Marketplace release is ready, install the preview VSIX and sign in once to let the extension configure the editor automatically. If you need to repair the setup later, use `ScreenshotsMCP: Configure Editor Integration` for the MCP connection or `ScreenshotsMCP: Sync Core Skill` for the managed local skill.
+Until the Marketplace release is ready, install the preview VSIX and sign in once to let the extension configure the editor automatically. If you need to repair the setup later, use `DeepSyte: Configure Editor Integration` for the MCP connection or `DeepSyte: Sync Core Skill` for the managed local skill.
 
 ---
 
 ## Manual Configuration
 
-ScreenshotsMCP works with any client that supports the **Model Context Protocol (MCP)**. Here's how to configure each one manually.
+DeepSyte works with any client that supports the **Model Context Protocol (MCP)**. Here's how to configure each one manually.
 
-If you are setting up a new agent and want the managed core skill plus packaged workflows installed automatically, prefer `npx screenshotsmcp setup --client <client>` before falling back to the manual snippets below.
+If you are setting up a new agent and want the managed core skill plus packaged workflows installed automatically, prefer `npx deepsyte setup --client <client>` before falling back to the manual snippets below.
 
 ## Cursor
 
@@ -121,8 +121,8 @@ Open Cursor Settings → MCP Servers, or edit `~/.cursor/mcp.json` directly:
 ```json
 {
   "mcpServers": {
-    "screenshotsmcp": {
-      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    "deepsyte": {
+      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
     }
   }
 }
@@ -135,8 +135,8 @@ Open Windsurf Settings → MCP, or edit the config file:
 ```json
 {
   "mcpServers": {
-    "screenshotsmcp": {
-      "serverUrl": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    "deepsyte": {
+      "serverUrl": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
     }
   }
 }
@@ -149,8 +149,8 @@ Edit `claude_desktop_config.json` (found in `~/Library/Application Support/Claud
 ```json
 {
   "mcpServers": {
-    "screenshotsmcp": {
-      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    "deepsyte": {
+      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
     }
   }
 }
@@ -163,21 +163,21 @@ Add to your VS Code settings (`.vscode/mcp.json`):
 ```json
 {
   "mcpServers": {
-    "screenshotsmcp": {
-      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    "deepsyte": {
+      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
     }
   }
 }
 ```
 
-This file is workspace-local, so repeat this step for each workspace that should have ScreenshotsMCP enabled.
+This file is workspace-local, so repeat this step for each workspace that should have DeepSyte enabled.
 
 ## Any MCP Client
 
 The server endpoint is:
 
 ```
-https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY
+https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY
 ```
 
 It supports **Streamable HTTP transport** — compatible with all MCP clients that support HTTP-based servers.

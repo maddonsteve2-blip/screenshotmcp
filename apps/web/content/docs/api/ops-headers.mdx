@@ -1,11 +1,11 @@
 ---
 title: Ops Headers
-description: Every ScreenshotsMCP API response carries request IDs, rate-limit hints, and a structured error envelope so automated clients can retry safely and support requests are debuggable.
+description: Every DeepSyte API response carries request IDs, rate-limit hints, and a structured error envelope so automated clients can retry safely and support requests are debuggable.
 ---
 
 ## What you get on every response
 
-Every call to `https://screenshotsmcp-api-production.up.railway.app/v1/*` returns a consistent set of operational headers and — on errors — a consistent JSON envelope. These are stable primitives that CLIs, SDKs, webhooks, and CI integrations can rely on.
+Every call to `https://deepsyte-api-production.up.railway.app/v1/*` returns a consistent set of operational headers and — on errors — a consistent JSON envelope. These are stable primitives that CLIs, SDKs, webhooks, and CI integrations can rely on.
 
 ## `X-Request-ID`
 
@@ -16,7 +16,7 @@ A short, URL-safe identifier attached to every request.
 - Include it when contacting support — we can find any request by id.
 
 ```bash
-curl -i https://screenshotsmcp-api-production.up.railway.app/v1/screenshot \
+curl -i https://deepsyte-api-production.up.railway.app/v1/screenshot \
   -H "Authorization: Bearer $SMCP_KEY" \
   -H "Content-Type: application/json" \
   -H "X-Request-ID: my-ci-run-7f2a" \
@@ -34,7 +34,7 @@ Safe retries for write endpoints. Client sends any stable key; we cache the firs
 - Two in-flight requests with the same key return `409 IDEMPOTENCY_IN_FLIGHT` rather than racing.
 
 ```bash
-curl -sS https://screenshotsmcp-api-production.up.railway.app/v1/screenshot \
+curl -sS https://deepsyte-api-production.up.railway.app/v1/screenshot \
   -H "Authorization: Bearer $SMCP_KEY" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: pr-42-run-01" \

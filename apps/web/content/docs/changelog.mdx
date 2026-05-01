@@ -10,7 +10,7 @@ description: Every update, fix, and new feature — in one place.
 - **`accessibility_audit` tool** — Real WCAG 2.1 AA compliance checks: landmarks, skip links, focus indicators, heading hierarchy, image alt text, SVG aria-hidden, color contrast ratios (computed from RGB with WCAG math), form labels, language attribute, and reduced-motion handling. Returns categorized PASS/FAIL/WARN results with WCAG criteria references.
 - **`extract_text_from_image` (OCR) tool** — AI-powered text extraction from screenshots, photos, infographics, and any image with embedded text. Works standalone with a URL or within a browser session. Powered by Kimi k2.5 vision.
 - **`seo_batch_compare` tool** — Compare SEO metadata across 2–10 URLs in one call. Returns a comparison table showing duplicated titles, descriptions, OG tags, and canonical issues across pages.
-- **OCR CLI command** — `npx screenshotsmcp ocr <url>` extracts text from any image via the command line (CLI v1.20.1).
+- **OCR CLI command** — `npx deepsyte ocr <url>` extracts text from any image via the command line (CLI v1.20.1).
 - **`responsive_audit` tool** — One-call responsive design audit within a browser session. Detects horizontal overflow with culprit elements (tag, class, bounding rect), checks touch targets (≥44×44px), finds text below 16px, verifies viewport meta tag, checks input font sizes for iOS zoom prevention, and reports tightly-spaced interactive elements. Returns a structured pass/fail report.
 
 **Improved**
@@ -27,7 +27,7 @@ description: Every update, fix, and new feature — in one place.
 
 **New**
 
-- **Outbound webhooks** — subscribe HTTPS endpoints to `screenshot.completed`, `screenshot.failed`, `run.completed`, `run.failed`, `quota.warning`, and `test.ping`. HMAC-SHA256 signed deliveries with `Webhook-Id` / `Webhook-Timestamp` / `Webhook-Signature` headers, retried 6× over ~14h (1m / 5m / 30m / 2h / 12h). Manage from `/dashboard/webhooks`, REST `/v1/webhooks`, MCP (`webhook_*` tools), or CLI (`screenshotsmcp webhooks:*`).
+- **Outbound webhooks** — subscribe HTTPS endpoints to `screenshot.completed`, `screenshot.failed`, `run.completed`, `run.failed`, `quota.warning`, and `test.ping`. HMAC-SHA256 signed deliveries with `Webhook-Id` / `Webhook-Timestamp` / `Webhook-Signature` headers, retried 6× over ~14h (1m / 5m / 30m / 2h / 12h). Manage from `/dashboard/webhooks`, REST `/v1/webhooks`, MCP (`webhook_*` tools), or CLI (`deepsyte webhooks:*`).
 - **Visual diff REST endpoint** — `POST /v1/screenshot/diff` returns `beforeUrl`, `afterUrl`, `diffUrl`, and pixel-change percentage in a single sync call.
 - **GitHub Action for visual regression** — `stevejford/action@v1` posts a sticky PR comment with baseline / preview / diff images and fails the check above your configured threshold.
 - **Quota warnings** — `quota.warning` fires once at 80% and once at 95% of your monthly cap so you can self-throttle before hitting 429.
@@ -36,7 +36,7 @@ description: Every update, fix, and new feature — in one place.
 
 **New**
 
-- CLI with `setup` command — one-liner install for all IDEs (`npx screenshotsmcp setup`)
+- CLI with `setup` command — one-liner install for all IDEs (`npx deepsyte setup`)
 - Install scripts: `install.sh` (bash) and `install.ps1` (PowerShell)
 - Session Recording — record browser sessions as `.webm` video
 - CAPTCHA Solver — auto-solve Cloudflare Turnstile, reCAPTCHA, hCaptcha

@@ -1,9 +1,9 @@
 ---
 title: Webhooks
-description: Subscribe an HTTPS endpoint to ScreenshotsMCP events. Every delivery is HMAC-signed, retried with exponential backoff, and observable from the dashboard.
+description: Subscribe an HTTPS endpoint to DeepSyte events. Every delivery is HMAC-signed, retried with exponential backoff, and observable from the dashboard.
 ---
 
-ScreenshotsMCP can push events to your backend as soon as they happen, so you can wire up Slack pings, Linear tickets, GitHub PR comments, or your own ETL without polling our REST API.
+DeepSyte can push events to your backend as soon as they happen, so you can wire up Slack pings, Linear tickets, GitHub PR comments, or your own ETL without polling our REST API.
 
 ## Event types
 
@@ -30,33 +30,33 @@ All deliveries share an envelope:
 
 ```bash
 # Create an endpoint (secret returned ONCE — store it)
-curl -sS https://screenshotsmcp-api-production.up.railway.app/v1/webhooks \
+curl -sS https://deepsyte-api-production.up.railway.app/v1/webhooks \
   -H "Authorization: Bearer $SMCP_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://example.com/hooks/screenshotsmcp",
+    "url": "https://example.com/hooks/deepsyte",
     "events": ["screenshot.completed", "run.completed", "quota.warning"],
     "description": "Production prod hooks"
   }'
 
 # List your endpoints
-curl -sS https://screenshotsmcp-api-production.up.railway.app/v1/webhooks \
+curl -sS https://deepsyte-api-production.up.railway.app/v1/webhooks \
   -H "Authorization: Bearer $SMCP_KEY"
 
 # Rotate the signing secret (returns the new secret once)
-curl -sS -X POST https://screenshotsmcp-api-production.up.railway.app/v1/webhooks/$ID/rotate \
+curl -sS -X POST https://deepsyte-api-production.up.railway.app/v1/webhooks/$ID/rotate \
   -H "Authorization: Bearer $SMCP_KEY"
 
 # Fire a test.ping to validate signing
-curl -sS -X POST https://screenshotsmcp-api-production.up.railway.app/v1/webhooks/$ID/test \
+curl -sS -X POST https://deepsyte-api-production.up.railway.app/v1/webhooks/$ID/test \
   -H "Authorization: Bearer $SMCP_KEY"
 
 # Inspect the last 50 deliveries (status, response code, error message)
-curl -sS https://screenshotsmcp-api-production.up.railway.app/v1/webhooks/$ID/deliveries \
+curl -sS https://deepsyte-api-production.up.railway.app/v1/webhooks/$ID/deliveries \
   -H "Authorization: Bearer $SMCP_KEY"
 
 # Delete
-curl -sS -X DELETE https://screenshotsmcp-api-production.up.railway.app/v1/webhooks/$ID \
+curl -sS -X DELETE https://deepsyte-api-production.up.railway.app/v1/webhooks/$ID \
   -H "Authorization: Bearer $SMCP_KEY"
 ```
 
@@ -71,8 +71,8 @@ Every POST your endpoint receives includes the following headers:
 | `Webhook-Id` | Stable delivery id. Use it to dedupe retries. |
 | `Webhook-Timestamp` | Unix seconds at signing time. |
 | `Webhook-Signature` | `t=<ts>,v1=<hex hmac sha256>`. The signed payload is `${ts}.${rawBody}`. |
-| `X-ScreenshotsMCP-Event` | The event type, mirrors the body's `type`. |
-| `User-Agent` | `ScreenshotsMCP-Webhook/1` |
+| `X-DeepSyte-Event` | The event type, mirrors the body's `type`. |
+| `User-Agent` | `DeepSyte-Webhook/1` |
 
 Reject any request older than 5 minutes (clock skew tolerance). After verifying the signature, treat the body's `type` as authoritative.
 

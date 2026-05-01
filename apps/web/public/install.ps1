@@ -1,12 +1,12 @@
-# ScreenshotsMCP — one-line installer for Windows PowerShell
-# Usage: irm https://screenshotsmcp.com/install.ps1 | iex
-# With client: $env:SMCP_CLIENT="cursor"; irm https://screenshotsmcp.com/install.ps1 | iex
-# AI agents: run `npx screenshotsmcp setup` or `npx screenshotsmcp setup --client windsurf`
+# DeepSyte — one-line installer for Windows PowerShell
+# Usage: irm https://deepsyte.com/install.ps1 | iex
+# With client: $env:SMCP_CLIENT="cursor"; irm https://deepsyte.com/install.ps1 | iex
+# AI agents: run `npx deepsyte setup` or `npx deepsyte setup --client windsurf`
 
 $ErrorActionPreference = "Stop"
 
 Write-Host ""
-Write-Host "  ScreenshotsMCP Installer" -ForegroundColor White
+Write-Host "  DeepSyte Installer" -ForegroundColor White
 Write-Host ""
 
 # --- Check Node.js ---
@@ -15,7 +15,7 @@ try {
   if (-not $nodeVersion) { throw "not found" }
   $major = [int]($nodeVersion -replace 'v','').Split('.')[0]
   if ($major -lt 18) {
-    Write-Host "  Node.js v$major detected. ScreenshotsMCP requires v18+." -ForegroundColor Yellow
+    Write-Host "  Node.js v$major detected. DeepSyte requires v18+." -ForegroundColor Yellow
     Write-Host "  Upgrade at https://nodejs.org" -ForegroundColor DarkGray
     exit 1
   }
@@ -27,22 +27,22 @@ try {
 }
 
 # --- Install or update ---
-$existing = Get-Command screenshotsmcp -ErrorAction SilentlyContinue
+$existing = Get-Command deepsyte -ErrorAction SilentlyContinue
 if ($existing) {
-  Write-Host "  screenshotsmcp already installed. Updating..." -ForegroundColor DarkGray
-  npm update -g screenshotsmcp
+  Write-Host "  deepsyte already installed. Updating..." -ForegroundColor DarkGray
+  npm update -g deepsyte
 } else {
-  Write-Host "  Installing screenshotsmcp..." -ForegroundColor DarkGray
-  npm install -g screenshotsmcp
+  Write-Host "  Installing deepsyte..." -ForegroundColor DarkGray
+  npm install -g deepsyte
 }
 
-Write-Host "  screenshotsmcp installed" -ForegroundColor Green
+Write-Host "  deepsyte installed" -ForegroundColor Green
 Write-Host ""
 
 # --- Run interactive setup ---
 $client = $env:SMCP_CLIENT
 if ($client) {
-  screenshotsmcp setup --client $client
+  deepsyte setup --client $client
 } else {
-  screenshotsmcp setup
+  deepsyte setup
 }

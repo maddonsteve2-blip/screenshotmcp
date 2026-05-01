@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Get ScreenshotsMCP running fast so your AI can inspect, test, and verify websites with real browser evidence.
+description: Get DeepSyte running fast so your AI can inspect, test, and verify websites with real browser evidence.
 ---
 
 ## Option A: CLI (Fastest)
@@ -8,76 +8,76 @@ description: Get ScreenshotsMCP running fast so your AI can inspect, test, and v
 For a new agent or fresh IDE setup, start with the one-command onboarding flow:
 
 ```bash
-npx screenshotsmcp setup --client cursor    # or: vscode, windsurf, claude, claude-code
+npx deepsyte setup --client cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
-That flow authenticates if needed, configures the MCP client, and installs or repairs the managed core ScreenshotsMCP skill into `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`.
+That flow authenticates if needed, configures the MCP client, and installs or repairs the managed core DeepSyte skill into `~/.agents/skills/deepsyte`, including `workflows/sitewide-performance-audit/WORKFLOW.md`.
 
 If you prefer to do onboarding in two steps, run:
 
 ```bash
-npx screenshotsmcp login
-npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
+npx deepsyte login
+npx deepsyte install cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
 That reaches the same result as `setup --client <client>` for most clients. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
 
-The first packaged workflow is `~/.agents/skills/screenshotsmcp/workflows/sitewide-performance-audit/WORKFLOW.md` for repeatable multi-page performance audits.
+The first packaged workflow is `~/.agents/skills/deepsyte/workflows/sitewide-performance-audit/WORKFLOW.md` for repeatable multi-page performance audits.
 
-Note: `screenshotsmcp skills ...` only manages the local core ScreenshotsMCP skill. To discover or install community skills such as Anthropic's `frontend-design`, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...`.
+Note: `deepsyte skills ...` only manages the local core DeepSyte skill. To discover or install community skills such as Anthropic's `frontend-design`, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...`.
 
 The CLI also works standalone from the terminal:
 
 ```bash
-npx screenshotsmcp screenshot https://example.com
-npx screenshotsmcp fullpage https://example.com
-npx screenshotsmcp responsive https://example.com
-npx screenshotsmcp auth:test https://example.com
-npx screenshotsmcp auth:find-login https://example.com
-npx screenshotsmcp auth:authorize-email
-npx screenshotsmcp review https://example.com
-npx screenshotsmcp browse https://example.com
-npx screenshotsmcp browse https://example.com --task-type site_audit --user-goal "Audit public pages for UX regressions" --workflow-name sitewide-performance-audit --auth-scope out --page-set homepage,pricing,docs --required-evidence screenshots,console,network
-npx screenshotsmcp browse:console <sessionId> --level error
-npx screenshotsmcp browse:network-errors <sessionId>
-npx screenshotsmcp browse:a11y <sessionId>
-npx screenshotsmcp browse:perf <sessionId>
-npx screenshotsmcp browser evidence --label homepage-check
-npx screenshotsmcp browser open https://example.com
-npx screenshotsmcp skills sync
+npx deepsyte screenshot https://example.com
+npx deepsyte fullpage https://example.com
+npx deepsyte responsive https://example.com
+npx deepsyte auth:test https://example.com
+npx deepsyte auth:find-login https://example.com
+npx deepsyte auth:authorize-email
+npx deepsyte review https://example.com
+npx deepsyte browse https://example.com
+npx deepsyte browse https://example.com --task-type site_audit --user-goal "Audit public pages for UX regressions" --workflow-name sitewide-performance-audit --auth-scope out --page-set homepage,pricing,docs --required-evidence screenshots,console,network
+npx deepsyte browse:console <sessionId> --level error
+npx deepsyte browse:network-errors <sessionId>
+npx deepsyte browse:a11y <sessionId>
+npx deepsyte browse:perf <sessionId>
+npx deepsyte browser evidence --label homepage-check
+npx deepsyte browser open https://example.com
+npx deepsyte skills sync
 ```
 
 Use remote execution first for public websites. The CLI now mirrors the MCP remote workflow directly: start a remote session with `browse`, keep the `sessionId`, and then use `browse:*` commands for interaction, debugging, SEO, performance, accessibility, cookies, storage, and CAPTCHA solving. Add workflow-aware flags like `--task-type`, `--user-goal`, `--workflow-name`, `--page-set`, and `--required-evidence` when you want the run UI to persist a verdict, proof coverage, and next actions. When you need localhost access, private apps, VPN-only environments, or more realistic manual-browser behavior, switch to the managed local browser without installing an extension:
 
 ```bash
-npx screenshotsmcp browser open https://example.com
-npx screenshotsmcp browser open https://example.com --record-video
-npx screenshotsmcp browser status
-npx screenshotsmcp browser goto https://example.org
-npx screenshotsmcp browser back
-npx screenshotsmcp browser forward
-npx screenshotsmcp browser click-at 320 480
-npx screenshotsmcp browser hover ".menu-trigger"
-npx screenshotsmcp browser wait-for ".results-loaded" --timeout 8000
-npx screenshotsmcp browser select "select[name=country]" "Australia"
-npx screenshotsmcp browser viewport 393 852
-npx screenshotsmcp browser screenshot
-npx screenshotsmcp browser text
-npx screenshotsmcp browser console --level error
-npx screenshotsmcp browser network-errors
-npx screenshotsmcp browser network-requests --resource-type fetch --min-duration 200
-npx screenshotsmcp browser evidence --label checkout-bug
-npx screenshotsmcp browser close --evidence --label checkout-bug
-npx screenshotsmcp browser cookies get
-npx screenshotsmcp browser storage getAll --type localStorage
-npx screenshotsmcp browser eval "document.title"
-npx screenshotsmcp browser a11y --max-depth 6
-npx screenshotsmcp browser perf
-npx screenshotsmcp browser seo
-npx screenshotsmcp browser close
+npx deepsyte browser open https://example.com
+npx deepsyte browser open https://example.com --record-video
+npx deepsyte browser status
+npx deepsyte browser goto https://example.org
+npx deepsyte browser back
+npx deepsyte browser forward
+npx deepsyte browser click-at 320 480
+npx deepsyte browser hover ".menu-trigger"
+npx deepsyte browser wait-for ".results-loaded" --timeout 8000
+npx deepsyte browser select "select[name=country]" "Australia"
+npx deepsyte browser viewport 393 852
+npx deepsyte browser screenshot
+npx deepsyte browser text
+npx deepsyte browser console --level error
+npx deepsyte browser network-errors
+npx deepsyte browser network-requests --resource-type fetch --min-duration 200
+npx deepsyte browser evidence --label checkout-bug
+npx deepsyte browser close --evidence --label checkout-bug
+npx deepsyte browser cookies get
+npx deepsyte browser storage getAll --type localStorage
+npx deepsyte browser eval "document.title"
+npx deepsyte browser a11y --max-depth 6
+npx deepsyte browser perf
+npx deepsyte browser seo
+npx deepsyte browser close
 ```
 
-This opens an installed local browser in a fresh dedicated ScreenshotsMCP profile after an explicit approval prompt, keeps console logs and network activity flowing into the tracked session while that browser stays open, and lets the CLI reconnect for local actions like history navigation, coordinate clicks, hover states, wait conditions, dropdown selection, viewport changes, screenshots, text extraction, cookies/storage inspection, script evaluation, accessibility inspection, performance metrics, SEO auditing, and timestamped evidence bundle export. Use `browser evidence` for a live proof snapshot, or `browser close --evidence` when you want the finalized local `.webm` included in the same bundle after recording finishes.
+This opens an installed local browser in a fresh dedicated DeepSyte profile after an explicit approval prompt, keeps console logs and network activity flowing into the tracked session while that browser stays open, and lets the CLI reconnect for local actions like history navigation, coordinate clicks, hover states, wait conditions, dropdown selection, viewport changes, screenshots, text extraction, cookies/storage inspection, script evaluation, accessibility inspection, performance metrics, SEO auditing, and timestamped evidence bundle export. Use `browser evidence` for a live proof snapshot, or `browser close --evidence` when you want the finalized local `.webm` included in the same bundle after recording finishes.
 
 The goal is not just capture. It is verification: run the workflow, inspect what happened, and keep the proof with the result.
 
@@ -87,7 +87,7 @@ The goal is not just capture. It is verification: run the workflow, inspect what
 
 ### 1. Get Your API Key
 
-Sign up at [screenshotmcp.com](https://www.screenshotmcp.com) and create an API key from your [dashboard](/dashboard/keys).
+Sign up at [deepsyte.com](https://www.deepsyte.com) and create an API key from your [dashboard](/dashboard/keys).
 
 ### 2. Add to Your IDE
 
@@ -98,8 +98,8 @@ Add to your Cursor MCP settings (`~/.cursor/mcp.json`):
 ```json
 {
   "mcpServers": {
-    "screenshotsmcp": {
-      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    "deepsyte": {
+      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
     }
   }
 }
@@ -112,8 +112,8 @@ Add to your Windsurf MCP config:
 ```json
 {
   "mcpServers": {
-    "screenshotsmcp": {
-      "serverUrl": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    "deepsyte": {
+      "serverUrl": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
     }
   }
 }
@@ -126,8 +126,8 @@ Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "screenshotsmcp": {
-      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    "deepsyte": {
+      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
     }
   }
 }
@@ -159,11 +159,11 @@ That's it. Your AI can now see websites, run browser workflows, and return evide
 
 ## Option C: Chrome Extension Preview
 
-If you want ScreenshotsMCP directly in Chrome, the monorepo includes an unpacked extension preview in `packages/chrome-extension`.
+If you want DeepSyte directly in Chrome, the monorepo includes an unpacked extension preview in `packages/chrome-extension`.
 
 ### What it does
 
-- **Public URLs** use the same ScreenshotsMCP Playwright-backed MCP path as the CLI when an API key is configured.
+- **Public URLs** use the same DeepSyte Playwright-backed MCP path as the CLI when an API key is configured.
 - **Localhost and private pages** stay local-first so you can still capture dev servers and pages the cloud browser cannot access.
 - **Page tools** in the popup can read visible text and DOM HTML for the active tab.
 - **Cloud save** reuses existing cloud-backed captures when available and can still upload local-only captures from the viewer.

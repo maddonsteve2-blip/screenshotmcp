@@ -21,7 +21,7 @@ async function resolveBaseUrl() {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "https";
-  return host ? `${proto}://${host}` : "https://www.screenshotmcp.com";
+  return host ? `${proto}://${host}` : "https://www.deepsyte.com";
 }
 
 async function getShared(token: string): Promise<SharedScreenshot | null> {

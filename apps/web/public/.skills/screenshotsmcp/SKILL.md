@@ -1,23 +1,23 @@
 ---
-name: screenshotsmcp
+name: deepsyte
 description: >
-  This skill should be used when the user asks to inspect, test, or verify a website, take screenshots, debug browser behavior, audit SEO or performance, test sign-in or sign-up flows, solve CAPTCHAs, create test inboxes, or otherwise needs browser truth from ScreenshotsMCP.
+  This skill should be used when the user asks to inspect, test, or verify a website, take screenshots, debug browser behavior, audit SEO or performance, test sign-in or sign-up flows, solve CAPTCHAs, create test inboxes, or otherwise needs browser truth from DeepSyte.
 license: MIT
-compatibility: Requires the ScreenshotsMCP MCP server connected and authenticated, or the ScreenshotsMCP CLI when terminal access is available.
+compatibility: Requires the DeepSyte MCP server connected and authenticated, or the DeepSyte CLI when terminal access is available.
 metadata:
-  author: screenshotsmcp
+  author: deepsyte
   version: "2.5.0"
-  website: https://www.screenshotmcp.com
-  api: https://screenshotsmcp-api-production.up.railway.app
+  website: https://www.deepsyte.com
+  api: https://deepsyte-api-production.up.railway.app
 ---
 
-# ScreenshotsMCP
+# DeepSyte
 
 Use this skill to give the assistant eyes and hands for the web. Use it to choose the right tool path, then read only the relevant workflow or reference for the task.
 
 ## Discovery model
 
-- Treat ScreenshotsMCP tools as atomic actions.
+- Treat DeepSyte tools as atomic actions.
 - Treat this skill as broad guidance for choosing the right path.
 - Treat packaged workflows as targeted procedures for repeatable multi-step jobs.
 - When the task is an audit, verification flow, or another repeatable multi-step procedure, check the available workflows before improvising.
@@ -45,8 +45,8 @@ Some sites reject traffic from the Railway-hosted cloud browser at the fingerpri
 When a valid-looking submit silently does nothing (URL does not change, no error, form resets), escalate instead of retrying:
 
 1. Start with MCP tools: `browser_navigate`, `smart_login`, `solve_captcha`.
-2. If MCP stalls, switch to the CLI local browser: `npx screenshotsmcp browser:start <url>`, then drive real Chrome one atomic command at a time with `browser:click`, `browser:fill`, `browser:paste` (React-compatible), `browser:wait-for`, `browser:inspect`, and `browser:eval`. Real Chrome on the user's residential IP passes trust checks the cloud browser cannot, often without even showing a CAPTCHA checkbox.
-3. Always call `screenshotsmcp auth:plan <url>` before a fresh auth attempt and `screenshotsmcp auth:record <url> <outcome>` after. Inbox, password, and per-site auth state persist so the next run resumes correctly.
+2. If MCP stalls, switch to the CLI local browser: `npx deepsyte browser:start <url>`, then drive real Chrome one atomic command at a time with `browser:click`, `browser:fill`, `browser:paste` (React-compatible), `browser:wait-for`, `browser:inspect`, and `browser:eval`. Real Chrome on the user's residential IP passes trust checks the cloud browser cannot, often without even showing a CAPTCHA checkbox.
+3. Always call `deepsyte auth:plan <url>` before a fresh auth attempt and `deepsyte auth:record <url> <outcome>` after. Inbox, password, and per-site auth state persist so the next run resumes correctly.
 4. Use `+alias` emails (e.g. `you+smithery@agentmail.to`) to reuse a single inbox for multiple signups.
 
 The interactive rule: after every `browser:*` command, read the returned PNG, confirm the state, then issue the next command. No preset scripts.
@@ -66,7 +66,7 @@ Use browser session tools when the user needs clicks, typing, hover states, navi
 - Start with `browser_navigate` and carry the returned `sessionId` through the workflow.
 - Prefer `browser_get_accessibility_tree` when you need structure, forms, buttons, and labels.
 - Always call `browser_close` when the workflow is finished.
-- **Always surface the `Run URL` returned by `browser_navigate` and `browser_close` to the user at the end of the task** (e.g. "View this run: https://www.screenshotmcp.com/dashboard/runs/..."). The dashboard shows the live timeline, captures, replay, console, and network evidence — it is the primary way users review what the agent did. If a `Share URL` is also returned, include it so teammates without an account can review the run.
+- **Always surface the `Run URL` returned by `browser_navigate` and `browser_close` to the user at the end of the task** (e.g. "View this run: https://www.deepsyte.com/dashboard/runs/..."). The dashboard shows the live timeline, captures, replay, console, and network evidence — it is the primary way users review what the agent did. If a `Share URL` is also returned, include it so teammates without an account can review the run.
 
 ### 3. Auth, sign-up, and verification
 Use the auth workflow when the user needs to test protected or multi-step flows.

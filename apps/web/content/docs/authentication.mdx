@@ -1,15 +1,15 @@
 ---
 title: Authentication
-description: Create and manage API keys for ScreenshotsMCP.
+description: Create and manage API keys for DeepSyte.
 ---
 
 ## API Keys
 
-Every request to ScreenshotsMCP requires an API key. Keys are scoped to your account and track usage automatically.
+Every request to DeepSyte requires an API key. Keys are scoped to your account and track usage automatically.
 
 ## Creating a Key
 
-1. Sign in at [screenshotsmcp.com/dashboard](/dashboard)
+1. Sign in at [deepsyte.com/dashboard](/dashboard)
 2. Go to **API Keys**
 3. Click **Create new key**
 4. Copy the key — it starts with `sk_live_`
@@ -25,7 +25,7 @@ Every request to ScreenshotsMCP requires an API key. Keys are scoped to your acc
 Your API key is embedded in the server URL:
 
 ```
-https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY
+https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY
 ```
 
 ### REST API
@@ -33,7 +33,7 @@ https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY
 Pass your key in the `Authorization` header:
 
 ```bash
-curl -X POST https://screenshotsmcp-api-production.up.railway.app/v1/screenshot \
+curl -X POST https://deepsyte-api-production.up.railway.app/v1/screenshot \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com"}'
@@ -47,10 +47,10 @@ curl -X POST https://screenshotsmcp-api-production.up.railway.app/v1/screenshot 
 
 ## Recommended Auth Testing Workflow
 
-If you use ScreenshotsMCP for website login, sign-up, or verification testing, start with the reusable auth helper:
+If you use DeepSyte for website login, sign-up, or verification testing, start with the reusable auth helper:
 
 ```bash
-npx screenshotsmcp auth:test https://example.com
+npx deepsyte auth:test https://example.com
 ```
 
 This workflow:

@@ -20,7 +20,7 @@ export default function FeedbackButton() {
     const body = encodeURIComponent(
       `${message}\n\n---\nPath: ${typeof window !== "undefined" ? window.location.pathname : ""}\nUA: ${typeof navigator !== "undefined" ? navigator.userAgent : ""}`,
     );
-    window.location.href = `mailto:hello@screenshotmcp.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:hello@deepsyte.com?subject=${subject}&body=${body}`;
     setOpen(false);
     setMessage("");
   };
@@ -80,7 +80,7 @@ export default function FeedbackButton() {
       />
 
       <div className="mt-3 flex items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">Sends to hello@screenshotmcp.com</p>
+        <p className="text-xs text-muted-foreground">Sends to hello@deepsyte.com</p>
         <Button size="sm" onClick={submit} disabled={!message.trim()}>
           Send
         </Button>

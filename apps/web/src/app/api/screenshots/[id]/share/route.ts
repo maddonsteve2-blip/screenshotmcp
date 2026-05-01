@@ -21,7 +21,7 @@ function buildShareUrl(req: NextRequest, token: string) {
   }
   
   // Fallback to canonical domain
-  return `https://www.screenshotmcp.com/shared/screenshots/${encodeURIComponent(token)}`;
+  return `https://www.deepsyte.com/shared/screenshots/${encodeURIComponent(token)}`;
 }
 
 export async function GET(

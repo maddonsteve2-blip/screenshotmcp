@@ -1,12 +1,12 @@
 ---
 title: REST API
-description: Use the ScreenshotsMCP HTTP API directly from any programming language.
+description: Use the DeepSyte HTTP API directly from any programming language.
 ---
 
 ## Base URL
 
 ```
-https://screenshotsmcp-api-production.up.railway.app
+https://deepsyte-api-production.up.railway.app
 ```
 
 ## Authentication
@@ -24,7 +24,7 @@ Authorization: Bearer sk_live_...
 Enqueue a screenshot job.
 
 ```bash
-curl -X POST https://screenshotsmcp-api-production.up.railway.app/v1/screenshot \
+curl -X POST https://deepsyte-api-production.up.railway.app/v1/screenshot \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -62,7 +62,7 @@ curl -X POST https://screenshotsmcp-api-production.up.railway.app/v1/screenshot 
 Poll for screenshot status and get the result URL.
 
 ```bash
-curl https://screenshotsmcp-api-production.up.railway.app/v1/screenshot/abc123 \
+curl https://deepsyte-api-production.up.railway.app/v1/screenshot/abc123 \
   -H "Authorization: Bearer sk_live_..."
 ```
 

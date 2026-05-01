@@ -31,9 +31,9 @@ Navigate to https://example.com, treat this as a public site audit, use the site
 
 Returns a screenshot of the loaded page and a **session ID**. Use this session ID with all other `browser_*` tools to continue interacting with the same page.
 
-When workflow metadata is provided, ScreenshotsMCP also persists structured run outcome context so the dashboard and shared run pages can explain the verdict, findings, evidence coverage, and next actions.
+When workflow metadata is provided, DeepSyte also persists structured run outcome context so the dashboard and shared run pages can explain the verdict, findings, evidence coverage, and next actions.
 
-The `screenshotsmcp perf <url>` and `screenshotsmcp seo <url>` CLI commands call this endpoint with workflow metadata automatically, so their sessions appear in the dashboard Runs UI with full outcome context. `screenshotsmcp review <url>` remains a standalone analysis and does not create a run.
+The `deepsyte perf <url>` and `deepsyte seo <url>` CLI commands call this endpoint with workflow metadata automatically, so their sessions appear in the dashboard Runs UI with full outcome context. `deepsyte review <url>` remains a standalone analysis and does not create a run.
 
 ## Sessions
 

@@ -1,18 +1,18 @@
-# AI Agent Instructions — ScreenshotsMCP
+# AI Agent Instructions — DeepSyte
 
 ## Project Overview
-ScreenshotsMCP is a screenshot-as-a-service platform with an MCP server, REST API, CLI, and web dashboard. Monorepo using Turborepo.
+DeepSyte is a screenshot-as-a-service platform with an MCP server, REST API, CLI, and web dashboard. Monorepo using Turborepo.
 
 ## Architecture
 - **apps/api** — Express API + MCP server + Playwright workers (deployed to Railway)
 - **apps/web** — Next.js dashboard + docs site (deployed to Vercel)
 - **packages/db** — Drizzle ORM schema + Neon Postgres (neon-http driver)
 - **packages/types** — Shared TypeScript types
-- **packages/cli** — npm CLI (`@anthropic/screenshotsmcp`)
+- **packages/cli** — npm CLI (`@anthropic/deepsyte`)
 
 ## Production URLs
 - **Web**: https://web-phi-eight-56.vercel.app
-- **API**: https://screenshotsmcp-api-production.up.railway.app
+- **API**: https://deepsyte-api-production.up.railway.app
 - **Sign-in**: https://web-phi-eight-56.vercel.app/sign-in
 - **Dashboard**: https://web-phi-eight-56.vercel.app/dashboard
 
@@ -52,7 +52,7 @@ GROUP BY day ORDER BY day;
 ### Check deployments
 - **Vercel**: `npx vercel ls` or check Vercel dashboard
 - **Railway**: `railway logs --tail` or `railway up` to deploy
-- **API health**: GET `https://screenshotsmcp-api-production.up.railway.app/health`
+- **API health**: GET `https://deepsyte-api-production.up.railway.app/health`
 
 ## Deploying
 - **API**: Run `railway up` from repo root (NOT git push)
@@ -89,7 +89,7 @@ GROUP BY day ORDER BY day;
 After any feature/tool change, update ALL of these:
 1. MCP Server — `apps/api/src/mcp/server.ts`
 2. CLI — `packages/cli/src/commands/`
-3. SKILL.md — `apps/web/public/.skills/screenshotsmcp/SKILL.md`
+3. SKILL.md — `apps/web/public/.skills/deepsyte/SKILL.md`
 4. llms.txt — `apps/web/public/llms.txt`
 5. Docs — `apps/web/content/docs/`
 6. Install page — `apps/web/src/app/dashboard/install/page.tsx`
