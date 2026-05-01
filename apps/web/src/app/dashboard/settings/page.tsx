@@ -132,7 +132,7 @@ export default function SettingsPage() {
             <p className="text-sm font-medium">What is AgentMail?</p>
             <p className="text-sm text-muted-foreground">
               AgentMail is an API platform that gives AI agents their own email inboxes to send, receive, and act upon emails.
-              ScreenshotsMCP uses AgentMail to power the <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">create_test_inbox</code> and <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">check_inbox</code> tools,
+              DeepSyte uses AgentMail to power the <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">create_test_inbox</code> and <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">check_inbox</code> tools,
               which let your AI assistant create disposable email addresses for testing sign-up flows, reading verification codes, and more.
             </p>
             <div className="flex flex-wrap gap-3 pt-1">

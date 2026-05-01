@@ -203,7 +203,7 @@ export default function KeysPage() {
             https://screenshotsmcp-api-production.up.railway.app/mcp/{activeKey ? activeKey.keyPreview.split("...")[0] + "..." : "YOUR_KEY"}
           </code>
           <p><strong>REST API:</strong> Pass as <code className="bg-muted px-1 rounded">Authorization: Bearer sk_live_...</code> header</p>
-          <p><strong>CLI:</strong> <code className="bg-muted px-1 rounded">screenshotsmcp login --key sk_live_...</code></p>
+          <p><strong>CLI:</strong> <code className="bg-muted px-1 rounded">deepsyte login --key sk_live_...</code></p>
           <p><strong>Playground:</strong> Your key is automatically loaded — just go to Playground and start capturing.</p>
         </CardContent>
       </Card>

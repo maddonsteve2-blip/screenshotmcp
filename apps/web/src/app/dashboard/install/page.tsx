@@ -134,7 +134,7 @@ export default function InstallPage() {
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Install browser truth</h1>
-          <p className="mt-2 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">Connect ScreenshotsMCP so your AI can inspect, test, and verify with real browser evidence.</p>
+          <p className="mt-2 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">Connect DeepSyte so your AI can inspect, test, and verify with real browser evidence.</p>
         </div>
         <Button variant="outline" size="sm" className="gap-2 text-base font-medium" onClick={() => document.getElementById("api-key-section")?.scrollIntoView({ behavior: "smooth" })}>
           <Key className="h-3.5 w-3.5" />
@@ -268,9 +268,9 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
   const t = titles[toolId] || { name: toolId, icon: <Globe className="h-5 w-5" /> };
 
   const cursorDeepLinkConfig = JSON.stringify({ url: mcpKeyUrl });
-  const cursorDeepLink = `cursor://anysphere.cursor-deeplink/mcp/install?name=screenshotsmcp&config=${encodeURIComponent(btoa(cursorDeepLinkConfig))}`;
+  const cursorDeepLink = `cursor://anysphere.cursor-deeplink/mcp/install?name=deepsyte&config=${encodeURIComponent(btoa(cursorDeepLinkConfig))}`;
 
-  const vscodeDeepLinkConfig = JSON.stringify({ name: "screenshotsmcp", type: "http", url: mcpKeyUrl });
+  const vscodeDeepLinkConfig = JSON.stringify({ name: "deepsyte", type: "http", url: mcpKeyUrl });
   const vscodeDeepLink = `vscode:mcp/install?${encodeURIComponent(vscodeDeepLinkConfig)}`;
 
   return (
@@ -297,7 +297,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
               <Step n={1} title="Option A: OAuth (recommended)">
                 <CopyBlock code={`{
   "mcpServers": {
-    "screenshotsmcp": {
+    "deepsyte": {
       "url": "${mcpBaseUrl}"
     }
   }
@@ -320,10 +320,10 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
           {toolId === "vscode" && (
             <>
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-base leading-relaxed text-blue-800 dark:bg-blue-950/20 dark:text-blue-200">
-                <strong>Extension preview:</strong> A native ScreenshotsMCP VS Code extension is now being developed in the monorepo with a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, API key fallback, native MCP registration, screenshot commands, output logs, and a live timeline panel.
+                <strong>Extension preview:</strong> A native DeepSyte VS Code extension is now being developed in the monorepo with a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, API key fallback, native MCP registration, screenshot commands, output logs, and a live timeline panel.
               </div>
               <div className="rounded-lg border bg-muted/40 p-4 text-base leading-relaxed text-muted-foreground">
-                Preview commands include <code className="bg-muted px-1 rounded">ScreenshotsMCP: Sign In</code>, <code className="bg-muted px-1 rounded">ScreenshotsMCP: Check Status</code>, <code className="bg-muted px-1 rounded">ScreenshotsMCP: Take Screenshot</code>, <code className="bg-muted px-1 rounded">ScreenshotsMCP: Open Timeline</code>, <code className="bg-muted px-1 rounded">ScreenshotsMCP: Configure Editor Integration</code>, and <code className="bg-muted px-1 rounded">ScreenshotsMCP: Sync Core Skill</code>. The sidebar also exposes quick actions and recent activity directly in VS Code, and the extension configures the editor and repairs the managed core skill automatically after sign-in when needed.
+                Preview commands include <code className="bg-muted px-1 rounded">DeepSyte: Sign In</code>, <code className="bg-muted px-1 rounded">DeepSyte: Check Status</code>, <code className="bg-muted px-1 rounded">DeepSyte: Take Screenshot</code>, <code className="bg-muted px-1 rounded">DeepSyte: Open Timeline</code>, <code className="bg-muted px-1 rounded">DeepSyte: Configure Editor Integration</code>, and <code className="bg-muted px-1 rounded">DeepSyte: Sync Core Skill</code>. The sidebar also exposes quick actions and recent activity directly in VS Code, and the extension configures the editor and repairs the managed core skill automatically after sign-in when needed.
               </div>
               <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-base leading-relaxed text-green-800 dark:bg-green-950/20 dark:text-green-200">
                 <strong>✨ OAuth — No API key needed!</strong> VS Code supports OAuth. Just use the base URL and you&apos;ll be prompted to sign in.
@@ -332,7 +332,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
                 <CopyBlock code={`{
   "mcp": {
     "servers": {
-      "screenshotsmcp": {
+      "deepsyte": {
         "type": "http",
         "url": "${mcpBaseUrl}"
       }
@@ -361,7 +361,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
               <Step n={1} title="Option A: OAuth (recommended)">
                 <CopyBlock code={`{
   "mcpServers": {
-    "screenshotsmcp": {
+    "deepsyte": {
       "serverUrl": "${mcpBaseUrl}"
     }
   }
@@ -372,7 +372,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
               <Step n={2} title="Option B: API key in URL">
                 <CopyBlock code={`{
   "mcpServers": {
-    "screenshotsmcp": {
+    "deepsyte": {
       "serverUrl": "${mcpKeyUrl}"
     }
   }
@@ -396,7 +396,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
                 </p>
                 <CopyBlock code={`{
   "mcpServers": {
-    "screenshotsmcp": {
+    "deepsyte": {
       "command": "cmd",
       "args": ["/c", "npx", "-y", "mcp-remote@latest", "${mcpBaseUrl}"]
     }
@@ -405,7 +405,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
                 <div className="mt-3">
                   <CopyBlock code={`{
   "mcpServers": {
-    "screenshotsmcp": {
+    "deepsyte": {
       "command": "npx",
       "args": ["-y", "mcp-remote@latest", "${mcpBaseUrl}"]
     }
@@ -418,7 +418,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
               <Step n={2} title="Option B: API key in URL (no browser popup)">
                 <CopyBlock code={`{
   "mcpServers": {
-    "screenshotsmcp": {
+    "deepsyte": {
       "command": "npx",
       "args": ["-y", "mcp-remote@latest", "${mcpKeyUrl}"]
     }
@@ -437,12 +437,12 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
                 <strong>✨ OAuth — No API key needed!</strong> Claude Code supports OAuth. A browser will open to sign in on first use.
               </div>
               <Step n={1} title="Option A: OAuth (recommended)">
-                <CopyBlock code={`claude mcp add --transport http screenshotsmcp -s user ${mcpBaseUrl}`} id="claude-code-oauth" copiedId={copiedId} onCopy={onCopy} />
+                <CopyBlock code={`claude mcp add --transport http deepsyte -s user ${mcpBaseUrl}`} id="claude-code-oauth" copiedId={copiedId} onCopy={onCopy} />
                 <p className="text-xs text-muted-foreground mt-2">Claude Code will open a browser to authorize on first use. No API key needed.</p>
               </Step>
               <Separator />
               <Step n={2} title="Option B: API key in URL">
-                <CopyBlock code={`claude mcp add --transport http screenshotsmcp -s user ${mcpKeyUrl}`} id="claude-code-cmd" copiedId={copiedId} onCopy={onCopy} />
+                <CopyBlock code={`claude mcp add --transport http deepsyte -s user ${mcpKeyUrl}`} id="claude-code-cmd" copiedId={copiedId} onCopy={onCopy} />
               </Step>
               <Step n={3} title="Verify the connection">
                 <p className="text-sm text-muted-foreground">Type <code className="bg-muted px-1.5 py-0.5 rounded font-mono">/mcp</code> in Claude Code to see connected servers.</p>
@@ -453,7 +453,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
           {toolId === "cli" && (
             <>
               <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/20 p-4 text-sm text-blue-800 dark:text-blue-200">
-                <strong>Terminal + browser workflow tool</strong> — Use ScreenshotsMCP directly from the command line, mirror the same remote MCP browser/auth flows for public sites, and escalate to a managed local browser when public cloud execution is not enough.
+                <strong>Terminal + browser workflow tool</strong> — Use DeepSyte directly from the command line, mirror the same remote MCP browser/auth flows for public sites, and escalate to a managed local browser when public cloud execution is not enough.
               </div>
               <Step n={1} title="Recommended: one-command onboarding for a new agent">
                 <CopyBlock code={CLI_SETUP_COMMAND} id="cli-setup" copiedId={copiedId} onCopy={onCopy} />
@@ -469,53 +469,53 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
               </Step>
               <Separator />
               <Step n={4} title="Repair or use it standalone from the terminal">
-                <CopyBlock code={`screenshotsmcp screenshot https://example.com
-screenshotsmcp fullpage https://example.com
-screenshotsmcp responsive https://example.com
-screenshotsmcp auth:test https://example.com
-screenshotsmcp auth:find-login https://example.com
-screenshotsmcp auth:authorize-email
-screenshotsmcp browse https://example.com
-screenshotsmcp browse https://example.com --task-type site_audit --user-goal "Audit public pages for UX regressions" --workflow-name sitewide-performance-audit --auth-scope out --page-set homepage,pricing,docs --required-evidence screenshots,console,network
-screenshotsmcp browse:console <sessionId> --level error
-screenshotsmcp browse:network-errors <sessionId>
-screenshotsmcp browse:a11y <sessionId>
-screenshotsmcp browse:perf <sessionId>
-screenshotsmcp browse:seo <sessionId>
-screenshotsmcp browse:captcha <sessionId>
-screenshotsmcp browse:close <sessionId>
-screenshotsmcp mobile https://example.com
-screenshotsmcp dark https://example.com
-screenshotsmcp review https://example.com
-screenshotsmcp browser open https://example.com
-screenshotsmcp browser open https://example.com --record-video
-screenshotsmcp browser status
-screenshotsmcp browser goto https://example.org
-screenshotsmcp browser back
-screenshotsmcp browser forward
-screenshotsmcp browser click-at 320 480
-screenshotsmcp browser hover ".menu-trigger"
-screenshotsmcp browser wait-for ".results-loaded" --timeout 8000
-screenshotsmcp browser select "select[name=country]" "Australia"
-screenshotsmcp browser viewport 393 852
-screenshotsmcp browser screenshot
-screenshotsmcp browser text
-screenshotsmcp browser console --level error
-screenshotsmcp browser network-errors
-screenshotsmcp browser network-requests --resource-type fetch --min-duration 200
-screenshotsmcp browser evidence --label checkout-bug
-screenshotsmcp browser close --evidence --label checkout-bug
-screenshotsmcp browser cookies get
-screenshotsmcp browser storage getAll --type localStorage
-screenshotsmcp browser eval "document.title"
-screenshotsmcp browser a11y --max-depth 6
-screenshotsmcp browser perf
-screenshotsmcp browser seo
-screenshotsmcp browser close
-screenshotsmcp perf https://example.com
-screenshotsmcp skills sync
-screenshotsmcp --help`} id="cli-commands" copiedId={copiedId} onCopy={onCopy} />
-                <p className="text-xs text-muted-foreground mt-2">Install globally with <code className="bg-muted px-1 rounded">npm install -g screenshotsmcp</code> for ongoing use. For public sites, the CLI now mirrors the remote MCP workflow directly: start auth with <code className="bg-muted px-1 rounded">screenshotsmcp auth:test &lt;url&gt;</code>, use <code className="bg-muted px-1 rounded">screenshotsmcp browse &lt;url&gt;</code> to get a remote session, and add workflow-aware flags such as <code className="bg-muted px-1 rounded">--task-type</code>, <code className="bg-muted px-1 rounded">--user-goal</code>, <code className="bg-muted px-1 rounded">--workflow-name</code>, <code className="bg-muted px-1 rounded">--page-set</code>, and <code className="bg-muted px-1 rounded">--required-evidence</code> when you want the run UI to show an explicit verdict, proof coverage, and next actions. Continue with <code className="bg-muted px-1 rounded">browse:console</code>, <code className="bg-muted px-1 rounded">browse:network-errors</code>, <code className="bg-muted px-1 rounded">browse:a11y</code>, <code className="bg-muted px-1 rounded">browse:perf</code>, <code className="bg-muted px-1 rounded">browse:seo</code>, <code className="bg-muted px-1 rounded">browse:cookies</code>, <code className="bg-muted px-1 rounded">browse:storage</code>, or <code className="bg-muted px-1 rounded">browse:captcha</code> without reopening the page. Use <code className="bg-muted px-1 rounded">screenshotsmcp browser open ...</code> only when you need the separate extension-free managed local browser for localhost, VPN-only, or approval-gated workflows. While that local browser stays open, ScreenshotsMCP continuously captures console logs and network activity, and you can control it with commands such as <code className="bg-muted px-1 rounded">browser status</code>, <code className="bg-muted px-1 rounded">browser goto</code>, <code className="bg-muted px-1 rounded">browser back</code>, <code className="bg-muted px-1 rounded">browser forward</code>, <code className="bg-muted px-1 rounded">browser click-at</code>, <code className="bg-muted px-1 rounded">browser hover</code>, <code className="bg-muted px-1 rounded">browser wait-for</code>, <code className="bg-muted px-1 rounded">browser select</code>, <code className="bg-muted px-1 rounded">browser viewport</code>, <code className="bg-muted px-1 rounded">browser console</code>
+                <CopyBlock code={`deepsyte screenshot https://example.com
+deepsyte fullpage https://example.com
+deepsyte responsive https://example.com
+deepsyte auth:test https://example.com
+deepsyte auth:find-login https://example.com
+deepsyte auth:authorize-email
+deepsyte browse https://example.com
+deepsyte browse https://example.com --task-type site_audit --user-goal "Audit public pages for UX regressions" --workflow-name sitewide-performance-audit --auth-scope out --page-set homepage,pricing,docs --required-evidence screenshots,console,network
+deepsyte browse:console <sessionId> --level error
+deepsyte browse:network-errors <sessionId>
+deepsyte browse:a11y <sessionId>
+deepsyte browse:perf <sessionId>
+deepsyte browse:seo <sessionId>
+deepsyte browse:captcha <sessionId>
+deepsyte browse:close <sessionId>
+deepsyte mobile https://example.com
+deepsyte dark https://example.com
+deepsyte review https://example.com
+deepsyte browser open https://example.com
+deepsyte browser open https://example.com --record-video
+deepsyte browser status
+deepsyte browser goto https://example.org
+deepsyte browser back
+deepsyte browser forward
+deepsyte browser click-at 320 480
+deepsyte browser hover ".menu-trigger"
+deepsyte browser wait-for ".results-loaded" --timeout 8000
+deepsyte browser select "select[name=country]" "Australia"
+deepsyte browser viewport 393 852
+deepsyte browser screenshot
+deepsyte browser text
+deepsyte browser console --level error
+deepsyte browser network-errors
+deepsyte browser network-requests --resource-type fetch --min-duration 200
+deepsyte browser evidence --label checkout-bug
+deepsyte browser close --evidence --label checkout-bug
+deepsyte browser cookies get
+deepsyte browser storage getAll --type localStorage
+deepsyte browser eval "document.title"
+deepsyte browser a11y --max-depth 6
+deepsyte browser perf
+deepsyte browser seo
+deepsyte browser close
+deepsyte perf https://example.com
+deepsyte skills sync
+deepsyte --help`} id="cli-commands" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Install globally with <code className="bg-muted px-1 rounded">npm install -g deepsyte</code> for ongoing use. For public sites, the CLI now mirrors the remote MCP workflow directly: start auth with <code className="bg-muted px-1 rounded">deepsyte auth:test &lt;url&gt;</code>, use <code className="bg-muted px-1 rounded">deepsyte browse &lt;url&gt;</code> to get a remote session, and add workflow-aware flags such as <code className="bg-muted px-1 rounded">--task-type</code>, <code className="bg-muted px-1 rounded">--user-goal</code>, <code className="bg-muted px-1 rounded">--workflow-name</code>, <code className="bg-muted px-1 rounded">--page-set</code>, and <code className="bg-muted px-1 rounded">--required-evidence</code> when you want the run UI to show an explicit verdict, proof coverage, and next actions. Continue with <code className="bg-muted px-1 rounded">browse:console</code>, <code className="bg-muted px-1 rounded">browse:network-errors</code>, <code className="bg-muted px-1 rounded">browse:a11y</code>, <code className="bg-muted px-1 rounded">browse:perf</code>, <code className="bg-muted px-1 rounded">browse:seo</code>, <code className="bg-muted px-1 rounded">browse:cookies</code>, <code className="bg-muted px-1 rounded">browse:storage</code>, or <code className="bg-muted px-1 rounded">browse:captcha</code> without reopening the page. Use <code className="bg-muted px-1 rounded">deepsyte browser open ...</code> only when you need the separate extension-free managed local browser for localhost, VPN-only, or approval-gated workflows. While that local browser stays open, DeepSyte continuously captures console logs and network activity, and you can control it with commands such as <code className="bg-muted px-1 rounded">browser status</code>, <code className="bg-muted px-1 rounded">browser goto</code>, <code className="bg-muted px-1 rounded">browser back</code>, <code className="bg-muted px-1 rounded">browser forward</code>, <code className="bg-muted px-1 rounded">browser click-at</code>, <code className="bg-muted px-1 rounded">browser hover</code>, <code className="bg-muted px-1 rounded">browser wait-for</code>, <code className="bg-muted px-1 rounded">browser select</code>, <code className="bg-muted px-1 rounded">browser viewport</code>, <code className="bg-muted px-1 rounded">browser console</code>
 , <code className="bg-muted px-1 rounded">browser network-errors</code>, <code className="bg-muted px-1 rounded">browser network-requests</code>, <code className="bg-muted px-1 rounded">browser evidence</code>, <code className="bg-muted px-1 rounded">browser cookies</code>, <code className="bg-muted px-1 rounded">browser storage</code>, <code className="bg-muted px-1 rounded">browser eval</code>, <code className="bg-muted px-1 rounded">browser a11y</code>, <code className="bg-muted px-1 rounded">browser perf</code>, <code className="bg-muted px-1 rounded">browser seo</code>, and <code className="bg-muted px-1 rounded">browser close</code> to gather reviewable proof locally.</p>
               </Step>
             </>
@@ -527,7 +527,7 @@ screenshotsmcp --help`} id="cli-commands" copiedId={copiedId} onCopy={onCopy} />
                 <strong>Chrome preview</strong> — The monorepo includes an unpacked Chrome extension under <code className="bg-muted px-1 rounded">packages/chrome-extension</code>.
               </div>
               <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
-                Public pages use the same ScreenshotsMCP Playwright-backed MCP path as the CLI when an API key is configured. Localhost and private pages stay local-first so you can still capture and inspect dev servers.
+                Public pages use the same DeepSyte Playwright-backed MCP path as the CLI when an API key is configured. Localhost and private pages stay local-first so you can still capture and inspect dev servers.
               </div>
               <Step n={1} title="Load the extension in Chrome">
                 <CopyBlock code={`chrome://extensions`} id="chrome-extension-url" copiedId={copiedId} onCopy={onCopy} />

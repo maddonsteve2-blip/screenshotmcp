@@ -14,7 +14,7 @@ const changelog: Entry[] = [
     version: "v2.0",
     tag: "new",
     items: [
-      "CLI with setup command — one-liner install for all IDEs (npx screenshotsmcp setup)",
+      "CLI with setup command — one-liner install for all IDEs (npx deepsyte setup)",
       "Install scripts: install.sh (bash) and install.ps1 (PowerShell)",
       "Session Recording — record browser sessions as .webm video",
       "CAPTCHA Solver — auto-solve Cloudflare Turnstile, reCAPTCHA, hCaptcha",

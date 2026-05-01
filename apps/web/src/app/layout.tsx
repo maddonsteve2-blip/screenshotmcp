@@ -17,27 +17,27 @@ function envValue(value?: string) {
 }
 
 export const metadata: Metadata = {
-  title: "ScreenshotsMCP – Screenshot API + MCP Server",
+  title: "DeepSyte – AI-Powered Website Auditing",
   description:
-    "Give your AI coding assistant eyes. Tools for screenshots, browser automation, SEO audits, and performance testing. Works with Claude and VS Code.",
-  metadataBase: new URL("https://www.screenshotmcp.com"),
+    "See what your website is really doing. AI-powered auditing for SEO, performance, accessibility, and UX — for developers, store owners, and everyone in between.",
+  metadataBase: new URL("https://www.deepsyte.com"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "ScreenshotsMCP – Give your AI coding assistant eyes",
+    title: "DeepSyte – See what your website is really doing",
     description:
-      "46+ AI-powered tools for screenshots, browser automation, SEO audits, performance testing, and accessibility checks. Free forever.",
-    url: "https://www.screenshotmcp.com/",
-    siteName: "ScreenshotsMCP",
+      "AI-powered website auditing for SEO, performance, accessibility, and UX. Works in your IDE, browser, or CLI. Free forever.",
+    url: "https://www.deepsyte.com/",
+    siteName: "DeepSyte",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    site: "@screenshotsmcp",
-    title: "ScreenshotsMCP – Give your AI coding assistant eyes",
+    site: "@deepsyte",
+    title: "DeepSyte – See what your website is really doing",
     description:
-      "46+ AI-powered tools for screenshots, browser automation, SEO audits, and more. Free forever.",
+      "AI-powered website auditing for everyone. SEO, performance, accessibility, and UX — in your IDE, browser, or CLI. Free forever.",
   },
 };
 

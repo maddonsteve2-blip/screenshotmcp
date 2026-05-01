@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Camera, CheckCircle2, XCircle } from "lucide-react";
+import { Eye, CheckCircle2, XCircle } from "lucide-react";
 import { Show } from "@clerk/nextjs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Status — ScreenshotsMCP",
+  title: "Status — DeepSyte",
   description:
-    "Live operational status for the ScreenshotsMCP API, MCP server, dashboard, and webhooks. Pulled directly from the production /health endpoint on every request.",
+    "Live operational status for the DeepSyte API, MCP server, dashboard, and webhooks. Pulled directly from the production /health endpoint on every request.",
   alternates: { canonical: "/status" },
 };
 
@@ -63,7 +63,7 @@ export default async function StatusPage() {
     },
     {
       name: "Dashboard + docs",
-      surface: "web.screenshotmcp.com",
+      surface: "web.deepsyte.com",
       ok: true,
       detail: "You are reading this page — it works.",
     },
@@ -84,7 +84,7 @@ export default async function StatusPage() {
       <header className="border-b border-white/[0.06] py-6">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
-            <Camera className="h-5 w-5" /> ScreenshotsMCP
+            <Eye className="h-5 w-5" /> DeepSyte
           </Link>
           <nav className="flex gap-4 text-sm text-gray-400">
             <Link href="/docs/quickstart" className="hover:text-white transition-colors">Docs</Link>
@@ -157,8 +157,8 @@ export default async function StatusPage() {
         <section className="mt-10 rounded-xl border border-white/[0.06] p-6 text-sm text-gray-400">
           <p>
             Need to report an outage? Email{" "}
-            <a href="mailto:support@screenshotmcp.com" className="text-white underline">
-              support@screenshotmcp.com
+            <a href="mailto:support@deepsyte.com" className="text-white underline">
+              support@deepsyte.com
             </a>{" "}
             with the <code className="rounded bg-white/5 px-1 py-0.5">X-Request-ID</code> from any
             failing response. Every API call returns one — see{" "}

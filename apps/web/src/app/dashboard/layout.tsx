@@ -1,7 +1,7 @@
 import { Inter } from "next/font/google";
 import Link from "next/link";
 import { SignOutButton, UserButton } from "@clerk/nextjs";
-import { Camera, Menu } from "lucide-react";
+import { Eye, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
@@ -18,8 +18,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className={`dashboard-theme ${inter.variable} flex min-h-screen bg-background`}>
       <aside className="sticky top-0 hidden h-screen w-60 border-r lg:flex lg:flex-col">
         <div className="p-6 flex items-center gap-2">
-          <Camera className="h-5 w-5 text-primary" />
-          <span className="text-[1.08rem] font-semibold">ScreenshotsMCP</span>
+          <Eye className="h-5 w-5 text-primary" />
+          <span className="text-[1.08rem] font-semibold">DeepSyte</span>
         </div>
         <Separator />
         <DashboardSidebar />
@@ -41,8 +41,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur lg:hidden">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Camera className="h-4 w-4 text-primary" />
-            <span className="text-base font-semibold">ScreenshotsMCP</span>
+            <Eye className="h-4 w-4 text-primary" />
+            <span className="text-base font-semibold">DeepSyte</span>
           </Link>
 
           <Dialog>

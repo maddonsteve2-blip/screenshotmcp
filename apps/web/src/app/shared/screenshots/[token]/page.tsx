@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { Camera } from "lucide-react";
+import { Eye } from "lucide-react";
 import { SharedScreenshotViewer } from "./shared-screenshot-viewer";
 
 export const dynamic = "force-dynamic";
@@ -40,10 +40,10 @@ export async function generateMetadata({
   const { token } = await params;
   const data = await getShared(token);
   if (!data) {
-    return { title: "Shared screenshot not found — ScreenshotsMCP" };
+    return { title: "Shared screenshot not found — DeepSyte" };
   }
   return {
-    title: `Shared screenshot · ${data.pageTitle ?? data.url} — ScreenshotsMCP`,
+    title: `Shared screenshot · ${data.pageTitle ?? data.url} — DeepSyte`,
     description: `Read-only shared screenshot captured from ${data.url}`,
     openGraph: {
       title: data.pageTitle ?? `Shared screenshot · ${data.url}`,
@@ -66,7 +66,7 @@ export default async function SharedScreenshotPage({
       <header className="border-b border-white/[0.06]">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2 text-sm font-semibold">
-            <Camera className="h-4 w-4" /> ScreenshotsMCP
+            <Eye className="h-4 w-4" /> DeepSyte
           </Link>
           <div className="flex items-center gap-4 text-sm">
             <Link href="/try" className="text-neutral-400 hover:text-white">Try it</Link>
@@ -103,7 +103,7 @@ export default async function SharedScreenshotPage({
 
         <div className="mt-8 rounded-lg border border-white/[0.06] bg-white/[0.02] p-6 text-center">
           <p className="text-sm text-neutral-400">
-            Captured with <Link href="/" className="text-green-400 hover:underline">ScreenshotsMCP</Link>
+            Captured with <Link href="/" className="text-green-400 hover:underline">DeepSyte</Link>
             {" — "}
             the browser your AI can see through.
           </p>

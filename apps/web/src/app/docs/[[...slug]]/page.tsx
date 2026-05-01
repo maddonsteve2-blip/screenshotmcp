@@ -45,14 +45,14 @@ export async function generateMetadata(props: {
   const slug = params.slug?.join('/') || '';
   const path = slug ? `/docs/${slug}` : '/docs';
   return {
-    title: `${page.data.title} – ScreenshotsMCP Docs`,
+    title: `${page.data.title} – DeepSyte Docs`,
     description: page.data.description,
     alternates: { canonical: path },
     openGraph: {
-      title: `${page.data.title} – ScreenshotsMCP Docs`,
+      title: `${page.data.title} – DeepSyte Docs`,
       description: page.data.description,
       url: path,
-      siteName: "ScreenshotsMCP",
+      siteName: "DeepSyte",
       type: "article",
       images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
     },

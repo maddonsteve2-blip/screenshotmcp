@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Camera, CheckCircle2, Clock, Hammer, Lightbulb } from "lucide-react";
+import { Eye, CheckCircle2, Clock, Hammer, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MarketingNavAuth } from "@/components/marketing-nav-auth";
 
 export const metadata: Metadata = {
-  title: "Roadmap — ScreenshotsMCP",
+  title: "Roadmap — DeepSyte",
   description:
-    "Public roadmap for ScreenshotsMCP — what we shipped, what we're building, and what's queued. Email hello@screenshotmcp.com to vote on items.",
+    "Public roadmap for DeepSyte — what we shipped, what we're building, and what's queued. Email hello@deepsyte.com to vote on items.",
   alternates: { canonical: "/roadmap" },
 };
 
@@ -37,7 +37,7 @@ const items: Item[] = [
   { status: "later", title: "Self-hosted edition", detail: "Single-binary deploy with bring-your-own R2 / S3 / browser pool, for regulated industries." },
   { status: "later", title: "Async batch export (CSV / Parquet)", detail: "Bulk capture of 10k+ URLs with downloadable manifests for analytics teams." },
   { status: "later", title: "Built-in scheduled visual regression", detail: "Daily diff your production URLs against baselines, alert on drift via webhooks." },
-  { status: "later", title: "MCP tool marketplace", detail: "Third-party MCP tool authors plug into ScreenshotsMCP for distribution + billing." },
+  { status: "later", title: "MCP tool marketplace", detail: "Third-party MCP tool authors plug into DeepSyte for distribution + billing." },
 ];
 
 const sections: Array<{ status: Status; label: string; Icon: typeof CheckCircle2; tone: string }> = [
@@ -53,8 +53,8 @@ export default function RoadmapPage() {
       <nav className="border-b">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Camera className="h-5 w-5 text-primary" />
-            <span className="text-[1.35rem] font-semibold">ScreenshotsMCP</span>
+            <Eye className="h-5 w-5 text-primary" />
+            <span className="text-[1.35rem] font-semibold">DeepSyte</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/changelog"><Button variant="ghost">Changelog</Button></Link>
@@ -69,7 +69,7 @@ export default function RoadmapPage() {
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">Public roadmap</h1>
           <p className="mt-4 text-lg text-muted-foreground">
             What we shipped, what we&apos;re building right now, what&apos;s next, and what we&apos;re thinking about for later. Vote on items by emailing{" "}
-            <a href="mailto:hello@screenshotmcp.com?subject=Roadmap%20vote" className="text-primary underline">hello@screenshotmcp.com</a>{" "}
+            <a href="mailto:hello@deepsyte.com?subject=Roadmap%20vote" className="text-primary underline">hello@deepsyte.com</a>{" "}
             with the title — we ship the most-requested ones first.
           </p>
         </header>
@@ -99,8 +99,8 @@ export default function RoadmapPage() {
         <section className="mt-16 rounded-2xl border bg-muted/40 p-6 text-sm text-muted-foreground">
           <p>
             Missing something you&apos;d pay for? Email{" "}
-            <a href="mailto:hello@screenshotmcp.com?subject=Feature%20request" className="text-primary underline">
-              hello@screenshotmcp.com
+            <a href="mailto:hello@deepsyte.com?subject=Feature%20request" className="text-primary underline">
+              hello@deepsyte.com
             </a>{" "}
             with the use case — we read every message and quote a delivery date for paid feature requests.
           </p>

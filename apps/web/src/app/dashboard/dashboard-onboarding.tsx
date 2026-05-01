@@ -22,7 +22,7 @@ const steps = [
     description:
       "Install the MCP server in Claude, Cursor, or Windsurf, or use the npx CLI in any terminal. Both ship with ready-to-paste config.",
     href: "/dashboard/install",
-    cta: "Install ScreenshotsMCP",
+    cta: "Install DeepSyte",
   },
   {
     number: 3,

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Camera, ArrowRight, Check, ExternalLink } from "lucide-react";
+import { Eye, ArrowRight, Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MarketingNavAuth } from "@/components/marketing-nav-auth";
 import { competitors, getCompetitor } from "@/lib/competitors";
@@ -26,7 +26,7 @@ export async function generateMetadata(
       title: c.seoTitle,
       description: c.seoDescription,
       url: `/compare/${c.slug}`,
-      siteName: "ScreenshotsMCP",
+      siteName: "DeepSyte",
       type: "article",
       images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
     },
@@ -45,8 +45,8 @@ export default async function CompareCompetitorPage(
       <nav className="border-b">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Camera className="h-5 w-5 text-primary" />
-            <span className="text-[1.35rem] font-semibold">ScreenshotsMCP</span>
+            <Eye className="h-5 w-5 text-primary" />
+            <span className="text-[1.35rem] font-semibold">DeepSyte</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/docs"><Button variant="ghost">Docs</Button></Link>
@@ -60,7 +60,7 @@ export default async function CompareCompetitorPage(
         <header className="mb-12">
           <p className="text-sm text-muted-foreground mb-3">Comparison · updated {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long" })}</p>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-            {c.name} vs ScreenshotsMCP
+            {c.name} vs DeepSyte
           </h1>
           <p className="mt-4 text-xl text-muted-foreground leading-relaxed">{c.tagline}</p>
         </header>
@@ -78,7 +78,7 @@ export default async function CompareCompetitorPage(
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">Feature</th>
                   <th className="px-4 py-3 text-left font-medium">{c.name}</th>
-                  <th className="px-4 py-3 text-left font-medium text-primary">ScreenshotsMCP</th>
+                  <th className="px-4 py-3 text-left font-medium text-primary">DeepSyte</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -94,12 +94,12 @@ export default async function CompareCompetitorPage(
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Pricing and capability rows reflect each provider&apos;s public docs at time of writing. Found something stale?{" "}
-            <a href="mailto:hello@screenshotmcp.com" className="underline">Tell us</a>.
+            <a href="mailto:hello@deepsyte.com" className="underline">Tell us</a>.
           </p>
         </section>
 
         <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-4">When ScreenshotsMCP is the better fit</h2>
+          <h2 className="text-2xl font-semibold mb-4">When DeepSyte is the better fit</h2>
           <ul className="space-y-3">
             {[
               "You want your AI agent (Cursor, Windsurf, Claude) to take screenshots, click, fill forms, and audit pages from one MCP server.",
@@ -124,7 +124,7 @@ export default async function CompareCompetitorPage(
         </section>
 
         <section className="mb-16 rounded-2xl border bg-muted/40 p-8">
-          <h2 className="text-2xl font-semibold mb-3">Try ScreenshotsMCP free</h2>
+          <h2 className="text-2xl font-semibold mb-3">Try DeepSyte free</h2>
           <p className="text-muted-foreground mb-6">
             100 screenshots per month forever, no card required. Wire it into Cursor, Windsurf, Claude, or any MCP-aware AI client in under a minute.
           </p>

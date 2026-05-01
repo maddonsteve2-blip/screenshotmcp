@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Camera, ShieldCheck } from "lucide-react";
+import { Eye, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Security — ScreenshotsMCP",
+  title: "Security — DeepSyte",
   description:
-    "ScreenshotsMCP security practices, responsible disclosure policy, and how to contact our security team.",
+    "DeepSyte security practices, responsible disclosure policy, and how to contact our security team.",
   alternates: { canonical: "/security" },
 };
 
@@ -15,7 +15,7 @@ export default function SecurityPage() {
       <header className="border-b border-white/[0.06] py-6">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
-            <Camera className="h-5 w-5" /> ScreenshotsMCP
+            <Eye className="h-5 w-5" /> DeepSyte
           </Link>
           <nav className="flex gap-4 text-sm text-gray-400">
             <Link href="/status" className="hover:text-white transition-colors">Status</Link>
@@ -40,8 +40,8 @@ export default function SecurityPage() {
           <h2 className="text-lg font-semibold text-white">Contact</h2>
           <p>
             For security issues, email{" "}
-            <a href="mailto:security@screenshotmcp.com" className="text-white underline">
-              security@screenshotmcp.com
+            <a href="mailto:security@deepsyte.com" className="text-white underline">
+              security@deepsyte.com
             </a>
             . We aim to acknowledge reports within one business day and will keep you updated through
             triage, remediation, and disclosure. Please do not file public GitHub issues for

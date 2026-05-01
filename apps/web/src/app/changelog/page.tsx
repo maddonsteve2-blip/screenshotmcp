@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Camera } from "lucide-react";
+import { Eye } from "lucide-react";
 
 type Entry = {
   date: string;
@@ -99,8 +99,8 @@ export default function ChangelogPage() {
       <nav className="border-b">
         <div className="mx-auto max-w-4xl px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-[1.2rem] font-semibold">
-            <Camera className="h-5 w-5 text-primary" />
-            ScreenshotsMCP
+            <Eye className="h-5 w-5 text-primary" />
+            DeepSyte
           </Link>
           <div className="flex gap-4 text-[1.02rem] text-muted-foreground sm:text-lg">
             <Link href="/docs" className="hover:text-foreground">Docs</Link>
@@ -152,8 +152,8 @@ export default function ChangelogPage() {
       <footer className="border-t py-8 mt-16">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 text-base text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Camera className="h-4 w-4" />
-            <span>© 2026 ScreenshotsMCP</span>
+            <Eye className="h-4 w-4" />
+            <span>© 2026 DeepSyte</span>
           </div>
           <div className="flex gap-4">
             <Link href="/docs" className="hover:text-foreground">Docs</Link>

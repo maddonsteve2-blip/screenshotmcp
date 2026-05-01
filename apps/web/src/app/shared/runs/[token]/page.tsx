@@ -185,7 +185,7 @@ export default async function SharedRunPage({ params }: { params: Promise<{ toke
               <p>Shared {formatDate(run.sharedAt)}</p>
             </div>
             <Link href="/" className="inline-flex items-center gap-2 text-foreground hover:text-primary">
-              Open ScreenshotsMCP
+              Open DeepSyte
               <ExternalLink className="h-4 w-4" />
             </Link>
           </div>

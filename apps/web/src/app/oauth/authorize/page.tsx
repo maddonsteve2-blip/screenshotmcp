@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Camera, Shield, CheckCircle, Loader2 } from "lucide-react";
+import { Eye, Shield, CheckCircle, Loader2 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
 
@@ -148,7 +148,7 @@ function AuthorizeContent() {
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <Camera className="h-10 w-10 mx-auto mb-2 text-primary" />
+            <Eye className="h-10 w-10 mx-auto mb-2 text-primary" />
             <CardTitle>Sign in Required</CardTitle>
             <CardDescription>
               Please sign in to authorize this connection.
@@ -168,10 +168,10 @@ function AuthorizeContent() {
     <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <Camera className="h-10 w-10 mx-auto mb-2 text-primary" />
+          <Eye className="h-10 w-10 mx-auto mb-2 text-primary" />
           <CardTitle>Authorize Connection</CardTitle>
           <CardDescription>
-            <strong>{clientId}</strong> wants to connect to your ScreenshotsMCP account in {client.label}.
+            <strong>{clientId}</strong> wants to connect to your DeepSyte account in {client.label}.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -186,7 +186,7 @@ function AuthorizeContent() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground text-center">
-              ScreenshotsMCP uses one active API key. Approving will reuse your current key when possible, and only refresh older legacy keys that cannot be revealed safely.
+              DeepSyte uses one active API key. Approving will reuse your current key when possible, and only refresh older legacy keys that cannot be revealed safely.
             </p>
             <div className="rounded-lg border border-muted bg-muted/30 p-3 text-left text-sm text-muted-foreground space-y-2">
               <p className="font-medium text-foreground">How to finish sign-in</p>

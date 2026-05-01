@@ -532,7 +532,7 @@ export default function WebhooksPage() {
                 <Label htmlFor="webhook-url">URL</Label>
                 <Input
                   id="webhook-url"
-                  placeholder="https://example.com/hooks/screenshotsmcp"
+                  placeholder="https://example.com/hooks/deepsyte"
                   value={createUrl}
                   onChange={(e) => setCreateUrl(e.target.value)}
                   required

@@ -229,7 +229,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                     <Download className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold">Connect ScreenshotsMCP to your workflow</p>
+                    <p className="font-semibold">Connect DeepSyte to your workflow</p>
                     <p className="text-sm text-muted-foreground">Create an API key, connect MCP, and start collecting screenshots, recordings, and proof from real browser runs.</p>
                   </div>
                 </div>
@@ -417,7 +417,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                   <p className="font-medium">{keyCount === 0 ? "Finish install" : "Run and review a session"}</p>
                   <p className="text-muted-foreground">
                     {keyCount === 0
-                      ? "Create your first API key and connect ScreenshotsMCP inside your IDE."
+                      ? "Create your first API key and connect DeepSyte inside your IDE."
                       : "Open the Runs view to review recent sessions before diving into raw artifacts."}
                   </p>
                 </div>
@@ -556,7 +556,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
               <pre className="rounded-md bg-muted p-4 text-sm overflow-x-auto">
                 <code>{`{
   "mcpServers": {
-    "screenshotsmcp": {
+    "deepsyte": {
       "url": "${apiUrl}/mcp",
       "headers": { "x-api-key": "YOUR_API_KEY" }
     }

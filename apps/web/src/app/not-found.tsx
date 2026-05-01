@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Camera, Home, FileQuestion } from "lucide-react";
+import { Eye, Home, FileQuestion } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -8,8 +8,8 @@ export default function NotFound() {
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="max-w-md w-full text-center space-y-6">
         <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <Camera className="h-4 w-4 text-primary" aria-hidden="true" />
-          <span className="font-semibold">ScreenshotsMCP</span>
+          <Eye className="h-4 w-4 text-primary" aria-hidden="true" />
+          <span className="font-semibold">DeepSyte</span>
         </Link>
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
           <FileQuestion className="h-7 w-7" aria-hidden="true" />

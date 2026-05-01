@@ -1,42 +1,42 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Camera } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MarketingNavAuth } from "@/components/marketing-nav-auth";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | ScreenshotsMCP",
-  description: "Privacy Policy for ScreenshotsMCP, including how we handle Google OAuth account data.",
+  title: "Privacy Policy | DeepSyte",
+  description: "Privacy Policy for DeepSyte, including how we handle Google OAuth account data.",
 };
 
 const sections = [
   {
     title: "Information we collect",
     body: [
-      "We collect the information you provide directly to us, including account details, contact information, API key metadata, billing information, support requests, and the browser workflow data you choose to capture through ScreenshotsMCP.",
-      "When you use ScreenshotsMCP to capture screenshots, recordings, logs, or other evidence, we process the data needed to provide those features, secure the service, and maintain your account.",
+      "We collect the information you provide directly to us, including account details, contact information, API key metadata, billing information, support requests, and the browser workflow data you choose to capture through DeepSyte.",
+      "When you use DeepSyte to capture screenshots, recordings, logs, or other evidence, we process the data needed to provide those features, secure the service, and maintain your account.",
     ],
   },
   {
     title: "Google OAuth and Google user data",
     body: [
       "If you sign in with Google, we receive basic account information from Google, which may include your name, email address, profile image, and your Google account identifier.",
-      "We use Google user data only to authenticate you, create and maintain your ScreenshotsMCP account, prevent abuse, and provide the features you request. We do not sell Google user data, and we do not use Google user data for advertising.",
+      "We use Google user data only to authenticate you, create and maintain your DeepSyte account, prevent abuse, and provide the features you request. We do not sell Google user data, and we do not use Google user data for advertising.",
       "We do not share Google user data with third parties except when necessary to operate the service, comply with the law, protect our rights, or with your explicit direction.",
     ],
   },
   {
     title: "How we use information",
     body: [
-      "We use your information to operate, improve, secure, and support ScreenshotsMCP, including authenticating users, storing evidence from browser workflows, processing payments, responding to support requests, and enforcing our terms.",
+      "We use your information to operate, improve, secure, and support DeepSyte, including authenticating users, storing evidence from browser workflows, processing payments, responding to support requests, and enforcing our terms.",
       "We may also use aggregated or de-identified information to understand product usage and improve performance, reliability, and safety.",
     ],
   },
   {
     title: "How we share information",
     body: [
-      "We may share information with service providers that help us run ScreenshotsMCP, such as hosting, authentication, analytics, billing, storage, and support infrastructure providers.",
-      "We may also disclose information if required by law, to respond to legal requests, to investigate misuse, or to protect the rights, safety, and security of ScreenshotsMCP, our users, or others.",
+      "We may share information with service providers that help us run DeepSyte, such as hosting, authentication, analytics, billing, storage, and support infrastructure providers.",
+      "We may also disclose information if required by law, to respond to legal requests, to investigate misuse, or to protect the rights, safety, and security of DeepSyte, our users, or others.",
     ],
   },
   {
@@ -62,7 +62,7 @@ const sections = [
   {
     title: "Contact",
     body: [
-      "If you have questions about this Privacy Policy or our handling of personal information, contact us at hello@screenshotsmcp.com.",
+      "If you have questions about this Privacy Policy or our handling of personal information, contact us at hello@deepsyte.com.",
     ],
   },
 ];
@@ -73,8 +73,8 @@ export default function PrivacyPolicyPage() {
       <nav className="border-b border-white/[0.06] bg-[#07070b]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2.5">
-            <Camera className="h-5 w-5 text-green-400" />
-            <span className="font-[var(--font-heading)] text-[1.35rem] font-bold tracking-tight">ScreenshotsMCP</span>
+            <Eye className="h-5 w-5 text-green-400" />
+            <span className="font-[var(--font-heading)] text-[1.35rem] font-bold tracking-tight">DeepSyte</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/terms-of-service">
@@ -94,7 +94,7 @@ export default function PrivacyPolicyPage() {
             Privacy Policy
           </h1>
           <p className="max-w-3xl text-[1.1rem] leading-relaxed text-gray-400 sm:text-[1.28rem]">
-            This Privacy Policy explains how ScreenshotsMCP collects, uses, shares, and protects information when you use our website,
+            This Privacy Policy explains how DeepSyte collects, uses, shares, and protects information when you use our website,
             dashboard, API, MCP tools, CLI, and related services, including when you sign in with Google.
           </p>
           <p className="text-base text-gray-500">Last updated: April 15, 2026</p>

@@ -74,7 +74,7 @@ const tools: Tool[] = [
     category: "Claude",
     config: `{
   "mcpServers": {
-    "screenshotsmcp": {
+    "deepsyte": {
       "url": "${API_BASE}/mcp/YOUR_API_KEY"
     }
   }
@@ -96,7 +96,7 @@ const tools: Tool[] = [
     subtitle: "CLI",
     icon: "🎯",
     category: "Claude",
-    config: `claude mcp add screenshotsmcp ${API_BASE}/mcp/YOUR_API_KEY -s user`,
+    config: `claude mcp add deepsyte ${API_BASE}/mcp/YOUR_API_KEY -s user`,
     instructions: (
       <div className="space-y-4">
         <p className="text-gray-700">Run this command in your terminal:</p>
@@ -165,7 +165,7 @@ export function InstallDialog({ isOpen, onClose }: { isOpen: boolean; onClose: (
           <>
             {/* Main view - category grid */}
             <div className="flex items-center justify-between px-6 pt-6 pb-2">
-              <h2 className="text-xl font-semibold text-gray-900">Use ScreenshotMCP Anywhere</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Use DeepSyte Anywhere</h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => window.open("/dashboard", "_blank")}

@@ -15,7 +15,7 @@ export function Header() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-2xl">📸</span>
-              <h1 className="text-xl font-bold text-gray-900">ScreenshotsMCP</h1>
+              <h1 className="text-xl font-bold text-gray-900">DeepSyte</h1>
             </div>
             
             <Button

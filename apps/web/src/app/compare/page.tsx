@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Camera, ArrowRight } from "lucide-react";
+import { Eye, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MarketingNavAuth } from "@/components/marketing-nav-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { competitors } from "@/lib/competitors";
 
 export const metadata: Metadata = {
-  title: "ScreenshotsMCP comparisons — vs Browserbase, Browserless, ScreenshotOne, and more",
+  title: "DeepSyte comparisons — vs Browserbase, Browserless, ScreenshotOne, and more",
   description:
     "Honest side-by-side comparisons against the screenshot, browser-as-API, and AI-agent browsing tools you might be evaluating. Pricing, MCP support, visual diff, webhooks, GitHub Action — at a glance.",
   alternates: { canonical: "/compare" },
@@ -19,8 +19,8 @@ export default function CompareIndexPage() {
       <nav className="border-b">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Camera className="h-5 w-5 text-primary" />
-            <span className="text-[1.35rem] font-semibold">ScreenshotsMCP</span>
+            <Eye className="h-5 w-5 text-primary" />
+            <span className="text-[1.35rem] font-semibold">DeepSyte</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/docs"><Button variant="ghost">Docs</Button></Link>
@@ -53,7 +53,7 @@ export default function CompareIndexPage() {
                   href={`/compare/${c.slug}`}
                   className="text-sm font-medium text-primary hover:underline"
                 >
-                  Compare {c.name} vs ScreenshotsMCP →
+                  Compare {c.name} vs DeepSyte →
                 </Link>
               </CardContent>
             </Card>

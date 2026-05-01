@@ -3,7 +3,7 @@ import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: '📸 ScreenshotsMCP',
+      title: '�️ DeepSyte',
     },
     links: [
       { text: 'Home', url: '/' },

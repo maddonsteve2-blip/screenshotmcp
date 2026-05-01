@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "nodejs";
-export const alt = "ScreenshotsMCP – Screenshot API + MCP Server";
+export const alt = "DeepSyte – AI-Powered Website Auditing";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -51,7 +51,7 @@ export default function OGImage() {
               letterSpacing: "-0.02em",
             }}
           >
-            ScreenshotsMCP
+            DeepSyte
           </span>
         </div>
 
@@ -65,7 +65,7 @@ export default function OGImage() {
             textAlign: "center",
           }}
         >
-          Give your AI coding assistant eyes.
+          See what your website is really doing.
         </div>
 
         {/* Feature pills */}

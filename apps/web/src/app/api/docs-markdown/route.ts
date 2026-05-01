@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
     // Extract title from frontmatter
     const titleMatch = raw.match(/^---[\s\S]*?title:\s*(.+?)[\r\n]/);
-    const title = titleMatch ? titleMatch[1].trim() : "ScreenshotsMCP Docs";
+    const title = titleMatch ? titleMatch[1].trim() : "DeepSyte Docs";
 
     const markdown = `# ${title}\n\n${stripped.trim()}\n`;
 

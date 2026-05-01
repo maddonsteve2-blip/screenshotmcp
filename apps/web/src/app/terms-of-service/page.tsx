@@ -1,25 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Camera } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MarketingNavAuth } from "@/components/marketing-nav-auth";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | ScreenshotsMCP",
-  description: "Terms of Service for ScreenshotsMCP.",
+  title: "Terms of Service | DeepSyte",
+  description: "Terms of Service for DeepSyte.",
 };
 
 const sections = [
   {
     title: "Acceptance of terms",
     body: [
-      "By accessing or using ScreenshotsMCP, you agree to these Terms of Service. If you do not agree to these terms, do not use the service.",
+      "By accessing or using DeepSyte, you agree to these Terms of Service. If you do not agree to these terms, do not use the service.",
     ],
   },
   {
     title: "Use of the service",
     body: [
-      "ScreenshotsMCP provides browser automation, screenshots, recordings, audits, developer tools, APIs, MCP integrations, and related services. You may use the service only in compliance with applicable laws, these terms, and any documentation or usage limits we provide.",
+      "DeepSyte provides browser automation, screenshots, recordings, audits, developer tools, APIs, MCP integrations, and related services. You may use the service only in compliance with applicable laws, these terms, and any documentation or usage limits we provide.",
       "You are responsible for the content you submit, the websites and systems you access, and ensuring you have all necessary rights and permissions for the workflows you run.",
     ],
   },
@@ -27,13 +27,13 @@ const sections = [
     title: "Accounts and authentication",
     body: [
       "You are responsible for maintaining the confidentiality of your account credentials, API keys, and any connected authentication methods. You are also responsible for all activity that occurs under your account.",
-      "If you sign in through Google or another identity provider, you authorize us to use the account information needed to authenticate you and operate your ScreenshotsMCP account.",
+      "If you sign in through Google or another identity provider, you authorize us to use the account information needed to authenticate you and operate your DeepSyte account.",
     ],
   },
   {
     title: "Acceptable use",
     body: [
-      "You may not use ScreenshotsMCP to violate the law, infringe the rights of others, access systems without authorization, distribute malware, interfere with service operation, or conduct abusive, deceptive, or harmful activity.",
+      "You may not use DeepSyte to violate the law, infringe the rights of others, access systems without authorization, distribute malware, interfere with service operation, or conduct abusive, deceptive, or harmful activity.",
       "We may suspend or terminate accounts that violate these terms, create security risks, or misuse the platform.",
     ],
   },
@@ -41,19 +41,19 @@ const sections = [
     title: "Customer data and content",
     body: [
       "You retain responsibility for the data, websites, credentials, screenshots, recordings, logs, and other content you submit to or process through the service.",
-      "You grant us the limited rights necessary to host, process, transmit, store, and display that content solely for the purpose of operating, securing, supporting, and improving ScreenshotsMCP.",
+      "You grant us the limited rights necessary to host, process, transmit, store, and display that content solely for the purpose of operating, securing, supporting, and improving DeepSyte.",
     ],
   },
   {
     title: "Third-party services",
     body: [
-      "ScreenshotsMCP may integrate with third-party services such as Google, Clerk, cloud infrastructure, storage, analytics, and billing providers. Your use of those services may also be subject to their separate terms and policies.",
+      "DeepSyte may integrate with third-party services such as Google, Clerk, cloud infrastructure, storage, analytics, and billing providers. Your use of those services may also be subject to their separate terms and policies.",
     ],
   },
   {
     title: "Fees and billing",
     body: [
-      "Some ScreenshotsMCP features may be free, while others may require payment. If you purchase a paid plan, you agree to pay the applicable fees and any taxes. Fees are non-refundable except where required by law or expressly stated otherwise.",
+      "Some DeepSyte features may be free, while others may require payment. If you purchase a paid plan, you agree to pay the applicable fees and any taxes. Fees are non-refundable except where required by law or expressly stated otherwise.",
     ],
   },
   {
@@ -65,8 +65,8 @@ const sections = [
   {
     title: "Disclaimers and limitation of liability",
     body: [
-      "ScreenshotsMCP is provided on an as-is and as-available basis. To the maximum extent permitted by law, we disclaim warranties of merchantability, fitness for a particular purpose, non-infringement, and uninterrupted availability.",
-      "To the maximum extent permitted by law, ScreenshotsMCP and its affiliates will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, or for any loss of data, profits, revenues, goodwill, or business opportunities.",
+      "DeepSyte is provided on an as-is and as-available basis. To the maximum extent permitted by law, we disclaim warranties of merchantability, fitness for a particular purpose, non-infringement, and uninterrupted availability.",
+      "To the maximum extent permitted by law, DeepSyte and its affiliates will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, or for any loss of data, profits, revenues, goodwill, or business opportunities.",
     ],
   },
   {
@@ -78,7 +78,7 @@ const sections = [
   {
     title: "Contact",
     body: [
-      "If you have questions about these Terms of Service, contact us at hello@screenshotsmcp.com.",
+      "If you have questions about these Terms of Service, contact us at hello@deepsyte.com.",
     ],
   },
 ];
@@ -89,8 +89,8 @@ export default function TermsOfServicePage() {
       <nav className="border-b border-white/[0.06] bg-[#07070b]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2.5">
-            <Camera className="h-5 w-5 text-green-400" />
-            <span className="font-[var(--font-heading)] text-[1.35rem] font-bold tracking-tight">ScreenshotsMCP</span>
+            <Eye className="h-5 w-5 text-green-400" />
+            <span className="font-[var(--font-heading)] text-[1.35rem] font-bold tracking-tight">DeepSyte</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/privacy-policy">
@@ -110,7 +110,7 @@ export default function TermsOfServicePage() {
             Terms of Service
           </h1>
           <p className="max-w-3xl text-[1.1rem] leading-relaxed text-gray-400 sm:text-[1.28rem]">
-            These Terms of Service govern your use of ScreenshotsMCP, including our website, dashboard, APIs, CLI, MCP tools,
+            These Terms of Service govern your use of DeepSyte, including our website, dashboard, APIs, CLI, MCP tools,
             browser automation features, and related services.
           </p>
           <p className="text-base text-gray-500">Last updated: April 15, 2026</p>

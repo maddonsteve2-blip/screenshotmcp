@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Camera } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MarketingNavAuth } from "@/components/marketing-nav-auth";
@@ -9,16 +9,16 @@ import { Separator } from "@/components/ui/separator";
 import { PLAN_DESCRIPTORS } from "@screenshotsmcp/types";
 
 export const metadata: Metadata = {
-  title: "Pricing & Plans – ScreenshotsMCP | Free Screenshot API",
+  title: "Pricing & Plans – DeepSyte | AI-Powered Website Auditing",
   description:
-    "Simple, transparent pricing for ScreenshotsMCP. Start free with 100 screenshots/month — no credit card required. Upgrade for higher volume.",
+    "Simple, transparent pricing for DeepSyte. Start free — no credit card required. Upgrade for higher volume.",
   alternates: { canonical: "/pricing" },
   openGraph: {
-    title: "Pricing & Plans – ScreenshotsMCP | Free Screenshot API",
+    title: "Pricing & Plans – DeepSyte | AI-Powered Website Auditing",
     description:
-      "Start free with 100 screenshots/month. Upgrade for higher volume. No credit card required.",
+      "Start free. Upgrade for higher volume. No credit card required.",
     url: "/pricing",
-    siteName: "ScreenshotsMCP",
+    siteName: "DeepSyte",
     type: "website",
     images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
   },
@@ -32,8 +32,8 @@ export default function PricingPage() {
       <nav className="border-b">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Camera className="h-5 w-5 text-primary" />
-            <span className="text-[1.35rem] font-semibold">ScreenshotsMCP</span>
+            <Eye className="h-5 w-5 text-primary" />
+            <span className="text-[1.35rem] font-semibold">DeepSyte</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/docs">
@@ -105,7 +105,7 @@ export default function PricingPage() {
         <div className="mt-16 text-center">
           <p className="mb-4 text-[1.05rem] text-muted-foreground sm:text-lg">
             Need a higher volume plan?{" "}
-            <a href="mailto:hello@screenshotsmcp.com" className="text-primary underline underline-offset-4">
+            <a href="mailto:hello@deepsyte.com" className="text-primary underline underline-offset-4">
               Contact us
             </a>
           </p>
@@ -117,7 +117,7 @@ export default function PricingPage() {
 
       <footer className="border-t mt-16 py-8">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 text-base text-muted-foreground">
-          <span>© {new Date().getFullYear()} ScreenshotsMCP</span>
+          <span>© {new Date().getFullYear()} DeepSyte</span>
           <div className="flex gap-4">
             <Link href="/docs" className="hover:text-foreground">Docs</Link>
             <Link href="/pricing" className="hover:text-foreground">Pricing</Link>

@@ -69,7 +69,7 @@ function buildMarkdown(run: RunSummaryInput): string {
     lines.push(run.outcomeSummary);
   }
   lines.push("");
-  lines.push(`_Generated from ScreenshotsMCP dashboard_`);
+  lines.push(`_Generated from DeepSyte dashboard_`);
   return lines.join("\n");
 }
 
