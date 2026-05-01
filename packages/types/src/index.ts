@@ -12,6 +12,12 @@ export const CORE_SITEWIDE_PERFORMANCE_WORKFLOW_PATH = "workflows/sitewide-perfo
 
 export const CORE_WORKOS_AUTHKIT_WORKFLOW_PATH = "workflows/workos-authkit-signup/WORKFLOW.md";
 
+export const CORE_SEO_AUDIT_WORKFLOW_PATH = "workflows/seo-audit/WORKFLOW.md";
+
+export const CORE_UX_ACCESSIBILITY_AUDIT_WORKFLOW_PATH = "workflows/ux-accessibility-audit/WORKFLOW.md";
+
+export const CORE_RESPONSIVE_AUDIT_WORKFLOW_PATH = "workflows/responsive-audit/WORKFLOW.md";
+
 export const TWO_STEP_ONBOARDING_NUANCE = "For most clients, login + install reaches the same result as setup --client <client>. The main nuances are that install vscode writes a workspace-local .vscode/mcp.json, while install claude-code prints the claude mcp add ... command for you to run manually.";
 
 export function getSetupCommand(client: OnboardingClient = DEFAULT_ONBOARDING_CLIENT): string {

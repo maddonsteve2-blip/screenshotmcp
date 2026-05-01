@@ -18,6 +18,9 @@ const files = {
   CORE_SKILL_CONTENT: join(skillRoot, "SKILL.md"),
   CORE_SITEWIDE_PERFORMANCE_WORKFLOW_CONTENT: join(skillRoot, "workflows", "sitewide-performance-audit", "WORKFLOW.md"),
   CORE_WORKOS_AUTHKIT_WORKFLOW_CONTENT: join(skillRoot, "workflows", "workos-authkit-signup", "WORKFLOW.md"),
+  CORE_SEO_AUDIT_WORKFLOW_CONTENT: join(skillRoot, "workflows", "seo-audit", "WORKFLOW.md"),
+  CORE_UX_ACCESSIBILITY_AUDIT_WORKFLOW_CONTENT: join(skillRoot, "workflows", "ux-accessibility-audit", "WORKFLOW.md"),
+  CORE_RESPONSIVE_AUDIT_WORKFLOW_CONTENT: join(skillRoot, "workflows", "responsive-audit", "WORKFLOW.md"),
 };
 
 const relativeSources = Object.fromEntries(

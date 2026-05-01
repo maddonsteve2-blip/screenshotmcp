@@ -21,7 +21,12 @@ Use this skill to give the assistant eyes and hands for the web. Use it to choos
 - Treat this skill as broad guidance for choosing the right path.
 - Treat packaged workflows as targeted procedures for repeatable multi-step jobs.
 - When the task is an audit, verification flow, or another repeatable multi-step procedure, check the available workflows before improvising.
-- For any site audit, performance audit, SEO audit, UX audit, full audit, or another repeatable multi-page public-site review, read `workflows/sitewide-performance-audit/WORKFLOW.md` before opening browser sessions, running audit tools, or drafting findings.
+- For any repeatable multi-page audit, read the matching workflow before opening browser sessions or running audit tools:
+  - Performance / speed / Core Web Vitals → `workflows/sitewide-performance-audit/WORKFLOW.md`
+  - SEO / meta tags / structured data / ranking → `workflows/seo-audit/WORKFLOW.md`
+  - UX / accessibility / WCAG / a11y → `workflows/ux-accessibility-audit/WORKFLOW.md`
+  - Responsive / mobile / breakpoints / layout → `workflows/responsive-audit/WORKFLOW.md`
+  - General "full audit" → start with performance, then SEO, then UX, then responsive.
 - Do not read every workflow up front. Read only the workflow that matches the task.
 - If terminal access exists and repeated tool calls are likely, prefer the CLI when it is clearly faster than repeated MCP round-trips. If terminal access is not available, stay in MCP.
 - For multi-page performance audits in MCP, avoid opening many new browser sessions in parallel. Measure sequentially unless there is a proven reason to increase concurrency.
@@ -29,6 +34,9 @@ Use this skill to give the assistant eyes and hands for the web. Use it to choos
 ## Available workflows
 
 - `workflows/sitewide-performance-audit/WORKFLOW.md` — use when the user asks why a site is slow, wants the slowest pages identified, or wants a repeatable multi-page performance review.
+- `workflows/seo-audit/WORKFLOW.md` — use when the user asks for an SEO audit, wants to check meta tags, structured data, OG tags, or ranking issues across pages.
+- `workflows/ux-accessibility-audit/WORKFLOW.md` — use when the user asks for a UX audit, accessibility review, WCAG compliance check, or a11y assessment.
+- `workflows/responsive-audit/WORKFLOW.md` — use when the user asks to check responsive design, test breakpoints, verify mobile/tablet layouts, or find layout issues at different screen sizes.
 
 ## Escalation ladder (when MCP silently stalls)
 
@@ -77,7 +85,7 @@ Use the auth workflow when the user needs to test protected or multi-step flows.
 ### 4. Audit and debugging
 Use audit and debug tools when the user wants findings, not just screenshots.
 
-- If the task is a repeatable multi-page performance audit or another repeatable multi-page public-site audit, read `workflows/sitewide-performance-audit/WORKFLOW.md` first.
+- If the task is a repeatable multi-page audit, read the matching workflow first (see Available workflows above).
 - If the user provides the site or base URL but not a page list, infer a representative public page set and start without blocking on clarification.
 - Default authenticated pages to out of scope unless the user explicitly asks for login, dashboard, account, or another protected flow.
 - Ask a blocking clarification question only when the base URL is missing or when protected-page scope is essential and still ambiguous.
@@ -105,7 +113,7 @@ Use audit and debug tools when the user wants findings, not just screenshots.
 - Call out breakpoints, clipping, and hierarchy issues.
 
 ### Site audit
-- Read `workflows/sitewide-performance-audit/WORKFLOW.md` first for repeatable multi-page public-site audits.
+- Read the matching workflow first for repeatable multi-page audits (performance, SEO, UX/accessibility, or responsive — see Available workflows above).
 - If the user gives you a site URL but no page list, infer the public page set and proceed instead of asking permission to start.
 - Use `browser_navigate`.
 - Gather `browser_get_accessibility_tree`, `browser_perf_metrics`, `browser_seo_audit`, `browser_console_logs`, and `browser_network_errors`.

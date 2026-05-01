@@ -5,16 +5,22 @@ import {
   CORE_SKILL_CONTENT,
   CORE_SITEWIDE_PERFORMANCE_WORKFLOW_CONTENT,
   CORE_WORKOS_AUTHKIT_WORKFLOW_CONTENT,
+  CORE_SEO_AUDIT_WORKFLOW_CONTENT,
+  CORE_UX_ACCESSIBILITY_AUDIT_WORKFLOW_CONTENT,
+  CORE_RESPONSIVE_AUDIT_WORKFLOW_CONTENT,
 } from "./skills/content.generated.js";
 
 export const CORE_SKILL_NAME = "screenshotsmcp";
-export const CORE_SKILL_VERSION = "2.5.0";
+export const CORE_SKILL_VERSION = "2.6.0";
 const MANIFEST_SCHEMA_VERSION = 1;
 
 export {
   CORE_SKILL_CONTENT,
   CORE_SITEWIDE_PERFORMANCE_WORKFLOW_CONTENT,
   CORE_WORKOS_AUTHKIT_WORKFLOW_CONTENT,
+  CORE_SEO_AUDIT_WORKFLOW_CONTENT,
+  CORE_UX_ACCESSIBILITY_AUDIT_WORKFLOW_CONTENT,
+  CORE_RESPONSIVE_AUDIT_WORKFLOW_CONTENT,
 };
 
 // ---------------------------------------------------------------------------
@@ -285,6 +291,18 @@ export function syncCoreSkill(): SkillSyncResult {
       {
         content: CORE_WORKOS_AUTHKIT_WORKFLOW_CONTENT,
         relativePath: join("workflows", "workos-authkit-signup", "WORKFLOW.md"),
+      },
+      {
+        content: CORE_SEO_AUDIT_WORKFLOW_CONTENT,
+        relativePath: join("workflows", "seo-audit", "WORKFLOW.md"),
+      },
+      {
+        content: CORE_UX_ACCESSIBILITY_AUDIT_WORKFLOW_CONTENT,
+        relativePath: join("workflows", "ux-accessibility-audit", "WORKFLOW.md"),
+      },
+      {
+        content: CORE_RESPONSIVE_AUDIT_WORKFLOW_CONTENT,
+        relativePath: join("workflows", "responsive-audit", "WORKFLOW.md"),
       },
     ],
     name: CORE_SKILL_NAME,
