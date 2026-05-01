@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     title: "ScreenshotsMCP – Give your AI coding assistant eyes",
     description:
       "46+ AI-powered tools for screenshots, browser automation, SEO audits, performance testing, and accessibility checks. Free forever.",
-    url: "https://www.screenshotmcp.com",
+    url: "https://www.screenshotmcp.com/",
     siteName: "ScreenshotsMCP",
     type: "website",
   },
@@ -54,6 +54,9 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning className={cn("font-sans", outfit.variable, sora.variable)}>
+      <head>
+        <link rel="preload" href="https://pub-79ded844355643e1a17a61cb64962257.r2.dev/assets/hero-video.mp4" as="video" type="video/mp4" />
+      </head>
       <body className={`${outfit.className} flex flex-col min-h-screen`}>
         <ClerkProvider
           publishableKey={publishableKey}

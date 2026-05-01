@@ -424,7 +424,7 @@ export default function HomePage() {
 
           {/* Hero video */}
           <div className="animate-fade-in-up delay-400 mt-14 mx-auto max-w-4xl rounded-xl overflow-hidden border border-white/10 shadow-2xl shadow-green-500/5">
-            <video autoPlay loop muted playsInline className="w-full h-auto">
+            <video autoPlay loop muted playsInline preload="auto" className="w-full h-auto">
               <source src={HERO_VIDEO_URL} type="video/mp4" />
             </video>
           </div>
@@ -620,7 +620,7 @@ export default function HomePage() {
           </p>
           <Link href="/sign-up">
             <Button size="lg" className="bg-green-500 hover:bg-green-400 text-black font-semibold gap-2 px-8 h-12 text-base">
-              <Camera className="h-4 w-4" />
+              <Camera className="h-4 w-4" aria-hidden="true" />
               Start free
             </Button>
           </Link>
