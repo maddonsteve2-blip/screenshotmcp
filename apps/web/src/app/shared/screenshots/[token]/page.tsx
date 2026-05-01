@@ -95,6 +95,7 @@ export default async function SharedScreenshotPage({
 
         <SharedScreenshotViewer
           src={data.publicUrl}
+          shareToken={token}
           width={data.width}
           height={data.height ?? 0}
           annotations={(data.annotations ?? []) as never[]}

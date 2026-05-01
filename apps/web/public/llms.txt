@@ -2,7 +2,7 @@
 
 > Give your AI coding assistant browser truth. Inspect, test, and verify websites with screenshots, browser workflows, audits, and evidence-rich results via MCP tools.
 
-ScreenshotsMCP is a Model Context Protocol (MCP) server with 46+ tools that gives AI coding assistants the ability to see, interact with, and verify websites. It supports remote browser workflows for public pages, managed local browser workflows for private or local environments, and evidence capture for proof-heavy debugging and QA. It works with Claude, Cursor, Windsurf, VS Code, and any MCP-compatible client.
+ScreenshotsMCP is a Model Context Protocol (MCP) server with 47+ tools that gives AI coding assistants the ability to see, interact with, and verify websites. It supports remote browser workflows for public pages, managed local browser workflows for private or local environments, and evidence capture for proof-heavy debugging and QA. It works with Claude, Cursor, Windsurf, VS Code, and any MCP-compatible client.
 
 ## Agent Skill
 
@@ -298,7 +298,7 @@ Rate limits by plan:
 
 ---
 
-## Tools Reference (46+ tools)
+## Tools Reference (47+ tools)
 
 ### Screenshot Tools (no session needed)
 
@@ -425,12 +425,12 @@ Screenshot current page state.
 Params: sessionId
 
 #### browser_get_text
-All visible text (or specific element).
-Params: sessionId, selector (optional)
+All visible text (or specific element). Returns fast "no matching element" error instead of hanging.
+Params: sessionId, selector (optional), timeout (default 5000ms, 500–30000)
 
 #### browser_get_html
-DOM source.
-Params: sessionId, selector (optional), outer
+DOM source. Returns fast "no matching element" error instead of hanging.
+Params: sessionId, selector (optional), outer, timeout (default 5000ms, 500–30000)
 
 #### browser_get_accessibility_tree
 Full a11y tree — best for understanding page structure.
@@ -548,6 +548,11 @@ Params: sender (optional), subject_keyword (optional), max_age_minutes
 #### ux_review
 AI-powered UX review using vision. Returns actionable feedback across Accessibility, SEO, Performance, Navigation, Content, and Mobile-friendliness.
 Params: url, width, height
+
+#### extract_text_from_image
+Extract text from an image using AI vision (OCR). Works on screenshots, photos of text, infographics, social cards, Canva graphics, and any image with embedded text.
+Params: image_url (optional — public URL of image), sessionId (optional — screenshot current page), selector (optional — OCR a specific element), prompt (optional — custom extraction prompt)
+Requires either image_url or sessionId. Use when page text is embedded in images rather than DOM.
 
 ---
 

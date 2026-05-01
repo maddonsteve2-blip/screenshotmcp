@@ -89,7 +89,7 @@ After any feature/tool change, update ALL of these:
 5. Docs — `apps/web/content/docs/`
 6. Install page — `apps/web/src/app/dashboard/install/page.tsx`
 
-Current tool count: 46+ MCP tools, 38 CLI commands.
+Current tool count: 47+ MCP tools, 38 CLI commands.
 
 ## Audit Workflow Gate
 - For any request involving a site audit, performance audit, SEO audit, UX audit, full audit, or another repeatable multi-page website review, read `workflows/sitewide-performance-audit/WORKFLOW.md` before opening browser sessions, running audit tools, or drafting findings.

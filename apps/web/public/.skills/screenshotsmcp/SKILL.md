@@ -60,6 +60,13 @@ Use browser session tools when the user needs clicks, typing, hover states, navi
 - Always call `browser_close` when the workflow is finished.
 - **Always surface the `Run URL` returned by `browser_navigate` and `browser_close` to the user at the end of the task** (e.g. "View this run: https://www.screenshotmcp.com/dashboard/runs/..."). The dashboard shows the live timeline, captures, replay, console, and network evidence — it is the primary way users review what the agent did. If a `Share URL` is also returned, include it so teammates without an account can review the run.
 
+### 2b. Text extraction from images (OCR)
+Use `extract_text_from_image` when the page contains text embedded in images (Canva graphics, social cards, infographics, profile banners, etc.) that cannot be read from the DOM.
+
+- Pass `image_url` for a public image URL, or pass `sessionId` to OCR the current page screenshot.
+- Use `selector` with `sessionId` to OCR a specific element instead of the full page.
+- Override `prompt` to ask specific questions about image content instead of extracting all text.
+
 ### 3. Auth, sign-up, and verification
 Use the auth workflow when the user needs to test protected or multi-step flows.
 

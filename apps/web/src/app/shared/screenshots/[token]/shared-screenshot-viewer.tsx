@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Download, ExternalLink } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import type { Annotation } from "@/components/screenshot-annotations";
 
 /**
@@ -10,11 +12,13 @@ import type { Annotation } from "@/components/screenshot-annotations";
  */
 export function SharedScreenshotViewer({
   src,
+  shareToken,
   width,
   height,
   annotations,
 }: {
   src: string;
+  shareToken: string;
   width: number;
   height: number;
   annotations: Annotation[];
@@ -24,6 +28,8 @@ export function SharedScreenshotViewer({
     h: height || 0,
   });
   const imgRef = useRef<HTMLImageElement | null>(null);
+  const fileName = src.split("?")[0]?.split("/").pop() || "shared-screenshot.png";
+  const downloadHref = `/api/shared/screenshots/${encodeURIComponent(shareToken)}/download`;
 
   // If server-supplied dims are missing, fall back to img onLoad.
   useEffect(() => {
@@ -37,6 +43,25 @@ export function SharedScreenshotViewer({
 
   return (
     <div className="relative overflow-hidden rounded-lg border border-white/10 bg-neutral-900 shadow-2xl">
+      <div className="flex items-center justify-end gap-2 border-b border-white/10 bg-black/20 px-4 py-3">
+        <a
+          href={downloadHref}
+          download={fileName}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          <Download className="h-3.5 w-3.5" />
+          Download image
+        </a>
+        <a
+          href={src}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          Open raw image
+        </a>
+      </div>
       <div className="relative">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

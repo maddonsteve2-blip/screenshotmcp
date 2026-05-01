@@ -847,6 +847,9 @@ server.tool(
     async (args) => {
       const auth = await validateKey(apiKey);
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+      if (args.url.startsWith("file://") || args.url.startsWith("file:///")) {
+        return { content: [{ type: "text", text: "Error: file:// URLs are not supported — the browser runs remotely and cannot access local files. Use an http:// or https:// URL instead." }] };
+      }
       try {
         const outcomeContext = {
           taskType: args.task_type,
@@ -1219,6 +1222,7 @@ server.tool(
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
       selector: z.string().optional().describe("Optional CSS selector to limit text extraction to a specific element (e.g. 'main', '#content', 'article')"),
+      timeout: z.number().int().min(500).max(30000).optional().default(5000).describe("Max time in ms to wait for the selector (default 5000). Lower values fail faster when a selector doesn't match."),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -1227,11 +1231,20 @@ server.tool(
       if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
       try {
         const sel = args.selector || "body";
-        const text = await session.page.locator(sel).first().innerText({ timeout: 5000 });
+        const loc = session.page.locator(sel).first();
+        const count = await loc.count().catch(() => 0);
+        if (sel !== "body" && count === 0) {
+          return { content: [{ type: "text", text: `No element matching selector "${sel}" found on the page. Try a different selector or omit it to get all page text.` }] };
+        }
+        const text = await loc.innerText({ timeout: args.timeout });
         const trimmed = text.length > 30000 ? text.slice(0, 30000) + "\n...(truncated)" : text;
         return { content: [{ type: "text", text: `Page text from "${sel}":\n\n${trimmed}` }] };
       } catch (err) {
-        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("Timeout") || msg.includes("waiting for")) {
+          return { content: [{ type: "text", text: `No element matching selector "${args.selector}" found within ${args.timeout}ms. Try a different selector or omit it to get all page text.` }] };
+        }
+        return { content: [{ type: "text", text: `Error: ${msg}` }] };
       }
     }
   );
@@ -1243,6 +1256,7 @@ server.tool(
       sessionId: z.string().describe("Session ID from browser_navigate"),
       selector: z.string().optional().describe("Optional CSS selector (e.g. 'nav', '#header', 'form'). Omit for full page HTML."),
       outer: z.boolean().default(true).describe("If true, return outerHTML (includes the element itself). If false, return innerHTML (children only)."),
+      timeout: z.number().int().min(500).max(30000).optional().default(5000).describe("Max time in ms to wait for the selector (default 5000). Lower values fail faster when a selector doesn't match."),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -1253,15 +1267,24 @@ server.tool(
         let html: string;
         const source = args.selector || "full page";
         if (args.selector) {
+          const loc = session.page.locator(args.selector).first();
+          const count = await loc.count().catch(() => 0);
+          if (count === 0) {
+            return { content: [{ type: "text", text: `No element matching selector "${args.selector}" found on the page. Try a different selector or omit it to get the full page HTML.` }] };
+          }
           const prop = args.outer ? "outerHTML" : "innerHTML";
-          html = await session.page.locator(args.selector).first().evaluate((el, p) => (el as any)[p], prop);
+          html = await loc.evaluate((el, p) => (el as any)[p], prop, { timeout: args.timeout } as any);
         } else {
           html = await session.page.content();
         }
         const trimmed = html.length > 50000 ? html.slice(0, 50000) + "\n...(truncated)" : html;
         return { content: [{ type: "text", text: `HTML from ${source} (${html.length} chars${html.length > 50000 ? ", truncated" : ""}):\n\n${trimmed}` }] };
       } catch (err) {
-        return { content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }] };
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("Timeout") || msg.includes("waiting for")) {
+          return { content: [{ type: "text", text: `No element matching selector "${args.selector}" found within ${args.timeout}ms. Try a different selector or omit it to get the full page HTML.` }] };
+        }
+        return { content: [{ type: "text", text: `Error: ${msg}` }] };
       }
     }
   );
@@ -4204,6 +4227,83 @@ server.tool(
       } finally {
         if (context) await context.close().catch(() => {});
         await release();
+      }
+    }
+  );
+
+  server.tool(
+    "extract_text_from_image",
+    "Extract text from an image using AI vision (OCR). Works on screenshots, photos of text, infographics, social cards, Canva graphics, and any image with embedded text. Pass an image URL or use within a browser session to extract text from the current page screenshot or a specific element.",
+    {
+      image_url: z.string().optional().describe("Public URL of the image to extract text from. If omitted, sessionId is required and a screenshot of the current page (or element) will be used."),
+      sessionId: z.string().optional().describe("Browser session ID. If provided (without image_url), a screenshot of the current page is used for OCR."),
+      selector: z.string().optional().describe("CSS selector of a specific element to screenshot for OCR (only used with sessionId)."),
+      prompt: z.string().optional().default("Extract ALL text visible in this image. Return the text exactly as it appears, preserving line breaks and structure. If no text is found, say 'No text found.'").describe("Custom prompt for the vision model. Override to ask specific questions about the image content."),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+
+      const kimiKey = process.env.KIMI_API_KEY;
+      if (!kimiKey) return { content: [{ type: "text", text: "Error: Vision API key not configured on the server. Contact the administrator." }] };
+
+      let imageDataUrl: string;
+
+      if (args.image_url) {
+        // Fetch the image and convert to base64 data URL
+        try {
+          const imgRes = await fetch(args.image_url, { signal: AbortSignal.timeout(15000) });
+          if (!imgRes.ok) return { content: [{ type: "text", text: `Error: Failed to fetch image (${imgRes.status}). Make sure the URL is publicly accessible.` }] };
+          const buf = Buffer.from(await imgRes.arrayBuffer());
+          const ct = imgRes.headers.get("content-type") || "image/png";
+          const mimeType = ct.split(";")[0].trim();
+          imageDataUrl = `data:${mimeType};base64,${buf.toString("base64")}`;
+        } catch (err) {
+          return { content: [{ type: "text", text: `Error fetching image: ${err instanceof Error ? err.message : String(err)}` }] };
+        }
+      } else if (args.sessionId) {
+        // Take a screenshot from the browser session
+        const session = await getSession(args.sessionId, auth.userId);
+        if (!session) return { content: [{ type: "text", text: "Error: Session not found or expired." }] };
+        try {
+          let screenshotBuf: Buffer;
+          if (args.selector) {
+            const loc = session.page.locator(args.selector).first();
+            const count = await loc.count().catch(() => 0);
+            if (count === 0) return { content: [{ type: "text", text: `No element matching selector "${args.selector}" found.` }] };
+            screenshotBuf = await loc.screenshot({ type: "png", timeout: 10000 }) as Buffer;
+          } else {
+            screenshotBuf = await session.page.screenshot({ type: "png", fullPage: false }) as Buffer;
+          }
+          imageDataUrl = `data:image/png;base64,${screenshotBuf.toString("base64")}`;
+        } catch (err) {
+          return { content: [{ type: "text", text: `Error capturing screenshot: ${err instanceof Error ? err.message : String(err)}` }] };
+        }
+      } else {
+        return { content: [{ type: "text", text: "Error: Provide either image_url or sessionId. image_url takes a public image URL; sessionId screenshots the current browser page." }] };
+      }
+
+      // Call Kimi vision model for OCR
+      try {
+        const client = new OpenAI({ apiKey: kimiKey, baseURL: "https://api.moonshot.ai/v1" });
+        const response = await client.chat.completions.create({
+          model: "kimi-latest",
+          max_tokens: 4096,
+          messages: [
+            { role: "system", content: "You are a precise text extraction assistant. Extract text from images accurately, preserving formatting and structure." },
+            {
+              role: "user",
+              content: [
+                { type: "image_url", image_url: { url: imageDataUrl } },
+                { type: "text", text: args.prompt },
+              ] as any,
+            },
+          ],
+        });
+        const extracted = response.choices?.[0]?.message?.content || "No text could be extracted.";
+        return { content: [{ type: "text", text: `Extracted text:\n\n${extracted}` }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error during text extraction: ${err instanceof Error ? err.message : String(err)}` }] };
       }
     }
   );
