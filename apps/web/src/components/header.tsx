@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Eye } from "lucide-react";
 import { InstallDialog } from "./install-dialog";
 
 export function Header() {
@@ -14,7 +14,7 @@ export function Header() {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">📸</span>
+              <Eye className="h-5 w-5 text-primary" />
               <h1 className="text-xl font-bold text-gray-900">DeepSyte</h1>
             </div>
             

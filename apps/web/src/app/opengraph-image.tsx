@@ -21,7 +21,7 @@ export default function OGImage() {
           padding: "60px",
         }}
       >
-        {/* Camera icon */}
+        {/* Eye icon */}
         <div
           style={{
             display: "flex",
@@ -35,13 +35,13 @@ export default function OGImage() {
             height="56"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#3b82f6"
+            stroke="#22c55e"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-            <circle cx="12" cy="13" r="3" />
+            <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+            <circle cx="12" cy="12" r="3" />
           </svg>
           <span
             style={{
@@ -88,11 +88,11 @@ export default function OGImage() {
             <div
               key={label}
               style={{
-                background: "rgba(59, 130, 246, 0.15)",
-                border: "1px solid rgba(59, 130, 246, 0.3)",
+                background: "rgba(34, 197, 94, 0.15)",
+                border: "1px solid rgba(34, 197, 94, 0.3)",
                 borderRadius: "9999px",
                 padding: "8px 20px",
-                color: "#93c5fd",
+                color: "#86efac",
                 fontSize: "18px",
                 fontWeight: 500,
               }}
