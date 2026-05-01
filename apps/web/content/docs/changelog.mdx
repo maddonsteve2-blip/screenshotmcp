@@ -8,16 +8,32 @@ description: Every update, fix, and new feature — in one place.
 **New**
 
 - **`accessibility_audit` tool** — Real WCAG 2.1 AA compliance checks: landmarks, skip links, focus indicators, heading hierarchy, image alt text, SVG aria-hidden, color contrast ratios (computed from RGB with WCAG math), form labels, language attribute, and reduced-motion handling. Returns categorized PASS/FAIL/WARN results with WCAG criteria references.
+- **`extract_text_from_image` (OCR) tool** — AI-powered text extraction from screenshots, photos, infographics, and any image with embedded text. Works standalone with a URL or within a browser session. Powered by Kimi k2.5 vision.
+- **`seo_batch_compare` tool** — Compare SEO metadata across 2–10 URLs in one call. Returns a comparison table showing duplicated titles, descriptions, OG tags, and canonical issues across pages.
+- **OCR CLI command** — `npx screenshotsmcp ocr <url>` extracts text from any image via the command line (CLI v1.20.1).
+- **SEO/UX/responsive audit workflows** — New structured workflow files for sitewide performance audits, SEO audits, UX/accessibility reviews, and responsive design checks.
 - **Mobile hamburger navigation** — Nav now collapses into a hamburger menu below 768px. Eliminates horizontal overflow on mobile and tablet viewports.
 
 **Improved**
 
+- **`browser_seo_audit` semantic validation** — Now detects canonical/og:url mismatches, robots.txt sitemap cross-domain issues, `Disallow: /` blocking, and cross-page duplicate titles/descriptions/OG tags within the same browser session.
+- **`og_preview` enhanced** — Social card previews now include semantic validation warnings for OG tag mismatches.
 - **`browser_perf_metrics` LCP fix** — LCP now uses a PerformanceObserver with 5s timeout instead of a synchronous check. No more "N/A" on pages with lazy-loaded LCP elements.
 - **`ux_review` grounded in DOM data** — The AI reviewer now receives verified "ground truth" (landmarks, SVG counts, structured data, perf metrics) so it cannot contradict measured facts. Eliminates false positives like "no alt text" on pages with zero images.
 - **`accessibility_snapshot` description clarified** — Now accurately describes itself as a raw tree viewer and points to `accessibility_audit` for compliance checks.
+- **Browser tool timeouts** — Improved timeout handling and `file://` URL detection with clear error messages.
 - **Responsive footer** — Footer links now wrap on mobile/tablet (`flex-wrap`) instead of causing horizontal overflow.
 - **Code block overflow** — Terminal code blocks use `overflow-x-auto` for long commands on narrow screens.
 - **LCP performance** — Hero H1 no longer starts at opacity:0 (removed fade-in animation), video has preload hint and poster. LCP dropped from ~5.2s to sub-500ms.
+- **Build optimization** — Vercel `ignoreCommand` skips rebuilds when only non-web packages changed (CLI, API, GitHub Action). Estimated ~$60/mo savings on build minutes.
+
+**SEO**
+
+- Added canonical URLs to all pages (homepage, pricing, docs)
+- Added complete Open Graph tags (`og:type`, `og:image`, `og:url`) across all pages
+- Fixed robots.txt sitemap directive
+- Longer, more descriptive page titles for pricing and feature pages
+- OG image switched to Node.js runtime for reliable generation
 
 **Accessibility**
 
