@@ -1660,6 +1660,38 @@ server.tool(
           robotsTxtNote = "Could not check robots.txt";
         }
 
+        // Cross-page duplicate detection within the same browser session
+        if (!session.seoAuditHistory) session.seoAuditHistory = [];
+        const prevAudits = session.seoAuditHistory;
+        for (const prev of prevAudits) {
+          if (prev.url === seo.url) continue;
+          if (seo.title && prev.title === seo.title) {
+            seoWarnings.push(`⚠️ DUPLICATE TITLE: identical to previously audited page ${prev.url}`);
+          }
+          if (seo.metaDescription && prev.description === seo.metaDescription) {
+            seoWarnings.push(`⚠️ DUPLICATE DESCRIPTION: identical to previously audited page ${prev.url}`);
+          }
+          if (seo.og.title && prev.ogTitle === seo.og.title) {
+            seoWarnings.push(`⚠️ DUPLICATE og:title: identical to previously audited page ${prev.url}`);
+          }
+          if (seo.og.description && prev.ogDescription === seo.og.description) {
+            seoWarnings.push(`⚠️ DUPLICATE og:description: identical to previously audited page ${prev.url}`);
+          }
+          if (seo.og.image && prev.ogImage === seo.og.image) {
+            seoWarnings.push(`⚠️ DUPLICATE og:image: same image as previously audited page ${prev.url}`);
+          }
+        }
+        // Store this audit for future cross-page checks
+        session.seoAuditHistory.push({
+          url: seo.url,
+          title: seo.title,
+          description: seo.metaDescription,
+          canonical: seo.canonical,
+          ogTitle: seo.og.title,
+          ogDescription: seo.og.description,
+          ogImage: seo.og.image,
+        });
+
         const lines = [
           `SEO Audit: ${seo.url}`,
           ``,
@@ -4306,6 +4338,145 @@ server.tool(
         }
 
         return { content };
+      } catch (err) {
+        return { content: [{ type: "text", text: `Error: ${humanizeError(err instanceof Error ? err.message : String(err))}` }] };
+      } finally {
+        if (context) await context.close().catch(() => {});
+        await release();
+      }
+    }
+  );
+
+  server.tool(
+    "seo_batch_compare",
+    "Compare SEO metadata across 2–10 URLs in one call. Returns a comparison table showing which meta fields are duplicated across pages — catches identical titles, descriptions, OG tags, and canonical issues that single-page tools miss. No browser session needed.",
+    {
+      urls: z.array(z.string().url()).min(2).max(10).describe("Array of 2–10 URLs to compare SEO metadata across"),
+    },
+    async (args) => {
+      const auth = await validateKey(apiKey);
+      if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
+
+      const { browser, release } = await browserPool.acquire();
+      let context;
+      try {
+        context = await browser.newContext({
+          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          viewport: { width: 1280, height: 800 },
+          locale: "en-US",
+        });
+
+        const results: Array<{
+          url: string; title: string | null; description: string | null;
+          canonical: string | null; ogTitle: string | null; ogDescription: string | null;
+          ogImage: string | null; ogUrl: string | null; twitterCard: string | null;
+          jsonLdTypes: string[];
+        }> = [];
+
+        for (const url of args.urls) {
+          const page = await context.newPage();
+          try {
+            try { await page.goto(url, { waitUntil: "networkidle", timeout: 20000 }); }
+            catch { await page.goto(url, { waitUntil: "load", timeout: 20000 }); }
+            await page.waitForTimeout(1000);
+
+            const meta = await page.evaluate(() => {
+              const doc = (globalThis as any).document;
+              const getMeta = (name: string) => doc.querySelector(`meta[property="${name}"], meta[name="${name}"]`)?.getAttribute("content") || null;
+              const jsonLd = Array.from(doc.querySelectorAll('script[type="application/ld+json"]')).map((s: any) => {
+                try { return JSON.parse(s.textContent); } catch { return null; }
+              }).filter(Boolean);
+              return {
+                url: (globalThis as any).location.href,
+                title: doc.title || null,
+                description: getMeta("description"),
+                canonical: doc.querySelector('link[rel="canonical"]')?.href || null,
+                ogTitle: getMeta("og:title"),
+                ogDescription: getMeta("og:description"),
+                ogImage: getMeta("og:image"),
+                ogUrl: getMeta("og:url"),
+                twitterCard: getMeta("twitter:card"),
+                jsonLdTypes: jsonLd.map((ld: any) => ld["@type"] || "Unknown"),
+              };
+            });
+            results.push(meta);
+          } catch (err) {
+            results.push({
+              url, title: `ERROR: ${err instanceof Error ? err.message : String(err)}`,
+              description: null, canonical: null, ogTitle: null, ogDescription: null,
+              ogImage: null, ogUrl: null, twitterCard: null, jsonLdTypes: [],
+            });
+          } finally {
+            await page.close();
+          }
+        }
+
+        // Build comparison table
+        const fields = ["title", "description", "canonical", "ogTitle", "ogDescription", "ogImage", "ogUrl", "twitterCard"] as const;
+        const fieldLabels: Record<string, string> = {
+          title: "Title", description: "Meta Description", canonical: "Canonical",
+          ogTitle: "og:title", ogDescription: "og:description", ogImage: "og:image",
+          ogUrl: "og:url", twitterCard: "twitter:card",
+        };
+
+        // Detect duplicates
+        const duplicateWarnings: string[] = [];
+        for (const field of fields) {
+          const values = results.map(r => r[field]).filter(Boolean);
+          const unique = new Set(values);
+          if (values.length > 1 && unique.size === 1) {
+            duplicateWarnings.push(`❌ ALL PAGES SHARE IDENTICAL ${fieldLabels[field]}: "${String(values[0]).slice(0, 80)}"`);
+          } else if (values.length > 1 && unique.size < values.length) {
+            const counts = new Map<string, string[]>();
+            results.forEach(r => {
+              const v = r[field];
+              if (v) {
+                if (!counts.has(v)) counts.set(v, []);
+                counts.get(v)!.push(r.url);
+              }
+            });
+            for (const [val, urls] of counts) {
+              if (urls.length > 1) {
+                duplicateWarnings.push(`⚠️ DUPLICATE ${fieldLabels[field]}: "${String(val).slice(0, 60)}" shared by ${urls.length} pages`);
+              }
+            }
+          }
+        }
+
+        // Canonical mismatch per-page
+        for (const r of results) {
+          if (r.canonical) {
+            const canonNorm = r.canonical.replace(/\/$/, "");
+            const urlNorm = r.url.replace(/\/$/, "");
+            if (canonNorm !== urlNorm) {
+              duplicateWarnings.push(`❌ CANONICAL MISMATCH on ${r.url}: canonical points to ${r.canonical}`);
+            }
+          }
+          if (r.ogUrl) {
+            const ogNorm = r.ogUrl.replace(/\/$/, "");
+            const urlNorm = r.url.replace(/\/$/, "");
+            if (ogNorm !== urlNorm) {
+              duplicateWarnings.push(`❌ og:url MISMATCH on ${r.url}: og:url points to ${r.ogUrl}`);
+            }
+          }
+        }
+
+        // Build output
+        const lines = [
+          `# SEO Batch Compare — ${results.length} pages`,
+          ``,
+          ...(duplicateWarnings.length > 0 ? [`## ⚠️ Issues Found`, ...duplicateWarnings, ``] : [`## ✅ No duplicates or mismatches detected`, ``]),
+          `## Per-Page Summary`,
+          `| URL | Title | Description | Canonical | og:title | og:image | Structured Data |`,
+          `|-----|-------|-------------|-----------|----------|----------|-----------------|`,
+          ...results.map(r => {
+            const shortUrl = r.url.replace(/https?:\/\/(www\.)?/, "").slice(0, 30);
+            const canonOk = r.canonical ? (r.canonical.replace(/\/$/, "") === r.url.replace(/\/$/, "") ? "✅" : "❌ mismatch") : "—";
+            return `| ${shortUrl} | ${(r.title || "—").slice(0, 35)} | ${(r.description || "—").slice(0, 30)} | ${canonOk} | ${(r.ogTitle || "—").slice(0, 30)} | ${r.ogImage ? "✅" : "❌"} | ${r.jsonLdTypes.length > 0 ? r.jsonLdTypes.join(", ") : "None"} |`;
+          }),
+        ];
+
+        return { content: [{ type: "text", text: lines.join("\n") }] };
       } catch (err) {
         return { content: [{ type: "text", text: `Error: ${humanizeError(err instanceof Error ? err.message : String(err))}` }] };
       } finally {

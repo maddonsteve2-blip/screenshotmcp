@@ -44,6 +44,8 @@ export interface Session {
   startUrl?: string;
   startTime: number;
   outcomeContext?: RunOutcomeContext | null;
+  /** Track SEO metadata across pages in the same session for duplicate detection. */
+  seoAuditHistory?: Array<{ url: string; title: string | null; description: string | null; canonical: string | null; ogTitle: string | null; ogDescription: string | null; ogImage: string | null }>;
 }
 
 const sessions = new Map<string, Session>();
