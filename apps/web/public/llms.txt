@@ -329,7 +329,7 @@ iPad (820×1180).
 Params: url, fullPage, format
 
 #### screenshot_responsive
-Desktop + tablet + mobile in ONE call. Most efficient for responsive checks.
+Desktop + tablet + mobile in ONE call. Most efficient for responsive visual comparison. For detailed checks (overflow, touch targets, font sizes), follow up with responsive_audit in a browser session.
 Params: url, fullPage, format
 
 #### screenshot_dark
@@ -357,8 +357,12 @@ Pixel-diff two URLs. Returns diff image + percentage changed + match score.
 Params: urlA, urlB, width, height, threshold
 
 #### find_breakpoints
-Detect responsive breakpoints (scans 320px–1920px).
+Detect responsive breakpoints (scans 320px–1920px). Returns structured width table with overflow status (✅/❌), height, and scrollWidth at each width. For element-level issues (culprit elements, touch targets, font sizes), follow up with responsive_audit.
 Params: url
+
+#### responsive_audit
+One-call responsive design audit in a browser session. Checks: horizontal overflow with culprit elements, touch target sizes (≥44×44px), text below 16px, viewport meta tag, input font sizes for iOS zoom prevention, and interactive element spacing. Returns structured pass/fail report.
+Params: sessionId
 
 #### list_recent_screenshots
 View recent captures.
@@ -561,7 +565,10 @@ Requires either image_url or sessionId. Use when page text is embedded in images
 ## Common Workflows
 
 ### Responsive Testing
-→ `screenshot_responsive` for desktop + tablet + mobile in one call
+→ `find_breakpoints` to scan all widths for overflow and layout shifts
+→ `browser_navigate` (mobile viewport) → `responsive_audit` for element-level checks
+→ `browser_set_viewport` (tablet) → `responsive_audit` again
+→ `screenshot_responsive` for visual comparison across viewports
 
 ### Full Site Audit
 → First read `workflows/sitewide-performance-audit/WORKFLOW.md` before any browser or audit tool use

@@ -680,7 +680,7 @@ server.tool(
 
   server.tool(
     "screenshot_responsive",
-    "Capture screenshots at desktop (1280×800), tablet (820×1180), and mobile (393×852) viewports in one call. By default captures viewport-only (recommended). Set fullPage to true for full-page captures. Returns all three URLs for responsive comparison.",
+    "Capture screenshots at desktop (1280×800), tablet (820×1180), and mobile (393×852) viewports in one call. By default captures viewport-only (recommended). Set fullPage to true for full-page captures. Returns all three URLs for responsive comparison. For detailed responsive checks (overflow, touch targets, font sizes), use responsive_audit in a browser session.",
     {
       url: z.string().url().describe("The URL to screenshot"),
       fullPage: z.boolean().default(false).describe("If true, captures entire scrollable page at each viewport. Default false = viewport-only (recommended)."),
@@ -1098,7 +1098,7 @@ server.tool(
   // @ts-ignore - TS2589: MCP SDK generic inference too deep
   server.tool(
     "browser_set_viewport",
-    "Resize the browser viewport in an existing session. Useful for testing responsive layouts without starting a new session — e.g. switch between desktop (1280×800), tablet (820×1180), and mobile (393×852). Returns a screenshot after resizing.",
+    "Resize the browser viewport in an existing session. Useful for testing responsive layouts without starting a new session — e.g. switch between desktop (1280×800), tablet (820×1180), and mobile (393×852). Returns a screenshot after resizing. After resizing, use responsive_audit to check overflow, touch targets, and font sizes at the new viewport.",
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
       width: z.number().int().min(320).max(3840).describe("New viewport width in pixels"),
@@ -1558,7 +1558,7 @@ server.tool(
 
   server.tool(
     "browser_seo_audit",
-    "Extract SEO metadata from the current page: title, meta description, Open Graph tags, Twitter cards, canonical URL, heading hierarchy, structured data (JSON-LD), robots directives, and image alt text coverage.",
+    "Extract SEO metadata from the current page: title, meta description, Open Graph tags, Twitter cards, canonical URL, heading hierarchy, structured data (JSON-LD), robots directives, and image alt text coverage. To compare SEO metadata across multiple pages at once, use seo_batch_compare.",
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
     },
@@ -2958,7 +2958,7 @@ server.tool(
   // ── Responsive Breakpoint Detection ────────────────────────
   server.tool(
     "find_breakpoints",
-    "Detect responsive layout breakpoints for a URL. Scans 23 viewport widths from 320px to 1920px and returns a structured width table showing height, scrollWidth, and overflow status (✅/❌) at each width. Also identifies significant layout shifts (>15% height change) and extracts CSS @media breakpoints from stylesheets.",
+    "Detect responsive layout breakpoints for a URL. Scans 23 viewport widths from 320px to 1920px and returns a structured width table showing height, scrollWidth, and overflow status (✅/❌) at each width. Also identifies significant layout shifts (>15% height change) and extracts CSS @media breakpoints from stylesheets. For element-level issues (culprit elements, touch targets, font sizes), follow up with responsive_audit in a browser session.",
     {
       url: z.string().url().describe("The URL to analyze"),
     },

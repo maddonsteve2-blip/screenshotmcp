@@ -108,9 +108,10 @@ Use audit and debug tools when the user wants findings, not just screenshots.
 ## Common patterns
 
 ### Responsive check
-- Use `screenshot_responsive`.
-- Compare layout shifts across desktop, tablet, and mobile.
-- Call out breakpoints, clipping, and hierarchy issues.
+- Use `find_breakpoints` to scan all widths for overflow and layout shifts in one call.
+- Use `responsive_audit` in a browser session for element-level checks: overflow culprits, touch targets (≥44×44px), text below 16px, viewport meta, input zoom risk, and interactive element spacing.
+- Use `screenshot_responsive` for visual comparison across desktop, tablet, and mobile.
+- Typical flow: `find_breakpoints` → `browser_navigate` (mobile viewport) → `responsive_audit` → `browser_set_viewport` (tablet) → `responsive_audit`.
 
 ### Site audit
 - Read the matching workflow first for repeatable multi-page audits (performance, SEO, UX/accessibility, or responsive — see Available workflows above).
