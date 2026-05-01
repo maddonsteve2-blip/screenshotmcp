@@ -42,8 +42,17 @@ export async function generateMetadata(props: {
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
+  const slug = params.slug?.join('/') || '';
+  const path = slug ? `/docs/${slug}` : '/docs';
   return {
     title: `${page.data.title} – ScreenshotsMCP Docs`,
     description: page.data.description,
+    alternates: { canonical: path },
+    openGraph: {
+      title: `${page.data.title} – ScreenshotsMCP Docs`,
+      description: page.data.description,
+      url: path,
+      siteName: "ScreenshotsMCP",
+    },
   };
 }

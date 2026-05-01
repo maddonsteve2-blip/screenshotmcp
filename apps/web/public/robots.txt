@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://web-phi-eight-56.vercel.app/sitemap.xml
+Sitemap: https://www.screenshotmcp.com/sitemap.xml

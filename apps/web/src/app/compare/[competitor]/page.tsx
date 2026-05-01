@@ -25,6 +25,8 @@ export async function generateMetadata(
     openGraph: {
       title: c.seoTitle,
       description: c.seoDescription,
+      url: `/compare/${c.slug}`,
+      siteName: "ScreenshotsMCP",
       type: "article",
     },
   };

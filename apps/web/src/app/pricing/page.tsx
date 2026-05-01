@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Camera } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,20 @@ import { MarketingNavAuth } from "@/components/marketing-nav-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PLAN_DESCRIPTORS } from "@screenshotsmcp/types";
+
+export const metadata: Metadata = {
+  title: "Pricing – ScreenshotsMCP",
+  description:
+    "Simple, transparent pricing for ScreenshotsMCP. Start free with 100 screenshots/month — no credit card required. Upgrade for higher volume.",
+  alternates: { canonical: "/pricing" },
+  openGraph: {
+    title: "Pricing – ScreenshotsMCP",
+    description:
+      "Start free with 100 screenshots/month. Upgrade for higher volume. No credit card required.",
+    url: "/pricing",
+    siteName: "ScreenshotsMCP",
+  },
+};
 
 const plans = [PLAN_DESCRIPTORS.free, PLAN_DESCRIPTORS.starter, PLAN_DESCRIPTORS.pro];
 

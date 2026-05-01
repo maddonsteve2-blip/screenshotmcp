@@ -21,9 +21,6 @@ export const metadata: Metadata = {
   description:
     "Give your AI coding assistant eyes. Tools for screenshots, browser automation, SEO audits, and performance testing. Works with Claude and VS Code.",
   metadataBase: new URL("https://www.screenshotmcp.com"),
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     title: "ScreenshotsMCP – Give your AI coding assistant eyes",
     description:
@@ -34,6 +31,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    site: "@screenshotsmcp",
     title: "ScreenshotsMCP – Give your AI coding assistant eyes",
     description:
       "46+ AI-powered tools for screenshots, browser automation, SEO audits, and more. Free forever.",
