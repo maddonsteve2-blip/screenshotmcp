@@ -9,16 +9,18 @@ import { Separator } from "@/components/ui/separator";
 import { PLAN_DESCRIPTORS } from "@screenshotsmcp/types";
 
 export const metadata: Metadata = {
-  title: "Pricing – ScreenshotsMCP",
+  title: "Pricing & Plans – ScreenshotsMCP | Free Screenshot API",
   description:
     "Simple, transparent pricing for ScreenshotsMCP. Start free with 100 screenshots/month — no credit card required. Upgrade for higher volume.",
   alternates: { canonical: "/pricing" },
   openGraph: {
-    title: "Pricing – ScreenshotsMCP",
+    title: "Pricing & Plans – ScreenshotsMCP | Free Screenshot API",
     description:
       "Start free with 100 screenshots/month. Upgrade for higher volume. No credit card required.",
     url: "/pricing",
     siteName: "ScreenshotsMCP",
+    type: "website",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
   },
 };
 

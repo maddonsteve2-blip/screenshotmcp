@@ -53,6 +53,8 @@ export async function generateMetadata(props: {
       description: page.data.description,
       url: path,
       siteName: "ScreenshotsMCP",
+      type: "article",
+      images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
     },
   };
 }
