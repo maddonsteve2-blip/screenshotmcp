@@ -1,5 +1,5 @@
 # VCS / editor
-.git
+# NOTE: Do NOT ignore .git — Vercel's ignoreCommand needs it for git diff
 .github
 .qodo
 .vscode
