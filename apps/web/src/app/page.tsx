@@ -5,7 +5,7 @@ import { Show } from "@clerk/nextjs";
 import { getNpxSetupCommand } from "@screenshotsmcp/types";
 import { Button } from "@/components/ui/button";
 import Script from "next/script";
-import { Camera, Eye, MonitorSmartphone, Search, Lock, Diff, Layers, Terminal, Copy, Check, ArrowRight, Zap, Shield, X, Sparkles } from "lucide-react";
+import { Camera, Eye, MonitorSmartphone, Search, Lock, Diff, Layers, Terminal, Copy, Check, ArrowRight, Zap, Shield, X, Sparkles, Menu } from "lucide-react";
 
 const HERO_VIDEO_URL = "https://pub-79ded844355643e1a17a61cb64962257.r2.dev/assets/hero-video.mp4";
 
@@ -243,7 +243,7 @@ function QuickStartSection() {
             </div>
           </div>
 
-          <div className="space-y-2 p-5 font-mono text-[0.95rem] leading-7 sm:text-base">
+          <div className="space-y-2 p-5 font-mono text-[0.95rem] leading-7 sm:text-base overflow-x-auto">
             {tab.comment && <div className="text-sm text-gray-400">{tab.comment}</div>}
             {tab.commands.map((cmd, i) => (
               <div key={i} className="flex items-center justify-between group">
@@ -320,8 +320,9 @@ function MidPageCTA() {
 }
 
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
-    <div className="min-h-screen bg-[#07070b] text-gray-100">
+    <div className="min-h-screen bg-[#07070b] text-gray-100 overflow-x-hidden">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-green-500 focus:px-4 focus:py-2 focus:text-black focus:font-semibold">Skip to content</a>
       <Script
         id="json-ld"
@@ -348,7 +349,17 @@ export default function HomePage() {
             <Camera className="h-5 w-5 text-green-400" aria-hidden="true" />
             <span className="font-[var(--font-heading)] text-[1.35rem] font-bold tracking-tight">ScreenshotsMCP</span>
           </Link>
-          <div className="flex items-center gap-3">
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-gray-400 hover:text-white transition-colors"
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-3">
             <Link href="/docs">
               <Button variant="ghost" className="text-[1.02rem] text-gray-400 hover:bg-white/5 hover:text-white sm:text-lg">Docs</Button>
             </Link>
@@ -372,6 +383,32 @@ export default function HomePage() {
             </Show>
           </div>
         </div>
+        {/* Mobile menu dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-white/[0.06] px-6 py-4 flex flex-col gap-3 bg-[#07070b]/95 backdrop-blur-xl">
+            <Link href="/docs" onClick={() => setMobileMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start text-[1.02rem] text-gray-400 hover:bg-white/5 hover:text-white">Docs</Button>
+            </Link>
+            <Link href="#pricing" onClick={() => setMobileMenuOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start text-[1.02rem] text-gray-400 hover:bg-white/5 hover:text-white">Pricing</Button>
+            </Link>
+            <Show when="signed-out">
+              <Link href="/sign-in" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start text-[1.02rem] text-gray-400 hover:bg-white/5 hover:text-white">Sign in</Button>
+              </Link>
+              <Link href="/sign-up" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full bg-green-500 text-[1.02rem] font-semibold text-black hover:bg-green-400">
+                  Start free
+                </Button>
+              </Link>
+            </Show>
+            <Show when="signed-in">
+              <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full bg-green-500 text-[1.02rem] font-semibold text-black hover:bg-green-400">Dashboard</Button>
+              </Link>
+            </Show>
+          </div>
+        )}
       </nav>
       </header>
 
@@ -711,7 +748,7 @@ export default function HomePage() {
               </div>
               <p className="text-sm text-gray-400 sm:text-base">Give your AI a real browser — and proof.</p>
             </div>
-            <div className="flex gap-8 text-[0.96rem] text-gray-400 sm:text-base">
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-[0.96rem] text-gray-400 sm:gap-8 sm:text-base">
               <Link href="/docs" className="hover:text-gray-300 transition-colors">Docs</Link>
               <Link href="#pricing" className="hover:text-gray-300 transition-colors">Pricing</Link>
               <Link href="/docs/quickstart" className="hover:text-gray-300 transition-colors">Quick Start</Link>
