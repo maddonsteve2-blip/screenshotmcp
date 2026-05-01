@@ -3,6 +3,32 @@ title: Changelog
 description: Every update, fix, and new feature — in one place.
 ---
 
+## May 2026 — v2.2
+
+**New**
+
+- **`accessibility_audit` tool** — Real WCAG 2.1 AA compliance checks: landmarks, skip links, focus indicators, heading hierarchy, image alt text, SVG aria-hidden, color contrast ratios (computed from RGB with WCAG math), form labels, language attribute, and reduced-motion handling. Returns categorized PASS/FAIL/WARN results with WCAG criteria references.
+- **Mobile hamburger navigation** — Nav now collapses into a hamburger menu below 768px. Eliminates horizontal overflow on mobile and tablet viewports.
+
+**Improved**
+
+- **`browser_perf_metrics` LCP fix** — LCP now uses a PerformanceObserver with 5s timeout instead of a synchronous check. No more "N/A" on pages with lazy-loaded LCP elements.
+- **`ux_review` grounded in DOM data** — The AI reviewer now receives verified "ground truth" (landmarks, SVG counts, structured data, perf metrics) so it cannot contradict measured facts. Eliminates false positives like "no alt text" on pages with zero images.
+- **`accessibility_snapshot` description clarified** — Now accurately describes itself as a raw tree viewer and points to `accessibility_audit` for compliance checks.
+- **Responsive footer** — Footer links now wrap on mobile/tablet (`flex-wrap`) instead of causing horizontal overflow.
+- **Code block overflow** — Terminal code blocks use `overflow-x-auto` for long commands on narrow screens.
+- **LCP performance** — Hero H1 no longer starts at opacity:0 (removed fade-in animation), video has preload hint and poster. LCP dropped from ~5.2s to sub-500ms.
+
+**Accessibility**
+
+- Added `<main>` landmark and skip-to-content link
+- Wrapped nav in `<header>` with `role="banner"`
+- Added `aria-hidden="true"` to all decorative SVG icons
+- Added visible `:focus-visible` indicators (green ring) for keyboard navigation
+- Fixed `text-gray-500` contrast on dark backgrounds → `text-gray-400`
+- Added `prefers-reduced-motion: reduce` CSS rule for all animations
+- Fixed canonical/og:url trailing slash mismatch
+
 ## April 2026 — v2.1
 
 **New**
