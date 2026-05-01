@@ -4238,7 +4238,7 @@ server.tool(
       image_url: z.string().optional().describe("Public URL of the image to extract text from. If omitted, sessionId is required and a screenshot of the current page (or element) will be used."),
       sessionId: z.string().optional().describe("Browser session ID. If provided (without image_url), a screenshot of the current page is used for OCR."),
       selector: z.string().optional().describe("CSS selector of a specific element to screenshot for OCR (only used with sessionId)."),
-      prompt: z.string().optional().default("Extract ALL text visible in this image. Return the text exactly as it appears, preserving line breaks and structure. If no text is found, say 'No text found.'").describe("Custom prompt for the vision model. Override to ask specific questions about the image content."),
+      prompt: z.string().optional().default("Read this image carefully. List every piece of text you can see — headings, body text, labels, buttons, links, watermarks, captions, and any other words. Return the text exactly as it appears, preserving line breaks and structure. If the image contains no text at all, say 'No text found.'").describe("Custom prompt for the vision model. Override to ask specific questions about the image content."),
     },
     async (args) => {
       const auth = await validateKey(apiKey);
@@ -4287,7 +4287,7 @@ server.tool(
       try {
         const client = new OpenAI({ apiKey: kimiKey, baseURL: "https://api.moonshot.ai/v1" });
         const response = await client.chat.completions.create({
-          model: "kimi-latest",
+          model: "kimi-k2.5",
           max_tokens: 4096,
           messages: [
             { role: "system", content: "You are a precise text extraction assistant. Extract text from images accurately, preserving formatting and structure." },
@@ -4299,6 +4299,8 @@ server.tool(
               ] as any,
             },
           ],
+          // @ts-ignore - Kimi specific parameter
+          thinking: { type: "disabled" },
         });
         const extracted = response.choices?.[0]?.message?.content || "No text could be extracted.";
         return { content: [{ type: "text", text: `Extracted text:\n\n${extracted}` }] };
