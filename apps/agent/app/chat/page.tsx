@@ -34,17 +34,19 @@ When asked to audit a site, follow this pattern:
 7. browser_close → clean up session
 8. Synthesise: present findings with specific, actionable recommendations
 
-Always cite evidence (screenshot URLs, metric values, WCAG criteria) in your summaries.
-Be concise and specific — no vague advice like "improve loading speed". Say "LCP is 4.2s; compress hero image and defer render-blocking JS."`;
+CRITICAL OUTPUT RULES:
+- After any tool call, DO NOT describe what you just did or repeat the result in text. The result is automatically rendered in the evidence panel on the left side of the UI — the user can already see it.
+- Only speak when you have a NEW insight, recommendation, or question. Never say things like "I've taken a screenshot" or "Here are the results" or "The screenshot has been captured".
+- For quick single-tool actions (screenshot, perf, seo, accessibility), respond with NO text at all after the tool — the evidence panel speaks for itself.
+- Only write a text response when you've completed a multi-step audit and need to synthesise findings into actionable recommendations.
+- Keep all text responses under 5 bullet points. No prose paragraphs.
+- Be specific: "LCP is 4.2s — compress hero image and defer render-blocking JS" not "improve loading speed"."`;
 
 function ToolStatus({ status, label }: { status: string; label: string }) {
+  if (status === "complete") return null;
   return (
-    <div className={`flex items-center gap-1.5 text-xs py-0.5 ${status === "complete" ? "text-gray-500" : "text-gray-300"}`}>
-      {status === "complete" ? (
-        <span className="text-green-400 font-medium">✓</span>
-      ) : (
-        <span className="inline-flex w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin" />
-      )}
+    <div className="flex items-center gap-1.5 text-xs py-0.5 text-gray-300">
+      <span className="inline-flex w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin" />
       {label}
     </div>
   );
