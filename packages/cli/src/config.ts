@@ -20,7 +20,7 @@ const config = new Conf({
   cwd: join(homedir(), ".config", "deepsyte"),
   schema: {
     apiKey: { type: "string", default: "" },
-    apiUrl: { type: "string", default: "https://deepsyte-api-production.up.railway.app" },
+    apiUrl: { type: "string", default: "https://api.deepsyte.com" },
   },
 });
 
@@ -64,7 +64,7 @@ export function syncApiKeyFromEditorConfigs(currentKey = ""): string {
 }
 
 export function getApiUrl(): string {
-  return (config.get("apiUrl") as string) || "https://deepsyte-api-production.up.railway.app";
+  return (config.get("apiUrl") as string) || "https://api.deepsyte.com";
 }
 
 export function setApiUrl(url: string): void {

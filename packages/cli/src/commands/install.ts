@@ -7,7 +7,7 @@ import { DEFAULT_ONBOARDING_CLIENT, ONBOARDING_CLIENTS, getSetupCommand } from "
 import { getApiKey, getApiUrl } from "../config.js";
 import { printSkillSyncResult, syncCoreSkillForCli } from "../skills.js";
 
-const API_URL_DEFAULT = "https://deepsyte-api-production.up.railway.app";
+const API_URL_DEFAULT = "https://api.deepsyte.com";
 const SUPPORTED_CLIENTS = ONBOARDING_CLIENTS.join(", ");
 
 function getMcpUrl(): string {
