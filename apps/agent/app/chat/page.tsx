@@ -341,7 +341,7 @@ export default function ChatPage() {
   });
 
   return (
-    <div className="flex h-screen bg-gray-950 overflow-hidden">
+    <main id="main-content" className="flex h-screen bg-gray-950 overflow-hidden">
       {/* Left: Evidence Panel — 60% */}
       <div className="flex-[3] min-w-0 overflow-hidden">
         <EvidencePanel items={evidence} />
@@ -356,6 +356,7 @@ export default function ChatPage() {
               viewBox="0 0 20 20"
               fill="currentColor"
               className="w-4 h-4 text-white"
+              aria-hidden="true"
             >
               <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
               <path
@@ -373,7 +374,7 @@ export default function ChatPage() {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 text-xs bg-green-500/10 text-green-400 px-2.5 py-1 rounded-full border border-green-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse motion-reduce:animate-none" aria-hidden="true" />
               Live
             </span>
           </div>
@@ -416,6 +417,6 @@ export default function ChatPage() {
           />
         </div>
       </div>
-    </div>
+    </main>
   );
 }
