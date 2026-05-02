@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useCopilotAction, useCopilotReadable } from "@copilotkit/react-core";
+import { useCopilotAction, useCopilotReadable, useCopilotChatHeadless_c } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
 import { EvidencePanel } from "@/components/evidence-panel";
 import type { EvidenceItem } from "@/lib/types";
@@ -39,6 +39,16 @@ Be concise and specific — no vague advice like "improve loading speed". Say "L
 
 export default function ChatPage() {
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
+  const [auditUrl, setAuditUrl] = useState("");
+  const { sendMessage } = useCopilotChatHeadless_c();
+
+  const handleQuickAudit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const url = auditUrl.trim();
+    if (!url) return;
+    void sendMessage({ id: Date.now().toString(), role: "user", content: `Run a full audit on ${url}` } as any);
+    setAuditUrl("");
+  };
 
   useCopilotReadable({
     description: "Evidence collected so far in this audit session",
@@ -369,14 +379,37 @@ export default function ChatPage() {
           </div>
         </header>
 
+        {/* Quick Audit bar */}
+        <form onSubmit={handleQuickAudit} className="px-4 py-2.5 border-b border-gray-800 bg-gray-950 flex gap-2 flex-shrink-0">
+          <input
+            type="text"
+            value={auditUrl}
+            onChange={(e) => setAuditUrl(e.target.value)}
+            placeholder="https://example.com"
+            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+          />
+          <button
+            type="submit"
+            disabled={!auditUrl.trim()}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-medium text-white transition-colors"
+          >
+            Audit
+          </button>
+        </form>
+
         {/* Chat */}
         <div className="flex-1 overflow-hidden">
           <CopilotChat
             instructions={SYSTEM_PROMPT}
+            suggestions={[
+              { title: "Full site audit", message: "Run a full audit on https://example.com" },
+              { title: "Screenshot", message: "Take a screenshot of https://stripe.com" },
+              { title: "Performance", message: "Check Core Web Vitals for https://vercel.com" },
+              { title: "Accessibility", message: "Run an accessibility audit on https://github.com" },
+            ]}
             labels={{
               title: "DeepSyte Agent",
-              initial:
-                "Hi! I'm **DeepSyte Agent** — your AI-powered web auditing assistant.\n\nI can audit any website for performance, SEO, accessibility, and UX issues — and collect visual evidence along the way.\n\nTry:\n• *Audit https://example.com*\n• *Take a screenshot of stripe.com*\n• *Check accessibility on https://mysite.com*",
+              initial: "Hi! I'm **DeepSyte Agent** — your AI-powered web auditing assistant.\n\nEnter a URL above for a full audit, or use a suggestion below.",
               placeholder: "Ask me to audit a site, take a screenshot, or check performance…",
             }}
             className="h-full"
