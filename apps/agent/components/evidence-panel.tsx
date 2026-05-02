@@ -400,6 +400,15 @@ export function EvidencePanel({ items, activity = [], lockedUrl }: Props) {
           <>
             {activity.length > 0 && <ActivityFeed items={activity} />}
 
+            {/* Loading skeleton when tools are running but no evidence yet */}
+            {activity.some(a => a.status === "running") && items.length === 0 && (
+              <div className="py-4 space-y-3">
+                <div className="h-4 bg-gray-800/80 rounded animate-pulse w-3/4" />
+                <div className="h-24 bg-gray-800/80 rounded animate-pulse" />
+                <div className="h-4 bg-gray-800/80 rounded animate-pulse w-1/2" />
+              </div>
+            )}
+
             {screenshots.length > 0 && (
               <section className="mb-5">
                 <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">

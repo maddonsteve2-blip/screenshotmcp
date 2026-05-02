@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCopilotAction, useCopilotReadable } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
 import { EvidencePanel } from "@/components/evidence-panel";
@@ -64,6 +64,8 @@ export default function ChatPage() {
     setActivity((prev) => [...prev, { id, tool, label, status: "running", timestamp: new Date() }]);
   const endActivity = (id: string, s: "done" | "error") =>
     setActivity((prev) => prev.map((a) => (a.id === id ? { ...a, status: s } : a)));
+
+  useEffect(() => { fetch("/api/warmup").catch(() => {}); }, []);
 
   const handleQuickAudit = (e: React.FormEvent) => {
     e.preventDefault();
