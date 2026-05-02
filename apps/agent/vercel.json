@@ -1,4 +1,5 @@
 {
   "installCommand": "cd ../.. && npm install",
-  "buildCommand": "next build"
+  "buildCommand": "next build",
+  "ignoreCommand": "git diff HEAD^ HEAD --name-only | grep -qE '^(apps/agent|packages/)'"
 }
