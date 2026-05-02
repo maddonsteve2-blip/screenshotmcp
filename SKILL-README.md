@@ -1,4 +1,4 @@
-# ScreenshotsMCP Agent Skill
+# deepsyte Agent Skill
 
 > Give your AI assistant eyes and hands for the web.
 
@@ -14,14 +14,14 @@
 
 **Claude, Cursor, Windsurf, VS Code, Claude Code:**
 
-1. Get API key: https://screenshotsmcp.com/dashboard/keys
+1. Get API key: https://deepsyte.com/dashboard/keys
 2. Add to MCP config:
 
 ```json
 {
   "mcpServers": {
-    "screenshotsmcp": {
-      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    "deepsyte": {
+      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
     }
   }
 }
@@ -31,55 +31,55 @@
 - Cursor: `~/.cursor/mcp.json`
 - Windsurf: `~/.codeium/windsurf/mcp_config.json`
 - VS Code: `.vscode/mcp.json`
-- Claude Code: `claude mcp add screenshotsmcp`
+- Claude Code: `claude mcp add deepsyte`
 
 ### For Terminal (CLI)
 
 ```bash
 # One-line setup
-npx screenshotsmcp setup
+npx deepsyte setup
 
 # Or install globally
-npm install -g screenshotsmcp
-screenshotsmcp login
+npm install -g deepsyte
+deepsyte login
 ```
 
 ## What You Can Do
 
 ### Screenshots
 ```bash
-screenshotsmcp screenshot https://example.com
-screenshotsmcp responsive https://example.com    # Desktop + tablet + mobile
-screenshotsmcp mobile https://example.com        # iPhone viewport
-screenshotsmcp dark https://example.com          # Dark mode
-screenshotsmcp diff https://v1.com https://v2.com # Before/after
+deepsyte screenshot https://example.com
+deepsyte responsive https://example.com    # Desktop + tablet + mobile
+deepsyte mobile https://example.com        # iPhone viewport
+deepsyte dark https://example.com          # Dark mode
+deepsyte diff https://v1.com https://v2.com # Before/after
 ```
 
 ### Browser Automation
 ```bash
 # Start session
-screenshotsmcp browse https://example.com
+deepsyte browse https://example.com
 # → Returns sessionId: sess_abc123
 
 # Interact
-screenshotsmcp browse:fill sess_abc123 "input[name=email]" "user@test.com"
-screenshotsmcp browse:click sess_abc123 "button[type=submit]"
-screenshotsmcp browse:screenshot sess_abc123
-screenshotsmcp browse:close sess_abc123
+deepsyte browse:fill sess_abc123 "input[name=email]" "user@test.com"
+deepsyte browse:click sess_abc123 "button[type=submit]"
+deepsyte browse:screenshot sess_abc123
+deepsyte browse:close sess_abc123
 ```
 
 ### Testing & Audits
 ```bash
-screenshotsmcp seo https://example.com      # SEO metadata
-screenshotsmcp perf https://example.com     # Core Web Vitals
-screenshotsmcp a11y https://example.com     # Accessibility tree
-screenshotsmcp review https://example.com   # AI UX review
+deepsyte seo https://example.com      # SEO metadata
+deepsyte perf https://example.com     # Core Web Vitals
+deepsyte a11y https://example.com     # Accessibility tree
+deepsyte review https://example.com   # AI UX review
 ```
 
 ### Disposable Email
 ```bash
-screenshotsmcp inbox:create                 # Create test inbox
-screenshotsmcp inbox:check <inboxId>       # Read messages + OTP codes
+deepsyte inbox:create                 # Create test inbox
+deepsyte inbox:check <inboxId>       # Read messages + OTP codes
 ```
 
 ## Tool Categories
@@ -102,44 +102,44 @@ screenshotsmcp inbox:check <inboxId>       # Read messages + OTP codes
 ### Screenshot a website
 ```
 User: "Check how my site looks on mobile"
-Agent: screenshotsmcp mobile https://mysite.com
+Agent: deepsyte mobile https://mysite.com
 ```
 
 ### Test a login flow
 ```
 User: "Test my sign-up flow"
 Agent: 
-  1. screenshotsmcp inbox:create
-  2. screenshotsmcp browse https://mysite.com/sign-up
-  3. screenshotsmcp browse:fill ... email fields
-  4. screenshotsmcp solve-captcha sess_xxx
-  5. screenshotsmcp browse:click ... submit
-  6. screenshotsmcp inbox:check ... get OTP
-  7. screenshotsmcp browse:fill ... OTP field
+  1. deepsyte inbox:create
+  2. deepsyte browse https://mysite.com/sign-up
+  3. deepsyte browse:fill ... email fields
+  4. deepsyte solve-captcha sess_xxx
+  5. deepsyte browse:click ... submit
+  6. deepsyte inbox:check ... get OTP
+  7. deepsyte browse:fill ... OTP field
 ```
 
 ### Audit performance
 ```
 User: "Why is my site slow?"
-Agent: screenshotsmcp perf https://mysite.com
+Agent: deepsyte perf https://mysite.com
 ```
 
 ## Authentication
 
-**API Key:** Get at https://screenshotsmcp.com/dashboard/keys
+**API Key:** Get at https://deepsyte.com/dashboard/keys
 - Format: `sk_live_...`
 - MCP: Embedded in server URL
-- CLI: `screenshotsmcp login --key sk_live_...`
+- CLI: `deepsyte login --key sk_live_...`
 
 ## Resources
 
 - **Full Skill Docs:** [SKILL.md](SKILL.md)
-- **Website:** https://screenshotsmcp.com
-- **API:** https://screenshotsmcp-api-production.up.railway.app
-- **CLI Package:** `npm install -g screenshotsmcp`
-- **GitHub:** https://github.com/stevejford/screenshotmcp
+- **Website:** https://deepsyte.com
+- **API:** https://deepsyte-api-production.up.railway.app
+- **CLI Package:** `npm install -g deepsyte`
+- **GitHub:** https://github.com/stevejford/deepsyte
 
-## Why Use ScreenshotsMCP?
+## Why Use deepsyte?
 
 - ✅ **46+ tools** — Most comprehensive screenshot/automation suite
 - ✅ **MCP + CLI** — Works with AI agents and terminal

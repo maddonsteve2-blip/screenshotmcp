@@ -6,7 +6,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
-const videoPath = resolve("screenshotmcpvideo.mp4");
+const videoPath = resolve("deepsytevideo.mp4");
 const buffer = readFileSync(videoPath);
 console.log(`Read ${(buffer.length / 1024 / 1024).toFixed(1)} MB from ${videoPath}`);
 

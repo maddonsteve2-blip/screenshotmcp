@@ -33,11 +33,11 @@ const otherClients = clients.filter((client) => client !== defaultClient);
 const clientSuffix = `# or: ${otherClients.join(", ")}`;
 
 function getSetupCommand(prefix = "", client = defaultClient) {
-  return `${prefix}screenshotsmcp setup --client ${client}`;
+  return `${prefix}deepsyte setup --client ${client}`;
 }
 
 function getInstallCommand(prefix = "", client = defaultClient) {
-  return `${prefix}screenshotsmcp install ${client}`;
+  return `${prefix}deepsyte install ${client}`;
 }
 
 const npxSetupLine = `${getSetupCommand("npx ")}    ${clientSuffix}`;
@@ -45,18 +45,18 @@ const npxInstallLine = `${getInstallCommand("npx ")}    ${clientSuffix}`;
 const cliSetupLine = `${getSetupCommand()}    ${clientSuffix}`;
 const cliInstallLine = `${getInstallCommand()}    ${clientSuffix}`;
 
-const managedOnboardingSentence = `This path authenticates if needed, configures the MCP client, and installs or repairs the managed core ScreenshotsMCP skill in \`${coreSkillInstallPath}\`, including \`${coreWorkflowPath}\`.`;
+const managedOnboardingSentence = `This path authenticates if needed, configures the MCP client, and installs or repairs the managed core deepsyte skill in \`${coreSkillInstallPath}\`, including \`${coreWorkflowPath}\`.`;
 const twoStepNuanceSentence = "For most clients, the two-step `login` + `install` path reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.";
-const publishedSetupSentence = `The CLI handles authentication via OAuth when needed, configures your MCP client, and installs or repairs the managed core ScreenshotsMCP skill in \`${coreSkillInstallPath}\`, including \`${coreWorkflowPath}\`.`;
-const publishedTwoStepSentence = "If you prefer to do onboarding in two steps, run `npx screenshotsmcp login` followed by `npx screenshotsmcp install <client>`. For most clients, that reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.";
-const llmsSetupSentence = `The CLI now also installs or repairs the managed core ScreenshotsMCP skill in \`${coreSkillInstallPath}\`, including \`${coreWorkflowPath}\`, during successful \`login\`, \`install\`, and \`setup\` flows.`;
-const llmsTwoStepSentence = "If you prefer to do onboarding in two steps, run `npx screenshotsmcp login` followed by `npx screenshotsmcp install <client>`. For most clients that reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.";
-const installationStepSentence = `3. Install or repair the managed core ScreenshotsMCP skill in \`${coreSkillInstallPath}\`, including \`${coreWorkflowPath}\``;
+const publishedSetupSentence = `The CLI handles authentication via OAuth when needed, configures your MCP client, and installs or repairs the managed core deepsyte skill in \`${coreSkillInstallPath}\`, including \`${coreWorkflowPath}\`.`;
+const publishedTwoStepSentence = "If you prefer to do onboarding in two steps, run `npx deepsyte login` followed by `npx deepsyte install <client>`. For most clients, that reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.";
+const llmsSetupSentence = `The CLI now also installs or repairs the managed core deepsyte skill in \`${coreSkillInstallPath}\`, including \`${coreWorkflowPath}\`, during successful \`login\`, \`install\`, and \`setup\` flows.`;
+const llmsTwoStepSentence = "If you prefer to do onboarding in two steps, run `npx deepsyte login` followed by `npx deepsyte install <client>`. For most clients that reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.";
+const installationStepSentence = `3. Install or repair the managed core deepsyte skill in \`${coreSkillInstallPath}\`, including \`${coreWorkflowPath}\``;
 const installationWorkflowSentence = `The first packaged workflow is \`${coreSkillInstallPath}/${coreWorkflowPath}\` for repeatable multi-page performance audits.`;
 const installationTwoStepSentence = "That two-step path reaches the same result as `setup --client <client>` for most clients. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.";
-const quickstartSetupSentence = `That flow authenticates if needed, configures the MCP client, and installs or repairs the managed core ScreenshotsMCP skill into \`${coreSkillInstallPath}\`, including \`${coreWorkflowPath}\`.`;
+const quickstartSetupSentence = `That flow authenticates if needed, configures the MCP client, and installs or repairs the managed core deepsyte skill into \`${coreSkillInstallPath}\`, including \`${coreWorkflowPath}\`.`;
 const quickstartTwoStepSentence = "That reaches the same result as `setup --client <client>` for most clients. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.";
-const readmeSkillSentence = `Every successful \`login\`, \`install\`, and \`setup\` flow now also installs or repairs the managed core ScreenshotsMCP skill under \`${coreSkillInstallPath}\`, including \`${coreWorkflowPath}\`, so your MCP connection and local skill stay aligned.`;
+const readmeSkillSentence = `Every successful \`login\`, \`install\`, and \`setup\` flow now also installs or repairs the managed core deepsyte skill under \`${coreSkillInstallPath}\`, including \`${coreWorkflowPath}\`, so your MCP connection and local skill stay aligned.`;
 const readmeTwoStepSentence = "For most clients, `login` + `install` reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.";
 
 const updatedFiles = [];
@@ -86,50 +86,50 @@ function syncFile(relativePath, transforms) {
 }
 
 syncFile("SKILL.md", [
-  { pattern: /npx screenshotsmcp setup --client [^\n]+/, replacement: npxSetupLine, label: "managed onboarding setup command" },
-  { pattern: /npx screenshotsmcp install [^\n]+/, replacement: npxInstallLine, label: "managed onboarding install command" },
-  { pattern: /This path authenticates if needed, configures the MCP client, and installs or repairs the managed core ScreenshotsMCP skill in `[^`]+`, including `[^`]+`\./, replacement: managedOnboardingSentence, label: "managed onboarding description" },
+  { pattern: /npx deepsyte setup --client [^\n]+/, replacement: npxSetupLine, label: "managed onboarding setup command" },
+  { pattern: /npx deepsyte install [^\n]+/, replacement: npxInstallLine, label: "managed onboarding install command" },
+  { pattern: /This path authenticates if needed, configures the MCP client, and installs or repairs the managed core deepsyte skill in `[^`]+`, including `[^`]+`\./, replacement: managedOnboardingSentence, label: "managed onboarding description" },
   { pattern: /For most clients, the two-step `login` \+ `install` path reaches the same result as `setup --client <client>`\. The main nuances are that `install vscode` writes a workspace-local `\.vscode\/mcp\.json`, while `install claude-code` prints the `claude mcp add \.\.\.` command for you to run manually\./, replacement: twoStepNuanceSentence, label: "managed onboarding nuance" },
 ]);
 
-syncFile("screenshotmcp-skill/SKILL.md", [
-  { pattern: /npx screenshotsmcp setup --client [^\n]+/, replacement: npxSetupLine, label: "mirrored onboarding setup command" },
-  { pattern: /npx screenshotsmcp install [^\n]+/, replacement: npxInstallLine, label: "mirrored onboarding install command" },
-  { pattern: /This path authenticates if needed, configures the MCP client, and installs or repairs the managed core ScreenshotsMCP skill in `[^`]+`, including `[^`]+`\./, replacement: managedOnboardingSentence, label: "mirrored onboarding description" },
+syncFile("deepsyte-skill/SKILL.md", [
+  { pattern: /npx deepsyte setup --client [^\n]+/, replacement: npxSetupLine, label: "mirrored onboarding setup command" },
+  { pattern: /npx deepsyte install [^\n]+/, replacement: npxInstallLine, label: "mirrored onboarding install command" },
+  { pattern: /This path authenticates if needed, configures the MCP client, and installs or repairs the managed core deepsyte skill in `[^`]+`, including `[^`]+`\./, replacement: managedOnboardingSentence, label: "mirrored onboarding description" },
   { pattern: /For most clients, the two-step `login` \+ `install` path reaches the same result as `setup --client <client>`\. The main nuances are that `install vscode` writes a workspace-local `\.vscode\/mcp\.json`, while `install claude-code` prints the `claude mcp add \.\.\.` command for you to run manually\./, replacement: twoStepNuanceSentence, label: "mirrored onboarding nuance" },
 ]);
 
-syncFile("apps/web/public/.skills/screenshotsmcp/SKILL.md", [
-  { pattern: /npx screenshotsmcp setup --client [^\n]+/, replacement: npxSetupLine, label: "published skill setup command" },
-  { pattern: /The CLI handles authentication via OAuth when needed, configures your MCP client, and installs or repairs the managed core ScreenshotsMCP skill in `[^`]+`, including `[^`]+`\./, replacement: publishedSetupSentence, label: "published skill setup sentence" },
-  { pattern: /If you prefer to do onboarding in two steps, run `npx screenshotsmcp login` followed by `npx screenshotsmcp install <client>`\. For most clients,? ?that reaches the same result as `setup --client <client>`\. The main nuances are that `install vscode` writes a workspace-local `\.vscode\/mcp\.json`, while `install claude-code` prints the `claude mcp add \.\.\.` command for you to run manually\./, replacement: publishedTwoStepSentence, label: "published skill two-step sentence" },
+syncFile("apps/web/public/.skills/deepsyte/SKILL.md", [
+  { pattern: /npx deepsyte setup --client [^\n]+/, replacement: npxSetupLine, label: "published skill setup command" },
+  { pattern: /The CLI handles authentication via OAuth when needed, configures your MCP client, and installs or repairs the managed core deepsyte skill in `[^`]+`, including `[^`]+`\./, replacement: publishedSetupSentence, label: "published skill setup sentence" },
+  { pattern: /If you prefer to do onboarding in two steps, run `npx deepsyte login` followed by `npx deepsyte install <client>`\. For most clients,? ?that reaches the same result as `setup --client <client>`\. The main nuances are that `install vscode` writes a workspace-local `\.vscode\/mcp\.json`, while `install claude-code` prints the `claude mcp add \.\.\.` command for you to run manually\./, replacement: publishedTwoStepSentence, label: "published skill two-step sentence" },
 ]);
 
 syncFile("apps/web/public/llms.txt", [
-  { pattern: /npx screenshotsmcp setup --client [^\n]+/, replacement: npxSetupLine, label: "llms setup command" },
-  { pattern: /The CLI now also installs or repairs the managed core ScreenshotsMCP skill in `[^`]+`, including `[^`]+`, during successful `login`, `install`, and `setup` flows\./, replacement: llmsSetupSentence, label: "llms setup sentence" },
-  { pattern: /If you prefer to do onboarding in two steps, run `npx screenshotsmcp login` followed by `npx screenshotsmcp install <client>`\. For most clients that reaches the same result as `setup --client <client>`\. The main nuances are that `install vscode` writes a workspace-local `\.vscode\/mcp\.json`, while `install claude-code` prints the `claude mcp add \.\.\.` command for you to run manually\./, replacement: llmsTwoStepSentence, label: "llms two-step sentence" },
+  { pattern: /npx deepsyte setup --client [^\n]+/, replacement: npxSetupLine, label: "llms setup command" },
+  { pattern: /The CLI now also installs or repairs the managed core deepsyte skill in `[^`]+`, including `[^`]+`, during successful `login`, `install`, and `setup` flows\./, replacement: llmsSetupSentence, label: "llms setup sentence" },
+  { pattern: /If you prefer to do onboarding in two steps, run `npx deepsyte login` followed by `npx deepsyte install <client>`\. For most clients that reaches the same result as `setup --client <client>`\. The main nuances are that `install vscode` writes a workspace-local `\.vscode\/mcp\.json`, while `install claude-code` prints the `claude mcp add \.\.\.` command for you to run manually\./, replacement: llmsTwoStepSentence, label: "llms two-step sentence" },
 ]);
 
 syncFile("packages/cli/README.md", [
-  { pattern: /screenshotsmcp setup --client [^\n]+/, replacement: cliSetupLine, label: "README setup command" },
-  { pattern: /screenshotsmcp install [^\n]+/, replacement: cliInstallLine, label: "README install command" },
-  { pattern: /Every successful `login`, `install`, and `setup` flow now also installs or repairs the managed core ScreenshotsMCP skill under `[^`]+`, including `[^`]+`, so your MCP connection and local skill stay aligned\./, replacement: readmeSkillSentence, label: "README managed skill sentence" },
+  { pattern: /deepsyte setup --client [^\n]+/, replacement: cliSetupLine, label: "README setup command" },
+  { pattern: /deepsyte install [^\n]+/, replacement: cliInstallLine, label: "README install command" },
+  { pattern: /Every successful `login`, `install`, and `setup` flow now also installs or repairs the managed core deepsyte skill under `[^`]+`, including `[^`]+`, so your MCP connection and local skill stay aligned\./, replacement: readmeSkillSentence, label: "README managed skill sentence" },
   { pattern: /For most clients, `login` \+ `install` reaches the same result as `setup --client <client>`\. The main nuances are that `install vscode` writes a workspace-local `\.vscode\/mcp\.json`, while `install claude-code` prints the `claude mcp add \.\.\.` command for you to run manually\./, replacement: readmeTwoStepSentence, label: "README two-step sentence" },
 ]);
 
 syncFile("apps/web/content/docs/installation.mdx", [
-  { pattern: /npx screenshotsmcp setup --client [^\n]+/, replacement: npxSetupLine, label: "installation setup command" },
-  { pattern: /3\. Install or repair the managed core ScreenshotsMCP skill in `[^`]+`, including `[^`]+`/, replacement: installationStepSentence, label: "installation step sentence" },
-  { pattern: /npx screenshotsmcp install [^\n]+/, replacement: npxInstallLine, label: "installation install command" },
+  { pattern: /npx deepsyte setup --client [^\n]+/, replacement: npxSetupLine, label: "installation setup command" },
+  { pattern: /3\. Install or repair the managed core deepsyte skill in `[^`]+`, including `[^`]+`/, replacement: installationStepSentence, label: "installation step sentence" },
+  { pattern: /npx deepsyte install [^\n]+/, replacement: npxInstallLine, label: "installation install command" },
   { pattern: /That two-step path reaches the same result as `setup --client <client>` for most clients\. The main nuances are that `install vscode` writes a workspace-local `\.vscode\/mcp\.json`, while `install claude-code` prints the `claude mcp add \.\.\.` command for you to run manually\./, replacement: installationTwoStepSentence, label: "installation nuance sentence" },
   { pattern: /The first packaged workflow is `[^`]+` for repeatable multi-page performance audits\./, replacement: installationWorkflowSentence, label: "installation workflow sentence" },
 ]);
 
 syncFile("apps/web/content/docs/quickstart.mdx", [
-  { pattern: /npx screenshotsmcp setup --client [^\n]+/, replacement: npxSetupLine, label: "quickstart setup command" },
-  { pattern: /That flow authenticates if needed, configures the MCP client, and installs or repairs the managed core ScreenshotsMCP skill into `[^`]+`, including `[^`]+`\./, replacement: quickstartSetupSentence, label: "quickstart setup sentence" },
-  { pattern: /npx screenshotsmcp install [^\n]+/, replacement: npxInstallLine, label: "quickstart install command" },
+  { pattern: /npx deepsyte setup --client [^\n]+/, replacement: npxSetupLine, label: "quickstart setup command" },
+  { pattern: /That flow authenticates if needed, configures the MCP client, and installs or repairs the managed core deepsyte skill into `[^`]+`, including `[^`]+`\./, replacement: quickstartSetupSentence, label: "quickstart setup sentence" },
+  { pattern: /npx deepsyte install [^\n]+/, replacement: npxInstallLine, label: "quickstart install command" },
   { pattern: /That reaches the same result as `setup --client <client>` for most clients\. The main nuances are that `install vscode` writes a workspace-local `\.vscode\/mcp\.json`, while `install claude-code` prints the `claude mcp add \.\.\.` command for you to run manually\./, replacement: quickstartTwoStepSentence, label: "quickstart nuance sentence" },
   { pattern: /The first packaged workflow is `[^`]+` for repeatable multi-page performance audits\./, replacement: installationWorkflowSentence, label: "quickstart workflow sentence" },
 ]);

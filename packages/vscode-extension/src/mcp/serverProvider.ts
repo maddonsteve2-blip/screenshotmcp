@@ -4,7 +4,7 @@ import { EXTENSION_DISPLAY_NAME, MCP_PROVIDER_ID } from "../constants";
 import { logLine } from "../output";
 import { getApiUrl } from "../settings";
 
-export class ScreenshotsMcpServerProvider {
+export class DeepsyteServerProvider {
   private readonly didChangeEmitter = new vscode.EventEmitter<void>();
 
   constructor(private readonly authStore: AuthStore) {}

@@ -1,10 +1,10 @@
 ---
-description: How to debug production issues on the ScreenshotsMCP app
+description: How to debug production issues on the deepsyte app
 ---
 
 ## Production URLs
 - **Web app**: https://web-phi-eight-56.vercel.app
-- **API server**: https://screenshotsmcp-api-production.up.railway.app
+- **API server**: https://deepsyte-api-production.up.railway.app
 - **Sign-in**: https://web-phi-eight-56.vercel.app/sign-in
 
 ## Debugging steps

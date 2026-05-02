@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ScreenshotsMCP Project URLs",
-  "description": "List of URLs that ScreenshotsMCP commands and CI checks should run against.",
+  "title": "deepsyte Project URLs",
+  "description": "List of URLs that deepsyte commands and CI checks should run against.",
   "oneOf": [
     {
       "type": "array",

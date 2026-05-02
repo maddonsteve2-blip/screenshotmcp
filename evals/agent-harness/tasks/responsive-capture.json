@@ -1,7 +1,7 @@
 {
   "id": "responsive-capture",
   "title": "Responsive capture uses the one-shot responsive path",
-  "request": "Check how https://www.screenshotmcp.com looks on desktop, tablet, and mobile.",
+  "request": "Check how https://www.deepsyte.com looks on desktop, tablet, and mobile.",
   "requiredFiles": [
     "prompt.md",
     "first-response.md",

@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { randomBytes } from "crypto";
 import { AuthStore } from "./store";
 import { buildAuthorizationUrl, createPkceChallenge } from "./oauthUtils";
-import { ScreenshotsMcpServerProvider } from "../mcp/serverProvider";
+import { DeepsyteServerProvider } from "../mcp/serverProvider";
 import { logLine } from "../output";
 import { getApiUrl, getDashboardUrl } from "../settings";
 import { TimelineStore } from "../timeline/store";
@@ -38,7 +38,7 @@ export class OAuthController implements vscode.UriHandler, vscode.Disposable {
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly authStore: AuthStore,
-    private readonly provider: ScreenshotsMcpServerProvider,
+    private readonly provider: DeepsyteServerProvider,
     private readonly statusBar: StatusBarController,
     private readonly timelineStore: TimelineStore,
   ) {

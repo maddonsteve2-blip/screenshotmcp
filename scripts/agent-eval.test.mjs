@@ -22,7 +22,7 @@ test("agent eval init creates the expected run bundle", () => {
   try {
     const manifest = JSON.parse(readFileSync(join(runDir, "manifest.json"), "utf8"));
     assert.equal(manifest.taskId, "audit-public-start");
-    assert.match(readFileSync(join(runDir, "prompt.md"), "utf8"), /full audit screenshotmcp\.com/i);
+    assert.match(readFileSync(join(runDir, "prompt.md"), "utf8"), /full audit deepsyte\.com/i);
     assert.equal(readFileSync(join(runDir, "first-response.md"), "utf8"), "");
   } finally {
     rmSync(runDir, { recursive: true, force: true });

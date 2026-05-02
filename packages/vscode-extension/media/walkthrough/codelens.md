@@ -11,6 +11,6 @@ Any `https://...` in your code gets two CodeLens actions above it:
 
 **Also available via right-click**
 
-Place the cursor on (or select) a URL and right-click → `ScreenshotsMCP: Screenshot Selected URL` or `Audit Selected URL`.
+Place the cursor on (or select) a URL and right-click → `deepsyte: Screenshot Selected URL` or `Audit Selected URL`.
 
-**Too noisy?** Disable via the setting `screenshotsmcp.codeLens.urlActions`.
+**Too noisy?** Disable via the setting `deepsyte.codeLens.urlActions`.

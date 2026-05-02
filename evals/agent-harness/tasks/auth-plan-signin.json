@@ -1,7 +1,7 @@
 {
   "id": "auth-plan-signin",
   "title": "Sign-in planning uses an auth path instead of guessing",
-  "request": "Test sign in to https://www.screenshotmcp.com",
+  "request": "Test sign in to https://www.deepsyte.com",
   "requiredFiles": [
     "prompt.md",
     "first-response.md",

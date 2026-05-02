@@ -46,7 +46,7 @@ Before tool use, explicitly state:
 10. Close active sessions when the audit is complete.
 ## Preferred tools
 - MCP path: for each page, run `browser_navigate` → `browser_perf_metrics` → `browser_network_requests` / `browser_network_errors` as needed. Keep the MCP path sequential unless there is a proven reason to increase concurrency.
-- CLI path for repeated checks: `screenshotsmcp perf <url>` for quick page-level metrics, or `screenshotsmcp browse <url>` followed by `browse:perf`, `browse:network-requests`, and `browse:network-errors` when deeper evidence is needed. If this path needs approval, ask once up front instead of switching mid-audit.
+- CLI path for repeated checks: `deepsyte perf <url>` for quick page-level metrics, or `deepsyte browse <url>` followed by `browse:perf`, `browse:network-requests`, and `browse:network-errors` when deeper evidence is needed. If this path needs approval, ask once up front instead of switching mid-audit.
 ## Output shape
 Always structure the result like this:
 # Sitewide Performance Audit

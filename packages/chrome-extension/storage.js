@@ -1,5 +1,5 @@
 // IndexedDB storage layer for screenshot history
-const DB_NAME = "screenshotsmcp";
+const DB_NAME = "deepsyte";
 const DB_VERSION = 1;
 const STORE_NAME = "screenshots";
 

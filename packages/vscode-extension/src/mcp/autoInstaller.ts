@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { homedir } from "os";
 import { dirname, join } from "path";
-import { ScreenshotsMcpServerProvider } from "./serverProvider";
+import { DeepsyteServerProvider } from "./serverProvider";
 import { getApiUrl } from "../settings";
 import { WORKSPACE_MCP_PATH } from "../constants";
 
@@ -31,7 +31,7 @@ export interface AutoInstallResult {
 export class EditorMcpAutoInstaller {
   constructor(
     private readonly context: vscode.ExtensionContext,
-    private readonly provider: ScreenshotsMcpServerProvider,
+    private readonly provider: DeepsyteServerProvider,
   ) {}
 
   async ensureConfigured(apiKey: string): Promise<AutoInstallResult> {

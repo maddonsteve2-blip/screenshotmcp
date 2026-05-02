@@ -130,7 +130,7 @@ What would actually work (not implemented):
    Email        {inbox from auth_test_assist}
    Name fields  already filled
    Remaining    One human click on the Turnstile checkbox + Submit
-   Inbox        screenshotsmcp inbox:check --inbox-id <email>
+   Inbox        deepsyte inbox:check --inbox-id <email>
    ```
 
 4. The user completes the Turnstile click in their own browser in ~10 seconds,

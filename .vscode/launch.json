@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "ScreenshotsMCP Extension",
+      "name": "deepsyte Extension",
       "type": "extensionHost",
       "request": "launch",
       "runtimeExecutable": "${execPath}",
@@ -12,7 +12,7 @@
       "outFiles": [
         "${workspaceFolder}/packages/vscode-extension/dist/**/*.js"
       ],
-      "preLaunchTask": "screenshotsmcp-extension: build"
+      "preLaunchTask": "deepsyte-extension: build"
     }
   ]
 }

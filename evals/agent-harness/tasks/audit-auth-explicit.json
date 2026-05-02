@@ -1,7 +1,7 @@
 {
   "id": "audit-auth-explicit",
   "title": "Explicit auth audit keeps protected scope in play",
-  "request": "Please audit screenshotmcp.com including the dashboard after login.",
+  "request": "Please audit deepsyte.com including the dashboard after login.",
   "requiredFiles": [
     "prompt.md",
     "first-response.md",

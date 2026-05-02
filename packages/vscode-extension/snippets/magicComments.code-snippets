@@ -1,80 +1,80 @@
 {
-  "ScreenshotsMCP: @screenshot directive (//)": {
+  "deepsyte: @screenshot directive (//)": {
     "scope": "javascript,typescript,javascriptreact,typescriptreact,go,rust,java,csharp,php,c,cpp",
     "prefix": ["ssmcp", "screenshot"],
-    "description": "Insert a ScreenshotsMCP `// @screenshot` magic comment",
+    "description": "Insert a deepsyte `// @screenshot` magic comment",
     "body": ["// @screenshot ${1:https://example.com}$0"]
   },
-  "ScreenshotsMCP: @audit directive (//)": {
+  "deepsyte: @audit directive (//)": {
     "scope": "javascript,typescript,javascriptreact,typescriptreact,go,rust,java,csharp,php,c,cpp",
     "prefix": ["ssmcp-audit", "audit"],
-    "description": "Insert a ScreenshotsMCP `// @audit` magic comment",
+    "description": "Insert a deepsyte `// @audit` magic comment",
     "body": ["// @audit ${1:https://example.com}$0"]
   },
-  "ScreenshotsMCP: @diff directive (//)": {
+  "deepsyte: @diff directive (//)": {
     "scope": "javascript,typescript,javascriptreact,typescriptreact,go,rust,java,csharp,php,c,cpp",
     "prefix": ["ssmcp-diff", "diff"],
-    "description": "Insert a ScreenshotsMCP `// @diff` magic comment",
+    "description": "Insert a deepsyte `// @diff` magic comment",
     "body": ["// @diff ${1:https://staging.example.com} ${2:https://example.com}$0"]
   },
-  "ScreenshotsMCP: @screenshot with options (//)": {
+  "deepsyte: @screenshot with options (//)": {
     "scope": "javascript,typescript,javascriptreact,typescriptreact,go,rust,java,csharp,php,c,cpp",
     "prefix": ["ssmcp-full", "screenshot-opts"],
-    "description": "Insert a ScreenshotsMCP `// @screenshot` with width/height/fullPage/format options",
+    "description": "Insert a deepsyte `// @screenshot` with width/height/fullPage/format options",
     "body": ["// @screenshot ${1:https://example.com} width=${2:1280} height=${3:800} fullPage=${4|true,false|} format=${5|png,jpeg,webp|}$0"]
   },
-  "ScreenshotsMCP: @baseline directive (//)": {
+  "deepsyte: @baseline directive (//)": {
     "scope": "javascript,typescript,javascriptreact,typescriptreact,go,rust,java,csharp,php,c,cpp",
     "prefix": ["ssmcp-baseline", "baseline"],
-    "description": "Insert a ScreenshotsMCP `// @baseline` directive (capture/diff CodeLens)",
+    "description": "Insert a deepsyte `// @baseline` directive (capture/diff CodeLens)",
     "body": ["// @baseline ${1:https://example.com}$0"]
   },
-  "ScreenshotsMCP: @baseline directive (#)": {
+  "deepsyte: @baseline directive (#)": {
     "scope": "python,ruby,yaml,shellscript,dockerfile,toml,powershell",
     "prefix": ["ssmcp-baseline", "baseline"],
-    "description": "Insert a ScreenshotsMCP `# @baseline` directive",
+    "description": "Insert a deepsyte `# @baseline` directive",
     "body": ["# @baseline ${1:https://example.com}$0"]
   },
-  "ScreenshotsMCP: @baseline directive (HTML)": {
+  "deepsyte: @baseline directive (HTML)": {
     "scope": "html,markdown,xml",
     "prefix": ["ssmcp-baseline", "baseline"],
-    "description": "Insert a ScreenshotsMCP `<!-- @baseline -->` directive",
+    "description": "Insert a deepsyte `<!-- @baseline -->` directive",
     "body": ["<!-- @baseline ${1:https://example.com} -->$0"]
   },
-  "ScreenshotsMCP: @screenshot directive (#)": {
+  "deepsyte: @screenshot directive (#)": {
     "scope": "python,ruby,yaml,shellscript,dockerfile,toml,powershell",
     "prefix": ["ssmcp", "screenshot"],
-    "description": "Insert a ScreenshotsMCP `# @screenshot` magic comment",
+    "description": "Insert a deepsyte `# @screenshot` magic comment",
     "body": ["# @screenshot ${1:https://example.com}$0"]
   },
-  "ScreenshotsMCP: @audit directive (#)": {
+  "deepsyte: @audit directive (#)": {
     "scope": "python,ruby,yaml,shellscript,dockerfile,toml,powershell",
     "prefix": ["ssmcp-audit", "audit"],
-    "description": "Insert a ScreenshotsMCP `# @audit` magic comment",
+    "description": "Insert a deepsyte `# @audit` magic comment",
     "body": ["# @audit ${1:https://example.com}$0"]
   },
-  "ScreenshotsMCP: @diff directive (#)": {
+  "deepsyte: @diff directive (#)": {
     "scope": "python,ruby,yaml,shellscript,dockerfile,toml,powershell",
     "prefix": ["ssmcp-diff", "diff"],
-    "description": "Insert a ScreenshotsMCP `# @diff` magic comment",
+    "description": "Insert a deepsyte `# @diff` magic comment",
     "body": ["# @diff ${1:https://staging.example.com} ${2:https://example.com}$0"]
   },
-  "ScreenshotsMCP: @screenshot directive (HTML)": {
+  "deepsyte: @screenshot directive (HTML)": {
     "scope": "html,markdown,xml",
     "prefix": ["ssmcp", "screenshot"],
-    "description": "Insert a ScreenshotsMCP `<!-- @screenshot -->` magic comment",
+    "description": "Insert a deepsyte `<!-- @screenshot -->` magic comment",
     "body": ["<!-- @screenshot ${1:https://example.com} -->$0"]
   },
-  "ScreenshotsMCP: @audit directive (HTML)": {
+  "deepsyte: @audit directive (HTML)": {
     "scope": "html,markdown,xml",
     "prefix": ["ssmcp-audit", "audit"],
-    "description": "Insert a ScreenshotsMCP `<!-- @audit -->` magic comment",
+    "description": "Insert a deepsyte `<!-- @audit -->` magic comment",
     "body": ["<!-- @audit ${1:https://example.com} -->$0"]
   },
-  "ScreenshotsMCP: @diff directive (HTML)": {
+  "deepsyte: @diff directive (HTML)": {
     "scope": "html,markdown,xml",
     "prefix": ["ssmcp-diff", "diff"],
-    "description": "Insert a ScreenshotsMCP `<!-- @diff -->` magic comment",
+    "description": "Insert a deepsyte `<!-- @diff -->` magic comment",
     "body": ["<!-- @diff ${1:https://staging.example.com} ${2:https://example.com} -->$0"]
   }
 }

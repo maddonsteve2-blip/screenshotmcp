@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Copies packages/types/src/skills/screenshotsmcp/** to
-// apps/web/public/.skills/screenshotsmcp/** so the hosted docs site serves the
+// Copies packages/types/src/skills/deepsyte/** to
+// apps/web/public/.skills/deepsyte/** so the hosted docs site serves the
 // same bytes installed by the CLI and extension. Run after editing skill
 // sources. CI should run `verify-skills.mjs` to catch drift.
 
@@ -9,8 +9,8 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const srcRoot = join(__dirname, "..", "src", "skills", "screenshotsmcp");
-const destRoot = join(__dirname, "..", "..", "..", "apps", "web", "public", ".skills", "screenshotsmcp");
+const srcRoot = join(__dirname, "..", "src", "skills", "deepsyte");
+const destRoot = join(__dirname, "..", "..", "..", "apps", "web", "public", ".skills", "deepsyte");
 
 function* walk(dir) {
   for (const entry of readdirSync(dir)) {

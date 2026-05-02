@@ -26,7 +26,7 @@ node_modules
 apps/api
 packages/vscode-extension
 packages/cli
-screenshotmcp-skill
+deepsyte-skill
 
 # Local assets / scripts not needed for web deploy
 load-test.ps1

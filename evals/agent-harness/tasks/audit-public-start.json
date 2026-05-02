@@ -1,7 +1,7 @@
 {
   "id": "audit-public-start",
   "title": "Public audit starts without blocking on scope",
-  "request": "please do a full audit screenshotmcp.com",
+  "request": "please do a full audit deepsyte.com",
   "requiredFiles": [
     "prompt.md",
     "first-response.md",

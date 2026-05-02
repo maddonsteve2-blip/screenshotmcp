@@ -1,4 +1,4 @@
-# ScreenshotsMCP — Product Audit & Gap Analysis
+# deepsyte — Product Audit & Gap Analysis
 
 **Auditor lens:** senior product manager looking at whether you are solving real-world problems for developers (and the AI agents working alongside them).
 **Date:** 2026-04-27
@@ -66,7 +66,7 @@ A useful PM frame: forget tools, ask "what painful job is the developer hiring t
 ### Job 6 — "Monitor my site / get alerted when it breaks"
 **Pain level:** every SRE has this. **Competitors:** Visualping, Better Stack, Checkly.
 **You today:** Webhooks, runs, audits, captures — the parts.
-**Gap:** No `screenshotsmcp monitor <url> --every 1h --notify` story. Easy SKU.
+**Gap:** No `deepsyte monitor <url> --every 1h --notify` story. Easy SKU.
 
 ### Job 7 — "Generate Open Graph / social preview images"
 **Pain level:** medium but extremely common. **Competitors:** OG Image API, Vercel OG, Bannerbear.
@@ -76,7 +76,7 @@ A useful PM frame: forget tools, ask "what painful job is the developer hiring t
 ### Job 8 — "I'm building an AI app that needs to see web pages"
 **Pain level:** new but exploding. **Competitors:** Browserbase, Stagehand, Bright Data.
 **You today:** Excellent on MCP. Workflow-aware outcomes are unique.
-**Gap:** No language SDKs. AI app builders use Python and TypeScript directly, not always through an MCP host. A `pip install screenshotsmcp` and `npm i @screenshotsmcp/sdk` would 5x your TAM.
+**Gap:** No language SDKs. AI app builders use Python and TypeScript directly, not always through an MCP host. A `pip install deepsyte` and `npm i @deepsyte/sdk` would 5x your TAM.
 
 ---
 
@@ -113,11 +113,11 @@ The shape of your tiers is also wrong for who actually pays:
 
 Highest impact first:
 
-1. **Visual regression as a first-class product.** You have the primitives. Wrap them as `screenshotsmcp regress add <url>`, `screenshotsmcp regress run`, `screenshotsmcp regress baseline`. Charge for it. Make a Percy/Chromatic comparison page. **Single biggest revenue lever you're not pulling.**
+1. **Visual regression as a first-class product.** You have the primitives. Wrap them as `deepsyte regress add <url>`, `deepsyte regress run`, `deepsyte regress baseline`. Charge for it. Make a Percy/Chromatic comparison page. **Single biggest revenue lever you're not pulling.**
 2. **Structured extraction tool.** `extract_structured(url, schema)` returning typed JSON. Firecrawl's killer move. Trivial for you to ship given you already evaluate JS in pages.
-3. **Scheduled jobs / monitoring.** `screenshotsmcp monitor` with cron + diff + webhook. Standalone $20–$50/mo SKU.
-4. **Language SDKs.** `@screenshotsmcp/sdk` (TS) and `screenshotsmcp` (Python). Drops the "do I have to install an MCP host?" objection for non-IDE users.
-5. **Vercel / Netlify / GitHub Actions integrations as named products** — not buried as primitives. "ScreenshotsMCP for Vercel" page with a 5-line install.
+3. **Scheduled jobs / monitoring.** `deepsyte monitor` with cron + diff + webhook. Standalone $20–$50/mo SKU.
+4. **Language SDKs.** `@deepsyte/sdk` (TS) and `deepsyte` (Python). Drops the "do I have to install an MCP host?" objection for non-IDE users.
+5. **Vercel / Netlify / GitHub Actions integrations as named products** — not buried as primitives. "deepsyte for Vercel" page with a 5-line install.
 6. **Org / team primitives.** API key scoping (read-only, prod-only, per-project), audit log, invite teammates, shared keys, SSO. **This unblocks B2B revenue.**
 7. **Cookie / session import.** Let users paste a Chrome session for "log in as me." Massive for authenticated testing.
 8. **Region selection.** EU vs US browser. Compliance + perf wedge for non-US devs.
@@ -130,7 +130,7 @@ Highest impact first:
 - **No `/visual-regression` landing page.** Even though the feature works.
 - **No `/agents/cursor`, `/agents/claude-code`, `/agents/windsurf` pages.** Each should rank for "Cursor screenshot tool," "Claude Code browser testing," etc.
 - **No referral program.** The roadmap mentions affiliate (30% lifetime), but for devs the right shape is *credit-based referrals* — give 1k free shots for each referral. Cheaper than affiliate, higher viral.
-- **No "share this run" virality.** Shared run pages exist (`shareToken`); does the public share page have a "Powered by ScreenshotsMCP — try free" footer? If not, add it. Free top-of-funnel.
+- **No "share this run" virality.** Shared run pages exist (`shareToken`); does the public share page have a "Powered by deepsyte — try free" footer? If not, add it. Free top-of-funnel.
 - **No public stats / counter.** "X screenshots captured this week" creates social proof and ranks.
 - **No Discord / community.** For a dev tool, Discord is the support + retention engine.
 - **No "watch our agent run yours" demo.** A live demo where someone enters a URL and watches an agent QA it in real-time would be your best demo asset.
@@ -140,7 +140,7 @@ Highest impact first:
 - **No SOC 2 / GDPR / data-residency claims** that I can find. Required to sell into anything bigger than indie devs.
 - **No clear data retention policy.** How long are screenshots / recordings / console logs kept? Can the user delete them? Auto-delete? This is a privacy ask and a billing lever (longer retention = higher tier).
 - **No status page integrity check.** A `/status` route exists — is it real-time and does it have history? If it's a placeholder, that hurts more than helping.
-- **Brand inconsistency.** I see both `screenshotsmcp.com` and `screenshotmcp.com` in the codebase. Pick one and redirect the other.
+- **Brand inconsistency.** I see both `deepsyte.com` and `deepsyte.com` in the codebase. Pick one and redirect the other.
 - **No public security disclosure / bug bounty / `security.txt`.** Devs check.
 - **No on-page reassurance about API key safety.** Where is the key stored? Hashed? When does it rotate? Tell the visitor on the keys page.
 
@@ -172,7 +172,7 @@ Treat this as a 90-day operating plan.
 2. Ship Stripe billing. Until you have paid customers, every other gap is academic.
 3. Pick a single primary use case for the hero ("Verify your deploy / your AI's work / your auth flow") and rewrite above-the-fold around it. Keep the others below.
 4. Add social proof — even one — to the homepage. GitHub stars badge, npm download badge, "since 2026 we've captured X screenshots" counter, or one quoted user.
-5. Resolve `screenshotmcp.com` vs `screenshotsmcp.com`. Pick one canonical, 301 the other.
+5. Resolve `deepsyte.com` vs `deepsyte.com`. Pick one canonical, 301 the other.
 6. Submit listings to Smithery, Pulse, official MCP registry. Manifest is already there.
 
 ### P1 — Next 30 days (revenue expansion)
@@ -187,7 +187,7 @@ Treat this as a 90-day operating plan.
 
 ### P2 — Next 60–90 days (durable moat)
 
-14. Self-serve scheduled monitoring product (`screenshotsmcp monitor`).
+14. Self-serve scheduled monitoring product (`deepsyte monitor`).
 15. Region selection + residential IP option.
 16. Cookie / storage state import for "log in as me."
 17. Dedup / cache mode and surface "you saved $X this month" in dashboard. *This is what makes power AI users upgrade.*

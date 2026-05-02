@@ -7,7 +7,7 @@ import { discoverWorkflows } from "../src/skills/discoverWorkflows";
 
 function buildFakeSkillsRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "smcp-skills-"));
-  const skillA = join(root, "screenshotsmcp", "workflows", "sitewide-performance-audit");
+  const skillA = join(root, "deepsyte", "workflows", "sitewide-performance-audit");
   mkdirSync(skillA, { recursive: true });
   writeFileSync(join(skillA, "WORKFLOW.md"), "# Sitewide Performance Audit\n\nRun steps...\n");
 
@@ -37,7 +37,7 @@ test("discoverWorkflows picks up WORKFLOW.md across skills and sorts by title", 
     assert.equal(workflows[0].skill, "custom-skill");
     assert.equal(workflows[1].id, "sitewide-performance-audit");
     assert.equal(workflows[1].title, "Sitewide Performance Audit");
-    assert.equal(workflows[1].skill, "screenshotsmcp");
+    assert.equal(workflows[1].skill, "deepsyte");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

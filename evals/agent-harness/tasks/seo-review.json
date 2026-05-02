@@ -1,7 +1,7 @@
 {
   "id": "seo-review",
   "title": "SEO review uses the SEO audit path",
-  "request": "Review the SEO for https://www.screenshotmcp.com/pricing",
+  "request": "Review the SEO for https://www.deepsyte.com/pricing",
   "requiredFiles": [
     "prompt.md",
     "first-response.md",

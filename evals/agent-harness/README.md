@@ -1,6 +1,6 @@
 # Agent Harness Eval Kit
 
-This eval kit captures and scores real ScreenshotsMCP agent tasks by saving run artifacts, applying deterministic rubric checks, and producing a JSON score summary for harness regressions.
+This eval kit captures and scores real deepsyte agent tasks by saving run artifacts, applying deterministic rubric checks, and producing a JSON score summary for harness regressions.
 
 ## Layout
 

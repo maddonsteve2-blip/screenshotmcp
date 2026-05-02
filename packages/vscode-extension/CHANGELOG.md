@@ -11,33 +11,33 @@
 
 ## 0.23.0
 
-- **Show Stored Baselines** command — browses every `.screenshotsmcp/baselines/*.json` file with a QuickPick (most-recent first) and offers "Diff against live page" or "Open baseline image" for each one
+- **Show Stored Baselines** command — browses every `.deepsyte/baselines/*.json` file with a QuickPick (most-recent first) and offers "Diff against live page" or "Open baseline image" for each one
 - Also surfaced in Quick Actions
 
 ## 0.22.0
 
-- **Edit Project Budget** command — opens (or scaffolds) `.screenshotsmcp/budget.json` with sensible defaults
-- **Watch Project URLs** command — launches `npx screenshotsmcp watch` in an integrated terminal so the CI gate re-runs every time you edit `urls.json` / `budget.json`
+- **Edit Project Budget** command — opens (or scaffolds) `.deepsyte/budget.json` with sensible defaults
+- **Watch Project URLs** command — launches `npx deepsyte watch` in an integrated terminal so the CI gate re-runs every time you edit `urls.json` / `budget.json`
 - Both surfaced in Quick Actions
 
 ## 0.21.0
 
 - **`@baseline` magic comment** — drop `// @baseline https://example.com` (or `#`/`<!-- -->`) and get two CodeLens actions inline:
-  - **Capture baseline** — stores the screenshot URL at `<workspace>/.screenshotsmcp/baselines/<sha>.json` (same format as the CLI's `screenshotsmcp baseline create`)
+  - **Capture baseline** — stores the screenshot URL at `<workspace>/.deepsyte/baselines/<sha>.json` (same format as the CLI's `deepsyte baseline create`)
   - **Diff vs baseline** — re-captures and diffs against the live page; shows the visual diff panel
-- New commands: `ScreenshotsMCP: Capture Baseline for URL`, `ScreenshotsMCP: Diff URL vs Stored Baseline`
+- New commands: `deepsyte: Capture Baseline for URL`, `deepsyte: Diff URL vs Stored Baseline`
 - Snippets bundled: `ssmcp-baseline<Tab>` (or `baseline<Tab>`) expands the directive in 15 languages
 - Pure parser test added (64 total)
 
 ## 0.20.0
 
-- **Open HTML Report** command — pick any `screenshotsmcp-report.html` file (e.g. CI build artifacts) and render it inline in a WebView instead of leaving the editor
-- Defaults the file picker to `screenshotsmcp-report.html` at the workspace root
+- **Open HTML Report** command — pick any `deepsyte-report.html` file (e.g. CI build artifacts) and render it inline in a WebView instead of leaving the editor
+- Defaults the file picker to `deepsyte-report.html` at the workspace root
 - Added to Quick Actions
 
 ## 0.19.0
 
-- **JSON Schema validation** for `.screenshotsmcp/urls.json` and `.screenshotsmcp/budget.json`:
+- **JSON Schema validation** for `.deepsyte/urls.json` and `.deepsyte/budget.json`:
   - Inline IntelliSense for every key (`maxFindingsPerUrl`, `categories` enum, `url` format checks, etc.)
   - Squiggle errors for typos, out-of-range numbers, invalid URL protocols
   - Hover tooltips with the field description from the schema
@@ -45,7 +45,7 @@
 
 ## 0.18.0
 
-- **Audit Findings sidebar section** — new section in the activity-bar `ScreenshotsMCP` view groups current audit diagnostics by URL/file
+- **Audit Findings sidebar section** — new section in the activity-bar `deepsyte` view groups current audit diagnostics by URL/file
   - Up to 20 most-noisy URLs, sorted by finding count
   - Worst-severity icon per row (`error` / `warning` / `info`)
   - Click a file-backed row → opens the file at the URL; click a synthetic-URL row → opens the Problems tab
@@ -60,7 +60,7 @@
 
 ## 0.16.0
 
-- **Shared audit budget** (`.screenshotsmcp/budget.json`) — single source of truth for both the extension's status-bar threshold and the CLI's `screenshotsmcp check` thresholds:
+- **Shared audit budget** (`.deepsyte/budget.json`) — single source of truth for both the extension's status-bar threshold and the CLI's `deepsyte check` thresholds:
   ```json
   { "maxFindingsPerUrl": 10, "maxTotalFindings": 50, "warnThreshold": 20 }
   ```
@@ -71,9 +71,9 @@
 
 ## 0.15.0
 
-- **Snippet bundle** — type `ssmcp<Tab>` (or `screenshot`, `audit`, `diff`) in any supported comment to expand a ScreenshotsMCP magic-comment scaffold. Works in JS/TS(X), Python, Ruby, Go, Rust, Java, C#, PHP, HTML, Markdown, YAML, shellscript
+- **Snippet bundle** — type `ssmcp<Tab>` (or `screenshot`, `audit`, `diff`) in any supported comment to expand a deepsyte magic-comment scaffold. Works in JS/TS(X), Python, Ruby, Go, Rust, Java, C#, PHP, HTML, Markdown, YAML, shellscript
   - `ssmcp-full` expands the screenshot directive with all options pre-filled (`width=1280 height=800 fullPage=true format=png`)
-- **Status-bar findings badge** — a secondary status-bar item shows `$(warning) N audit findings` whenever the Problems tab contains ScreenshotsMCP audit diagnostics
+- **Status-bar findings badge** — a secondary status-bar item shows `$(warning) N audit findings` whenever the Problems tab contains deepsyte audit diagnostics
   - Background turns `errorBackground` at ≥20 findings
   - Clicking opens the Problems tab
   - Hidden automatically when findings clear or the user signs out
@@ -89,7 +89,7 @@
 
 ## 0.13.0
 
-- **Recent URLs in the sidebar** — the activity-bar `ScreenshotsMCP` view now lists the 10 most recently captured/audited URLs
+- **Recent URLs in the sidebar** — the activity-bar `deepsyte` view now lists the 10 most recently captured/audited URLs
   - Each row shows the short URL, run count, and last-seen timestamp
   - Click opens the URL history panel directly
   - Auto-refreshes every time a screenshot or audit completes
@@ -108,13 +108,13 @@
 
 ## 0.11.0
 
-- **Project URL lists** — share a list of URLs with your team via `.screenshotsmcp/urls.json`
+- **Project URL lists** — share a list of URLs with your team via `.deepsyte/urls.json`
   - Accepts `{ "urls": [...] }` with strings or `{ url, label?, tags? }` objects, or a bare array
   - Up to 200 entries, invalid URLs skipped with output-channel warnings
 - New commands:
-  - `ScreenshotsMCP: Edit Project URLs` — open or auto-create the file with a sample
-  - `ScreenshotsMCP: Screenshot Project URLs` — multi-select + batch capture with progress + cancel
-  - `ScreenshotsMCP: Audit Project URLs` — same flow for audits
+  - `deepsyte: Edit Project URLs` — open or auto-create the file with a sample
+  - `deepsyte: Screenshot Project URLs` — multi-select + batch capture with progress + cancel
+  - `deepsyte: Audit Project URLs` — same flow for audits
 - Quick Actions entries added · pure `urlList.ts` parser covered by 6 new tests (48 total)
 
 ## 0.10.0
@@ -125,18 +125,18 @@
   - Verdict chip (Nearly identical · Small differences · Noticeable · Significant)
   - Match score, changed pixel %, resolution
   - Re-run button · open diff image in browser
-- New command `ScreenshotsMCP: Visual Diff (compare two URLs)` — picks from URL history or accepts manual entry
-- New chat slash command `/diff https://a https://b` on `@screenshotsmcp`
+- New command `deepsyte: Visual Diff (compare two URLs)` — picks from URL history or accepts manual entry
+- New chat slash command `/diff https://a https://b` on `@deepsyte`
 - Quick Actions entry added · pure `diffParse.ts` covered by 5 new tests (42 total)
 
 ## 0.9.0
 
 - **Per-workspace screenshot defaults** — five new settings honoured by every extension-triggered capture:
-  - `screenshotsmcp.screenshot.width` (320–3840, default 1280)
-  - `screenshotsmcp.screenshot.height` (240–2160, default 800)
-  - `screenshotsmcp.screenshot.fullPage` (default `true`)
-  - `screenshotsmcp.screenshot.delay` ms (0–10 000, default 0)
-  - `screenshotsmcp.screenshot.format` (`png` / `jpeg` / `webp`, default `png`)
+  - `deepsyte.screenshot.width` (320–3840, default 1280)
+  - `deepsyte.screenshot.height` (240–2160, default 800)
+  - `deepsyte.screenshot.fullPage` (default `true`)
+  - `deepsyte.screenshot.delay` ms (0–10 000, default 0)
+  - `deepsyte.screenshot.format` (`png` / `jpeg` / `webp`, default `png`)
 - Audit viewport now mirrors the `width` / `height` settings
 - Values are clamped to safe ranges so a typo in `settings.json` can't break capture
 
@@ -145,13 +145,13 @@
 - **URL history** — every screenshot and audit is recorded per-URL in global state (max 20 entries × 200 URLs)
 - **URL history WebView** — thumbnails for every past run, badges for `screenshot` vs `audit`, buttons to re-capture/re-audit the same URL, open image, or view the dashboard run
 - New commands:
-  - `ScreenshotsMCP: Show URL History` (palette + Quick Actions)
-  - `ScreenshotsMCP: Show History for Selected URL` (right-click a URL in the editor)
+  - `deepsyte: Show URL History` (palette + Quick Actions)
+  - `deepsyte: Show History for Selected URL` (right-click a URL in the editor)
 - 4 new unit tests for `UrlHistoryStore` (36 total)
 
 ## 0.7.0
 
-- **Chat participant** `@screenshotsmcp` — works in Copilot Chat, Continue, or any client that supports the VS Code Chat API
+- **Chat participant** `@deepsyte` — works in Copilot Chat, Continue, or any client that supports the VS Code Chat API
   - `/screenshot <url>` — capture a page with one click
   - `/audit <url>` — run a UX/SEO/accessibility review
   - `/workflow` — list packaged runbooks from installed skills
@@ -163,14 +163,14 @@
 
 - **Audit diagnostics** — UX review findings now surface as entries in the **Problems** tab, anchored to the audited URL's location when it appears in an open document (markdown, JS/TS, JSON, YAML, HTML). Fall back to a synthetic URI otherwise
 - Accessibility & performance findings map to Warnings; SEO / content / navigation / mobile map to Information; purely positive bullets are filtered out
-- New command: `ScreenshotsMCP: Clear Audit Diagnostics`
+- New command: `deepsyte: Clear Audit Diagnostics`
 - Pure `auditParse.ts` module extracted for unit testing — 5 new tests covering parsing, severity, positive-bullet filtering
 
 ## 0.5.0
 
 - **Workflows section** in the sidebar — auto-discovers every `~/.agents/skills/<skill>/workflows/<id>/WORKFLOW.md` from installed skills
 - New **Workflow preview** WebView — renders the workflow markdown with **Copy as prompt** (wraps it in a "follow this runbook" prompt) and **Open file** actions
-- New command: `ScreenshotsMCP: Open Workflow` (palette + Quick Actions)
+- New command: `deepsyte: Open Workflow` (palette + Quick Actions)
 - Extracted `discoverWorkflows` into a pure module covered by unit tests
 
 ## 0.4.0
@@ -181,35 +181,35 @@
 
 ## 0.3.0
 
-- New **Get started with ScreenshotsMCP** walkthrough (auto-opens on first install) — sign in → first screenshot → first audit → CodeLens → skills, in 5 clicks
+- New **Get started with deepsyte** walkthrough (auto-opens on first install) — sign in → first screenshot → first audit → CodeLens → skills, in 5 clicks
 - Status bar item now opens a **Quick Actions** menu (take screenshot, audit URL, open timeline, create skill, open dashboard, sign out) when authenticated
-- New command palette entry: `ScreenshotsMCP: Quick Actions` (`screenshotsmcp.showQuickActions`)
+- New command palette entry: `deepsyte: Quick Actions` (`deepsyte.showQuickActions`)
 
 ## 0.2.0
 
 - Inline **Screenshot** WebView panel — captured images render alongside the editor with open, copy, rerun, and "View run" toolbar actions
 - Inline **Audit** WebView panel — UX review results render as structured sections with a hero screenshot, re-audit, and dashboard deep-link
 - Added dashboard run deep-link (`View run`) extracted from any tool response that mentions a run id or `/dashboard/runs/<id>` URL
-- Added editor context menu entries: **ScreenshotsMCP: Screenshot Selected URL** and **ScreenshotsMCP: Audit Selected URL**
-- Added `ScreenshotsMCP: Create Skill` skill-authoring scaffold that writes a ready-to-edit `SKILL.md` into `~/.agents/skills/<name>/`
+- Added editor context menu entries: **deepsyte: Screenshot Selected URL** and **deepsyte: Audit Selected URL**
+- Added `deepsyte: Create Skill` skill-authoring scaffold that writes a ready-to-edit `SKILL.md` into `~/.agents/skills/<name>/`
 - New unit tests for Phase 1 code — `extractRunUrl` branches and the `findUrlsForCodeLens` URL scanner
 - Extracted `findUrlsForCodeLens` into a pure `urlScan.ts` module so it's testable without the `vscode` runtime
 
 ## 0.1.0
 
-- Added `📸 Screenshot` and `🔍 Audit` CodeLens actions above every URL in markdown, JS/TS, JSON, YAML, and HTML files (gated behind `screenshotsmcp.codeLens.urlActions`, defaults on)
+- Added `📸 Screenshot` and `🔍 Audit` CodeLens actions above every URL in markdown, JS/TS, JSON, YAML, and HTML files (gated behind `deepsyte.codeLens.urlActions`, defaults on)
 - Added a rich skill preview WebView that renders the full `SKILL.md` with an **Install skill** button — clicking a catalog skill in the sidebar now previews before installing
 - Switched the skill catalog to a hosted `index.json` at `/.skills/index.json` with 24h client-side cache and transparent fallback to the in-code catalog when offline
-- Fixed the double source of truth for embedded skill content — the extension and the web docs now share the same `.md` sources in `@screenshotsmcp/types`
+- Fixed the double source of truth for embedded skill content — the extension and the web docs now share the same `.md` sources in `@deepsyte/types`
 - Narrowed extension activation: removed `onStartupFinished`; extension now activates on command palette, sidebar open, URI handler, or when a workspace contains `.vscode/mcp.json` or `.cursor/mcp.json`
-- Added `screenshotsmcp.takeScreenshotAtUrl` and `screenshotsmcp.auditUrl` commands
+- Added `deepsyte.takeScreenshotAtUrl` and `deepsyte.auditUrl` commands
 - Removed tracked `.vsix` build artifacts from the repo and added `.gitignore`
-- Fixed cross-package relative import in `skills.ts` (now `@screenshotsmcp/types/skills`)
+- Fixed cross-package relative import in `skills.ts` (now `@deepsyte/types/skills`)
 
 ## 0.0.10
 
 - Added automatic managed core skill sync alongside startup restoration, sign-in, and manual editor integration repair
-- Added `ScreenshotsMCP: Sync Core Skill` for installing, updating, or repairing the managed skill in `~/.agents/skills/screenshotsmcp`
+- Added `deepsyte: Sync Core Skill` for installing, updating, or repairing the managed skill in `~/.agents/skills/deepsyte`
 - Exposed the core skill sync action in the Activity Bar sidebar
 
 ## 0.0.9
@@ -221,7 +221,7 @@
 
 ## 0.0.8
 
-- Normalized old `screenshotsmcp.com` dashboard and keys overrides to `www.screenshotmcp.com`
+- Normalized old `deepsyte.com` dashboard and keys overrides to `www.deepsyte.com`
 - Reopened the browser when sign-in is retried while an OAuth flow is already pending
 
 ## 0.0.7
@@ -238,7 +238,7 @@
 
 ## 0.0.5
 
-- Updated the extension dashboard and API key links to the confirmed `www.screenshotmcp.com` custom domain
+- Updated the extension dashboard and API key links to the confirmed `www.deepsyte.com` custom domain
 
 ## 0.0.4
 
@@ -247,7 +247,7 @@
 
 ## 0.0.3
 
-- Added a ScreenshotsMCP Activity Bar sidebar with quick actions and recent activity
+- Added a deepsyte Activity Bar sidebar with quick actions and recent activity
 - Kept the timeline panel available as a detailed secondary view
 - Refreshed the VSIX package for the Marketplace follow-up update
 
@@ -259,7 +259,7 @@
 
 ## 0.0.1
 
-- Initial preview release scaffold for the ScreenshotsMCP VS Code extension
+- Initial preview release scaffold for the deepsyte VS Code extension
 - Secure API key sign-in and sign-out flows
 - Connection status checks and output channel logging
 - Workspace MCP installation command

@@ -63,7 +63,7 @@
     "mentions_sign_in_path": [
       {
         "type": "regex",
-        "value": "https://www\\.screenshotmcp\\.com/sign-in|/sign-in",
+        "value": "https://www\\.deepsyte\\.com/sign-in|/sign-in",
         "label": "references the sign-in path",
         "weight": 1
       }

@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "screenshotsmcp-extension: build",
+      "label": "deepsyte-extension: build",
       "type": "shell",
       "command": "npm run build",
       "options": {
@@ -11,7 +11,7 @@
       "problemMatcher": []
     },
     {
-      "label": "screenshotsmcp-extension: watch",
+      "label": "deepsyte-extension: watch",
       "type": "shell",
       "command": "npm run watch",
       "isBackground": true,
@@ -33,7 +33,7 @@
       }
     },
     {
-      "label": "screenshotsmcp-extension: typecheck",
+      "label": "deepsyte-extension: typecheck",
       "type": "shell",
       "command": "npm run typecheck",
       "options": {
@@ -42,7 +42,7 @@
       "problemMatcher": ["$tsc"]
     },
     {
-      "label": "screenshotsmcp-extension: test",
+      "label": "deepsyte-extension: test",
       "type": "shell",
       "command": "npm test",
       "options": {

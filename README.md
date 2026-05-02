@@ -1,8 +1,8 @@
-# ScreenshotsMCP
+# deepsyte
 
 Give your AI a real browser — and proof.
 
-ScreenshotsMCP is a browser truth platform for AI agents and developers. It helps AI inspect, test, and verify websites with screenshots, browser actions, recordings, audits, and evidence bundles across remote and local execution modes.
+deepsyte is a browser truth platform for AI agents and developers. It helps AI inspect, test, and verify websites with screenshots, browser actions, recordings, audits, and evidence bundles across remote and local execution modes.
 
 ## What it does
 
@@ -14,7 +14,7 @@ ScreenshotsMCP is a browser truth platform for AI agents and developers. It help
 
 ## Execution modes
 
-ScreenshotsMCP is designed around least-invasive execution first:
+deepsyte is designed around least-invasive execution first:
 
 - **Remote browser sessions** for public websites and cloud-friendly workflows
 - **Managed local browser** for private, local, or more realistic human-in-the-loop testing
@@ -27,40 +27,40 @@ That lets the same product cover public QA, authenticated flows, local developme
 ### Install the CLI
 
 ```bash
-npm install -g screenshotsmcp
+npm install -g deepsyte
 ```
 
 Or use it without installing:
 
 ```bash
-npx screenshotsmcp setup
+npx deepsyte setup
 ```
 
 ### Basic examples
 
 ```bash
 # Take a screenshot
-screenshotsmcp screenshot https://example.com
+deepsyte screenshot https://example.com
 
 # Review a site with AI
-screenshotsmcp review https://example.com
+deepsyte review https://example.com
 
 # Open a managed local browser with explicit approval
-screenshotsmcp browser open https://example.com --record-video
+deepsyte browser open https://example.com --record-video
 
 # Export an evidence bundle when closing
-screenshotsmcp browser close --evidence --label checkout-bug
+deepsyte browser close --evidence --label checkout-bug
 ```
 
 ### MCP setup
 
-Add ScreenshotsMCP to your MCP client:
+Add deepsyte to your MCP client:
 
 ```json
 {
   "mcpServers": {
-    "screenshotsmcp": {
-      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    "deepsyte": {
+      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
     }
   }
 }
@@ -68,7 +68,7 @@ Add ScreenshotsMCP to your MCP client:
 
 Supported clients include Cursor, Windsurf, Claude Desktop, Claude Code, and VS Code.
 
-## Why ScreenshotsMCP
+## Why deepsyte
 
 - **Browser truth for AI** instead of code-only guesses
 - **Proof by default** with screenshots, recordings, logs, and shareable artifacts
@@ -90,7 +90,7 @@ Supported clients include Cursor, Windsurf, Claude Desktop, Claude Code, and VS 
 ## Project Structure
 
 ```
-screenshotsmcp/
+deepsyte/
 ├── apps/
 │   ├── api/                # Express + Playwright + MCP server → Railway
 │   └── web/                # Next.js dashboard, docs, landing page → Vercel
@@ -107,7 +107,7 @@ screenshotsmcp/
 - **GitHub repo README** — this file, for product and repo overview
 - **CLI README** — `packages/cli/README.md`
 - **Docs site** — `apps/web/content/docs/`
-- **Agent skill docs** — `apps/web/public/.skills/screenshotsmcp/SKILL.md`
+- **Agent skill docs** — `apps/web/public/.skills/deepsyte/SKILL.md`
 - **LLM-facing docs** — `apps/web/public/llms.txt`
 
 ## Local development
@@ -142,7 +142,7 @@ Use the API for screenshot capture and browser-backed workflows from your own ap
 
 ### MCP server
 
-Use the MCP server when you want AI agents to call ScreenshotsMCP tools directly from Cursor, Windsurf, Claude Desktop, Claude Code, VS Code, and similar clients.
+Use the MCP server when you want AI agents to call deepsyte tools directly from Cursor, Windsurf, Claude Desktop, Claude Code, VS Code, and similar clients.
 
 ### CLI
 
@@ -157,13 +157,13 @@ Use the web app for keys, billing, installation, analytics, screenshots, recordi
 ### REST
 ```bash
 # Take a screenshot
-curl -X POST https://screenshotsmcp-api-production.up.railway.app/v1/screenshot \
+curl -X POST https://deepsyte-api-production.up.railway.app/v1/screenshot \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com", "format": "png", "fullPage": false}'
 
 # Poll for result
-curl https://screenshotsmcp-api-production.up.railway.app/v1/screenshot/<id> \
+curl https://deepsyte-api-production.up.railway.app/v1/screenshot/<id> \
   -H "Authorization: Bearer sk_live_..."
 ```
 
@@ -172,8 +172,8 @@ Add to your MCP config:
 ```json
 {
   "mcpServers": {
-    "screenshotsmcp": {
-      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    "deepsyte": {
+      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
     }
   }
 }
@@ -201,13 +201,13 @@ Add environment variables from `apps/web/.env.example`.
 3. Run `npm run db:migrate`
 
 ### Storage → Cloudflare R2
-1. Create R2 bucket named `screenshotsmcp`
+1. Create R2 bucket named `deepsyte`
 2. Create API token with R2 read/write
 3. Set a custom domain for public access
 
 ## Links
 
-- **Website:** https://www.screenshotmcp.com
+- **Website:** https://www.deepsyte.com
 - **Dashboard:** https://web-phi-eight-56.vercel.app/dashboard
-- **API:** https://screenshotsmcp-api-production.up.railway.app
+- **API:** https://deepsyte-api-production.up.railway.app
 - **CLI docs:** `packages/cli/README.md`

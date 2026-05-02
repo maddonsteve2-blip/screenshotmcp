@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Fails if the generated content or the web-synced copies are out of date with
-// the .md sources in packages/types/src/skills/screenshotsmcp/. Intended for
+// the .md sources in packages/types/src/skills/deepsyte/. Intended for
 // CI: run after `npm ci` and before build/test.
 
 import { execSync } from "node:child_process";
@@ -20,8 +20,8 @@ function readOrEmpty(path) {
 }
 
 const generatedPath = join(__dirname, "..", "src", "skills", "content.generated.ts");
-const webSkillPath = join(repoRoot, "apps", "web", "public", ".skills", "screenshotsmcp", "SKILL.md");
-const srcSkillPath = join(__dirname, "..", "src", "skills", "screenshotsmcp", "SKILL.md");
+const webSkillPath = join(repoRoot, "apps", "web", "public", ".skills", "deepsyte", "SKILL.md");
+const srcSkillPath = join(__dirname, "..", "src", "skills", "deepsyte", "SKILL.md");
 
 const priorGenerated = readOrEmpty(generatedPath);
 const priorWebSkill = readOrEmpty(webSkillPath);
@@ -34,15 +34,15 @@ const nextWebSkill = readOrEmpty(webSkillPath);
 
 const problems = [];
 if (priorGenerated !== nextGenerated) {
-  problems.push("packages/types/src/skills/content.generated.ts is out of date — run `pnpm --filter @screenshotsmcp/types generate:skills`.");
+  problems.push("packages/types/src/skills/content.generated.ts is out of date — run `pnpm --filter @deepsyte/types generate:skills`.");
 }
 if (priorWebSkill !== nextWebSkill) {
-  problems.push("apps/web/public/.skills/screenshotsmcp/** is out of date — run `pnpm --filter @screenshotsmcp/types sync:skills-to-web`.");
+  problems.push("apps/web/public/.skills/deepsyte/** is out of date — run `pnpm --filter @deepsyte/types sync:skills-to-web`.");
 }
 
 // Sanity: SKILL.md source must not be empty.
 if (!readOrEmpty(srcSkillPath).trim()) {
-  problems.push("packages/types/src/skills/screenshotsmcp/SKILL.md is empty.");
+  problems.push("packages/types/src/skills/deepsyte/SKILL.md is empty.");
 }
 
 if (problems.length > 0) {

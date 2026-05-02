@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 let activeTabId = null;
 const WEB_URL = "https://web-phi-eight-56.vercel.app";
-const API_URL = "https://screenshotsmcp-api-production.up.railway.app";
+const API_URL = "https://deepsyte-api-production.up.railway.app";
 
 // ===== INIT =====
 async function init() {
@@ -217,7 +217,7 @@ function inspectPage(action, label) {
 
     $("inspectPanel").style.display = "block";
     $("inspectTitle").textContent = label;
-    $("inspectMeta").textContent = `${res?.source === "platform-mcp" ? "Via ScreenshotsMCP Playwright" : "Via local DOM access"} • ${res?.url || $("tabUrl").textContent}`;
+    $("inspectMeta").textContent = `${res?.source === "platform-mcp" ? "Via deepsyte Playwright" : "Via local DOM access"} • ${res?.url || $("tabUrl").textContent}`;
     $("inspectOutput").textContent = res?.content || "";
     setStatus("success", `${label} loaded`);
   });
@@ -298,7 +298,7 @@ function loadSettings() {
 
 async function validateApiKey(apiKey) {
   if (!apiKey.startsWith("sk_live_")) {
-    return { ok: false, error: "Paste a valid ScreenshotsMCP API key." };
+    return { ok: false, error: "Paste a valid deepsyte API key." };
   }
 
   try {
@@ -309,7 +309,7 @@ async function validateApiKey(apiKey) {
     });
 
     if (res.status === 401) {
-      return { ok: false, error: "That API key was rejected. Open your ScreenshotsMCP key page and paste the current active key." };
+      return { ok: false, error: "That API key was rejected. Open your deepsyte key page and paste the current active key." };
     }
 
     if (res.status === 404 || res.ok) {
@@ -318,7 +318,7 @@ async function validateApiKey(apiKey) {
 
     return { ok: false, error: "Could not verify that API key right now. Try again in a moment." };
   } catch {
-    return { ok: false, error: "Could not reach ScreenshotsMCP to verify that key." };
+    return { ok: false, error: "Could not reach deepsyte to verify that key." };
   }
 }
 
@@ -334,13 +334,13 @@ async function updateAuthState(apiKey, validationOverride) {
 
   $("authBadge").textContent = "Checking...";
   $("authStatus").textContent = `Checking saved key ${maskApiKey(apiKey)}.`;
-  $("authNote").textContent = "Verifying that your saved key still works with ScreenshotsMCP.";
+  $("authNote").textContent = "Verifying that your saved key still works with deepsyte.";
 
   const validation = validationOverride ?? await validateApiKey(apiKey);
   if (!validation.ok) {
     $("authBadge").textContent = "Invalid key";
     $("authStatus").textContent = `Saved key ${maskApiKey(apiKey)} is no longer accepted.`;
-    $("authNote").textContent = "Open your ScreenshotsMCP key page and paste the current active key here.";
+    $("authNote").textContent = "Open your deepsyte key page and paste the current active key here.";
     return;
   }
 

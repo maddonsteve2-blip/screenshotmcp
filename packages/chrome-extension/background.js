@@ -1,9 +1,9 @@
-// ScreenshotsMCP Chrome Extension — Background Service Worker
+// deepsyte Chrome Extension — Background Service Worker
 // Handles capture, storage, and opens viewer tab
 
 importScripts("storage.js");
 
-const API_URL = "https://screenshotsmcp-api-production.up.railway.app";
+const API_URL = "https://deepsyte-api-production.up.railway.app";
 const MCP_URL = `${API_URL}/mcp`;
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -24,7 +24,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const filename = msg.filename || `screenshot-${Date.now()}.png`;
     chrome.downloads.download({
       url: msg.dataUrl,
-      filename: `ScreenshotsMCP/${filename}`,
+      filename: `deepsyte/${filename}`,
       saveAs: false,
     }, (downloadId) => {
       sendResponse({ downloadId });
@@ -380,7 +380,7 @@ async function initializeMcpSession(apiKey) {
       params: {
         protocolVersion: "2024-11-05",
         capabilities: {},
-        clientInfo: { name: "screenshotsmcp-chrome-extension", version: "1.1.0" },
+        clientInfo: { name: "deepsyte-chrome-extension", version: "1.1.0" },
       },
     }),
   });

@@ -1,6 +1,6 @@
-# ScreenshotsMCP Chrome Extension
+# deepsyte Chrome Extension
 
-Capture and inspect the current tab directly from Chrome, with ScreenshotsMCP platform parity on public pages and local fallback for `localhost` and private URLs.
+Capture and inspect the current tab directly from Chrome, with deepsyte platform parity on public pages and local fallback for `localhost` and private URLs.
 
 ## Features
 
@@ -27,9 +27,9 @@ Capture and inspect the current tab directly from Chrome, with ScreenshotsMCP pl
 ## Usage
 
 1. Navigate to any page
-2. Click the ScreenshotsMCP extension icon
+2. Click the deepsyte extension icon
 3. Open **Settings** and paste your existing `sk_live_...` API key
-4. On a public page, use **Screenshot** or **Full Page Screenshot** to capture through the ScreenshotsMCP platform
+4. On a public page, use **Screenshot** or **Full Page Screenshot** to capture through the deepsyte platform
 5. On `localhost` or private pages, the extension falls back to local browser capture automatically
 6. Use the **Navigate** field to send the active tab to another URL such as `google.com`
 7. Use **Read Text** or **Read DOM** to inspect the current page
@@ -39,7 +39,7 @@ Capture and inspect the current tab directly from Chrome, with ScreenshotsMCP pl
 
 ### Public pages
 
-If the active tab is a public `http` or `https` URL and a valid API key is saved, the extension uses the ScreenshotsMCP MCP server for screenshot capture and page inspection. That gives you the same Playwright-backed behavior as the CLI for current-tab workflows.
+If the active tab is a public `http` or `https` URL and a valid API key is saved, the extension uses the deepsyte MCP server for screenshot capture and page inspection. That gives you the same Playwright-backed behavior as the CLI for current-tab workflows.
 
 ### Localhost and private pages
 

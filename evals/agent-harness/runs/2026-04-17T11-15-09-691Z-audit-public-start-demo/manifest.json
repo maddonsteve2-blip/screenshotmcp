@@ -9,7 +9,7 @@
     "first-response.md",
     "tool-calls.json"
   ],
-  "request": "please do a full audit screenshotmcp.com",
+  "request": "please do a full audit deepsyte.com",
   "lastScoredAt": "2026-04-17T11:15:30.702Z",
   "percent": 100,
   "earnedScore": 18,

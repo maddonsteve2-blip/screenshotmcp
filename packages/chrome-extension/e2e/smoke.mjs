@@ -15,11 +15,11 @@ const navigateUrl = process.env.CHROME_EXTENSION_E2E_NAV_URL || "https://www.goo
 const runPublicChecks = process.env.CHROME_EXTENSION_E2E_SKIP_PUBLIC !== "1";
 
 async function resolveApiKey() {
-  if (process.env.SCREENSHOTSMCP_API_KEY?.trim()) {
-    return process.env.SCREENSHOTSMCP_API_KEY.trim();
+  if (process.env.deepsyte_API_KEY?.trim()) {
+    return process.env.deepsyte_API_KEY.trim();
   }
 
-  const configPath = path.join(os.homedir(), ".config", "screenshotsmcp", "config.json");
+  const configPath = path.join(os.homedir(), ".config", "deepsyte", "config.json");
   try {
     const raw = await fs.readFile(configPath, "utf8");
     const parsed = JSON.parse(raw);
@@ -165,7 +165,7 @@ function sleep(ms) {
 
 async function main() {
   const apiKey = await resolveApiKey();
-  const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), "screenshotsmcp-extension-e2e-"));
+  const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), "deepsyte-extension-e2e-"));
   const context = await chromium.launchPersistentContext(userDataDir, {
     headless: false,
     args: [
@@ -183,7 +183,7 @@ async function main() {
       logStep("Configuring extension API key through popup UI");
       await configureApiKeyViaPopup(context, apiKey);
     } else {
-      logStep("No ScreenshotsMCP API key found; public-page checks will be skipped");
+      logStep("No deepsyte API key found; public-page checks will be skipped");
     }
 
     logStep(`Opening localhost page ${baseUrl}`);

@@ -106,7 +106,7 @@ function printNextSteps(includeWorkflow: boolean): void {
   console.log(`  2. Tweak ${chalk.cyan(".deepsyte/budget.json")} thresholds if needed`);
   console.log(`  3. Run ${chalk.cyan("deepsyte check")} locally to confirm`);
   if (includeWorkflow) {
-    console.log(`  4. Add ${chalk.cyan("SCREENSHOTSMCP_API_KEY")} to your GitHub repo secrets`);
+    console.log(`  4. Add ${chalk.cyan("deepsyte_API_KEY")} to your GitHub repo secrets`);
     console.log(`  5. Push the workflow \u2014 PRs will get audited automatically`);
   }
 }

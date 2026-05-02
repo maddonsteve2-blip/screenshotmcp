@@ -6,7 +6,7 @@ import { configureEditorAfterSignIn, registerCommands } from "./commands";
 import { SIDEBAR_VIEW_ID } from "./constants";
 import { EditorMcpAutoInstaller } from "./mcp/autoInstaller";
 import { logLine } from "./output";
-import { ScreenshotsMcpServerProvider } from "./mcp/serverProvider";
+import { DeepsyteServerProvider } from "./mcp/serverProvider";
 import { TimelineStore } from "./timeline/store";
 import { registerChatParticipant } from "./chat/participant";
 import { UrlHistoryStore } from "./history/store";
@@ -23,7 +23,7 @@ import { validateApiKey } from "./mcp/client";
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const authStore = new AuthStore(context);
   const statusBar = new StatusBarController();
-  const provider = new ScreenshotsMcpServerProvider(authStore);
+  const provider = new DeepsyteServerProvider(authStore);
   const autoInstaller = new EditorMcpAutoInstaller(context, provider);
   const timelineStore = new TimelineStore();
   const timelinePanel = new TimelinePanelController(context, timelineStore);

@@ -7,7 +7,7 @@ import { callTool, extractImageUrl, extractRunUrl, extractText, validateApiKey }
 import { EditorMcpAutoInstaller } from "./mcp/autoInstaller";
 import { logLine, showOutputChannel } from "./output";
 import { getApiUrl, getDashboardUrl, getKeysUrl, getScreenshotDefaults } from "./settings";
-import { ScreenshotsMcpServerProvider } from "./mcp/serverProvider";
+import { DeepsyteServerProvider } from "./mcp/serverProvider";
 import { formatSkillSyncFailureMessage, formatSkillSyncMessage, installCatalogSkillForExtension, syncCoreSkillForExtension } from "./skills";
 import { buildSkillTemplate } from "./skills/template";
 import { TimelineStore } from "./timeline/store";
@@ -38,7 +38,7 @@ interface CommandDependencies {
   autoInstaller: EditorMcpAutoInstaller;
   catalogCache: CatalogCache;
   oauthController: OAuthController;
-  provider: ScreenshotsMcpServerProvider;
+  provider: DeepsyteServerProvider;
   statusBar: StatusBarController;
   timelineStore: TimelineStore;
   timelinePanel: TimelinePanelController;
@@ -638,7 +638,7 @@ async function runQuickActions(deps: CommandDependencies): Promise<void> {
 async function ensureAuthenticated(
   authStore: AuthStore,
   oauthController: OAuthController,
-  provider: ScreenshotsMcpServerProvider,
+  provider: DeepsyteServerProvider,
   statusBar: StatusBarController,
   timelineStore: TimelineStore,
   autoInstaller: EditorMcpAutoInstaller,

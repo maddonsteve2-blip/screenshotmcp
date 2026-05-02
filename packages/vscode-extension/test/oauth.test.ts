@@ -11,18 +11,18 @@ test("createPkceChallenge creates a deterministic base64url sha256 digest", () =
 
 test("buildAuthorizationUrl includes OAuth authorization parameters", () => {
   const url = buildAuthorizationUrl(
-    "https://screenshotsmcp-api-production.up.railway.app",
-    "ScreenshotMCP.screenshotsmcp-vscode",
-    "vscode://ScreenshotMCP.screenshotsmcp-vscode/auth-callback",
+    "https://deepsyte-api-production.up.railway.app",
+    "deepsyte.deepsyte-vscode",
+    "vscode://deepsyte.deepsyte-vscode/auth-callback",
     "state-123",
     "challenge-456",
   );
 
   const parsed = new URL(url);
-  assert.equal(parsed.origin, "https://screenshotsmcp-api-production.up.railway.app");
+  assert.equal(parsed.origin, "https://deepsyte-api-production.up.railway.app");
   assert.equal(parsed.pathname, "/oauth/authorize");
-  assert.equal(parsed.searchParams.get("client_id"), "ScreenshotMCP.screenshotsmcp-vscode");
-  assert.equal(parsed.searchParams.get("redirect_uri"), "vscode://ScreenshotMCP.screenshotsmcp-vscode/auth-callback");
+  assert.equal(parsed.searchParams.get("client_id"), "deepsyte.deepsyte-vscode");
+  assert.equal(parsed.searchParams.get("redirect_uri"), "vscode://deepsyte.deepsyte-vscode/auth-callback");
   assert.equal(parsed.searchParams.get("response_type"), "code");
   assert.equal(parsed.searchParams.get("state"), "state-123");
   assert.equal(parsed.searchParams.get("code_challenge"), "challenge-456");

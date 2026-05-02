@@ -1,4 +1,4 @@
-# ScreenshotsMCP Chrome Extension Smoke Tests
+# deepsyte Chrome Extension Smoke Tests
 
 ## Automated E2E harness
 
@@ -12,9 +12,9 @@ npm run test:chrome-extension:e2e
 
 - Run `npm install` at the repo root.
 - Keep the web app running locally at `http://localhost:3456`, or set `CHROME_EXTENSION_E2E_BASE_URL`.
-- Keep a valid `sk_live_...` ScreenshotsMCP API key available in either:
-  - `SCREENSHOTSMCP_API_KEY`, or
-  - `~/.config/screenshotsmcp/config.json`
+- Keep a valid `sk_live_...` deepsyte API key available in either:
+  - `deepsyte_API_KEY`, or
+  - `~/.config/deepsyte/config.json`
 - Make sure Playwright browsers are installed locally.
 
 ## Optional environment variables
@@ -22,7 +22,7 @@ npm run test:chrome-extension:e2e
 - `CHROME_EXTENSION_E2E_BASE_URL` — override the localhost page under test.
 - `CHROME_EXTENSION_E2E_PUBLIC_URL` — override the public URL used for platform-backed checks.
 - `CHROME_EXTENSION_E2E_SKIP_PUBLIC=1` — run only localhost fallback checks.
-- `SCREENSHOTSMCP_API_KEY` — explicitly provide the API key used by the extension during the test.
+- `deepsyte_API_KEY` — explicitly provide the API key used by the extension during the test.
 
 ## What the harness validates
 
@@ -34,7 +34,7 @@ npm run test:chrome-extension:e2e
 ### 2. Extension auth
 
 - Opens the real popup UI.
-- Saves the ScreenshotsMCP API key through the popup settings flow.
+- Saves the deepsyte API key through the popup settings flow.
 - Confirms the popup reports a saved key state.
 
 ### 3. Localhost fallback flow

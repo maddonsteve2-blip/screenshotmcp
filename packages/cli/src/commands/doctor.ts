@@ -42,8 +42,8 @@ export const doctorCommand = new Command("doctor")
       results.push({
         name: "API key",
         status: "fail",
-        detail: "No API key found in config or env (SCREENSHOTSMCP_API_KEY).",
-        hint: "Run `deepsyte login` or set SCREENSHOTSMCP_API_KEY.",
+        detail: "No API key found in config or env (deepsyte_API_KEY).",
+        hint: "Run `deepsyte login` or set deepsyte_API_KEY.",
       });
     } else {
       results.push({

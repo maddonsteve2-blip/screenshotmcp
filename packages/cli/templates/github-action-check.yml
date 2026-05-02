@@ -1,12 +1,12 @@
-# Drop this into `.github/workflows/screenshotsmcp.yml` to run UX/SEO audits
+# Drop this into `.github/workflows/deepsyte.yml` to run UX/SEO audits
 # on every pull request. Fails the build if thresholds are exceeded.
-name: ScreenshotsMCP Check
+name: deepsyte Check
 
 on:
   pull_request:
     paths:
-      - ".screenshotsmcp/**"
-      - ".github/workflows/screenshotsmcp.yml"
+      - ".deepsyte/**"
+      - ".github/workflows/deepsyte.yml"
   workflow_dispatch: {}
 
 jobs:
@@ -17,24 +17,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install ScreenshotsMCP CLI
-        run: npm install -g screenshotsmcp
+      - name: Install deepsyte CLI
+        run: npm install -g deepsyte
       - name: Run audit against project URL list
         id: audit
         env:
-          SCREENSHOTSMCP_API_KEY: ${{ secrets.SCREENSHOTSMCP_API_KEY }}
+          deepsyte_API_KEY: ${{ secrets.deepsyte_API_KEY }}
         run: |
           set +e
-          screenshotsmcp check \
-            --file .screenshotsmcp/urls.json \
+          deepsyte check \
+            --file .deepsyte/urls.json \
             --report github-comment \
-            --report-out screenshotsmcp-report.md
+            --report-out deepsyte-report.md
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
       - name: Post PR comment
         if: github.event_name == 'pull_request' && always()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          path: screenshotsmcp-report.md
+          path: deepsyte-report.md
       - name: Fail job if audit failed
         if: steps.audit.outputs.exit_code != '0'
         run: exit 1

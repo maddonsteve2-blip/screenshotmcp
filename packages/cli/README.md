@@ -1,6 +1,6 @@
-# screenshotsmcp
+# deepsyte
 
-CLI for [ScreenshotsMCP](https://www.screenshotmcp.com) — inspect, test, and verify websites from the terminal with real browser execution and proof.
+CLI for [deepsyte](https://www.deepsyte.com) — inspect, test, and verify websites from the terminal with real browser execution and proof.
 
 Use it when you want:
 
@@ -11,123 +11,123 @@ Use it when you want:
 ## Install
 
 ```bash
-npm install -g screenshotsmcp
+npm install -g deepsyte
 ```
 
 Or use without installing:
 
 ```bash
-npx screenshotsmcp screenshot https://example.com
+npx deepsyte screenshot https://example.com
 ```
 
 ## Quick Start
 
 ```bash
 # One-command onboarding for a new agent or fresh IDE setup
-screenshotsmcp setup --client cursor    # or: vscode, windsurf, claude, claude-code
+deepsyte setup --client cursor    # or: vscode, windsurf, claude, claude-code
 
 # Or do it in two steps
-screenshotsmcp login
-screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
+deepsyte login
+deepsyte install cursor    # or: vscode, windsurf, claude, claude-code
 
 # Or use an API key directly
-screenshotsmcp login --key sk_live_your_key_here
+deepsyte login --key sk_live_your_key_here
 
 # Take a screenshot
-screenshotsmcp screenshot https://example.com
+deepsyte screenshot https://example.com
 
 # Run an audit with findings
-screenshotsmcp review https://example.com
+deepsyte review https://example.com
 
 # Launch a managed local browser and keep the proof
-screenshotsmcp browser open https://example.com --record-video
-screenshotsmcp browser close --evidence --label homepage-check
+deepsyte browser open https://example.com --record-video
+deepsyte browser close --evidence --label homepage-check
 
 # Mobile screenshot
-screenshotsmcp mobile https://example.com
+deepsyte mobile https://example.com
 
 # Dark mode
-screenshotsmcp dark https://example.com
+deepsyte dark https://example.com
 
 # Responsive (desktop + tablet + mobile)
-screenshotsmcp responsive https://example.com
+deepsyte responsive https://example.com
 
 # Screenshot a specific element
-screenshotsmcp element https://example.com -s "#hero"
+deepsyte element https://example.com -s "#hero"
 
 # Compare two URLs
-screenshotsmcp diff https://staging.example.com https://example.com
+deepsyte diff https://staging.example.com https://example.com
 
 # Export as PDF
-screenshotsmcp pdf https://example.com
+deepsyte pdf https://example.com
 ```
 
 ## Project setup & CI gating
 
-The CLI ships an opinionated, zero-config workflow for adding ScreenshotsMCP to a repo:
+The CLI ships an opinionated, zero-config workflow for adding deepsyte to a repo:
 
 ```bash
-# Scaffold .screenshotsmcp/{urls,budget}.json, agents.json, and a GH Action
-screenshotsmcp init
+# Scaffold .deepsyte/{urls,budget}.json, agents.json, and a GH Action
+deepsyte init
 
 # Run the audit gate locally — exits non-zero when findings exceed the budget
-screenshotsmcp check
+deepsyte check
 
 # Emit a sticky-PR-comment-friendly markdown report
-screenshotsmcp check --report github-comment --report-out report.md
+deepsyte check --report github-comment --report-out report.md
 ```
 
 The default `init` produces:
 
-- **`.screenshotsmcp/urls.json`** — the list of URLs to capture/audit (string or `{ url, label, tags }` entries)
-- **`.screenshotsmcp/budget.json`** — shared finding/perf thresholds consumed by both `check` and the VS Code extension's status-bar badge
+- **`.deepsyte/urls.json`** — the list of URLs to capture/audit (string or `{ url, label, tags }` entries)
+- **`.deepsyte/budget.json`** — shared finding/perf thresholds consumed by both `check` and the VS Code extension's status-bar badge
 - **`agents.json`** — manifest any AI framework (Claude Code, Cursor, Aider, Continue, OpenAI Agents) can ingest to expose `screenshot`, `review`, `diff`, `check`, etc. as tools
-- **`.github/workflows/screenshotsmcp.yml`** — opt-in PR audit workflow that posts a sticky comment
+- **`.github/workflows/deepsyte.yml`** — opt-in PR audit workflow that posts a sticky comment
 
 Pass `--no-agents` or `--no-github-action` to skip individual outputs; `--force` overwrites existing files.
 
 ### Visual baselines
 
-Per-URL visual regression with local manifests stored under `.screenshotsmcp/baselines/`:
+Per-URL visual regression with local manifests stored under `.deepsyte/baselines/`:
 
 ```bash
-screenshotsmcp baseline create https://example.com   # capture & store
-screenshotsmcp baseline list                         # see all stored baselines
-screenshotsmcp baseline diff https://example.com    # compare current page vs reference
-screenshotsmcp baseline rm https://example.com       # remove a baseline
+deepsyte baseline create https://example.com   # capture & store
+deepsyte baseline list                         # see all stored baselines
+deepsyte baseline diff https://example.com    # compare current page vs reference
+deepsyte baseline rm https://example.com       # remove a baseline
 ```
 
 Each baseline is a tiny JSON file (no binaries committed); `screenshot_diff` re-fetches both sides at diff time so the comparison always uses live pages.
 
 ```bash
 # Drift check across every stored baseline (CI-friendly)
-screenshotsmcp baseline verify --threshold 0.1 --max-changed 5
+deepsyte baseline verify --threshold 0.1 --max-changed 5
 ```
 
 ## Day-to-day commands
 
 | Command | What it does |
 | --- | --- |
-| `screenshotsmcp share <url>` | Capture and copy the CDN image URL to your clipboard (Win/macOS/Linux). `--open` to launch in the default browser. |
-| `screenshotsmcp logs` (alias `recent`) | Tail your last N screenshots/audits. `--json` for raw output. |
-| `screenshotsmcp doctor` | Diagnoses API key validity, network reachability, project-file health, GH workflow presence. Color-coded with hints. |
-| `screenshotsmcp upgrade` | Self-update to the latest npm version. `--check` for CI-friendly version-only check. |
-| `screenshotsmcp config list` | Inspect/manage stored API key + URL without editing JSON. `config set apiUrl https://...`, `config path`, etc. |
-| `screenshotsmcp budget show` / `budget set <key> <value>` | Edit `.screenshotsmcp/budget.json` (`maxFindingsPerUrl`, `maxTotalFindings`, `warnThreshold`, `categories`) without touching JSON by hand. |
-| `screenshotsmcp watch` | Re-run `check` every time `urls.json` or `budget.json` changes — keep this running while editing. Forwards `--report` and `--report-out`. |
+| `deepsyte share <url>` | Capture and copy the CDN image URL to your clipboard (Win/macOS/Linux). `--open` to launch in the default browser. |
+| `deepsyte logs` (alias `recent`) | Tail your last N screenshots/audits. `--json` for raw output. |
+| `deepsyte doctor` | Diagnoses API key validity, network reachability, project-file health, GH workflow presence. Color-coded with hints. |
+| `deepsyte upgrade` | Self-update to the latest npm version. `--check` for CI-friendly version-only check. |
+| `deepsyte config list` | Inspect/manage stored API key + URL without editing JSON. `config set apiUrl https://...`, `config path`, etc. |
+| `deepsyte budget show` / `budget set <key> <value>` | Edit `.deepsyte/budget.json` (`maxFindingsPerUrl`, `maxTotalFindings`, `warnThreshold`, `categories`) without touching JSON by hand. |
+| `deepsyte watch` | Re-run `check` every time `urls.json` or `budget.json` changes — keep this running while editing. Forwards `--report` and `--report-out`. |
 
 ### Reports for CI
 
 `check` supports four `--report` formats so you can plug it into any pipeline:
 
 ```bash
-screenshotsmcp check --report github-comment --report-out report.md  # sticky PR comment
-screenshotsmcp check --report html --report-out report.html          # self-contained, emailable
-screenshotsmcp check --report short                                   # one-liner status check
-screenshotsmcp check --report json                                    # structured machine output
+deepsyte check --report github-comment --report-out report.md  # sticky PR comment
+deepsyte check --report html --report-out report.html          # self-contained, emailable
+deepsyte check --report short                                   # one-liner status check
+deepsyte check --report json                                    # structured machine output
 ```
 
-Every successful `login`, `install`, and `setup` flow now also installs or repairs the managed core ScreenshotsMCP skill under `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`, so your MCP connection and local skill stay aligned.
+Every successful `login`, `install`, and `setup` flow now also installs or repairs the managed core deepsyte skill under `~/.agents/skills/deepsyte`, including `workflows/sitewide-performance-audit/WORKFLOW.md`, so your MCP connection and local skill stay aligned.
 
 For most clients, `login` + `install` reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
 
@@ -135,163 +135,163 @@ Start with remote execution for public sites. Escalate to the managed local brow
 
 If you want a browser-native current-tab client instead of the terminal, the monorepo also includes an unpacked Chrome extension preview in `packages/chrome-extension` with Playwright-backed public-page capture and local fallback for `localhost` and private pages.
 
-`screenshotsmcp skills ...` only manages that local core ScreenshotsMCP skill. To discover or install community skills such as Anthropic's `frontend-design`, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...`.
+`deepsyte skills ...` only manages that local core deepsyte skill. To discover or install community skills such as Anthropic's `frontend-design`, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...`.
 
 ## Local Managed Browser
 
 ```bash
 # Launch an extension-free local browser with explicit approval
-screenshotsmcp browser open https://example.com
+deepsyte browser open https://example.com
 
 # Record the full managed local browser session to a local .webm file
-screenshotsmcp browser open https://example.com --record-video
+deepsyte browser open https://example.com --record-video
 
 # Pick a specific installed browser
-screenshotsmcp browser open https://example.com --browser edge
+deepsyte browser open https://example.com --browser edge
 
 # Control the tracked managed browser
-screenshotsmcp browser status
-screenshotsmcp browser goto https://example.org
-screenshotsmcp browser back
-screenshotsmcp browser forward
-screenshotsmcp browser click "Learn more"
-screenshotsmcp browser click-at 320 480
-screenshotsmcp browser fill "input[type=email]" "user@example.com"
-screenshotsmcp browser hover ".menu-trigger"
-screenshotsmcp browser wait-for ".results-loaded" --timeout 8000
-screenshotsmcp browser select "select[name=country]" "Australia"
-screenshotsmcp browser key Enter
-screenshotsmcp browser scroll -y 500
-screenshotsmcp browser viewport 393 852
-screenshotsmcp browser screenshot
-screenshotsmcp browser text
-screenshotsmcp browser html
-screenshotsmcp browser console --level error
-screenshotsmcp browser network-errors
-screenshotsmcp browser network-requests --resource-type fetch --min-duration 200
-screenshotsmcp browser evidence --label checkout-bug
-screenshotsmcp browser close --evidence --label checkout-bug
-screenshotsmcp browser cookies get
-screenshotsmcp browser storage getAll --type localStorage
-screenshotsmcp browser eval "document.title"
-screenshotsmcp browser a11y --max-depth 6
-screenshotsmcp browser perf
-screenshotsmcp browser seo
-screenshotsmcp browser close
+deepsyte browser status
+deepsyte browser goto https://example.org
+deepsyte browser back
+deepsyte browser forward
+deepsyte browser click "Learn more"
+deepsyte browser click-at 320 480
+deepsyte browser fill "input[type=email]" "user@example.com"
+deepsyte browser hover ".menu-trigger"
+deepsyte browser wait-for ".results-loaded" --timeout 8000
+deepsyte browser select "select[name=country]" "Australia"
+deepsyte browser key Enter
+deepsyte browser scroll -y 500
+deepsyte browser viewport 393 852
+deepsyte browser screenshot
+deepsyte browser text
+deepsyte browser html
+deepsyte browser console --level error
+deepsyte browser network-errors
+deepsyte browser network-requests --resource-type fetch --min-duration 200
+deepsyte browser evidence --label checkout-bug
+deepsyte browser close --evidence --label checkout-bug
+deepsyte browser cookies get
+deepsyte browser storage getAll --type localStorage
+deepsyte browser eval "document.title"
+deepsyte browser a11y --max-depth 6
+deepsyte browser perf
+deepsyte browser seo
+deepsyte browser close
 ```
 
 This command:
 
 - asks the user for explicit approval before opening a local browser
-- uses a fresh isolated ScreenshotsMCP browser profile per launch
+- uses a fresh isolated deepsyte browser profile per launch
 - does not require manual extension installation
 - currently depends on an installed Chrome, Edge, or Chromium browser
 - captures console logs and network activity continuously while the managed browser stays open
 - reconnects to the tracked managed browser over CDP for follow-up actions
 - can export a timestamped local evidence bundle with screenshot, HTML, text, accessibility, performance, SEO, cookies, storage, console logs, network logs, and session metadata
-- supports `screenshotsmcp browser close --evidence` to finalize recording and include the local `.webm` in the same bundle when video capture is enabled
-- can optionally record the entire managed local browser session and return a local `.webm` path on `screenshotsmcp browser close`
+- supports `deepsyte browser close --evidence` to finalize recording and include the local `.webm` in the same bundle when video capture is enabled
+- can optionally record the entire managed local browser session and return a local `.webm` path on `deepsyte browser close`
 
 ## Browser Sessions
 
 ```bash
 # Open a browser session
-screenshotsmcp browse https://example.com
+deepsyte browse https://example.com
 
 # With video recording
-screenshotsmcp browse https://example.com --record
+deepsyte browse https://example.com --record
 
 # Interact with the page
-screenshotsmcp browse:click <sessionId> "Sign in"
-screenshotsmcp browse:fill <sessionId> "#email" "user@example.com"
-screenshotsmcp browse:key <sessionId> Enter
-screenshotsmcp browse:scroll <sessionId> -y 500
-screenshotsmcp browse:screenshot <sessionId>
+deepsyte browse:click <sessionId> "Sign in"
+deepsyte browse:fill <sessionId> "#email" "user@example.com"
+deepsyte browse:key <sessionId> Enter
+deepsyte browse:scroll <sessionId> -y 500
+deepsyte browse:screenshot <sessionId>
 
 # Close session (returns video URL if recording)
-screenshotsmcp browse:close <sessionId>
+deepsyte browse:close <sessionId>
 ```
 
 ## Site Auditing
 
 ```bash
 # AI-powered UX review
-screenshotsmcp review https://example.com
+deepsyte review https://example.com
 
 # SEO audit
-screenshotsmcp seo https://example.com
+deepsyte seo https://example.com
 
 # Performance metrics (Core Web Vitals)
-screenshotsmcp perf https://example.com
+deepsyte perf https://example.com
 
 # Accessibility tree
-screenshotsmcp a11y https://example.com
+deepsyte a11y https://example.com
 
 # Detect responsive breakpoints
-screenshotsmcp breakpoints https://example.com
+deepsyte breakpoints https://example.com
 ```
 
 ## Test Email Inboxes
 
 ```bash
 # Plan auth with the saved primary inbox and site memory
-screenshotsmcp auth:test https://example.com
+deepsyte auth:test https://example.com
 
 # Discover likely login URLs
-screenshotsmcp auth:find-login https://example.com
+deepsyte auth:find-login https://example.com
 
 # Try the smart login flow when you already know the credentials
-screenshotsmcp auth:smart-login https://example.com/sign-in --username user@example.com --password secret
+deepsyte auth:smart-login https://example.com/sign-in --username user@example.com --password secret
 
 # Connect Gmail once for OTP reads, then read the latest code
-screenshotsmcp auth:authorize-email
-screenshotsmcp auth:read-email
+deepsyte auth:authorize-email
+deepsyte auth:read-email
 
 # Create or reuse the primary test inbox
-screenshotsmcp inbox:create
+deepsyte inbox:create
 
 # Check for messages
-screenshotsmcp inbox:check <inboxId>
+deepsyte inbox:check <inboxId>
 
 # Send a test email
-screenshotsmcp inbox:send <inboxId> -t recipient@example.com -s "Test" -b "Hello!"
+deepsyte inbox:send <inboxId> -t recipient@example.com -s "Test" -b "Hello!"
 ```
 
 For website login, sign-up, and verification flows:
 
-- Start with `screenshotsmcp auth:test <url>` to reuse the saved primary inbox and remembered auth history for that origin.
+- Start with `deepsyte auth:test <url>` to reuse the saved primary inbox and remembered auth history for that origin.
 - Read the helper's recommended auth path, account-exists confidence, likely auth method, and expected follow-up before deciding whether to sign in or sign up first.
 - Treat the helper's reusable strategy as the default cross-site guidance, and treat per-site hints as supporting evidence rather than universal rules.
 - If sign-in fails because the account does not exist, switch to sign-up with the same saved credentials.
 - If `smart_login` is uncertain on Clerk or multi-step auth UIs, fall back to browser tools and inspect network or console evidence before concluding the login failed.
-- Use `screenshotsmcp inbox:check <inboxId>` for OTP codes and verification links.
+- Use `deepsyte inbox:check <inboxId>` for OTP codes and verification links.
 - When reporting auth results, summarize reusable auth-system heuristics first and site-specific evidence second.
-- After the auth attempt, record the result with `screenshotsmcp auth:test <url> --record --outcome <...>` so future runs remember what worked.
+- After the auth attempt, record the result with `deepsyte auth:test <url> --record --outcome <...>` so future runs remember what worked.
 
 ## Auto-Install MCP Server
 
-For first-time onboarding, prefer `screenshotsmcp setup --client <client>`. Use `install <client>` when you are already authenticated or only need to configure one client.
+For first-time onboarding, prefer `deepsyte setup --client <client>`. Use `install <client>` when you are already authenticated or only need to configure one client.
 
 ```bash
 # Configure your IDE automatically
-screenshotsmcp install cursor
-screenshotsmcp install vscode
-screenshotsmcp install windsurf
-screenshotsmcp install claude
-screenshotsmcp install claude-code
+deepsyte install cursor
+deepsyte install vscode
+deepsyte install windsurf
+deepsyte install claude
+deepsyte install claude-code
 ```
 
 ## Managed Skills
 
 ```bash
 # List installed skills under ~/.agents/skills
-screenshotsmcp skills list
+deepsyte skills list
 
 # Install, update, or repair the managed core skill
-screenshotsmcp skills sync
+deepsyte skills sync
 
 # Alias for the current core-skill update path
-screenshotsmcp skills update
+deepsyte skills update
 ```
 
 For community skills, use commands such as:

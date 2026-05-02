@@ -1,7 +1,7 @@
 {
   "id": "debug-browser-session",
   "title": "Browser debugging collects structural evidence",
-  "request": "Debug why https://www.screenshotmcp.com/pricing feels broken and gather evidence from the live page.",
+  "request": "Debug why https://www.deepsyte.com/pricing feels broken and gather evidence from the live page.",
   "requiredFiles": [
     "prompt.md",
     "first-response.md",

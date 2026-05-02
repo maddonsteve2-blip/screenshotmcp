@@ -14,7 +14,7 @@ test("validateHttpUrl rejects blank and invalid protocols", () => {
   assert.equal(validateHttpUrl("notaurl"), "Enter a valid URL.");
 });
 
-test("buildWorkspaceMcpConfig preserves other servers and injects screenshotsmcp", () => {
+test("buildWorkspaceMcpConfig preserves other servers and injects deepsyte", () => {
   const config = buildWorkspaceMcpConfig(
     {
       mcp: {
@@ -23,7 +23,7 @@ test("buildWorkspaceMcpConfig preserves other servers and injects screenshotsmcp
         },
       },
     },
-    "https://screenshotsmcp-api-production.up.railway.app",
+    "https://deepsyte-api-production.up.railway.app",
     "sk_live_test",
   );
 
@@ -31,9 +31,9 @@ test("buildWorkspaceMcpConfig preserves other servers and injects screenshotsmcp
     mcp: {
       servers: {
         existing: { type: "http", url: "https://example.com/mcp" },
-        screenshotsmcp: {
+        deepsyte: {
           type: "http",
-          url: "https://screenshotsmcp-api-production.up.railway.app/mcp/sk_live_test",
+          url: "https://deepsyte-api-production.up.railway.app/mcp/sk_live_test",
         },
       },
     },

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ScreenshotsMCP Audit Budget",
-  "description": "Shared finding/perf thresholds used by both the VS Code extension's status-bar badge and the `screenshotsmcp check` CLI command.",
+  "title": "deepsyte Audit Budget",
+  "description": "Shared finding/perf thresholds used by both the VS Code extension's status-bar badge and the `deepsyte check` CLI command.",
   "type": "object",
   "additionalProperties": false,
   "properties": {

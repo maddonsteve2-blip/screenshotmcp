@@ -1,14 +1,14 @@
 {
-  "$schema": "https://www.screenshotmcp.com/schemas/agents.schema.json",
-  "name": "screenshotsmcp",
+  "$schema": "https://www.deepsyte.com/schemas/agents.schema.json",
+  "name": "deepsyte",
   "version": "1.7.0",
   "description": "Browser screenshots, UX/SEO/accessibility audits, visual diffs, and pre-commit/CI gates as a CLI any AI agent framework (Claude Code, Cursor, Aider, Continue, OpenAI Agents) can shell out to.",
-  "homepage": "https://www.screenshotmcp.com",
+  "homepage": "https://www.deepsyte.com",
   "tools": [
     {
       "name": "screenshot",
       "description": "Capture a viewport-only screenshot of a URL. Returns a public CDN image URL.",
-      "command": "screenshotsmcp screenshot",
+      "command": "deepsyte screenshot",
       "args": [
         { "name": "url", "type": "string", "required": true, "positional": true },
         { "name": "--width", "type": "integer", "default": 1280 },
@@ -21,7 +21,7 @@
     {
       "name": "fullpage",
       "description": "Capture the full scrollable page as a single tall image.",
-      "command": "screenshotsmcp fullpage",
+      "command": "deepsyte fullpage",
       "args": [
         { "name": "url", "type": "string", "required": true, "positional": true },
         { "name": "--max-height", "type": "integer", "description": "Cap output image height in pixels" }
@@ -30,25 +30,25 @@
     {
       "name": "review",
       "description": "Run an AI-powered UX review on a URL (accessibility / performance / SEO / content / mobile findings).",
-      "command": "screenshotsmcp review",
+      "command": "deepsyte review",
       "args": [{ "name": "url", "type": "string", "required": true, "positional": true }]
     },
     {
       "name": "seo",
       "description": "Extract SEO metadata (title, meta description, OG tags, headings, structured data, robots).",
-      "command": "screenshotsmcp seo",
+      "command": "deepsyte seo",
       "args": [{ "name": "url", "type": "string", "required": true, "positional": true }]
     },
     {
       "name": "perf",
       "description": "Get Core Web Vitals + performance metrics (LCP, FCP, CLS, TTFB).",
-      "command": "screenshotsmcp perf",
+      "command": "deepsyte perf",
       "args": [{ "name": "url", "type": "string", "required": true, "positional": true }]
     },
     {
       "name": "a11y",
       "description": "Get the accessibility tree for a URL.",
-      "command": "screenshotsmcp a11y",
+      "command": "deepsyte a11y",
       "args": [
         { "name": "url", "type": "string", "required": true, "positional": true },
         { "name": "--full", "type": "boolean", "description": "Include all nodes, not just interactive" }
@@ -57,7 +57,7 @@
     {
       "name": "diff",
       "description": "Pixel-level visual diff between two URLs. Returns before/after/diff image URLs and a match score.",
-      "command": "screenshotsmcp diff",
+      "command": "deepsyte diff",
       "args": [
         { "name": "urlA", "type": "string", "required": true, "positional": true },
         { "name": "urlB", "type": "string", "required": true, "positional": true },
@@ -66,10 +66,10 @@
     },
     {
       "name": "check",
-      "description": "CI gate. Audits URLs from .screenshotsmcp/urls.json and exits non-zero when findings exceed the budget. Supports --report=github-comment for sticky PR comments.",
-      "command": "screenshotsmcp check",
+      "description": "CI gate. Audits URLs from .deepsyte/urls.json and exits non-zero when findings exceed the budget. Supports --report=github-comment for sticky PR comments.",
+      "command": "deepsyte check",
       "args": [
-        { "name": "--file", "type": "string", "default": ".screenshotsmcp/urls.json" },
+        { "name": "--file", "type": "string", "default": ".deepsyte/urls.json" },
         { "name": "--max-findings", "type": "integer" },
         { "name": "--max-total", "type": "integer" },
         { "name": "--only", "type": "string", "description": "Comma-separated categories" },
@@ -80,24 +80,24 @@
     {
       "name": "baseline-create",
       "description": "Capture and store a baseline screenshot for visual regression.",
-      "command": "screenshotsmcp baseline create",
+      "command": "deepsyte baseline create",
       "args": [{ "name": "url", "type": "string", "required": true, "positional": true }]
     },
     {
       "name": "baseline-diff",
       "description": "Re-capture a URL and diff against its stored baseline.",
-      "command": "screenshotsmcp baseline diff",
+      "command": "deepsyte baseline diff",
       "args": [{ "name": "url", "type": "string", "required": true, "positional": true }]
     }
   ],
   "config": {
     "env": [
-      { "name": "SCREENSHOTSMCP_API_KEY", "required": true, "description": "API key from https://www.screenshotmcp.com/dashboard/keys" }
+      { "name": "deepsyte_API_KEY", "required": true, "description": "API key from https://www.deepsyte.com/dashboard/keys" }
     ],
     "files": [
-      { "path": ".screenshotsmcp/urls.json", "description": "List of URLs the project cares about." },
-      { "path": ".screenshotsmcp/budget.json", "description": "Shared finding/perf thresholds." },
-      { "path": ".screenshotsmcp/baselines/*.json", "description": "Per-URL baseline references." }
+      { "path": ".deepsyte/urls.json", "description": "List of URLs the project cares about." },
+      { "path": ".deepsyte/budget.json", "description": "Shared finding/perf thresholds." },
+      { "path": ".deepsyte/baselines/*.json", "description": "Per-URL baseline references." }
     ]
   }
 }

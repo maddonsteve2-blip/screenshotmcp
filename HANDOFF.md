@@ -1,4 +1,4 @@
-# ScreenshotsMCP — New Session Briefing
+# deepsyte — New Session Briefing
 
 > **Read this first.** Then read `AGENTS.md` at the repo root for architecture, debugging, and deployment details.
 
@@ -6,7 +6,7 @@
 
 ## What Is This Project?
 
-**ScreenshotsMCP** is a screenshot-as-a-service platform for AI agents. It lets AI assistants (Claude, GPT, Cursor, Windsurf, etc.) capture screenshots of websites, run browser automation, audit UX/SEO/performance, test login flows, and verify visual output — all through standard protocols.
+**deepsyte** is a screenshot-as-a-service platform for AI agents. It lets AI assistants (Claude, GPT, Cursor, Windsurf, etc.) capture screenshots of websites, run browser automation, audit UX/SEO/performance, test login flows, and verify visual output — all through standard protocols.
 
 ### Core surfaces
 
@@ -15,7 +15,7 @@
 | **MCP Server** | Express + Playwright | `apps/api/src/mcp/` | Model Context Protocol server — AI agents connect here |
 | **REST API** | Express | `apps/api/` | HTTP API for screenshots, browser sessions, audits |
 | **Web Dashboard** | Next.js 15 | `apps/web/` | User dashboard, docs site, billing, shared pages |
-| **CLI** | Node.js | `packages/cli/` | npm CLI (`npx screenshotsmcp`) |
+| **CLI** | Node.js | `packages/cli/` | npm CLI (`npx deepsyte`) |
 | **VS Code Extension** | TypeScript | `packages/vscode-extension/` | IDE integration |
 | **GitHub Action** | TypeScript | `packages/github-action/` | CI/CD screenshot capture |
 
@@ -49,12 +49,12 @@
 
 | What | URL |
 |------|-----|
-| Website / Dashboard | https://www.screenshotmcp.com |
-| API | https://screenshotsmcp-api-production.up.railway.app |
-| Sign-in | https://www.screenshotmcp.com/sign-in |
-| Dashboard | https://www.screenshotmcp.com/dashboard |
-| Docs | https://www.screenshotmcp.com/docs |
-| Shared screenshots | https://www.screenshotmcp.com/shared/screenshots/[token] |
+| Website / Dashboard | https://www.deepsyte.com |
+| API | https://deepsyte-api-production.up.railway.app |
+| Sign-in | https://www.deepsyte.com/sign-in |
+| Dashboard | https://www.deepsyte.com/dashboard |
+| Docs | https://www.deepsyte.com/docs |
+| Shared screenshots | https://www.deepsyte.com/shared/screenshots/[token] |
 
 ---
 
@@ -79,7 +79,7 @@
 | `apps/web/src/app/api/` | Next.js API routes |
 | `apps/web/src/app/dashboard/` | Dashboard pages |
 | `apps/web/src/app/shared/` | Public shared screenshot pages |
-| `apps/web/public/.skills/screenshotsmcp/SKILL.md` | Skill file (must be updated when tools change) |
+| `apps/web/public/.skills/deepsyte/SKILL.md` | Skill file (must be updated when tools change) |
 | `apps/web/public/llms.txt` | LLM-readable docs (must be updated when tools change) |
 
 ---
@@ -103,7 +103,7 @@
 - Wired annotation display into captures tab and artifacts page
 
 ### Share Link Domain
-- Share URLs now use the canonical domain (`screenshotmcp.com`) derived from request headers, not potentially stale env vars
+- Share URLs now use the canonical domain (`deepsyte.com`) derived from request headers, not potentially stale env vars
 
 ---
 
@@ -146,7 +146,7 @@ The owner wants to launch on Product Hunt. This requires:
 After any feature/tool change, update ALL of these:
 1. MCP Server — `apps/api/src/mcp/server.ts`
 2. CLI — `packages/cli/src/commands/`
-3. SKILL.md — `apps/web/public/.skills/screenshotsmcp/SKILL.md`
+3. SKILL.md — `apps/web/public/.skills/deepsyte/SKILL.md`
 4. llms.txt — `apps/web/public/llms.txt`
 5. Docs — `apps/web/content/docs/`
 6. Install page — `apps/web/src/app/dashboard/install/page.tsx`

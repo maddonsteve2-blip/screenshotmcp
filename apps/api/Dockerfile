@@ -62,7 +62,7 @@ COPY packages/db ./packages/db
 COPY packages/types ./packages/types
 COPY apps/api ./apps/api
 
-RUN NODE_OPTIONS=--max-old-space-size=8192 npx turbo build --filter=@screenshotsmcp/api...
+RUN NODE_OPTIONS=--max-old-space-size=8192 npx turbo build --filter=@deepsyte/api...
 
 EXPOSE 3001
 
