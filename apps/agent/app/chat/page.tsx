@@ -67,6 +67,10 @@ export default function ChatPage() {
 
   useEffect(() => { fetch("/api/warmup").catch(() => {}); }, []);
 
+  useEffect(() => {
+    console.log('[DEBUG] evidence state changed, length:', evidence.length, 'items:', evidence.map(e => e.type));
+  }, [evidence]);
+
   const handleQuickAudit = (e: React.FormEvent) => {
     e.preventDefault();
     const url = auditUrl.trim();
