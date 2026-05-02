@@ -13,8 +13,8 @@ function getConfig() {
 function normalizeWebUrl(value: string, fallback: string): string {
   try {
     const url = new URL(value || fallback);
-    if (url.hostname === "screenshotsmcp.com") {
-      url.hostname = "www.screenshotmcp.com";
+    if (url.hostname === "deepsyte.com") {
+      url.hostname = "www.deepsyte.com";
     }
     return url.toString();
   } catch {

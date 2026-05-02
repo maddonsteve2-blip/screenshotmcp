@@ -7,7 +7,7 @@ import { uploadScreenshot } from "./r2.js";
 /**
  * Shared visual-diff implementation used by both the MCP `screenshot_diff`
  * tool and the REST `POST /v1/screenshot/diff` endpoint (which the
- * `screenshotsmcp/action` GitHub Action wraps).
+ * `deepsyte/action` GitHub Action wraps).
  *
  * Captures both URLs at the same viewport, runs pixelmatch with the requested
  * threshold, uploads the diff overlay plus both source captures to R2, and

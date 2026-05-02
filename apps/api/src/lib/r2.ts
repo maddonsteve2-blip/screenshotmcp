@@ -19,15 +19,15 @@ export const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!;
 
 /**
  * Append a non-cryptographic referral marker so every shared screenshot URL
- * carries attribution back to screenshotmcp.com. R2 ignores unknown query
+ * carries attribution back to deepsyte.com. R2 ignores unknown query
  * strings, so this is a no-op for content delivery while turning every public
  * link into a small marketing surface.
  *
  * Set REFERRAL_TAG="" in production to disable globally; the worker also skips
- * tagging for paid plans (see screenshotsmcp/types#PLAN_LIMITS).
+ * tagging for paid plans (see @deepsyte/types#PLAN_LIMITS).
  */
 const REFERRAL_TAG =
-  process.env.SCREENSHOT_REFERRAL_TAG ?? "via=screenshotmcp.com";
+  process.env.SCREENSHOT_REFERRAL_TAG ?? "via=deepsyte.com";
 
 export function tagPublicUrl(url: string): string {
   if (!REFERRAL_TAG) return url;

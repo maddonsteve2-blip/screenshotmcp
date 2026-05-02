@@ -4,7 +4,7 @@ import { browserPool } from "./browser-pool.js";
 import { STEALTH_SCRIPT, DEFAULT_USER_AGENT } from "./stealth.js";
 import { uploadScreenshot } from "./r2.js";
 import { db } from "./db.js";
-import { recordings, runs, screenshots } from "@screenshotsmcp/db";
+import { recordings, runs, screenshots } from "@deepsyte/db";
 import { persistInitialRunOutcome, persistRunOutcomeSnapshot, type RunOutcomeContext, normalizeOutcomeContext } from "./run-outcomes.js";
 import { emitWebhookEvent } from "./webhook-delivery.js";
 import { emitDashboardEvent } from "./dashboard-events.js";

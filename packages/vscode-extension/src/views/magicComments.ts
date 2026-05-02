@@ -1,5 +1,5 @@
 /**
- * Pure parser for ScreenshotsMCP magic comments in source files.
+ * Pure parser for DeepSyte magic comments in source files.
  *
  * Supported syntax (anywhere in a line, after `//`, `#`, or `<!--`):
  *

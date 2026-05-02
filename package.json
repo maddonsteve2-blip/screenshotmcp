@@ -1,5 +1,5 @@
 {
-  "name": "screenshotsmcp",
+  "name": "deepsyte",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -10,16 +10,16 @@
     "dev": "turbo dev",
     "eval:agent": "node scripts/agent-eval.mjs",
     "lint": "turbo lint",
-    "lint:auth": "npm --workspace @screenshotsmcp/api run lint:mcp-server && npm --workspace screenshotsmcp run lint:auth && npm --workspace @screenshotsmcp/types run lint:auth && npm --workspace @screenshotsmcp/web run lint:auth",
-    "lint:quiet": "npm --workspace @screenshotsmcp/web run lint -- --quiet",
+    "lint:auth": "npm --workspace @deepsyte/api run lint:mcp-server && npm --workspace deepsyte run lint:auth && npm --workspace @deepsyte/types run lint:auth && npm --workspace @deepsyte/web run lint:auth",
+    "lint:quiet": "npm --workspace @deepsyte/web run lint -- --quiet",
     "sync:onboarding": "node scripts/sync-onboarding-copy.mjs",
     "sync:onboarding:check": "node scripts/sync-onboarding-copy.mjs --check",
     "test:agent-eval": "node --test scripts/agent-eval.test.mjs",
-    "test:run-outcomes": "npm --workspace @screenshotsmcp/api run test:run-outcomes",
+    "test:run-outcomes": "npm --workspace @deepsyte/api run test:run-outcomes",
     "test": "npm --prefix packages/vscode-extension run test",
     "test:chrome-extension:e2e": "node packages/chrome-extension/e2e/smoke.mjs",
     "typecheck": "turbo typecheck",
-    "verify:auth": "npm run lint:auth && npm --workspace @screenshotsmcp/web run typecheck && npm --workspace screenshotsmcp run build",
+    "verify:auth": "npm run lint:auth && npm --workspace @deepsyte/web run typecheck && npm --workspace deepsyte run build",
     "verify:quiet": "npm run typecheck && npm run build && npm run lint:quiet && npm test",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate"

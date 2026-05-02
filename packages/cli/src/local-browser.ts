@@ -9,7 +9,7 @@ import type {
   LocalBrowserLaunchResult,
   LocalBrowserName,
   LocalBrowserPermissionPrompt,
-} from "@screenshotsmcp/types";
+} from "@deepsyte/types";
 import { getConfigPath } from "./config.js";
 
 export interface ResolvedLocalBrowser {
@@ -139,7 +139,7 @@ export function createLocalBrowserPermissionPrompt(
   const details = [
     `Browser: ${resolved.browser}`,
     `Executable: ${resolved.executablePath}`,
-    `Profile: A fresh isolated ScreenshotsMCP profile will be created under ${browserBaseDir}`,
+    `Profile: A fresh isolated DeepSyte profile will be created under ${browserBaseDir}`,
     `Data access: Pages you open in this managed browser can be read and interacted with during the approved session.`,
     "Observability: Console logs and network activity are captured continuously while the managed browser stays open.",
     request.url ? `Start URL: ${request.url}` : "Start URL: about:blank",
@@ -236,12 +236,12 @@ export function getLocalBrowserInstallHelp(): string[] {
 
 export function getLocalBrowserDefaultReason(url?: string): string {
   if (url) {
-    return `Launch a local browser with an isolated ScreenshotsMCP profile to test ${url} with human-like realism.`;
+    return `Launch a local browser with an isolated DeepSyte profile to test ${url} with human-like realism.`;
   }
 
-  return "Launch a local browser with an isolated ScreenshotsMCP profile for human-like website testing.";
+  return "Launch a local browser with an isolated DeepSyte profile for human-like website testing.";
 }
 
 export function getLocalBrowserHomeDir(): string {
-  return join(homedir(), ".config", "screenshotsmcp", "local-browser");
+  return join(homedir(), ".config", "deepsyte", "local-browser");
 }

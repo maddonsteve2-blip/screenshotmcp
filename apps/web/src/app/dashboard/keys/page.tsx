@@ -200,7 +200,7 @@ export default function KeysPage() {
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p><strong>MCP Server URL:</strong></p>
           <code className="block rounded bg-muted px-3 py-2 text-xs font-mono break-all">
-            https://screenshotsmcp-api-production.up.railway.app/mcp/{activeKey ? activeKey.keyPreview.split("...")[0] + "..." : "YOUR_KEY"}
+            https://deepsyte-api-production.up.railway.app/mcp/{activeKey ? activeKey.keyPreview.split("...")[0] + "..." : "YOUR_KEY"}
           </code>
           <p><strong>REST API:</strong> Pass as <code className="bg-muted px-1 rounded">Authorization: Bearer sk_live_...</code> header</p>
           <p><strong>CLI:</strong> <code className="bg-muted px-1 rounded">deepsyte login --key sk_live_...</code></p>

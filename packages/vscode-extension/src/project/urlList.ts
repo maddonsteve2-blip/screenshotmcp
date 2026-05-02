@@ -1,5 +1,5 @@
 /**
- * Parser for `.screenshotsmcp/urls.json` — a per-workspace list of URLs that a
+ * Parser for `.deepsyte/urls.json` — a per-workspace list of URLs that a
  * team wants to screenshot or audit consistently.
  *
  * Accepted shapes:

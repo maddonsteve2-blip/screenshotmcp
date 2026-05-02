@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
-import { runs } from "@screenshotsmcp/db";
+import { runs } from "@deepsyte/db";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 

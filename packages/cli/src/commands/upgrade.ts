@@ -34,7 +34,7 @@ async function readLocalVersion(): Promise<string> {
 }
 
 async function fetchLatestVersion(): Promise<string | undefined> {
-  const res = await fetch("https://registry.npmjs.org/screenshotsmcp", {
+  const res = await fetch("https://registry.npmjs.org/deepsyte", {
     headers: { Accept: "application/vnd.npm.install-v1+json" },
   });
   if (!res.ok) return undefined;
@@ -58,7 +58,7 @@ export const upgradeCommand = new Command("upgrade")
   .option("--force", "Re-install even if already on the latest version")
   .action(async (opts: Record<string, boolean>) => {
     const local = await readLocalVersion();
-    console.log(chalk.dim(`Current: screenshotsmcp@${local}`));
+    console.log(chalk.dim(`Current: deepsyte@${local}`));
     let latest: string | undefined;
     try {
       latest = await fetchLatestVersion();
@@ -72,7 +72,7 @@ export const upgradeCommand = new Command("upgrade")
       process.exit(1);
       return;
     }
-    console.log(chalk.dim(`Latest:  screenshotsmcp@${latest}`));
+    console.log(chalk.dim(`Latest:  deepsyte@${latest}`));
 
     const cmp = local === "unknown" ? -1 : compareSemver(local, latest);
     if (cmp >= 0 && !opts.force) {
@@ -84,22 +84,22 @@ export const upgradeCommand = new Command("upgrade")
     if (opts.check) {
       console.log("");
       console.log(chalk.yellow(`\u2191 Update available: ${local} \u2192 ${latest}`));
-      console.log(`  Run: ${chalk.cyan("screenshotsmcp upgrade")}`);
+      console.log(`  Run: ${chalk.cyan("deepsyte upgrade")}`);
       process.exit(1);
       return;
     }
 
     console.log("");
-    console.log(chalk.bold(`Installing screenshotsmcp@${latest}\u2026`));
+    console.log(chalk.bold(`Installing deepsyte@${latest}\u2026`));
     const cmd = process.platform === "win32" ? "npm.cmd" : "npm";
-    const child = spawn(cmd, ["install", "-g", `screenshotsmcp@${latest}`], {
+    const child = spawn(cmd, ["install", "-g", `deepsyte@${latest}`], {
       stdio: "inherit",
       shell: false,
     });
     child.on("exit", (code) => {
       if (code === 0) {
         console.log("");
-        console.log(chalk.green(`\u2713 Upgraded to screenshotsmcp@${latest}`));
+        console.log(chalk.green(`\u2713 Upgraded to deepsyte@${latest}`));
         process.exit(0);
       } else {
         console.error(chalk.red(`\u2717 npm install exited with code ${code}`));

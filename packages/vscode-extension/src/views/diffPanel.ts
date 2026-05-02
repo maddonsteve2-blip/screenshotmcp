@@ -20,7 +20,7 @@ export const DiffPanel = {
       return;
     }
     const panel = vscode.window.createWebviewPanel(
-      "screenshotsmcp.diff",
+      "deepsyte.diff",
       `Diff: ${shortHost(input.urlA)} vs ${shortHost(input.urlB)}`,
       vscode.ViewColumn.Beside,
       { enableScripts: true, retainContextWhenHidden: true },

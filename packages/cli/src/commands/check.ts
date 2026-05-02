@@ -9,15 +9,15 @@ import { renderGithubComment, renderHtmlReport, renderShortSummary, type UrlRepo
 
 /**
  * CI-friendly check command. Reads a URL list (default
- * `.screenshotsmcp/urls.json`), runs `ux_review` on each URL, counts
+ * `.deepsyte/urls.json`), runs `ux_review` on each URL, counts
  * audit findings (heuristic parse), and exits non-zero when the total
  * exceeds the configured threshold.
  *
  * Designed for pre-commit hooks and GitHub Actions.
  */
 export const checkCommand = new Command("check")
-  .description("CI check: audit URLs from .screenshotsmcp/urls.json and fail if findings exceed thresholds")
-  .option("-f, --file <path>", "Path to URL list JSON", ".screenshotsmcp/urls.json")
+  .description("CI check: audit URLs from .deepsyte/urls.json and fail if findings exceed thresholds")
+  .option("-f, --file <path>", "Path to URL list JSON", ".deepsyte/urls.json")
   .option("--max-findings <n>", "Fail if a single URL has more than this many findings", "10")
   .option("--max-total <n>", "Fail if total findings across all URLs exceed this", "50")
   .option("--json", "Emit the per-URL report as JSON on stdout")
@@ -27,7 +27,7 @@ export const checkCommand = new Command("check")
   .option("--report <format>", "Emit a formatted report: 'github-comment' (markdown), 'html', 'short' (one-line), 'json'")
   .option("--report-out <path>", "Write the formatted report to this file (default: stdout)")
   .action(async (opts: Record<string, string | boolean>) => {
-    const file = typeof opts.file === "string" ? opts.file : ".screenshotsmcp/urls.json";
+    const file = typeof opts.file === "string" ? opts.file : ".deepsyte/urls.json";
     const { budget, path: budgetPath, errors: budgetErrors } = await loadBudgetFromCwd();
 
     // CLI flags override the budget file when explicitly passed.
@@ -73,7 +73,7 @@ export const checkCommand = new Command("check")
     }
 
     if (!jsonOnly) {
-      console.log(chalk.bold(`\n\u{1F4E6} ScreenshotsMCP check\u2014${urls.length} URL${urls.length === 1 ? "" : "s"} from ${file}\n`));
+      console.log(chalk.bold(`\n\u{1F4E6} DeepSyte check\u2014${urls.length} URL${urls.length === 1 ? "" : "s"} from ${file}\n`));
     }
 
     const report: UrlReport[] = [];

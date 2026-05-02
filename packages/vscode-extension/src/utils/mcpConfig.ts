@@ -16,7 +16,7 @@ export function buildWorkspaceMcpConfig(
       ...existingMcp,
       servers: {
         ...existingServers,
-        screenshotsmcp: {
+        deepsyte: {
           type: "http",
           url: `${apiUrl}/mcp/${apiKey}`,
         },

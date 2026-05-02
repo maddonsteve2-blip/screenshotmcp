@@ -5,7 +5,7 @@ import { ScreenshotsMcpServerProvider } from "./serverProvider";
 import { getApiUrl } from "../settings";
 import { WORKSPACE_MCP_PATH } from "../constants";
 
-const AUTO_CONFIG_STATE_KEY = "screenshotsmcp.autoConfiguredTarget";
+const AUTO_CONFIG_STATE_KEY = "deepsyte.autoConfiguredTarget";
 
 type EditorKind = "vscode" | "cursor" | "windsurf" | "unknown";
 type ResultStatus = "updated" | "unchanged" | "removed" | "native" | "skipped";
@@ -42,7 +42,7 @@ export class EditorMcpAutoInstaller {
       return {
         status: "native",
         editor,
-        message: "ScreenshotsMCP is available through VS Code's native MCP registration.",
+        message: "DeepSyte is available through VS Code's native MCP registration.",
       };
     }
 
@@ -63,7 +63,7 @@ export class EditorMcpAutoInstaller {
       return {
         status: "unchanged",
         editor,
-        message: `${target.label} is already configured for ScreenshotsMCP.`,
+        message: `${target.label} is already configured for DeepSyte.`,
         path: target.fileUri.fsPath,
       };
     }
@@ -78,7 +78,7 @@ export class EditorMcpAutoInstaller {
     return {
       status: "updated",
       editor,
-      message: `Configured ScreenshotsMCP automatically for ${target.label}.`,
+      message: `Configured DeepSyte automatically for ${target.label}.`,
       path: target.fileUri.fsPath,
     };
   }
@@ -114,7 +114,7 @@ export class EditorMcpAutoInstaller {
     return {
       status: "removed",
       editor: state.editor,
-      message: `Removed the extension-managed ScreenshotsMCP config from ${state.path}.`,
+      message: `Removed the extension-managed DeepSyte config from ${state.path}.`,
       path: state.path,
     };
   }
@@ -191,7 +191,7 @@ function buildConfigForEditor(
         ...existingMcp,
         servers: {
           ...existingServers,
-          screenshotsmcp: {
+          deepsyte: {
             type: "http",
             url: `${apiUrl}/mcp/${apiKey}`,
           },
@@ -207,7 +207,7 @@ function buildConfigForEditor(
       ...existing,
       mcpServers: {
         ...existingServers,
-        screenshotsmcp: {
+        deepsyte: {
           url: `${apiUrl}/mcp/${apiKey}`,
         },
       },
@@ -218,7 +218,7 @@ function buildConfigForEditor(
     ...existing,
     mcpServers: {
       ...existingServers,
-      screenshotsmcp: {
+      deepsyte: {
         headers: {
           "x-api-key": apiKey,
         },
@@ -236,11 +236,11 @@ function removeConfigForEditor(
     const existingMcp = isObject(existing.mcp) ? existing.mcp : undefined;
     const existingServers = existingMcp && isObject(existingMcp.servers) ? { ...existingMcp.servers } : undefined;
 
-    if (!existingMcp || !existingServers || !("screenshotsmcp" in existingServers)) {
+    if (!existingMcp || !existingServers || !("deepsyte" in existingServers)) {
       return existing;
     }
 
-    delete existingServers.screenshotsmcp;
+    delete existingServers.deepsyte;
     const next = { ...existing };
 
     if (Object.keys(existingServers).length === 0) {
@@ -262,11 +262,11 @@ function removeConfigForEditor(
   }
 
   const existingServers = isObject(existing.mcpServers) ? { ...existing.mcpServers } : undefined;
-  if (!existingServers || !("screenshotsmcp" in existingServers)) {
+  if (!existingServers || !("deepsyte" in existingServers)) {
     return existing;
   }
 
-  delete existingServers.screenshotsmcp;
+  delete existingServers.deepsyte;
   if (Object.keys(existingServers).length === 0) {
     const next = { ...existing };
     delete next.mcpServers;

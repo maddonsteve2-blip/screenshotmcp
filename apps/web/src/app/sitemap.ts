@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { source } from '@/lib/source';
 import { competitors } from '@/lib/competitors';
 
-const BASE_URL = 'https://www.screenshotmcp.com';
+const BASE_URL = 'https://deepsyte.com';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages = source.getPages().map((page) => ({

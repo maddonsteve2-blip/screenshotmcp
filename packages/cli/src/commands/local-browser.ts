@@ -34,7 +34,7 @@ import {
  * next command. No preset script — full closed-loop.
  */
 
-const SESSION_FILE = join(tmpdir(), "screenshotsmcp-local-session.json");
+const SESSION_FILE = join(tmpdir(), "deepsyte-local-session.json");
 
 interface SessionState {
   port: number;
@@ -55,7 +55,7 @@ interface SessionState {
 function loadSession(): SessionState {
   if (!existsSync(SESSION_FILE)) {
     throw new Error(
-      "No active local browser session. Run `screenshotsmcp browser:start <url>` first.",
+      "No active local browser session. Run `deepsyte browser:start <url>` first.",
     );
   }
   return JSON.parse(readFileSync(SESSION_FILE, "utf8"));
@@ -244,8 +244,8 @@ export const browserStartCommand = new Command("browser:start")
     }
 
     const port = parseInt(opts.port, 10);
-    const userDataDir = join(tmpdir(), `screenshotsmcp-chrome-${Date.now()}`);
-    const snapshotDir = join(tmpdir(), `screenshotsmcp-snaps-${Date.now()}`);
+    const userDataDir = join(tmpdir(), `deepsyte-chrome-${Date.now()}`);
+    const snapshotDir = join(tmpdir(), `deepsyte-snaps-${Date.now()}`);
     mkdirSync(userDataDir, { recursive: true });
     mkdirSync(snapshotDir, { recursive: true });
 

@@ -4,7 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { DEFAULT_BUDGET, parseBudgetJson, type AuditBudget } from "../budget.js";
 
-const BUDGET_PATH = ".screenshotsmcp/budget.json";
+const BUDGET_PATH = ".deepsyte/budget.json";
 
 const ALLOWED_KEYS = ["maxFindingsPerUrl", "maxTotalFindings", "warnThreshold", "categories"] as const;
 type BudgetKey = (typeof ALLOWED_KEYS)[number];
@@ -30,7 +30,7 @@ async function persist(budget: AuditBudget): Promise<string> {
   return path;
 }
 
-export const budgetCommand = new Command("budget").description("Inspect and edit .screenshotsmcp/budget.json without hand-editing JSON.");
+export const budgetCommand = new Command("budget").description("Inspect and edit .deepsyte/budget.json without hand-editing JSON.");
 
 budgetCommand
   .command("show")

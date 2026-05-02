@@ -21,7 +21,7 @@ export class TimelinePanelController implements vscode.Disposable {
     }
 
     this.panel = vscode.window.createWebviewPanel(
-      "screenshotsmcp.timeline",
+      "deepsyte.timeline",
       `${EXTENSION_DISPLAY_NAME} Timeline`,
       vscode.ViewColumn.Two,
       {
@@ -65,11 +65,11 @@ export class TimelinePanelController implements vscode.Disposable {
       return;
     }
     if (message.type === "screenshot" && typeof message.url === "string") {
-      void vscode.commands.executeCommand("screenshotsmcp.takeScreenshotAtUrl", message.url);
+      void vscode.commands.executeCommand("deepsyte.takeScreenshotAtUrl", message.url);
       return;
     }
     if (message.type === "audit" && typeof message.url === "string") {
-      void vscode.commands.executeCommand("screenshotsmcp.auditUrl", message.url);
+      void vscode.commands.executeCommand("deepsyte.auditUrl", message.url);
       return;
     }
     if (message.type === "clear") {
@@ -118,7 +118,7 @@ function getTimelineHtml(filtered: TimelineEvent[], all: TimelineEvent[], filter
   ].join("\n");
 
   const items = filtered.length === 0
-    ? '<div class="empty">No activity for this filter yet. Run a ScreenshotsMCP command to populate the timeline.</div>'
+    ? '<div class="empty">No activity for this filter yet. Run a DeepSyte command to populate the timeline.</div>'
     : filtered.map(renderEvent).join("");
 
   return `<!DOCTYPE html>
@@ -126,7 +126,7 @@ function getTimelineHtml(filtered: TimelineEvent[], all: TimelineEvent[], filter
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ScreenshotsMCP Timeline</title>
+    <title>DeepSyte Timeline</title>
     <style>
       :root { color-scheme: light dark; }
       body {
@@ -224,7 +224,7 @@ function getTimelineHtml(filtered: TimelineEvent[], all: TimelineEvent[], filter
   </head>
   <body>
     <header>
-      <h1>ScreenshotsMCP Timeline</h1>
+      <h1>DeepSyte Timeline</h1>
       <button class="toolbar-btn" id="clearBtn">Clear</button>
     </header>
     <div class="filters">${chips}</div>

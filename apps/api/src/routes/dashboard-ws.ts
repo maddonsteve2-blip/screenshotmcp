@@ -3,7 +3,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { URL } from "url";
 import { createHash } from "crypto";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
-import { apiKeys, recordings, runOutcomes, runs, screenshots, users, webhookDeliveries, webhookEndpoints } from "@screenshotsmcp/db";
+import { apiKeys, recordings, runOutcomes, runs, screenshots, users, webhookDeliveries, webhookEndpoints } from "@deepsyte/db";
 import { db } from "../lib/db.js";
 import { getPresignedUrl } from "../lib/r2.js";
 import { getSession } from "../lib/sessions.js";

@@ -1,5 +1,5 @@
 /**
- * Pure parser for `.screenshotsmcp/budget.json` — kept in sync with the
+ * Pure parser for `.deepsyte/budget.json` — kept in sync with the
  * VS Code extension's `src/project/budget.ts`. CLI vs extension are
  * shipped as separate npm packages, so the parser is duplicated rather
  * than depended on across boundaries.
@@ -84,7 +84,7 @@ function clamp(raw: unknown, min: number, max: number, key: string, errors: stri
 export async function loadBudgetFromCwd(): Promise<{ budget: AuditBudget; path?: string; errors: string[] }> {
   const { resolve } = await import("node:path");
   const { readFile } = await import("node:fs/promises");
-  const candidates = [".screenshotsmcp/budget.json", ".screenshotsmcp.budget.json"];
+  const candidates = [".deepsyte/budget.json", ".deepsyte.budget.json"];
   for (const candidate of candidates) {
     const full = resolve(process.cwd(), candidate);
     try {

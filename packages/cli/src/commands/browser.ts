@@ -2,7 +2,7 @@ import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import { randomUUID } from "crypto";
-import type { LocalBrowserLaunchRequest, LocalBrowserPermissionPrompt } from "@screenshotsmcp/types";
+import type { LocalBrowserLaunchRequest, LocalBrowserPermissionPrompt } from "@deepsyte/types";
 import {
   createLocalBrowserPermissionPrompt,
   getLocalBrowserDefaultReason,
@@ -89,11 +89,11 @@ function parseJsonArgument<T>(value: string, label: string): T {
 }
 
 export const browserCommand = new Command("browser")
-  .description("Launch and control an extension-free managed local browser for ScreenshotsMCP workflows");
+  .description("Launch and control an extension-free managed local browser for DeepSyte workflows");
 
 browserCommand
   .command("open")
-  .description("Open a local browser in a dedicated ScreenshotsMCP profile after explicit approval")
+  .description("Open a local browser in a dedicated DeepSyte profile after explicit approval")
   .argument("[url]", "Optional URL to open immediately")
   .option("-b, --browser <browser>", "Browser to use: auto, chrome, edge, chromium", "auto")
   .option("--headless", "Launch in headless mode for debugging future local automation flows")
@@ -178,8 +178,8 @@ browserCommand
           console.log(`  Recording dir: ${chalk.dim(result.recordingDir)}`);
         }
       }
-      console.log(chalk.dim("  This is an isolated ScreenshotsMCP browser profile for future local automation and evidence capture flows."));
-      console.log(chalk.dim("  Use `screenshotsmcp browser status` or `screenshotsmcp browser click ...` to control this managed local browser."));
+      console.log(chalk.dim("  This is an isolated DeepSyte browser profile for future local automation and evidence capture flows."));
+      console.log(chalk.dim("  Use `deepsyte browser status` or `deepsyte browser click ...` to control this managed local browser."));
     } catch (err) {
       launchSpinner.fail(chalk.red("Local browser launch failed"));
       console.error(chalk.red(err instanceof Error ? err.message : String(err)));

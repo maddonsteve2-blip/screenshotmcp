@@ -2,7 +2,7 @@ import { Router } from "express";
 import Stripe from "stripe";
 import { eq } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { users } from "@screenshotsmcp/db";
+import { users } from "@deepsyte/db";
 
 let _stripe: Stripe | null = null;
 function getStripe(): Stripe {

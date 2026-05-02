@@ -34,7 +34,7 @@ export class ScreenshotPanel {
     this.input = input;
     this.onRerun = onRerun;
     this.panel = vscode.window.createWebviewPanel(
-      "screenshotsmcp.screenshot",
+      "deepsyte.screenshot",
       `${EXTENSION_DISPLAY_NAME} · Screenshot`,
       vscode.ViewColumn.Active,
       { enableScripts: true, retainContextWhenHidden: true },

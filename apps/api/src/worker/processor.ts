@@ -1,13 +1,13 @@
 import { Job } from "bullmq";
 import { eq } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { screenshots } from "@screenshotsmcp/db";
+import { screenshots } from "@deepsyte/db";
 import { emitDashboardEvent } from "../lib/dashboard-events.js";
 import { uploadScreenshot } from "../lib/r2.js";
 import { browserPool } from "../lib/browser-pool.js";
 import { STEALTH_SCRIPT, DEFAULT_USER_AGENT } from "../lib/stealth.js";
 import { emitWebhookEvent } from "../lib/webhook-delivery.js";
-import type { ScreenshotJob } from "@screenshotsmcp/types";
+import type { ScreenshotJob } from "@deepsyte/types";
 import type { Page } from "playwright";
 
 const CONTENT_TYPES: Record<string, string> = {

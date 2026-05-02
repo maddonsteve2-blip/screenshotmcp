@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
-import { users } from "@screenshotsmcp/db";
+import { users } from "@deepsyte/db";
 
 export async function GET() {
   const { userId: clerkId } = await auth();

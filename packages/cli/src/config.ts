@@ -7,7 +7,7 @@ const WINDSURF_MCP_CONFIG_PATH = join(homedir(), ".codeium", "windsurf", "mcp_co
 
 interface WindsurfMcpConfig {
   mcpServers?: {
-    screenshotsmcp?: {
+    deepsyte?: {
       headers?: Record<string, string>;
       serverUrl?: string;
       url?: string;
@@ -16,11 +16,11 @@ interface WindsurfMcpConfig {
 }
 
 const config = new Conf({
-  projectName: "screenshotsmcp",
-  cwd: join(homedir(), ".config", "screenshotsmcp"),
+  projectName: "deepsyte",
+  cwd: join(homedir(), ".config", "deepsyte"),
   schema: {
     apiKey: { type: "string", default: "" },
-    apiUrl: { type: "string", default: "https://screenshotsmcp-api-production.up.railway.app" },
+    apiUrl: { type: "string", default: "https://deepsyte-api-production.up.railway.app" },
   },
 });
 
@@ -39,7 +39,7 @@ export function getWindsurfApiKey(): string {
 
   try {
     const parsed = JSON.parse(readFileSync(WINDSURF_MCP_CONFIG_PATH, "utf8")) as WindsurfMcpConfig;
-    const server = parsed.mcpServers?.screenshotsmcp;
+    const server = parsed.mcpServers?.deepsyte;
     const headerKey = server?.headers?.["x-api-key"];
     if (headerKey?.startsWith("sk_live_")) {
       return headerKey;
@@ -64,7 +64,7 @@ export function syncApiKeyFromEditorConfigs(currentKey = ""): string {
 }
 
 export function getApiUrl(): string {
-  return (config.get("apiUrl") as string) || "https://screenshotsmcp-api-production.up.railway.app";
+  return (config.get("apiUrl") as string) || "https://deepsyte-api-production.up.railway.app";
 }
 
 export function setApiUrl(url: string): void {

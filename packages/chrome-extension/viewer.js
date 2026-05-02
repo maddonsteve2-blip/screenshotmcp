@@ -1,8 +1,8 @@
-// ScreenshotsMCP Viewer — Full-tab screenshot viewer with toolbar
+// DeepSyte Viewer — Full-tab screenshot viewer with toolbar
 
 const $ = (id) => document.getElementById(id);
-const CLOUD_API = "https://screenshotsmcp-api-production.up.railway.app";
-const WEB_URL = "https://www.screenshotmcp.com";
+const CLOUD_API = "https://deepsyte-api-production.up.railway.app";
+const WEB_URL = "https://deepsyte.com";
 
 let screenshotId = null;
 let screenshotData = null;
@@ -33,7 +33,7 @@ async function init() {
     // Set page info
     $("pageTitle").textContent = screenshotData.title || "Screenshot";
     $("pageUrl").textContent = screenshotData.url || "";
-    document.title = `${screenshotData.title || "Screenshot"} — ScreenshotsMCP`;
+    document.title = `${screenshotData.title || "Screenshot"} — DeepSyte`;
 
     // Set meta
     $("dimensions").textContent = `${screenshotData.width} × ${screenshotData.height}`;
@@ -221,10 +221,10 @@ async function checkCloudAuth() {
     $("cloudLoggedIn").style.display = "block";
     $("cloudUser").textContent = "Signed in • API key configured";
     if (screenshotData?.cloudUrl) {
-      $("cloudUsage").textContent = "This screenshot is already saved to ScreenshotsMCP.";
+      $("cloudUsage").textContent = "This screenshot is already saved to DeepSyte.";
       $("cloudUpload").textContent = "Open cloud image";
     } else {
-      $("cloudUsage").textContent = "Ready to save this screenshot to ScreenshotsMCP.";
+      $("cloudUsage").textContent = "Ready to save this screenshot to DeepSyte.";
       $("cloudUpload").textContent = "Upload to Cloud";
     }
   } else {
@@ -277,7 +277,7 @@ async function uploadToCloud() {
     $("cloudResult").style.display = "block";
     $("cloudResult").className = "cloud-result success";
     $("cloudResult").innerHTML = `Saved! <a href="${data.url}" target="_blank" style="color:#00ff88">${data.url}</a>`;
-    $("cloudUsage").textContent = "This screenshot is already saved to ScreenshotsMCP.";
+    $("cloudUsage").textContent = "This screenshot is already saved to DeepSyte.";
     $("cloudUpload").textContent = "Open cloud image";
     setStatus("success", "Uploaded to cloud");
   } catch (e) {

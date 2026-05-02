@@ -4,7 +4,7 @@ import { findMagicComments, type MagicMatch } from "./magicComments";
 /**
  * Surfaces CodeLens actions above `// @screenshot`, `// @audit`, and
  * `// @diff` directives. The heavy lifting is delegated to the normal
- * command (`screenshotsmcp.takeScreenshotAtUrl` etc.); this provider just
+ * command (`deepsyte.takeScreenshotAtUrl` etc.); this provider just
  * wires up the gutter affordance.
  */
 export class MagicCommentCodeLensProvider implements vscode.CodeLensProvider {
@@ -55,7 +55,7 @@ function buildLensesFor(match: MagicMatch, range: vscode.Range): vscode.CodeLens
     return [
       new vscode.CodeLens(range, {
         title: "\u{1F50D} Diff",
-        command: "screenshotsmcp.diffUrls",
+        command: "deepsyte.diffUrls",
         arguments: [a, b],
         tooltip: `Visual diff: ${a} vs ${b}`,
       }),
@@ -67,7 +67,7 @@ function buildLensesFor(match: MagicMatch, range: vscode.Range): vscode.CodeLens
     return [
       new vscode.CodeLens(range, {
         title: "\u{1F50D} Audit",
-        command: "screenshotsmcp.auditUrl",
+        command: "deepsyte.auditUrl",
         arguments: [url],
         tooltip: `Audit ${url}`,
       }),
@@ -77,19 +77,19 @@ function buildLensesFor(match: MagicMatch, range: vscode.Range): vscode.CodeLens
     return [
       new vscode.CodeLens(range, {
         title: "\u{1F4CC} Capture baseline",
-        command: "screenshotsmcp.captureBaseline",
+        command: "deepsyte.captureBaseline",
         arguments: [url],
         tooltip: `Capture and store a visual baseline for ${url}`,
       }),
       new vscode.CodeLens(range, {
         title: "\u{1F50D} Diff vs baseline",
-        command: "screenshotsmcp.diffBaseline",
+        command: "deepsyte.diffBaseline",
         arguments: [url],
         tooltip: `Re-capture ${url} and diff against the stored baseline`,
       }),
       new vscode.CodeLens(range, {
         title: "\u{2B06} Promote baseline",
-        command: "screenshotsmcp.promoteBaseline",
+        command: "deepsyte.promoteBaseline",
         arguments: [url],
         tooltip: `Overwrite the stored baseline for ${url} with a fresh capture`,
       }),
@@ -99,13 +99,13 @@ function buildLensesFor(match: MagicMatch, range: vscode.Range): vscode.CodeLens
   return [
     new vscode.CodeLens(range, {
       title: "\u{1F4F8} Screenshot",
-      command: "screenshotsmcp.takeScreenshotAtUrl",
+      command: "deepsyte.takeScreenshotAtUrl",
       arguments: [url, match.options],
       tooltip: describeScreenshot(url, match),
     }),
     new vscode.CodeLens(range, {
       title: "\u{1F50D} Audit",
-      command: "screenshotsmcp.auditUrl",
+      command: "deepsyte.auditUrl",
       arguments: [url],
       tooltip: `Audit ${url}`,
     }),

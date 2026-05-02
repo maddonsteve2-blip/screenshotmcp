@@ -21,7 +21,7 @@ import { createServer } from "http";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const APP_URL = process.env.APP_URL || "https://screenshotsmcp-api-production.up.railway.app";
+const APP_URL = process.env.APP_URL || "https://deepsyte-api-production.up.railway.app";
 
 // Attach a stable X-Request-ID before any handler so logs, error envelopes,
 // idempotency caches, and client retries can all reference the same id.
@@ -30,7 +30,7 @@ app.use(requestId);
 app.use("/webhooks", express.raw({ type: "application/json" }));
 app.use(express.json({ limit: "50mb" }));
 app.use(cors({
-  origin: [process.env.WEB_URL || "https://www.screenshotmcp.com", "http://localhost:3000"],
+  origin: [process.env.WEB_URL || "https://www.deepsyte.com", "http://localhost:3000"],
   credentials: true,
   exposedHeaders: [
     "X-Request-ID",
@@ -50,11 +50,11 @@ app.get("/health", (_req, res) => {
 // Claude Desktop, Smithery, Pulse) probe /.well-known/mcp.json to learn the
 // server name, transports, and the get-an-API-key URL.
 app.get("/.well-known/mcp.json", (_req, res) => {
-  const webUrl = process.env.WEB_URL || "https://www.screenshotmcp.com";
+  const webUrl = process.env.WEB_URL || "https://www.deepsyte.com";
   res.json({
     schemaVersion: "1",
-    name: "screenshotsmcp",
-    displayName: "ScreenshotsMCP",
+    name: "deepsyte",
+    displayName: "DeepSyte",
     description:
       "Screenshots, browser automation, visual diff, and audit tooling for AI agents. 52+ MCP tools spanning Playwright sessions, full-page captures, accessibility / SEO / performance reviews, CAPTCHA solving, and signed outbound webhooks.",
     homepage: webUrl,
@@ -70,7 +70,7 @@ app.get("/.well-known/mcp.json", (_req, res) => {
       },
     },
     capabilities: ["tools"],
-    contact: { email: "support@screenshotmcp.com" },
+    contact: { email: "support@deepsyte.com" },
   });
 });
 
@@ -96,7 +96,7 @@ app.get("/.well-known/oauth-authorization-server", (_req, res) => {
 });
 
 app.get("/oauth/authorize", (req, res) => {
-  const webUrl = process.env.WEB_URL || "https://www.screenshotmcp.com";
+  const webUrl = process.env.WEB_URL || "https://www.deepsyte.com";
   const params = new URLSearchParams(req.query as Record<string, string>);
   res.redirect(`${webUrl}/oauth/authorize?${params.toString()}`);
 });

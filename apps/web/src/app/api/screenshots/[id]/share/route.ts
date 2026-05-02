@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
-import { screenshots } from "@screenshotsmcp/db";
+import { screenshots } from "@deepsyte/db";
 
 function buildShareUrl(req: NextRequest, token: string) {
   // Prefer the request origin so we always use the canonical domain

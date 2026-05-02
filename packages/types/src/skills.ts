@@ -10,7 +10,7 @@ import {
   CORE_RESPONSIVE_AUDIT_WORKFLOW_CONTENT,
 } from "./skills/content.generated.js";
 
-export const CORE_SKILL_NAME = "screenshotsmcp";
+export const CORE_SKILL_NAME = "deepsyte";
 export const CORE_SKILL_VERSION = "2.6.0";
 const MANIFEST_SCHEMA_VERSION = 1;
 
@@ -36,7 +36,7 @@ export interface CatalogSkill {
   contentUrl: string;
 }
 
-const SKILLS_BASE_URL = "https://www.screenshotmcp.com/.skills";
+const SKILLS_BASE_URL = "https://www.deepsyte.com/.skills";
 const DEFAULT_CATALOG_URL = `${SKILLS_BASE_URL}/index.json`;
 const DEFAULT_CATALOG_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -48,11 +48,11 @@ const DEFAULT_CATALOG_TTL_MS = 24 * 60 * 60 * 1000;
  */
 export const SKILL_CATALOG: CatalogSkill[] = [
   {
-    name: "screenshotsmcp",
-    displayName: "ScreenshotsMCP Core",
+    name: "deepsyte",
+    displayName: "DeepSyte Core",
     description: "Screenshot, browser automation, CAPTCHA solving, email testing, SEO/perf audits — the full 46+ tool suite.",
     version: CORE_SKILL_VERSION,
-    contentUrl: `${SKILLS_BASE_URL}/screenshotsmcp/SKILL.md`,
+    contentUrl: `${SKILLS_BASE_URL}/deepsyte/SKILL.md`,
   },
 ];
 
@@ -76,7 +76,7 @@ interface CachedCatalog {
   skills: CatalogSkill[];
 }
 
-const CATALOG_CACHE_KEY = "screenshotsmcp.skills.catalog.v1";
+const CATALOG_CACHE_KEY = "deepsyte.skills.catalog.v1";
 
 /**
  * Fetches the hosted skill catalog (apps/web/public/.skills/index.json).
@@ -210,7 +210,7 @@ export async function installCatalogSkill(
 
 export interface ManagedSkillRecord {
   installPath: string;
-  managedBy: "screenshotsmcp";
+  managedBy: "deepsyte";
   updatedAt: string;
   version: string;
 }
@@ -243,7 +243,7 @@ export interface ManagedSkillFile {
 }
 
 export function getManagedStateDir(): string {
-  return join(homedir(), ".screenshotsmcp");
+  return join(homedir(), ".deepsyte");
 }
 
 export function getManagedSkillsManifestPath(): string {
@@ -339,7 +339,7 @@ export function syncManagedSkill(input: { content: string; files?: ManagedSkillF
 
   manifest.skills[input.name] = {
     installPath,
-    managedBy: "screenshotsmcp",
+    managedBy: "deepsyte",
     updatedAt: new Date().toISOString(),
     version: input.version,
   };
@@ -375,7 +375,7 @@ function readManagedSkillsManifest(): ManagedSkillsManifest {
 
     skills[name] = {
       installPath: value.installPath,
-      managedBy: "screenshotsmcp",
+      managedBy: "deepsyte",
       updatedAt: value.updatedAt,
       version: value.version,
     };

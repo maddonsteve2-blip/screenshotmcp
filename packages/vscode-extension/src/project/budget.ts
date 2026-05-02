@@ -1,5 +1,5 @@
 /**
- * Pure parser for `.screenshotsmcp/budget.json` — a shared contract between
+ * Pure parser for `.deepsyte/budget.json` — a shared contract between
  * the VS Code extension's status-bar badge and the CLI `check` command.
  *
  * Schema:

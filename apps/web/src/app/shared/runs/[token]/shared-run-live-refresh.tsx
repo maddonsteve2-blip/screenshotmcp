@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://deepsyte-api-production.up.railway.app";
 
 function buildWsUrl(shareToken: string): string {
   const base = API_URL.replace(/^https?:\/\//, (match) => (match === "https://" ? "wss://" : "ws://"));

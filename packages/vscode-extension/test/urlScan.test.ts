@@ -16,12 +16,12 @@ test("findUrlsForCodeLens trims trailing punctuation", () => {
 });
 
 test("findUrlsForCodeLens stops at JSON quotes and commas", () => {
-  const json = '{"homepage":"https://www.screenshotmcp.com","docs":"https://www.screenshotmcp.com/docs"}';
+  const json = '{"homepage":"https://www.deepsyte.com","docs":"https://www.deepsyte.com/docs"}';
   const matches = findUrlsForCodeLens(json);
   assert.equal(matches.length, 2);
   assert.deepEqual(matches.map((m) => m.url), [
-    "https://www.screenshotmcp.com",
-    "https://www.screenshotmcp.com/docs",
+    "https://www.deepsyte.com",
+    "https://www.deepsyte.com/docs",
   ]);
 });
 

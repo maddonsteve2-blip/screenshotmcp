@@ -19,17 +19,17 @@ test("extractImageUrl finds image and pdf URLs in text content", () => {
 
 test("extractRunUrl returns direct /dashboard/runs/<id> URL when present", () => {
   const url = extractRunUrl(
-    "Audit complete. See https://www.screenshotmcp.com/dashboard/runs/run_abc123 for details.",
-    "https://www.screenshotmcp.com/dashboard",
+    "Audit complete. See https://www.deepsyte.com/dashboard/runs/run_abc123 for details.",
+    "https://www.deepsyte.com/dashboard",
   );
-  assert.equal(url, "https://www.screenshotmcp.com/dashboard/runs/run_abc123");
+  assert.equal(url, "https://www.deepsyte.com/dashboard/runs/run_abc123");
 });
 
 test("extractRunUrl synthesises a run URL from a run id mention", () => {
-  const url = extractRunUrl("Kicked off run id: run_xyz789 on Railway.", "https://www.screenshotmcp.com/dashboard");
-  assert.equal(url, "https://www.screenshotmcp.com/dashboard/runs/run_xyz789");
+  const url = extractRunUrl("Kicked off run id: run_xyz789 on Railway.", "https://www.deepsyte.com/dashboard");
+  assert.equal(url, "https://www.deepsyte.com/dashboard/runs/run_xyz789");
 });
 
 test("extractRunUrl returns undefined when no run id or url is present", () => {
-  assert.equal(extractRunUrl("Nothing relevant here.", "https://www.screenshotmcp.com/dashboard"), undefined);
+  assert.equal(extractRunUrl("Nothing relevant here.", "https://www.deepsyte.com/dashboard"), undefined);
 });

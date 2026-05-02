@@ -2,7 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getDb } from "./db";
-import { users } from "@screenshotsmcp/db";
+import { users } from "@deepsyte/db";
 
 export async function getOrCreateDbUser(clerkId: string) {
   const db = getDb();

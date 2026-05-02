@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { eq, and, desc, or, ilike, lt, count } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { recordings, apiKeys, runs, users } from "@screenshotsmcp/db";
+import { recordings, apiKeys, runs, users } from "@deepsyte/db";
 import { getPresignedUrl } from "../lib/r2.js";
 import { createHash } from "crypto";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";

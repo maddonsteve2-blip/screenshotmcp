@@ -1,10 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { users } from "@screenshotsmcp/db";
+import { users } from "@deepsyte/db";
 import { eq } from "drizzle-orm";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://screenshotsmcp-api-production.up.railway.app";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://deepsyte-api-production.up.railway.app";
 const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET ?? "").trim();
 
 async function getDbUserId(clerkId: string): Promise<string | null> {

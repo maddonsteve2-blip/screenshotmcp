@@ -1,8 +1,8 @@
 import { Response, NextFunction } from "express";
 import { and, count, eq, gte } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { usageEvents, users } from "@screenshotsmcp/db";
-import { PLAN_LIMITS, LEGACY_FREE_QUOTA_PER_MONTH } from "@screenshotsmcp/types";
+import { usageEvents, users } from "@deepsyte/db";
+import { PLAN_LIMITS, LEGACY_FREE_QUOTA_PER_MONTH } from "@deepsyte/types";
 import type { AuthRequest } from "./auth.js";
 import type { RequestIdRequest } from "./requestId.js";
 import { emitWebhookEvent } from "../lib/webhook-delivery.js";

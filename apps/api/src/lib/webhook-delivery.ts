@@ -4,7 +4,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { nanoid } from "nanoid";
 import { and, eq } from "drizzle-orm";
 import { db } from "./db.js";
-import { webhookEndpoints, webhookDeliveries } from "@screenshotsmcp/db";
+import { webhookEndpoints, webhookDeliveries } from "@deepsyte/db";
 import { getRedis } from "./redis.js";
 import { emitDashboardEvent } from "./dashboard-events.js";
 
@@ -259,11 +259,11 @@ async function processWebhookDelivery(job: Job<DeliveryJobData>): Promise<void> 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "User-Agent": "ScreenshotsMCP-Webhook/1",
+        "User-Agent": "DeepSyte-Webhook/1",
         "Webhook-Id": delivery.id,
         "Webhook-Timestamp": String(ts),
         "Webhook-Signature": `t=${ts},v1=${sig}`,
-        "X-ScreenshotsMCP-Event": delivery.eventType,
+        "X-DeepSyte-Event": delivery.eventType,
       },
       body: delivery.payload,
       signal: controller.signal,

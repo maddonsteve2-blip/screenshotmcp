@@ -1,11 +1,11 @@
 # `stevejford/action` — Visual Diff for Pull Requests
 
-A GitHub Action that captures two URLs through [ScreenshotsMCP](https://www.screenshotmcp.com), pixel-diffs them, and posts (or updates) a sticky PR comment with the result. Fails the check when the change percentage exceeds your configured threshold.
+A GitHub Action that captures two URLs through [DeepSyte](https://www.deepsyte.com), pixel-diffs them, and posts (or updates) a sticky PR comment with the result. Fails the check when the change percentage exceeds your configured threshold.
 
 ```yaml
 - uses: stevejford/action@v1
   with:
-    api-key: ${{ secrets.SCREENSHOTSMCP_API_KEY }}
+    api-key: ${{ secrets.DEEPSYTE_API_KEY }}
     baseline-url: https://your-app.com
     preview-url: ${{ steps.deploy.outputs.preview_url }}
     fail-on-change-percent: "1.0"
@@ -15,7 +15,7 @@ A GitHub Action that captures two URLs through [ScreenshotsMCP](https://www.scre
 
 | Name | Required | Default | Description |
 | --- | --- | --- | --- |
-| `api-key` | yes | — | ScreenshotsMCP API key (`sk_live_...`). Store as a repo secret. |
+| `api-key` | yes | — | DeepSyte API key (`sk_live_...`). Store as a repo secret. |
 | `baseline-url` | yes | — | URL captured as the baseline (typically your production / `main` deployment). |
 | `preview-url` | yes | — | URL captured as the candidate (typically the PR preview deployment). |
 | `width` | no | `1280` | Viewport width in pixels. |
@@ -24,7 +24,7 @@ A GitHub Action that captures two URLs through [ScreenshotsMCP](https://www.scre
 | `fail-on-change-percent` | no | `1.0` | Maximum % of pixels that may change before this check fails. Set to `100` to always pass. |
 | `comment-on-pr` | no | `true` | Post / update a sticky PR comment with the diff. |
 | `github-token` | no | `${{ github.token }}` | Token used to post the PR comment. The default `GITHUB_TOKEN` is enough for same-repo PRs. |
-| `api-base` | no | `https://screenshotsmcp-api-production.up.railway.app` | Override for self-hosted or staging APIs. |
+| `api-base` | no | `https://deepsyte-api-production.up.railway.app` | Override for self-hosted or staging APIs. |
 
 ## Outputs
 
@@ -60,7 +60,7 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
       - uses: stevejford/action@v1
         with:
-          api-key: ${{ secrets.SCREENSHOTSMCP_API_KEY }}
+          api-key: ${{ secrets.DEEPSYTE_API_KEY }}
           baseline-url: https://your-app.com
           preview-url: ${{ steps.deploy.outputs.preview-url }}
           fail-on-change-percent: "1.0"
@@ -68,7 +68,7 @@ jobs:
 
 ## Counts toward your monthly quota
 
-Each invocation counts as **one screenshot** against your ScreenshotsMCP plan, regardless of how many captures the diff requires internally. Reruns of the same workflow + commit are deduped via `Idempotency-Key` so you never double-pay for retries.
+Each invocation counts as **one screenshot** against your DeepSyte plan, regardless of how many captures the diff requires internally. Reruns of the same workflow + commit are deduped via `Idempotency-Key` so you never double-pay for retries.
 
 ## Local development
 
@@ -80,4 +80,4 @@ npm run build         # emits dist/index.js (commit this)
 
 The action's runtime is a single bundled CJS file under `dist/`. The published version lives at [`stevejford/action`](https://github.com/stevejford/action) — that repo holds the committed bundle so consumers can pull `stevejford/action@v1` without an install step.
 
-See the [Webhooks docs](https://www.screenshotmcp.com/docs/api/webhooks) and [Ops Headers reference](https://www.screenshotmcp.com/docs/api/ops-headers) for related primitives.
+See the [Webhooks docs](https://www.deepsyte.com/docs/api/webhooks) and [Ops Headers reference](https://www.deepsyte.com/docs/api/ops-headers) for related primitives.

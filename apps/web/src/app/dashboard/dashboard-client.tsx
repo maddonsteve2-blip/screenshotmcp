@@ -8,7 +8,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Camera, Download, ArrowRight, Video, ExternalLink, Globe, Image as ImageIcon, AlertTriangle, Activity, Clock3, Monitor, Network, Radio, SquareTerminal } from "lucide-react";
-import { PLAN_LIMITS } from "@screenshotsmcp/types";
+import { PLAN_LIMITS } from "@deepsyte/types";
 import { InstallDialog } from "@/components/install-dialog";
 import { PageContainer } from "@/components/page-container";
 import { useDashboardWs } from "@/lib/use-dashboard-ws";

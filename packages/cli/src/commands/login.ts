@@ -6,7 +6,7 @@ import { getApiKey, setApiKey, getConfigPath } from "../config.js";
 import { printSkillSyncResult, syncCoreSkillForCli } from "../skills.js";
 
 export const loginCommand = new Command("login")
-  .description("Authenticate with ScreenshotsMCP")
+  .description("Authenticate with DeepSyte")
   .option("--key <apiKey>", "Use an API key directly instead of OAuth")
   .action(async (opts) => {
     if (opts.key) {
@@ -18,14 +18,14 @@ export const loginCommand = new Command("login")
       console.log(chalk.green("✓ API key saved."));
       console.log(chalk.dim(`  Config: ${getConfigPath()}`));
       printSkillSyncResult(syncCoreSkillForCli());
-      console.log(chalk.dim("  Tip: use `screenshotsmcp auth:test https://example.com` before login or sign-up testing."));
+      console.log(chalk.dim("  Tip: use `deepsyte auth:test https://example.com` before login or sign-up testing."));
       return;
     }
 
     const existing = getApiKey();
     if (existing) {
       console.log(chalk.yellow(`Already logged in (key: ${existing.slice(0, 12)}...${existing.slice(-4)})`));
-      console.log(chalk.dim("Use --key to replace, or `screenshotsmcp logout` to clear."));
+      console.log(chalk.dim("Use --key to replace, or `deepsyte logout` to clear."));
     }
 
     const spinner = ora("Opening browser for authentication...").start();
@@ -35,7 +35,7 @@ export const loginCommand = new Command("login")
       console.log(chalk.dim(`  Key: ${result.apiKey.slice(0, 12)}...${result.apiKey.slice(-4)}`));
       console.log(chalk.dim(`  Config: ${getConfigPath()}`));
       printSkillSyncResult(syncCoreSkillForCli());
-      console.log(chalk.dim("  Tip: use `screenshotsmcp auth:test https://example.com` before login or sign-up testing."));
+      console.log(chalk.dim("  Tip: use `deepsyte auth:test https://example.com` before login or sign-up testing."));
     } catch (err) {
       spinner.fail(chalk.red("Login failed"));
       console.error(chalk.red(err instanceof Error ? err.message : String(err)));
@@ -55,7 +55,7 @@ export const whoamiCommand = new Command("whoami")
   .action(() => {
     const key = getApiKey();
     if (!key) {
-      console.log(chalk.yellow("Not logged in. Run `screenshotsmcp login` to authenticate."));
+      console.log(chalk.yellow("Not logged in. Run `deepsyte login` to authenticate."));
       return;
     }
     console.log(chalk.green("✓ Authenticated"));

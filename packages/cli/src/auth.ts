@@ -115,13 +115,13 @@ function buildSuccessPage(ide: DetectedIDE): string {
   if (!scheme) {
     return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>ScreenshotsMCP</title></head>
+<head><meta charset="utf-8"><title>DeepSyte</title></head>
 <body style="font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #fafafa; color: #111;">
   <div style="text-align: center; max-width: 400px; padding: 2rem;">
     <div style="width: 64px; height: 64px; border-radius: 50%; background: #dcfce7; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
       <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
     </div>
-    <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.5rem;">Logged in to ScreenshotsMCP</h1>
+    <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.5rem;">Logged in to DeepSyte</h1>
     <p style="color: #666; margin: 0 0 1rem; font-size: 0.95rem;">Authentication successful. You can close this tab.</p>
     <p style="color: #999; font-size: 0.85rem;">Return to ${name} — it's already logged in.</p>
   </div>
@@ -133,13 +133,13 @@ function buildSuccessPage(ide: DetectedIDE): string {
   // For IDEs with protocol handlers — show a return button + auto-redirect
   return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>ScreenshotsMCP</title></head>
+<head><meta charset="utf-8"><title>DeepSyte</title></head>
 <body style="font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #fafafa; color: #111;">
   <div style="text-align: center; max-width: 400px; padding: 2rem;">
     <div style="width: 64px; height: 64px; border-radius: 50%; background: #dcfce7; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
       <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
     </div>
-    <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.5rem;">Logged in to ScreenshotsMCP</h1>
+    <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.5rem;">Logged in to DeepSyte</h1>
     <p style="color: #666; margin: 0 0 1.5rem; font-size: 0.95rem;">Authentication successful.</p>
     <a href="${scheme}" id="return-btn" style="display: inline-block; padding: 0.75rem 2rem; background: #111; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: background 0.15s;">
       Return to ${name}
@@ -233,7 +233,7 @@ export async function oauthLogin(): Promise<OAuthResult> {
     server.listen(port, "127.0.0.1", () => {
       // Open browser to authorize
       const authorizeUrl = new URL(`${apiUrl}/oauth/authorize`);
-      authorizeUrl.searchParams.set("client_id", "screenshotsmcp-cli");
+      authorizeUrl.searchParams.set("client_id", "deepsyte-cli");
       authorizeUrl.searchParams.set("redirect_uri", redirectUri);
       authorizeUrl.searchParams.set("response_type", "code");
       authorizeUrl.searchParams.set("code_challenge", codeChallenge);

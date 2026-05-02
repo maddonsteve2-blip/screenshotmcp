@@ -34,7 +34,7 @@ test("agent eval scoring passes a compliant audit start run", () => {
   try {
     writeFileSync(join(runDir, "first-response.md"), [
       "I read `workflows/sitewide-performance-audit/WORKFLOW.md`.",
-      "Base URL: https://www.screenshotmcp.com",
+      "Base URL: https://deepsyte.com",
       "Tool path first: MCP first",
       "Page set: /, /pricing, /docs/quickstart, /dashboard/install, /sign-in",
       "Authenticated pages are out of scope by default.",

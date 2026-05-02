@@ -3,11 +3,11 @@ import chalk from "chalk";
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
-import { DEFAULT_ONBOARDING_CLIENT, ONBOARDING_CLIENTS, getSetupCommand } from "@screenshotsmcp/types";
+import { DEFAULT_ONBOARDING_CLIENT, ONBOARDING_CLIENTS, getSetupCommand } from "@deepsyte/types";
 import { getApiKey, getApiUrl } from "../config.js";
 import { printSkillSyncResult, syncCoreSkillForCli } from "../skills.js";
 
-const API_URL_DEFAULT = "https://screenshotsmcp-api-production.up.railway.app";
+const API_URL_DEFAULT = "https://deepsyte-api-production.up.railway.app";
 const SUPPORTED_CLIENTS = ONBOARDING_CLIENTS.join(", ");
 
 function getMcpUrl(): string {
@@ -59,7 +59,7 @@ export const installCommand = new Command("install")
     const key = getApiKey();
     if (!key) {
       console.log(chalk.yellow(`Not logged in. For the smoothest first-time setup, run \`${getSetupCommand(DEFAULT_ONBOARDING_CLIENT)}\` instead.`));
-      console.log(chalk.dim("Or use `screenshotsmcp login --key sk_live_...` to set a key manually before running install.\n"));
+      console.log(chalk.dim("Or use `deepsyte login --key sk_live_...` to set a key manually before running install.\n"));
     }
 
     const mcpUrl = getMcpUrl();
@@ -70,7 +70,7 @@ export const installCommand = new Command("install")
         const configPath = join(homedir(), ".cursor", "mcp.json");
         mergeJsonConfig(configPath, {
           mcpServers: {
-            screenshotsmcp: { url: mcpUrl },
+            deepsyte: { url: mcpUrl },
           },
         });
         console.log(chalk.green(`✓ Configured Cursor`));
@@ -85,7 +85,7 @@ export const installCommand = new Command("install")
         mergeJsonConfig(configPath, {
           mcp: {
             servers: {
-              screenshotsmcp: { type: "http", url: mcpUrl },
+              deepsyte: { type: "http", url: mcpUrl },
             },
           },
         });
@@ -102,7 +102,7 @@ export const installCommand = new Command("install")
         if (key) {
           mergeJsonConfig(configPath, {
             mcpServers: {
-              screenshotsmcp: {
+              deepsyte: {
                 headers: { "x-api-key": key },
                 serverUrl: `${getApiUrl()}/mcp`,
               },
@@ -111,7 +111,7 @@ export const installCommand = new Command("install")
         } else {
           mergeJsonConfig(configPath, {
             mcpServers: {
-              screenshotsmcp: { serverUrl: mcpUrl },
+              deepsyte: { serverUrl: mcpUrl },
             },
           });
         }
@@ -135,7 +135,7 @@ export const installCommand = new Command("install")
 
         mergeJsonConfig(configPath, {
           mcpServers: {
-            screenshotsmcp: { command, args },
+            deepsyte: { command, args },
           },
         });
         console.log(chalk.green(`✓ Configured Claude Desktop`));
@@ -147,7 +147,7 @@ export const installCommand = new Command("install")
 
       case "claude-code": {
         console.log(chalk.cyan("Claude Code is configured by running this command manually:\n"));
-        console.log(`  claude mcp add --transport http screenshotsmcp -s user ${mcpUrl}\n`);
+        console.log(`  claude mcp add --transport http deepsyte -s user ${mcpUrl}\n`);
         printSkillSyncResult(syncCoreSkillForCli());
         break;
       }

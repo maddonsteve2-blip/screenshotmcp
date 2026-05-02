@@ -5,15 +5,15 @@ import { watch as fsWatch } from "node:fs";
 import { stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
-const WATCH_TARGETS = [".screenshotsmcp/urls.json", ".screenshotsmcp/budget.json"];
+const WATCH_TARGETS = [".deepsyte/urls.json", ".deepsyte/budget.json"];
 
 /**
- * Re-runs `screenshotsmcp check` whenever `.screenshotsmcp/urls.json` or
- * `.screenshotsmcp/budget.json` changes. Designed for "leave this in a
+ * Re-runs `deepsyte check` whenever `.deepsyte/urls.json` or
+ * `.deepsyte/budget.json` changes. Designed for "leave this in a
  * terminal while editing" workflows.
  */
 export const watchCommand = new Command("watch")
-  .description("Watch .screenshotsmcp/{urls,budget}.json and re-run `check` on every change")
+  .description("Watch .deepsyte/{urls,budget}.json and re-run `check` on every change")
   .option("--debounce <ms>", "Wait N ms after the last change before re-running", "500")
   .option("--report <format>", "Forward --report to `check` (e.g. github-comment, html)")
   .option("--report-out <path>", "Forward --report-out to `check`")
@@ -32,7 +32,7 @@ export const watchCommand = new Command("watch")
       }
     }
     if (watchPaths.length === 0) {
-      console.error(chalk.red("No watchable files found. Run `screenshotsmcp init` first."));
+      console.error(chalk.red("No watchable files found. Run `deepsyte init` first."));
       process.exit(1);
       return;
     }
@@ -54,7 +54,7 @@ export const watchCommand = new Command("watch")
       const args = ["check"];
       if (opts.report) args.push("--report", opts.report);
       if (opts.reportOut) args.push("--report-out", opts.reportOut);
-      console.log(chalk.cyan(`\u25B6 screenshotsmcp ${args.join(" ")}`));
+      console.log(chalk.cyan(`\u25B6 deepsyte ${args.join(" ")}`));
       const exe = process.execPath;
       const cliEntry = process.argv[1] ?? "";
       const child = spawn(exe, [cliEntry, ...args], { stdio: "inherit" });

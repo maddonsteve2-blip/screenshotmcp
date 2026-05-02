@@ -247,7 +247,7 @@ async function connectToManagedBrowser(debugPort: number): Promise<Awaited<Retur
     await wait(250);
   }
 
-  throw new Error(`The managed browser on debug port ${debugPort} did not become attachable in time. Launch it again with \`screenshotsmcp browser open\`.`);
+  throw new Error(`The managed browser on debug port ${debugPort} did not become attachable in time. Launch it again with \`deepsyte browser open\`.`);
 }
 
 async function resolveManagedPage(browser: Awaited<ReturnType<typeof chromium.connectOverCDP>>) {

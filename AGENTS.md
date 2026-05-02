@@ -57,10 +57,10 @@ GROUP BY day ORDER BY day;
 ## Deploying
 - **API**: Run `railway up` from repo root (NOT git push)
   - Railway account: `maddonsteve2@gmail.com` (GitHub: `maddonsteeve2-blip`)
-  - Railway project: `screenshotsmcp-api`
-  - Railway service: `screenshotsmcp-api`
+  - Railway project: `deepsyte-api`
+  - Railway service: `deepsyte-api`
   - Railway environment: `production`
-  - If `railway up` says "Unauthorized", run `railway login --browserless` with the **maddonsteve2** account, then `railway link` and select `screenshotsmcp-api`.
+  - If `railway up` says "Unauthorized", run `railway login --browserless` with the **maddonsteve2** account, then `railway link` and select `deepsyte-api`.
 - **Web**: Auto-deploys via Vercel on `git push`, or manually with `npx vercel --prod`
 - **CLI**: `cd packages/cli && npm version patch && npm publish --access public`
 

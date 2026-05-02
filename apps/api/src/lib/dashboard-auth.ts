@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { createHash } from "crypto";
-import { apiKeys, users } from "@screenshotsmcp/db";
+import { apiKeys, users } from "@deepsyte/db";
 import { db } from "./db.js";
 
 const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET || "").trim();

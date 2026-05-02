@@ -20,7 +20,7 @@ export const WorkflowPanel = {
     }
 
     const panel = vscode.window.createWebviewPanel(
-      "screenshotsmcp.workflow",
+      "deepsyte.workflow",
       workflow.title,
       vscode.ViewColumn.Beside,
       {

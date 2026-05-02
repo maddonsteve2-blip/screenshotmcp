@@ -3,7 +3,7 @@ import { DEFAULT_BUDGET, parseBudgetJson, type AuditBudget } from "./budget";
 
 /**
  * Returns the URI of the existing budget file, or creates a defaults-filled
- * one at `.screenshotsmcp/budget.json` and returns that. Mirrors
+ * one at `.deepsyte/budget.json` and returns that. Mirrors
  * `ensureProjectUrlsFile`.
  */
 export async function ensureProjectBudgetFile(): Promise<vscode.Uri | undefined> {
@@ -14,13 +14,13 @@ export async function ensureProjectBudgetFile(): Promise<vscode.Uri | undefined>
   }
   const existing = await loadAuditBudget();
   if (existing.uri) return existing.uri;
-  const uri = vscode.Uri.joinPath(folder.uri, ".screenshotsmcp/budget.json");
+  const uri = vscode.Uri.joinPath(folder.uri, ".deepsyte/budget.json");
   const sample = JSON.stringify(DEFAULT_BUDGET, null, 2) + "\n";
   await vscode.workspace.fs.writeFile(uri, Buffer.from(sample, "utf8"));
   return uri;
 }
 
-const CANDIDATE_PATHS = [".screenshotsmcp/budget.json", ".screenshotsmcp.budget.json"];
+const CANDIDATE_PATHS = [".deepsyte/budget.json", ".deepsyte.budget.json"];
 
 export interface BudgetLoadResult {
   budget: AuditBudget;

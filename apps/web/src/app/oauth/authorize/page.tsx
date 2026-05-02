@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, Shield, CheckCircle, Loader2 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://deepsyte-api-production.up.railway.app";
 
 function normalizeRedirectUri(value: string): string {
   if (!value.includes("?") && /%3[fF]/.test(value)) {

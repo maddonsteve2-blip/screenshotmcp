@@ -33,10 +33,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const sidebarProvider = new SidebarProvider(authStore, timelineStore, catalogCache, urlHistory, auditDiagnostics);
   const oauthController = new OAuthController(context, authStore, provider, statusBar, timelineStore);
 
-  logLine("Activating ScreenshotsMCP extension.");
+  logLine("Activating DeepSyte extension.");
   timelineStore.add({
     title: "Extension activated",
-    detail: "ScreenshotsMCP extension activation completed.",
+    detail: "DeepSyte extension activation completed.",
     status: "info",
   });
 
@@ -53,10 +53,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const providerDisposable = provider.register();
   if (providerDisposable) {
     context.subscriptions.push(providerDisposable);
-    logLine("Registered ScreenshotsMCP MCP provider.");
+    logLine("Registered DeepSyte MCP provider.");
     timelineStore.add({
       title: "MCP provider registered",
-      detail: "ScreenshotsMCP MCP server definition provider is available.",
+      detail: "DeepSyte MCP server definition provider is available.",
       status: "success",
     });
   }
@@ -82,13 +82,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   void catalogCache.refresh();
 
   // Register CodeLens on URLs if the user hasn't disabled it. The setting
-  // `screenshotsmcp.codeLens.urlActions` defaults to true and is observed on
+  // `deepsyte.codeLens.urlActions` defaults to true and is observed on
   // change below.
   const codeLensProvider = new UrlCodeLensProvider();
   let codeLensDisposable: vscode.Disposable | undefined;
   const registerCodeLens = () => {
     const enabled = vscode.workspace
-      .getConfiguration("screenshotsmcp")
+      .getConfiguration("deepsyte")
       .get<boolean>("codeLens.urlActions", true);
     codeLensDisposable?.dispose();
     codeLensDisposable = enabled
@@ -99,7 +99,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     codeLensProvider,
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration("screenshotsmcp.codeLens.urlActions")) {
+      if (e.affectsConfiguration("deepsyte.codeLens.urlActions")) {
         registerCodeLens();
       }
     }),
@@ -147,7 +147,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const folder = vscode.workspace.workspaceFolders?.[0];
   if (folder) {
     const watcher = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(folder, "{.screenshotsmcp/budget.json,.screenshotsmcp.budget.json}"),
+      new vscode.RelativePattern(folder, "{.deepsyte/budget.json,.deepsyte.budget.json}"),
     );
     context.subscriptions.push(
       watcher,
@@ -158,12 +158,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   // First-run: open the "Get started" walkthrough once per machine.
-  const welcomedKey = "screenshotsmcp.welcomedAt";
+  const welcomedKey = "deepsyte.welcomedAt";
   if (!context.globalState.get<string>(welcomedKey)) {
     await context.globalState.update(welcomedKey, new Date().toISOString());
     void vscode.commands.executeCommand(
       "workbench.action.openWalkthrough",
-      { category: "ScreenshotMCP.screenshotsmcp-vscode#screenshotsmcp.getStarted", step: "screenshotsmcp.getStarted#signIn" },
+      { category: "DeepSyte.deepsyte-vscode#deepsyte.getStarted", step: "deepsyte.getStarted#signIn" },
       false,
     );
   }
@@ -194,7 +194,7 @@ async function pingApiKey(
   statusBar: StatusBarController,
   timelineStore: TimelineStore,
 ): Promise<void> {
-  const PING_KEY = "screenshotsmcp.lastPingDay";
+  const PING_KEY = "deepsyte.lastPingDay";
   const today = new Date().toISOString().slice(0, 10);
   if (context.globalState.get<string>(PING_KEY) === today) {
     return;
@@ -214,12 +214,12 @@ async function pingApiKey(
       status: "error",
     });
     const action = await vscode.window.showWarningMessage(
-      `ScreenshotsMCP couldn't validate your API key (${result.message}). Sign in again?`,
+      `DeepSyte couldn't validate your API key (${result.message}). Sign in again?`,
       "Sign In",
       "Dismiss",
     );
     if (action === "Sign In") {
-      await vscode.commands.executeCommand("screenshotsmcp.signIn");
+      await vscode.commands.executeCommand("deepsyte.signIn");
     }
   } catch (err) {
     // Network failures are non-fatal — don't bug the user about them.
@@ -228,5 +228,5 @@ async function pingApiKey(
 }
 
 export function deactivate(): void {
-  logLine("Deactivating ScreenshotsMCP extension.");
+  logLine("Deactivating DeepSyte extension.");
 }

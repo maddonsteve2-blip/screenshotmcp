@@ -5,7 +5,7 @@ import { join } from "path";
 import { SECRET_API_KEY } from "../constants";
 import { getApiUrl } from "../settings";
 
-const CLI_CONFIG_PATH = join(homedir(), ".config", "screenshotsmcp", "config.json");
+const CLI_CONFIG_PATH = join(homedir(), ".config", "deepsyte", "config.json");
 
 interface CliConfigShape {
   apiKey?: string;
@@ -64,6 +64,6 @@ function readCliConfig(): CliConfigShape {
 }
 
 function writeCliConfig(config: CliConfigShape): void {
-  mkdirSync(join(homedir(), ".config", "screenshotsmcp"), { recursive: true });
+  mkdirSync(join(homedir(), ".config", "deepsyte"), { recursive: true });
   writeFileSync(CLI_CONFIG_PATH, `${JSON.stringify(config, null, 2)}\n`, "utf8");
 }

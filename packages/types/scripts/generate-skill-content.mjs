@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Generates packages/types/src/skills/content.generated.ts from the .md files
-// under packages/types/src/skills/screenshotsmcp/. This is the single source of
-// truth for the core ScreenshotsMCP skill. The generated file is committed so
+// under packages/types/src/skills/deepsyte/. This is the single source of
+// truth for the core DeepSyte skill. The generated file is committed so
 // `tsc` builds work without running this script first; a `prebuild` hook keeps
 // it in sync, and `verify-skills.mjs` catches drift in CI.
 
@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..", "..", "..");
-const skillRoot = join(__dirname, "..", "src", "skills", "screenshotsmcp");
+const skillRoot = join(__dirname, "..", "src", "skills", "deepsyte");
 const outFile = join(__dirname, "..", "src", "skills", "content.generated.ts");
 
 const files = {

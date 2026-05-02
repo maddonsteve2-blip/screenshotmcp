@@ -1,13 +1,13 @@
-name: "ScreenshotsMCP Visual Diff"
-description: "Compare a baseline URL against a PR preview URL pixel-by-pixel using ScreenshotsMCP. Posts a PR comment with the diff overlay image and fails the check if pixel changes exceed the configured threshold."
-author: "ScreenshotsMCP"
+name: "DeepSyte Visual Diff"
+description: "Compare a baseline URL against a PR preview URL pixel-by-pixel using DeepSyte. Posts a PR comment with the diff overlay image and fails the check if pixel changes exceed the configured threshold."
+author: "DeepSyte"
 branding:
   icon: "camera"
   color: "green"
 
 inputs:
   api-key:
-    description: "ScreenshotsMCP API key (sk_live_...). Use a repository secret."
+    description: "DeepSyte API key (sk_live_...). Use a repository secret."
     required: true
   baseline-url:
     description: "URL captured as the baseline (typically the production / main branch deployment)."
@@ -40,9 +40,9 @@ inputs:
     required: false
     default: ${{ github.token }}
   api-base:
-    description: "Override the ScreenshotsMCP API base URL."
+    description: "Override the DeepSyte API base URL."
     required: false
-    default: "https://screenshotsmcp-api-production.up.railway.app"
+    default: "https://deepsyte-api-production.up.railway.app"
 
 outputs:
   diff-url:

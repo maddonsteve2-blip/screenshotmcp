@@ -2,7 +2,7 @@ import { Router } from "express";
 import { and, asc, desc, eq, ilike, inArray, lt, or, sql, count } from "drizzle-orm";
 import { createHash } from "crypto";
 import { nanoid } from "nanoid";
-import { apiKeys, recordings, runOutcomes, runs, screenshots, users } from "@screenshotsmcp/db";
+import { apiKeys, recordings, runOutcomes, runs, screenshots, users } from "@deepsyte/db";
 import { db } from "../lib/db.js";
 import { getSession } from "../lib/sessions.js";
 import { getPresignedUrl, uploadScreenshot } from "../lib/r2.js";

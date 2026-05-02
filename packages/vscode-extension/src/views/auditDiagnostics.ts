@@ -17,7 +17,7 @@ export class AuditDiagnostics implements vscode.Disposable {
   readonly onDidChangeCount = this.changeEmitter.event;
 
   constructor() {
-    this.collection = vscode.languages.createDiagnosticCollection("screenshotsmcp.audit");
+    this.collection = vscode.languages.createDiagnosticCollection("deepsyte.audit");
   }
 
   dispose(): void {
@@ -36,13 +36,13 @@ export class AuditDiagnostics implements vscode.Disposable {
 
   /**
    * Returns one entry per Uri currently holding diagnostics. Synthetic Uris
-   * use the `screenshotsmcp-audit:` scheme; their URL is the encoded path.
+   * use the `deepsyte-audit:` scheme; their URL is the encoded path.
    */
   listGroupedByUri(): Array<{ uri: vscode.Uri; url?: string; diagnostics: readonly vscode.Diagnostic[] }> {
     const out: Array<{ uri: vscode.Uri; url?: string; diagnostics: readonly vscode.Diagnostic[] }> = [];
     this.collection.forEach((uri, diagnostics) => {
       if (diagnostics.length === 0) return;
-      const url = uri.scheme === "screenshotsmcp-audit" ? safeDecode(uri.path) : undefined;
+      const url = uri.scheme === "deepsyte-audit" ? safeDecode(uri.path) : undefined;
       out.push({ uri, url, diagnostics });
     });
     return out.sort((a, b) => b.diagnostics.length - a.diagnostics.length);
@@ -77,7 +77,7 @@ export class AuditDiagnostics implements vscode.Disposable {
       return;
     }
 
-    const syntheticUri = vscode.Uri.parse(`screenshotsmcp-audit:${encodeURIComponent(url)}`);
+    const syntheticUri = vscode.Uri.parse(`deepsyte-audit:${encodeURIComponent(url)}`);
     const range = new vscode.Range(0, 0, 0, Math.min(url.length, 120));
     const diagnostics = findings.map((f) => this.toDiagnostic(f, range, url));
     this.collection.set(syntheticUri, diagnostics);
@@ -89,14 +89,14 @@ export class AuditDiagnostics implements vscode.Disposable {
     if (target) {
       this.collection.delete(target.uri);
     }
-    this.collection.delete(vscode.Uri.parse(`screenshotsmcp-audit:${encodeURIComponent(url)}`));
+    this.collection.delete(vscode.Uri.parse(`deepsyte-audit:${encodeURIComponent(url)}`));
     this.emitChange();
   }
 
   private toDiagnostic(finding: AuditFinding, range: vscode.Range, urlContext?: string): vscode.Diagnostic {
     const prefix = urlContext ? `${urlContext}: ` : "";
     const diag = new vscode.Diagnostic(range, `${prefix}[${finding.category}] ${finding.message}`, finding.severity);
-    diag.source = "ScreenshotsMCP audit";
+    diag.source = "DeepSyte audit";
     return diag;
   }
 }

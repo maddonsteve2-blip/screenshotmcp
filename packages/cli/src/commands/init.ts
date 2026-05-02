@@ -20,10 +20,10 @@ const BUDGET_TEMPLATE = {
 };
 
 export const initCommand = new Command("init")
-  .description("Scaffold .screenshotsmcp/ (urls.json + budget.json) and an agents.json manifest in the current directory")
+  .description("Scaffold .deepsyte/ (urls.json + budget.json) and an agents.json manifest in the current directory")
   .option("--force", "Overwrite existing files instead of skipping")
   .option("--no-agents", "Skip writing agents.json at the project root")
-  .option("--no-github-action", "Skip writing .github/workflows/screenshotsmcp.yml")
+  .option("--no-github-action", "Skip writing .github/workflows/deepsyte.yml")
   .option("--next-steps-only", "Only print the post-setup checklist; don't scaffold any files")
   .action(async (opts: Record<string, boolean>) => {
     const force = Boolean(opts.force);
@@ -41,14 +41,14 @@ export const initCommand = new Command("init")
     const skipped: string[] = [];
 
     await ensureFile(
-      join(cwd, ".screenshotsmcp/urls.json"),
+      join(cwd, ".deepsyte/urls.json"),
       JSON.stringify(URLS_TEMPLATE, null, 2) + "\n",
       force,
       created,
       skipped,
     );
     await ensureFile(
-      join(cwd, ".screenshotsmcp/budget.json"),
+      join(cwd, ".deepsyte/budget.json"),
       JSON.stringify(BUDGET_TEMPLATE, null, 2) + "\n",
       force,
       created,
@@ -66,7 +66,7 @@ export const initCommand = new Command("init")
       const wfTpl = await readTemplate("github-action-check.yml");
       if (wfTpl) {
         await ensureFile(
-          join(cwd, ".github/workflows/screenshotsmcp.yml"),
+          join(cwd, ".github/workflows/deepsyte.yml"),
           wfTpl,
           force,
           created,
@@ -76,7 +76,7 @@ export const initCommand = new Command("init")
       const baselinesTpl = await readTemplate("github-action-baselines.yml");
       if (baselinesTpl) {
         await ensureFile(
-          join(cwd, ".github/workflows/screenshotsmcp-baselines.yml"),
+          join(cwd, ".github/workflows/deepsyte-baselines.yml"),
           baselinesTpl,
           force,
           created,
@@ -102,19 +102,19 @@ export const initCommand = new Command("init")
 function printNextSteps(includeWorkflow: boolean): void {
   console.log("");
   console.log(chalk.bold("Next steps:"));
-  console.log(`  1. Edit ${chalk.cyan(".screenshotsmcp/urls.json")} with your real URLs`);
-  console.log(`  2. Tweak ${chalk.cyan(".screenshotsmcp/budget.json")} thresholds if needed`);
-  console.log(`  3. Run ${chalk.cyan("screenshotsmcp check")} locally to confirm`);
+  console.log(`  1. Edit ${chalk.cyan(".deepsyte/urls.json")} with your real URLs`);
+  console.log(`  2. Tweak ${chalk.cyan(".deepsyte/budget.json")} thresholds if needed`);
+  console.log(`  3. Run ${chalk.cyan("deepsyte check")} locally to confirm`);
   if (includeWorkflow) {
     console.log(`  4. Add ${chalk.cyan("SCREENSHOTSMCP_API_KEY")} to your GitHub repo secrets`);
     console.log(`  5. Push the workflow \u2014 PRs will get audited automatically`);
   }
 }
 
-const GITIGNORE_MARKER = "# screenshotsmcp";
+const GITIGNORE_MARKER = "# deepsyte";
 const GITIGNORE_BLOCK = `${GITIGNORE_MARKER}
-screenshotsmcp-report.html
-screenshotsmcp-report.md
+deepsyte-report.html
+        deepsyte-report.md
 shots/
 *.diff.png
 `;

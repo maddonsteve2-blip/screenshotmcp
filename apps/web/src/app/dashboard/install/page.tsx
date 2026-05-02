@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { CORE_SITEWIDE_PERFORMANCE_WORKFLOW_PATH, CORE_SKILL_INSTALL_PATH, DEFAULT_ONBOARDING_CLIENT, ONBOARDING_CLIENTS, TWO_STEP_ONBOARDING_NUANCE, getNpxInstallCommand, getNpxSetupCommand, getTwoStepOnboardingCommand } from "@screenshotsmcp/types";
+import { CORE_SITEWIDE_PERFORMANCE_WORKFLOW_PATH, CORE_SKILL_INSTALL_PATH, DEFAULT_ONBOARDING_CLIENT, ONBOARDING_CLIENTS, TWO_STEP_ONBOARDING_NUANCE, getNpxInstallCommand, getNpxSetupCommand, getTwoStepOnboardingCommand } from "@deepsyte/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Check, Copy, ArrowLeft, ArrowRight, Key, Terminal, AlertCircle, Downloa
 import { apiFetch } from "@/lib/api-fetch";
 import { PageContainer } from "@/components/page-container";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://deepsyte-api-production.up.railway.app";
 const MCP_URL = `${API_BASE}/mcp`;
 const CLI_ONBOARDING_CLIENT = DEFAULT_ONBOARDING_CLIENT;
 const CLI_SETUP_COMMAND = getNpxSetupCommand(CLI_ONBOARDING_CLIENT);

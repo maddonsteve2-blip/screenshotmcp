@@ -1,4 +1,4 @@
-import { createDb } from "@screenshotsmcp/db";
+import { createDb } from "@deepsyte/db";
 
 let cached: ReturnType<typeof createDb> | null = null;
 

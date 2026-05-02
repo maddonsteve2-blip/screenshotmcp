@@ -14,10 +14,10 @@ const ALLOWED_FORMATS = new Set(["png", "jpeg", "webp"]);
  * actually want when scripting ("give me the file").
  */
 export const saveCommand = new Command("save")
-  .description("Capture a URL (or every URL in .screenshotsmcp/urls.json) and download the image locally")
+  .description("Capture a URL (or every URL in .deepsyte/urls.json) and download the image locally")
   .argument("[url]", "URL to capture (omit when using --batch)")
   .option("-t, --to <path>", "Output file path (single mode) or directory (batch mode)")
-  .option("--batch", "Read URLs from .screenshotsmcp/urls.json and save each one to --to directory")
+  .option("--batch", "Read URLs from .deepsyte/urls.json and save each one to --to directory")
   .option("-w, --width <px>", "Viewport width", "1280")
   .option("-h, --height <px>", "Viewport height", "800")
   .option("--fullPage", "Capture the entire scrollable page", false)
@@ -127,7 +127,7 @@ interface ManifestEntry {
 async function runBatch(opts: BatchOpts): Promise<void> {
   const entries = await loadUrlsForBatch();
   if (entries.length === 0) {
-    console.error(chalk.red("No URLs found in .screenshotsmcp/urls.json. Run `screenshotsmcp init` first."));
+    console.error(chalk.red("No URLs found in .deepsyte/urls.json. Run `deepsyte init` first."));
     process.exit(1);
     return;
   }
@@ -210,7 +210,7 @@ async function runBatch(opts: BatchOpts): Promise<void> {
 }
 
 async function loadUrlsForBatch(): Promise<Array<{ url: string }>> {
-  const path = resolve(process.cwd(), ".screenshotsmcp/urls.json");
+  const path = resolve(process.cwd(), ".deepsyte/urls.json");
   let raw: string;
   try {
     raw = await readFile(path, "utf8");

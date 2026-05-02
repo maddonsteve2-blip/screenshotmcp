@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "svix";
 import { nanoid } from "nanoid";
 import { getDb } from "@/lib/db";
-import { users } from "@screenshotsmcp/db";
+import { users } from "@deepsyte/db";
 
 export async function POST(req: NextRequest) {
   const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;

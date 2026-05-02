@@ -3,7 +3,7 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { screenshots, usageEvents } from "@screenshotsmcp/db";
+import { screenshots, usageEvents } from "@deepsyte/db";
 import { screenshotQueue } from "../lib/queue.js";
 import { uploadScreenshot } from "../lib/r2.js";
 import { requireApiKey, type AuthRequest } from "../middleware/auth.js";
@@ -167,7 +167,7 @@ const diffSchema = z.object({
 });
 
 /**
- * Synchronous visual diff. Used by the `screenshotsmcp/action` GitHub Action
+ * Synchronous visual diff. Used by the `deepsyte/action` GitHub Action
  * and any CI pipeline that wants a baseline-vs-head comparison without
  * driving the MCP transport directly. Counts as one screenshot against the
  * monthly quota (the underlying captures share the request).

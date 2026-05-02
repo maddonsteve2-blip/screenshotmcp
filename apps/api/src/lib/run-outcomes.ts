@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
-import { runOutcomes } from "@screenshotsmcp/db";
+import { runOutcomes } from "@deepsyte/db";
 import { emitDashboardEvent } from "./dashboard-events.js";
 
 export type WorkflowAuthScope = "in" | "out" | "mixed" | "unknown";

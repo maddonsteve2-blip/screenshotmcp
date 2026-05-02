@@ -1,12 +1,12 @@
 import { Command } from "commander";
 import chalk from "chalk";
-import { CORE_SKILL_INSTALL_PATH } from "@screenshotsmcp/types";
+import { CORE_SKILL_INSTALL_PATH } from "@deepsyte/types";
 import {
   fetchRemoteCatalog,
   installCatalogSkill,
   SKILL_CATALOG,
   type CatalogSkill,
-} from "@screenshotsmcp/types/skills";
+} from "@deepsyte/types/skills";
 import {
   getInstalledSkillsForCli,
   printInstalledSkills,
@@ -15,18 +15,18 @@ import {
 } from "../skills.js";
 
 export const skillsCommand = new Command("skills")
-  .description(`Manage the local ScreenshotsMCP core skill under ${CORE_SKILL_INSTALL_PATH}, including packaged workflows (not community skill discovery/install)`);
+  .description(`Manage the local DeepSyte core skill under ${CORE_SKILL_INSTALL_PATH}, including packaged workflows (not community skill discovery/install)`);
 
 skillsCommand
   .command("list")
-  .description("List installed skills under ~/.agents/skills and whether ScreenshotsMCP manages them")
+  .description("List installed skills under ~/.agents/skills and whether DeepSyte manages them")
   .action(() => {
     printInstalledSkills(getInstalledSkillsForCli());
   });
 
 skillsCommand
   .command("sync")
-  .description("Install, update, or repair the managed core ScreenshotsMCP skill and packaged workflow files")
+  .description("Install, update, or repair the managed core DeepSyte skill and packaged workflow files")
   .action(() => {
     printSkillSyncResult(syncCoreSkillForCli());
   });
@@ -40,7 +40,7 @@ skillsCommand
 
 skillsCommand
   .command("available")
-  .description("List skills available in the hosted ScreenshotsMCP catalog")
+  .description("List skills available in the hosted DeepSyte catalog")
   .option("--offline", "Use the built-in fallback catalog instead of fetching the hosted index", false)
   .action(async (opts: { offline?: boolean }) => {
     const catalog = await loadCatalog(opts.offline);
@@ -55,12 +55,12 @@ skillsCommand
       console.log(chalk.dim(`  ${skill.description}`));
     }
     console.log();
-    console.log(chalk.dim(`Install with: screenshotsmcp skills install <name>`));
+    console.log(chalk.dim(`Install with: deepsyte skills install <name>`));
   });
 
 skillsCommand
   .command("install <name>")
-  .description("Install a skill from the hosted ScreenshotsMCP catalog into ~/.agents/skills/<name>")
+  .description("Install a skill from the hosted DeepSyte catalog into ~/.agents/skills/<name>")
   .option("--offline", "Resolve from the built-in fallback catalog only", false)
   .action(async (name: string, opts: { offline?: boolean }) => {
     try {

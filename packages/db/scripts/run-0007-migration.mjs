@@ -25,7 +25,7 @@ async function main() {
 
   console.log("Seeding demo-public-user...");
   await sql`INSERT INTO users (id, clerk_id, email, plan)
-    VALUES ('demo-public-user', 'demo-public-no-clerk', 'demo-public@screenshotmcp.com', 'free')
+    VALUES ('demo-public-user', 'demo-public-no-clerk', 'demo-public@deepsyte.com', 'free')
     ON CONFLICT (id) DO NOTHING`;
 
   const users = await sql`SELECT id, email, plan FROM users WHERE id = 'demo-public-user'`;

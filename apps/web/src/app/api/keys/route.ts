@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
 import { decryptApiKey, encryptApiKey } from "@/lib/api-key-crypto";
-import { apiKeys } from "@screenshotsmcp/db";
+import { apiKeys } from "@deepsyte/db";
 
 // GET: return the user's single active key (or null)
 export async function GET() {

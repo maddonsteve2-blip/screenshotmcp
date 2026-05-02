@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { ONBOARDING_CLIENTS, getNpxSetupCommand, type OnboardingClient } from "@screenshotsmcp/types";
+import { ONBOARDING_CLIENTS, getNpxSetupCommand, type OnboardingClient } from "@deepsyte/types";
 import { oauthLogin } from "../auth.js";
 import { getApiKey } from "../config.js";
 import { installCommand } from "./install.js";
@@ -52,7 +52,7 @@ export const setupCommand = new Command("setup")
   )
   .option("--client <client>", `Skip interactive prompt (for AI agents): ${CLIENT_LIST}`)
   .action(async (opts) => {
-    console.log(chalk.bold("\n  ScreenshotsMCP Setup\n"));
+    console.log(chalk.bold("\n  DeepSyte Setup\n"));
 
     // Step 1: Check auth
     let key = getApiKey();
@@ -68,7 +68,7 @@ export const setupCommand = new Command("setup")
       } catch (err) {
         spinner.fail(chalk.red("Login failed"));
         console.error(chalk.red(err instanceof Error ? err.message : String(err)));
-        console.log(chalk.dim("\nYou can also run: screenshotsmcp login --key sk_live_..."));
+        console.log(chalk.dim("\nYou can also run: deepsyte login --key sk_live_..."));
         process.exit(1);
       }
     }
@@ -120,6 +120,6 @@ export const setupCommand = new Command("setup")
 
     console.log(chalk.bold(chalk.green("\n  Setup complete! ✓\n")));
     console.log(chalk.dim("  Try asking your AI: \"Take a screenshot of https://example.com\""));
-    console.log(chalk.dim("  For login or sign-up testing, start with: `screenshotsmcp auth:test https://example.com`"));
+    console.log(chalk.dim("  For login or sign-up testing, start with: `deepsyte auth:test https://example.com`"));
     console.log();
   });

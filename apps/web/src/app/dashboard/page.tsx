@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { eq, count, and, gte, desc, gt, inArray, isNotNull, or } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
-import { usageEvents, apiKeys, screenshots, recordings, runs } from "@screenshotsmcp/db";
-import { PLAN_LIMITS } from "@screenshotsmcp/types";
+import { usageEvents, apiKeys, screenshots, recordings, runs } from "@deepsyte/db";
+import { PLAN_LIMITS } from "@deepsyte/types";
 import { DashboardClient } from "./dashboard-client";
 import { DashboardOnboarding } from "./dashboard-onboarding";
 
@@ -149,7 +149,7 @@ export default async function DashboardPage() {
         issueRunCount,
         sharedRunCount,
         plan,
-        apiUrl: process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app",
+        apiUrl: process.env.NEXT_PUBLIC_API_URL || "https://deepsyte-api-production.up.railway.app",
         recentRuns: recentRunRows.map((item) => ({
           ...item,
           sharedAt: item.sharedAt?.toISOString() ?? null,

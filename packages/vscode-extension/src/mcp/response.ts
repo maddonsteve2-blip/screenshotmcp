@@ -56,7 +56,7 @@ export function extractImageUrl(response: McpResponse): string | null {
 }
 
 /**
- * Finds a ScreenshotsMCP dashboard run URL in tool response text, or
+ * Finds a DeepSyte dashboard run URL in tool response text, or
  * synthesises one from a `run id: <id>` mention paired with a dashboard base.
  */
 export function extractRunUrl(text: string, dashboardBaseUrl: string): string | undefined {

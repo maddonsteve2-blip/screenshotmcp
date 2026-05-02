@@ -1,5 +1,5 @@
 /**
- * `screenshotsmcp/action` — visual diff for pull requests.
+ * `deepsyte/action` — visual diff for pull requests.
  *
  * Calls `POST {apiBase}/v1/screenshot/diff` with the baseline and preview URLs
  * and posts (or updates) a sticky PR comment summarising the result. Fails
@@ -11,13 +11,13 @@
  *   bundle tiny and the security surface minimal.
  * - Uses an `Idempotency-Key` per workflow run + commit SHA so reruns of the
  *   same job do not double-charge quota.
- * - Comment marker `<!-- screenshotsmcp:visual-diff -->` lets us update the
+ * - Comment marker `<!-- deepsyte:visual-diff -->` lets us update the
  *   existing comment instead of stacking a new one on every push.
  */
 
 import { appendFileSync } from "node:fs";
 
-const COMMENT_MARKER = "<!-- screenshotsmcp:visual-diff -->";
+const COMMENT_MARKER = "<!-- deepsyte:visual-diff -->";
 
 interface DiffResponse {
   beforeUrl: string;
@@ -94,12 +94,12 @@ async function findExistingComment(
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/vnd.github+json",
-          "User-Agent": "screenshotsmcp-action",
+          "User-Agent": "deepsyte-action",
         },
       },
     );
     if (!res.ok) {
-      console.warn(`[screenshotsmcp] failed to list PR comments: HTTP ${res.status}`);
+      console.warn(`[deepsyte] failed to list PR comments: HTTP ${res.status}`);
       return null;
     }
     const items = (await res.json()) as Array<{ id: number; body: string }>;
@@ -128,13 +128,13 @@ async function upsertComment(
       Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github+json",
       "Content-Type": "application/json",
-      "User-Agent": "screenshotsmcp-action",
+      "User-Agent": "deepsyte-action",
     },
     body: JSON.stringify({ body }),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    console.warn(`[screenshotsmcp] failed to ${method} comment: HTTP ${res.status} ${text}`);
+    console.warn(`[deepsyte] failed to ${method} comment: HTTP ${res.status} ${text}`);
   }
 }
 
@@ -149,7 +149,7 @@ function buildCommentBody(
   const pct = diff.changedPercent.toFixed(2);
   return [
     COMMENT_MARKER,
-    "## ScreenshotsMCP visual diff",
+    "## DeepSyte visual diff",
     "",
     `**${verdict}** — ${pct}% of pixels changed (threshold: ${failThreshold}%)`,
     "",
@@ -161,7 +161,7 @@ function buildCommentBody(
     "",
     `Resolution: ${diff.width}×${diff.height} · pixelmatch threshold: ${diff.threshold} · changed pixels: ${diff.changedPixels.toLocaleString()} / ${diff.totalPixels.toLocaleString()}`,
     "",
-    `<sub>🤖 Visual diff by [ScreenshotsMCP](https://www.screenshotmcp.com/?ref=github-action) · [Wire it into your AI agent](https://www.screenshotmcp.com/dashboard/install?ref=github-action) · Free for public repos</sub>`,
+    `<sub>🤖 Visual diff by [DeepSyte](https://deepsyte.com/?ref=github-action) · [Wire it into your AI agent](https://deepsyte.com/dashboard/install?ref=github-action) · Free for public repos</sub>`,
   ].join("\n");
 }
 
@@ -176,13 +176,13 @@ async function main(): Promise<void> {
   const commentOnPr = (getInput("comment-on-pr") || "true").toLowerCase() === "true";
   const githubToken = getInput("github-token");
   const apiBase =
-    getInput("api-base") || "https://screenshotsmcp-api-production.up.railway.app";
+    getInput("api-base") || "https://deepsyte-api-production.up.railway.app";
 
   const idempotencyKey = `${process.env.GITHUB_RUN_ID ?? "local"}-${
     process.env.GITHUB_SHA ?? Date.now()
   }`;
 
-  console.log(`[screenshotsmcp] diff baseline=${baselineUrl} preview=${previewUrl}`);
+  console.log(`[deepsyte] diff baseline=${baselineUrl} preview=${previewUrl}`);
   const res = await fetch(`${apiBase}/v1/screenshot/diff`, {
     method: "POST",
     headers: {
@@ -216,20 +216,20 @@ async function main(): Promise<void> {
     if (ctx && githubToken) {
       await upsertComment(ctx, githubToken, buildCommentBody(diff, passed, failThreshold, baselineUrl, previewUrl));
     } else if (!ctx) {
-      console.log("[screenshotsmcp] not a pull_request event — skipping PR comment.");
+      console.log("[deepsyte] not a pull_request event — skipping PR comment.");
     } else if (!githubToken) {
-      console.log("[screenshotsmcp] no github-token provided — skipping PR comment.");
+      console.log("[deepsyte] no github-token provided — skipping PR comment.");
     }
   }
 
   if (!passed) {
     process.exitCode = 1;
     console.error(
-      `[screenshotsmcp] FAILED: ${diff.changedPercent.toFixed(2)}% changed exceeds threshold ${failThreshold}%`,
+      `[deepsyte] FAILED: ${diff.changedPercent.toFixed(2)}% changed exceeds threshold ${failThreshold}%`,
     );
   } else {
     console.log(
-      `[screenshotsmcp] OK: ${diff.changedPercent.toFixed(2)}% changed (threshold ${failThreshold}%)`,
+      `[deepsyte] OK: ${diff.changedPercent.toFixed(2)}% changed (threshold ${failThreshold}%)`,
     );
   }
 }

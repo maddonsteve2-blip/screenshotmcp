@@ -14,7 +14,7 @@ type Tool = {
   instructions: React.ReactNode;
 };
 
-const API_BASE = "https://screenshotsmcp-api-production.up.railway.app";
+const API_BASE = "https://deepsyte-api-production.up.railway.app";
 
 const tools: Tool[] = [
   {

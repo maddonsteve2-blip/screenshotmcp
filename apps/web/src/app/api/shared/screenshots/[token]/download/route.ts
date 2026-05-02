@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { screenshots } from "@screenshotsmcp/db";
+import { screenshots } from "@deepsyte/db";
 
 function guessFileName(publicUrl: string, pageTitle: string | null, fallbackId: string) {
   const cleanTitle = (pageTitle ?? "shared-screenshot")

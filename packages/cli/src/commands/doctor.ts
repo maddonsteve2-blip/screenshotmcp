@@ -13,19 +13,19 @@ interface CheckResult {
 }
 
 /**
- * Diagnoses the most common ScreenshotsMCP setup problems in one shot.
+ * Diagnoses the most common DeepSyte setup problems in one shot.
  * Designed to be safe to run anywhere — every check fails closed and never
  * mutates state.
  */
 export const doctorCommand = new Command("doctor")
-  .description("Diagnose common ScreenshotsMCP setup problems (API key, network, project files, GH workflow)")
+  .description("Diagnose common DeepSyte setup problems (API key, network, project files, GH workflow)")
   .option("--json", "Emit machine-readable results on stdout")
   .option("--fix", "Auto-scaffold missing project files by running `init` before diagnosing")
   .action(async (opts: Record<string, boolean>) => {
     const jsonOnly = Boolean(opts.json);
     if (opts.fix && !jsonOnly) {
       // Run `init` in-process by invoking the same module so we scaffold the
-      // same files the user would get from `screenshotsmcp init`.
+      // same files the user would get from `deepsyte init`.
       console.log(chalk.bold("\u{1F527} Running init to scaffold missing files\u2026\n"));
       const { initCommand } = await import("./init.js");
       await initCommand.parseAsync(["node", "init"]);
@@ -34,7 +34,7 @@ export const doctorCommand = new Command("doctor")
     const cwd = process.cwd();
     const results: CheckResult[] = [];
 
-    if (!jsonOnly) console.log(chalk.bold("\n\u{1F50D} ScreenshotsMCP doctor\n"));
+    if (!jsonOnly) console.log(chalk.bold("\n\u{1F50D} DeepSyte doctor\n"));
 
     // 1. API key configured?
     const apiKey = getApiKey();
@@ -43,7 +43,7 @@ export const doctorCommand = new Command("doctor")
         name: "API key",
         status: "fail",
         detail: "No API key found in config or env (SCREENSHOTSMCP_API_KEY).",
-        hint: "Run `screenshotsmcp login` or set SCREENSHOTSMCP_API_KEY.",
+        hint: "Run `deepsyte login` or set SCREENSHOTSMCP_API_KEY.",
       });
     } else {
       results.push({
@@ -64,7 +64,7 @@ export const doctorCommand = new Command("doctor")
           name: "API reachable",
           status: "warn",
           detail: `${apiUrl}/health responded ${res.status}`,
-          hint: "Service may be degraded; check https://www.screenshotmcp.com.",
+          hint: "Service may be degraded; check https://www.deepsyte.com.",
         });
       }
     } catch (err) {
@@ -86,7 +86,7 @@ export const doctorCommand = new Command("doctor")
             name: "API key valid",
             status: "fail",
             detail: text.slice(0, 200),
-            hint: "Run `screenshotsmcp login` again with a fresh key.",
+            hint: "Run `deepsyte login` again with a fresh key.",
           });
         } else {
           results.push({ name: "API key valid", status: "ok", detail: "Authenticated successfully." });
@@ -103,26 +103,26 @@ export const doctorCommand = new Command("doctor")
       results.push({ name: "API key valid", status: "skip", detail: "Skipped (no API key)." });
     }
 
-    // 4. .screenshotsmcp/urls.json
-    results.push(await checkJsonFile(join(cwd, ".screenshotsmcp/urls.json"), "Project URLs file"));
+    // 4. .deepsyte/urls.json
+    results.push(await checkJsonFile(join(cwd, ".deepsyte/urls.json"), "Project URLs file"));
 
-    // 5. .screenshotsmcp/budget.json
-    results.push(await checkJsonFile(join(cwd, ".screenshotsmcp/budget.json"), "Audit budget file"));
+    // 5. .deepsyte/budget.json
+    results.push(await checkJsonFile(join(cwd, ".deepsyte/budget.json"), "Audit budget file"));
 
     // 6. agents.json (optional)
     results.push(await checkJsonFile(join(cwd, "agents.json"), "agents.json manifest", true));
 
     // 7. GH workflow file
-    const wfPath = join(cwd, ".github/workflows/screenshotsmcp.yml");
+    const wfPath = join(cwd, ".github/workflows/deepsyte.yml");
     try {
       await stat(wfPath);
-      results.push({ name: "GitHub Action workflow", status: "ok", detail: ".github/workflows/screenshotsmcp.yml present." });
+      results.push({ name: "GitHub Action workflow", status: "ok", detail: ".github/workflows/deepsyte.yml present." });
     } catch {
       results.push({
         name: "GitHub Action workflow",
         status: "skip",
         detail: "Not present (optional).",
-        hint: "Run `screenshotsmcp init` to scaffold the PR audit workflow.",
+        hint: "Run `deepsyte init` to scaffold the PR audit workflow.",
       });
     }
 
@@ -138,7 +138,7 @@ export const doctorCommand = new Command("doctor")
     }
     if (localVersion) {
       try {
-        const res = await fetch("https://registry.npmjs.org/screenshotsmcp", {
+        const res = await fetch("https://registry.npmjs.org/deepsyte", {
           headers: { Accept: "application/vnd.npm.install-v1+json" },
         });
         if (res.ok) {
@@ -148,17 +148,17 @@ export const doctorCommand = new Command("doctor")
             results.push({
               name: "CLI version",
               status: "warn",
-              detail: `screenshotsmcp@${localVersion} (latest: ${latest})`,
-              hint: "Run `screenshotsmcp upgrade` to update.",
+              detail: `deepsyte@${localVersion} (latest: ${latest})`,
+              hint: "Run `deepsyte upgrade` to update.",
             });
           } else {
-            results.push({ name: "CLI version", status: "ok", detail: `screenshotsmcp@${localVersion} (up to date)` });
+            results.push({ name: "CLI version", status: "ok", detail: `deepsyte@${localVersion} (up to date)` });
           }
         } else {
-          results.push({ name: "CLI version", status: "ok", detail: `screenshotsmcp@${localVersion}` });
+          results.push({ name: "CLI version", status: "ok", detail: `deepsyte@${localVersion}` });
         }
       } catch {
-        results.push({ name: "CLI version", status: "ok", detail: `screenshotsmcp@${localVersion}` });
+        results.push({ name: "CLI version", status: "ok", detail: `deepsyte@${localVersion}` });
       }
     }
 
@@ -211,7 +211,7 @@ async function checkJsonFile(path: string, label: string, optional = false): Pro
             name: label,
             status: "warn",
             detail: `${relativise(path)} not found.`,
-            hint: "Run `screenshotsmcp init` to scaffold defaults.",
+            hint: "Run `deepsyte init` to scaffold defaults.",
           };
     }
     return {

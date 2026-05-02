@@ -1,5 +1,5 @@
 import { db } from "./db.js";
-import { activationEvents } from "@screenshotsmcp/db";
+import { activationEvents } from "@deepsyte/db";
 import { nanoid } from "nanoid";
 import { sql } from "drizzle-orm";
 

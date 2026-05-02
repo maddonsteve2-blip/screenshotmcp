@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Show } from "@clerk/nextjs";
-import { getNpxSetupCommand } from "@screenshotsmcp/types";
+import { getNpxSetupCommand } from "@deepsyte/types";
 import { Button } from "@/components/ui/button";
 import Script from "next/script";
 import { Camera, Eye, MonitorSmartphone, Search, Lock, Diff, Layers, Terminal, Copy, Check, ArrowRight, Zap, Shield, X, Menu } from "lucide-react";

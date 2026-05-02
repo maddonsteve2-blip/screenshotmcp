@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { screenshots } from "@screenshotsmcp/db";
+import { screenshots } from "@deepsyte/db";
 
 /**
  * Public, unauthenticated endpoint that returns the image URL +

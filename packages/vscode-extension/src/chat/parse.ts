@@ -1,5 +1,5 @@
 /**
- * Pure helpers used by the `@screenshotsmcp` chat participant.
+ * Pure helpers used by the `@deepsyte` chat participant.
  * Kept free of `vscode` imports so the tests can run under `tsx --test`.
  */
 

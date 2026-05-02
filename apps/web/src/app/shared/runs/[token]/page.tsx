@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AlertTriangle, Camera, CheckCircle2, Clock, ExternalLink, Globe, Monitor, Network, PlayCircle, SquareTerminal } from "lucide-react";
 import { SharedRunLiveRefresh } from "./shared-run-live-refresh";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://screenshotsmcp-api-production.up.railway.app";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://deepsyte-api-production.up.railway.app";
 
 type SharedRun = {
   id: string;

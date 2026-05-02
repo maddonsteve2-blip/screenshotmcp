@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { users } from "@screenshotsmcp/db";
+import { users } from "@deepsyte/db";
 import { getInternalApiBase, getInternalApiHeaders } from "@/lib/internal-api";
 
 async function getDbUserId(clerkId: string): Promise<string | null> {

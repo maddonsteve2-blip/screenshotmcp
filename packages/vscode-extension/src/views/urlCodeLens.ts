@@ -44,13 +44,13 @@ export class UrlCodeLensProvider implements vscode.CodeLensProvider {
       lenses.push(
         new vscode.CodeLens(range, {
           title: "📸 Screenshot",
-          command: "screenshotsmcp.takeScreenshotAtUrl",
+          command: "deepsyte.takeScreenshotAtUrl",
           arguments: [url],
           tooltip: `Capture ${url}`,
         }),
         new vscode.CodeLens(range, {
           title: "🔍 Audit",
-          command: "screenshotsmcp.auditUrl",
+          command: "deepsyte.auditUrl",
           arguments: [url],
           tooltip: `Audit ${url}`,
         }),

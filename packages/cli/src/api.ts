@@ -13,7 +13,7 @@ export async function callTool(toolName: string, args: Record<string, unknown> =
   const storedApiKey = getApiKey();
   const apiKey = syncApiKeyFromEditorConfigs(storedApiKey);
   if (!apiKey) {
-    throw new Error("Not logged in. Run `screenshotsmcp login` first.");
+    throw new Error("Not logged in. Run `deepsyte login` first.");
   }
 
   return callToolWithKey(toolName, args, apiKey, true);
@@ -44,7 +44,7 @@ async function callToolWithKey(
       params: {
         protocolVersion: "2024-11-05",
         capabilities: {},
-        clientInfo: { name: "screenshotsmcp-cli", version: "1.0.0" },
+        clientInfo: { name: "deepsyte-cli", version: "1.0.0" },
       },
     }),
   });
@@ -161,7 +161,7 @@ function getAuthedApiKey(): string {
   const storedApiKey = getApiKey();
   const apiKey = syncApiKeyFromEditorConfigs(storedApiKey);
   if (!apiKey) {
-    throw new Error("Not logged in. Run `screenshotsmcp login` first.");
+    throw new Error("Not logged in. Run `deepsyte login` first.");
   }
   return apiKey;
 }

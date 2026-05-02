@@ -4,7 +4,7 @@ export const runtime = "nodejs";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ??
-  "https://screenshotsmcp-api-production.up.railway.app";
+  "https://deepsyte-api-production.up.railway.app";
 const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET ?? "").trim();
 const DEMO_USER_ID = (process.env.PUBLIC_DEMO_USER_ID ?? "demo-public-user").trim();
 

@@ -4,8 +4,8 @@ import { URL } from "url";
 import { createHash } from "crypto";
 import { eq, desc, gte, and, count, sql } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { screenshots, users, apiKeys } from "@screenshotsmcp/db";
-import { PLAN_LIMITS } from "@screenshotsmcp/types";
+import { screenshots, users, apiKeys } from "@deepsyte/db";
+import { PLAN_LIMITS } from "@deepsyte/types";
 
 const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET || "").trim();
 

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
-import { apiKeys } from "@screenshotsmcp/db";
+import { apiKeys } from "@deepsyte/db";
 
 export async function DELETE(
   _req: NextRequest,

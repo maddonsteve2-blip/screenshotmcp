@@ -96,7 +96,7 @@ export class OAuthController implements vscode.UriHandler, vscode.Disposable {
         detail: message,
         status: "error",
       });
-      vscode.window.showErrorMessage(`ScreenshotsMCP sign-in failed: ${message}`);
+      vscode.window.showErrorMessage(`DeepSyte sign-in failed: ${message}`);
       pending.resolver(undefined);
       return;
     }
@@ -107,7 +107,7 @@ export class OAuthController implements vscode.UriHandler, vscode.Disposable {
         detail: "Authorization code missing from callback.",
         status: "error",
       });
-      vscode.window.showErrorMessage("ScreenshotsMCP sign-in failed: authorization code missing.");
+      vscode.window.showErrorMessage("DeepSyte sign-in failed: authorization code missing.");
       pending.resolver(undefined);
       return;
     }
@@ -117,23 +117,23 @@ export class OAuthController implements vscode.UriHandler, vscode.Disposable {
       await this.authStore.setApiKey(apiKey);
       this.provider.refresh();
       this.statusBar.update(true);
-      logLine("ScreenshotsMCP OAuth sign-in completed.");
+      logLine("DeepSyte OAuth sign-in completed.");
       this.timelineStore.add({
         title: "Signed in with OAuth",
         detail: `Connected to ${getApiUrl()}`,
         status: "success",
       });
-      vscode.window.showInformationMessage("ScreenshotsMCP connected.");
+      vscode.window.showInformationMessage("DeepSyte connected.");
       pending.resolver(apiKey);
     } catch (errorValue) {
       const message = errorValue instanceof Error ? errorValue.message : String(errorValue);
-      logLine(`ScreenshotsMCP OAuth callback failed: ${message}`);
+      logLine(`DeepSyte OAuth callback failed: ${message}`);
       this.timelineStore.add({
         title: "OAuth sign-in failed",
         detail: message,
         status: "error",
       });
-      vscode.window.showErrorMessage(`ScreenshotsMCP sign-in failed: ${message}`);
+      vscode.window.showErrorMessage(`DeepSyte sign-in failed: ${message}`);
       pending.resolver(undefined);
     }
   }
@@ -172,7 +172,7 @@ export class OAuthController implements vscode.UriHandler, vscode.Disposable {
           return;
         }
         this.pending = undefined;
-        logLine("ScreenshotsMCP OAuth sign-in timed out.");
+        logLine("DeepSyte OAuth sign-in timed out.");
         this.timelineStore.add({
           title: "OAuth sign-in timed out",
           detail: "Browser authorization was not completed within 5 minutes.",
@@ -198,7 +198,7 @@ export class OAuthController implements vscode.UriHandler, vscode.Disposable {
         clearTimeout(this.pending.timer);
         this.pending = undefined;
       }
-      vscode.window.showErrorMessage("ScreenshotsMCP sign-in failed: could not open the browser.");
+      vscode.window.showErrorMessage("DeepSyte sign-in failed: could not open the browser.");
       return undefined;
     }
 

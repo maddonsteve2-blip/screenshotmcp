@@ -34,7 +34,7 @@ export class AuditPanel {
     this.input = input;
     this.onRerun = onRerun;
     this.panel = vscode.window.createWebviewPanel(
-      "screenshotsmcp.audit",
+      "deepsyte.audit",
       `${EXTENSION_DISPLAY_NAME} · Audit`,
       vscode.ViewColumn.Active,
       { enableScripts: true, retainContextWhenHidden: true },

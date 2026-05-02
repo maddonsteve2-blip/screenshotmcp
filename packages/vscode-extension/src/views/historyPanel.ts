@@ -12,7 +12,7 @@ export const UrlHistoryPanel = {
       return;
     }
     const panel = vscode.window.createWebviewPanel(
-      "screenshotsmcp.history",
+      "deepsyte.history",
       `History: ${shortenUrl(url)}`,
       vscode.ViewColumn.Beside,
       { enableScripts: true, retainContextWhenHidden: true },
@@ -21,9 +21,9 @@ export const UrlHistoryPanel = {
     panel.webview.onDidReceiveMessage(async (message: unknown) => {
       if (!isRecord(message) || typeof message.type !== "string") return;
       if (message.type === "screenshot") {
-        await vscode.commands.executeCommand("screenshotsmcp.takeScreenshotAtUrl", url);
+        await vscode.commands.executeCommand("deepsyte.takeScreenshotAtUrl", url);
       } else if (message.type === "audit") {
-        await vscode.commands.executeCommand("screenshotsmcp.auditUrl", url);
+        await vscode.commands.executeCommand("deepsyte.auditUrl", url);
       } else if (message.type === "openExternal" && typeof message.url === "string") {
         await vscode.env.openExternal(vscode.Uri.parse(message.url));
       } else if (message.type === "clear") {

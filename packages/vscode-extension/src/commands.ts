@@ -48,7 +48,7 @@ interface CommandDependencies {
 
 export function registerCommands(context: vscode.ExtensionContext, deps: CommandDependencies): void {
   context.subscriptions.push(
-    vscode.commands.registerCommand("screenshotsmcp.signIn", async () => {
+    vscode.commands.registerCommand("deepsyte.signIn", async () => {
       const apiKey = await promptForApiKey(deps.authStore, deps.oauthController, deps.timelineStore);
       if (!apiKey) {
         return;
@@ -57,7 +57,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       deps.statusBar.update(true);
       await configureEditorAfterSignIn(apiKey, deps.autoInstaller, deps.timelineStore);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.signOut", async () => {
+    vscode.commands.registerCommand("deepsyte.signOut", async () => {
       await deps.authStore.clearApiKey();
       deps.provider.refresh();
       deps.statusBar.update(false);
@@ -71,11 +71,11 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       });
       vscode.window.showInformationMessage(
         removal.status === "removed"
-          ? "ScreenshotsMCP credentials and auto-installed MCP config cleared."
-          : "ScreenshotsMCP credentials cleared.",
+          ? "DeepSyte credentials and auto-installed MCP config cleared."
+          : "DeepSyte credentials cleared.",
       );
     }),
-    vscode.commands.registerCommand("screenshotsmcp.checkStatus", async () => {
+    vscode.commands.registerCommand("deepsyte.checkStatus", async () => {
       const apiKey = await deps.authStore.getApiKey();
       if (!apiKey) {
         deps.statusBar.update(false);
@@ -84,9 +84,9 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
           detail: "No API key is stored yet.",
           status: "info",
         });
-        const action = await vscode.window.showWarningMessage("ScreenshotsMCP is not signed in.", "Sign In", "Open Dashboard");
+        const action = await vscode.window.showWarningMessage("DeepSyte is not signed in.", "Sign In", "Open Dashboard");
         if (action === "Sign In") {
-          await vscode.commands.executeCommand("screenshotsmcp.signIn");
+          await vscode.commands.executeCommand("deepsyte.signIn");
         }
         if (action === "Open Dashboard") {
           await openExternal(getDashboardUrl());
@@ -97,7 +97,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       const validation = await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: "Checking ScreenshotsMCP connection",
+          title: "Checking DeepSyte connection",
         },
         () => validateApiKey(apiKey),
       );
@@ -107,7 +107,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
           detail: validation.message,
           status: "error",
         });
-        vscode.window.showErrorMessage(`ScreenshotsMCP key check failed: ${validation.message}`);
+        vscode.window.showErrorMessage(`DeepSyte key check failed: ${validation.message}`);
         return;
       }
       deps.timelineStore.add({
@@ -115,9 +115,9 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
         detail: `Connected to ${getApiUrl()}`,
         status: "success",
       });
-      vscode.window.showInformationMessage(`ScreenshotsMCP connected to ${getApiUrl()}`);
+      vscode.window.showInformationMessage(`DeepSyte connected to ${getApiUrl()}`);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.installMcpServer", async () => {
+    vscode.commands.registerCommand("deepsyte.installMcpServer", async () => {
       const apiKey = await ensureAuthenticated(deps.authStore, deps.oauthController, deps.provider, deps.statusBar, deps.timelineStore, deps.autoInstaller);
       if (!apiKey) {
         return;
@@ -147,9 +147,9 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
         const document = await vscode.workspace.openTextDocument(fileUri);
         await vscode.window.showTextDocument(document);
         if (skillResult.ok) {
-          vscode.window.showInformationMessage(`Installed ScreenshotsMCP into workspace .vscode/mcp.json. ${skillMessage}`);
+          vscode.window.showInformationMessage(`Installed DeepSyte into workspace .vscode/mcp.json. ${skillMessage}`);
         } else {
-          vscode.window.showWarningMessage(`Installed ScreenshotsMCP into workspace .vscode/mcp.json. ${skillMessage}`);
+          vscode.window.showWarningMessage(`Installed DeepSyte into workspace .vscode/mcp.json. ${skillMessage}`);
         }
         return;
       }
@@ -182,7 +182,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
         }
       }
     }),
-    vscode.commands.registerCommand("screenshotsmcp.syncCoreSkill", async () => {
+    vscode.commands.registerCommand("deepsyte.syncCoreSkill", async () => {
       const result = syncCoreSkillForExtension(deps.timelineStore);
       if (result.ok && result.result) {
         vscode.window.showInformationMessage(formatSkillSyncMessage(result.result));
@@ -190,10 +190,10 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
         vscode.window.showErrorMessage(formatSkillSyncFailureMessage(result));
       }
     }),
-    vscode.commands.registerCommand("screenshotsmcp.browseSkills", async () => {
+    vscode.commands.registerCommand("deepsyte.browseSkills", async () => {
       await openExternal("https://skills.sh/");
     }),
-    vscode.commands.registerCommand("screenshotsmcp.installSkill", async (skillName?: string) => {
+    vscode.commands.registerCommand("deepsyte.installSkill", async (skillName?: string) => {
       if (!skillName) {
         return;
       }
@@ -208,7 +208,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
         vscode.window.showErrorMessage(outcome.errorMessage ?? `Failed to install skill "${skillName}".`);
       }
     }),
-    vscode.commands.registerCommand("screenshotsmcp.previewSkill", async (skillName?: string) => {
+    vscode.commands.registerCommand("deepsyte.previewSkill", async (skillName?: string) => {
       if (!skillName) {
         return;
       }
@@ -218,12 +218,12 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
         return;
       }
       SkillPreviewPanel.show(skill, () => {
-        void vscode.commands.executeCommand("screenshotsmcp.installSkill", skill.name);
+        void vscode.commands.executeCommand("deepsyte.installSkill", skill.name);
       });
     }),
-    vscode.commands.registerCommand("screenshotsmcp.takeScreenshot", async () => {
+    vscode.commands.registerCommand("deepsyte.takeScreenshot", async () => {
       const url = await vscode.window.showInputBox({
-        title: "ScreenshotsMCP",
+        title: "DeepSyte",
         prompt: "Enter the URL to capture",
         placeHolder: "https://example.com",
         validateInput: validateHttpUrl,
@@ -233,7 +233,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       }
       await runScreenshot(deps, url);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.takeScreenshotAtUrl", async (url?: string, overrides?: unknown) => {
+    vscode.commands.registerCommand("deepsyte.takeScreenshotAtUrl", async (url?: string, overrides?: unknown) => {
       if (!url) {
         return;
       }
@@ -244,7 +244,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       }
       await runScreenshot(deps, url, sanitiseScreenshotOverrides(overrides));
     }),
-    vscode.commands.registerCommand("screenshotsmcp.auditUrl", async (url?: string) => {
+    vscode.commands.registerCommand("deepsyte.auditUrl", async (url?: string) => {
       if (!url) {
         return;
       }
@@ -255,7 +255,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       }
       await runAudit(deps, url);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.screenshotSelectedUrl", async () => {
+    vscode.commands.registerCommand("deepsyte.screenshotSelectedUrl", async () => {
       const url = pickUrlFromActiveEditor();
       if (!url) {
         vscode.window.showWarningMessage("Select a URL (or place the cursor on one) first.");
@@ -263,7 +263,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       }
       await runScreenshot(deps, url);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.auditSelectedUrl", async () => {
+    vscode.commands.registerCommand("deepsyte.auditSelectedUrl", async () => {
       const url = pickUrlFromActiveEditor();
       if (!url) {
         vscode.window.showWarningMessage("Select a URL (or place the cursor on one) first.");
@@ -271,10 +271,10 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       }
       await runAudit(deps, url);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.createSkill", async () => {
+    vscode.commands.registerCommand("deepsyte.createSkill", async () => {
       await runCreateSkill(deps);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.openDashboard", async () => {
+    vscode.commands.registerCommand("deepsyte.openDashboard", async () => {
       deps.timelineStore.add({
         title: "Opened dashboard",
         detail: getDashboardUrl(),
@@ -282,18 +282,18 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       });
       await openExternal(getDashboardUrl());
     }),
-    vscode.commands.registerCommand("screenshotsmcp.openTimeline", async () => {
+    vscode.commands.registerCommand("deepsyte.openTimeline", async () => {
       deps.timelinePanel.show();
     }),
-    vscode.commands.registerCommand("screenshotsmcp.showOutput", async () => {
+    vscode.commands.registerCommand("deepsyte.showOutput", async () => {
       deps.timelineStore.add({
         title: "Opened output channel",
-        detail: "ScreenshotsMCP output channel shown.",
+        detail: "DeepSyte output channel shown.",
         status: "info",
       });
       showOutputChannel();
     }),
-    vscode.commands.registerCommand("screenshotsmcp.captureFromClipboard", async () => {
+    vscode.commands.registerCommand("deepsyte.captureFromClipboard", async () => {
       const clipboard = (await vscode.env.clipboard.readText()).trim();
       if (!clipboard) {
         void vscode.window.showWarningMessage("Clipboard is empty. Copy a URL first.");
@@ -307,12 +307,12 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
         void vscode.window.showWarningMessage(`No valid http(s) URL found in the clipboard (first 80 chars: "${clipboard.slice(0, 80)}").`);
         return;
       }
-      await vscode.commands.executeCommand("screenshotsmcp.takeScreenshotAtUrl", url);
+      await vscode.commands.executeCommand("deepsyte.takeScreenshotAtUrl", url);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.showQuickActions", async () => {
+    vscode.commands.registerCommand("deepsyte.showQuickActions", async () => {
       await runQuickActions(deps);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.captureBaseline", async (urlArg?: string) => {
+    vscode.commands.registerCommand("deepsyte.captureBaseline", async (urlArg?: string) => {
       const url = urlArg && validateHttpUrl(urlArg) === undefined ? urlArg : undefined;
       if (!url) {
         void vscode.window.showWarningMessage("captureBaseline requires a valid http(s) URL.");
@@ -362,7 +362,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
         void vscode.window.showErrorMessage(`Baseline capture failed: ${message}`);
       }
     }),
-    vscode.commands.registerCommand("screenshotsmcp.promoteBaseline", async (urlArg?: string) => {
+    vscode.commands.registerCommand("deepsyte.promoteBaseline", async (urlArg?: string) => {
       const url = urlArg && validateHttpUrl(urlArg) === undefined ? urlArg : undefined;
       if (!url) {
         void vscode.window.showWarningMessage("promoteBaseline requires a valid http(s) URL.");
@@ -379,9 +379,9 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       }
       // Re-use captureBaseline, which already handles auth, capture, and
       // timeline. The store.write call inside overwrites whatever exists.
-      await vscode.commands.executeCommand("screenshotsmcp.captureBaseline", url);
+      await vscode.commands.executeCommand("deepsyte.captureBaseline", url);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.diffBaseline", async (urlArg?: string) => {
+    vscode.commands.registerCommand("deepsyte.diffBaseline", async (urlArg?: string) => {
       if (!urlArg) {
         void vscode.window.showWarningMessage("diffBaseline requires a URL argument.");
         return;
@@ -394,22 +394,22 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
           "Cancel",
         );
         if (action === "Capture baseline") {
-          await vscode.commands.executeCommand("screenshotsmcp.captureBaseline", urlArg);
+          await vscode.commands.executeCommand("deepsyte.captureBaseline", urlArg);
         }
         return;
       }
       // Reuse the existing diff workflow — diffs the live URL against itself
       // (matching the CLI's behaviour) and surfaces the stored baseline image
       // URL in the panel for visual comparison.
-      await vscode.commands.executeCommand("screenshotsmcp.diffUrls", urlArg, urlArg);
+      await vscode.commands.executeCommand("deepsyte.diffUrls", urlArg, urlArg);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.openHtmlReport", async (uriArg?: vscode.Uri) => {
+    vscode.commands.registerCommand("deepsyte.openHtmlReport", async (uriArg?: vscode.Uri) => {
       let target: vscode.Uri | undefined = uriArg;
       if (!target) {
         const folder = vscode.workspace.workspaceFolders?.[0];
-        const defaultUri = folder ? vscode.Uri.joinPath(folder.uri, "screenshotsmcp-report.html") : undefined;
+        const defaultUri = folder ? vscode.Uri.joinPath(folder.uri, "deepsyte-report.html") : undefined;
         const picked = await vscode.window.showOpenDialog({
-          title: "Open ScreenshotsMCP HTML report",
+          title: "Open DeepSyte HTML report",
           openLabel: "Open report",
           canSelectMany: false,
           filters: { "HTML reports": ["html", "htm"] },
@@ -427,13 +427,13 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
         void vscode.window.showErrorMessage(`Could not open report: ${message}`);
       }
     }),
-    vscode.commands.registerCommand("screenshotsmcp.editProjectUrls", async () => {
+    vscode.commands.registerCommand("deepsyte.editProjectUrls", async () => {
       const uri = await ensureProjectUrlsFile();
       if (!uri) return;
       const doc = await vscode.workspace.openTextDocument(uri);
       await vscode.window.showTextDocument(doc);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.showStoredBaselines", async () => {
+    vscode.commands.registerCommand("deepsyte.showStoredBaselines", async () => {
       const baselines = await baselineStore.list();
       if (baselines.length === 0) {
         const action = await vscode.window.showInformationMessage(
@@ -441,7 +441,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
           "Open Docs",
         );
         if (action === "Open Docs") {
-          await vscode.env.openExternal(vscode.Uri.parse("https://www.screenshotmcp.com/docs"));
+          await vscode.env.openExternal(vscode.Uri.parse("https://www.deepsyte.com/docs"));
         }
         return;
       }
@@ -464,39 +464,39 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       );
       if (!action) return;
       if (action.id === "diff") {
-        await vscode.commands.executeCommand("screenshotsmcp.diffBaseline", picked.baseline.url);
+        await vscode.commands.executeCommand("deepsyte.diffBaseline", picked.baseline.url);
       } else {
         await vscode.env.openExternal(vscode.Uri.parse(picked.baseline.imageUrl));
       }
     }),
-    vscode.commands.registerCommand("screenshotsmcp.editProjectBudget", async () => {
+    vscode.commands.registerCommand("deepsyte.editProjectBudget", async () => {
       const uri = await ensureProjectBudgetFile();
       if (!uri) return;
       const doc = await vscode.workspace.openTextDocument(uri);
       await vscode.window.showTextDocument(doc);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.watchProjectUrls", async () => {
+    vscode.commands.registerCommand("deepsyte.watchProjectUrls", async () => {
       const folder = vscode.workspace.workspaceFolders?.[0];
       if (!folder) {
         void vscode.window.showWarningMessage("Open a workspace folder first.");
         return;
       }
-      const existing = vscode.window.terminals.find((t) => t.name === "ScreenshotsMCP Watch");
+      const existing = vscode.window.terminals.find((t) => t.name === "DeepSyte Watch");
       const terminal = existing ?? vscode.window.createTerminal({
-        name: "ScreenshotsMCP Watch",
+        name: "DeepSyte Watch",
         cwd: folder.uri.fsPath,
       });
       terminal.show(true);
       // Use `npx` so it works whether or not the CLI is installed globally.
-      terminal.sendText("npx -y screenshotsmcp watch");
+      terminal.sendText("npx -y deepsyte watch");
     }),
-    vscode.commands.registerCommand("screenshotsmcp.runProjectUrls", async () => {
+    vscode.commands.registerCommand("deepsyte.runProjectUrls", async () => {
       await runProjectUrlBatch(deps, "screenshot");
     }),
-    vscode.commands.registerCommand("screenshotsmcp.auditProjectUrls", async () => {
+    vscode.commands.registerCommand("deepsyte.auditProjectUrls", async () => {
       await runProjectUrlBatch(deps, "audit");
     }),
-    vscode.commands.registerCommand("screenshotsmcp.diffUrls", async (urlAArg?: string, urlBArg?: string) => {
+    vscode.commands.registerCommand("deepsyte.diffUrls", async (urlAArg?: string, urlBArg?: string) => {
       const urls = deps.urlHistory.listUrls().map((u) => u.url);
       const urlA = urlAArg && validateHttpUrl(urlAArg) ? urlAArg : await pickOrEnterUrl("Compare A: pick or enter the 'before' URL", urls);
       if (!urlA) return;
@@ -504,14 +504,14 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       if (!urlB) return;
       await runDiff(deps, urlA, urlB);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.showUrlHistory", async (urlArg?: string) => {
+    vscode.commands.registerCommand("deepsyte.showUrlHistory", async (urlArg?: string) => {
       const resolved = await resolveUrlForHistory(deps, urlArg);
       if (!resolved) {
         return;
       }
       UrlHistoryPanel.show(resolved, deps.urlHistory);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.showHistoryForSelectedUrl", async () => {
+    vscode.commands.registerCommand("deepsyte.showHistoryForSelectedUrl", async () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
         void vscode.window.showWarningMessage("Open a file and select a URL first.");
@@ -527,14 +527,14 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       }
       UrlHistoryPanel.show(url, deps.urlHistory);
     }),
-    vscode.commands.registerCommand("screenshotsmcp.clearAuditDiagnostics", () => {
+    vscode.commands.registerCommand("deepsyte.clearAuditDiagnostics", () => {
       deps.auditDiagnostics.clear();
       deps.timelineStore.add({
         title: "Audit diagnostics cleared",
         status: "info",
       });
     }),
-    vscode.commands.registerCommand("screenshotsmcp.openWorkflow", async (pathOrUndefined?: string) => {
+    vscode.commands.registerCommand("deepsyte.openWorkflow", async (pathOrUndefined?: string) => {
       const workflows = discoverWorkflows();
       const match = pathOrUndefined
         ? workflows.find((w) => w.path === pathOrUndefined)
@@ -547,7 +547,7 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
 
       if (workflows.length === 0) {
         void vscode.window.showWarningMessage(
-          "No workflows found. Install a skill that ships WORKFLOW.md files — e.g. run `ScreenshotsMCP: Sync Core Skill`.",
+          "No workflows found. Install a skill that ships WORKFLOW.md files — e.g. run `DeepSyte: Sync Core Skill`.",
         );
         return;
       }
@@ -580,28 +580,28 @@ async function runQuickActions(deps: CommandDependencies): Promise<void> {
   const hasApiKey = await deps.authStore.hasApiKey();
   const actions: QuickAction[] = hasApiKey
     ? [
-        { label: "$(device-camera) Take Screenshot", description: "Capture a URL", command: "screenshotsmcp.takeScreenshot" },
-        { label: "$(clippy) Capture from Clipboard", description: "Screenshot the URL currently in your clipboard", command: "screenshotsmcp.captureFromClipboard" },
-        { label: "$(search) Audit URL", description: "Run a UX review", command: "screenshotsmcp.takeScreenshot", args: [] },
-        { label: "$(list-unordered) Open Timeline", description: "Recent runs and events", command: "screenshotsmcp.openTimeline" },
-        { label: "$(history) Show URL History", description: "Past screenshots/audits grouped by URL", command: "screenshotsmcp.showUrlHistory" },
-        { label: "$(diff) Visual Diff", description: "Compare two URLs pixel-by-pixel", command: "screenshotsmcp.diffUrls" },
-        { label: "$(folder-library) Screenshot Project URLs", description: "Batch-capture .screenshotsmcp/urls.json", command: "screenshotsmcp.runProjectUrls" },
-        { label: "$(checklist) Audit Project URLs", description: "Batch-audit .screenshotsmcp/urls.json", command: "screenshotsmcp.auditProjectUrls" },
-        { label: "$(edit) Edit Project URLs", description: "Open or create .screenshotsmcp/urls.json", command: "screenshotsmcp.editProjectUrls" },
-        { label: "$(gear) Edit Project Budget", description: "Open or create .screenshotsmcp/budget.json", command: "screenshotsmcp.editProjectBudget" },
-        { label: "$(eye) Watch Project URLs", description: "Run `screenshotsmcp watch` in a terminal", command: "screenshotsmcp.watchProjectUrls" },
-        { label: "$(pin) Show Stored Baselines", description: "Pick a baseline to diff or open", command: "screenshotsmcp.showStoredBaselines" },
-        { label: "$(file-code) Open HTML Report", description: "Render a screenshotsmcp-report.html file inline", command: "screenshotsmcp.openHtmlReport" },
-        { label: "$(run-all) Open Workflow", description: "Pick a packaged skill workflow to preview", command: "screenshotsmcp.openWorkflow" },
-        { label: "$(book) Create Skill", description: "Scaffold a new ~/.agents/skills/<name>", command: "screenshotsmcp.createSkill" },
-        { label: "$(globe) Open Dashboard", description: getDashboardUrl(), command: "screenshotsmcp.openDashboard" },
-        { label: "$(output) Show Output", description: "ScreenshotsMCP log channel", command: "screenshotsmcp.showOutput" },
-        { label: "$(sign-out) Sign Out", description: "Clear stored API key", command: "screenshotsmcp.signOut" },
+        { label: "$(device-camera) Take Screenshot", description: "Capture a URL", command: "deepsyte.takeScreenshot" },
+        { label: "$(clippy) Capture from Clipboard", description: "Screenshot the URL currently in your clipboard", command: "deepsyte.captureFromClipboard" },
+        { label: "$(search) Audit URL", description: "Run a UX review", command: "deepsyte.takeScreenshot", args: [] },
+        { label: "$(list-unordered) Open Timeline", description: "Recent runs and events", command: "deepsyte.openTimeline" },
+        { label: "$(history) Show URL History", description: "Past screenshots/audits grouped by URL", command: "deepsyte.showUrlHistory" },
+        { label: "$(diff) Visual Diff", description: "Compare two URLs pixel-by-pixel", command: "deepsyte.diffUrls" },
+        { label: "$(folder-library) Screenshot Project URLs", description: "Batch-capture .deepsyte/urls.json", command: "deepsyte.runProjectUrls" },
+        { label: "$(checklist) Audit Project URLs", description: "Batch-audit .deepsyte/urls.json", command: "deepsyte.auditProjectUrls" },
+        { label: "$(edit) Edit Project URLs", description: "Open or create .deepsyte/urls.json", command: "deepsyte.editProjectUrls" },
+        { label: "$(gear) Edit Project Budget", description: "Open or create .deepsyte/budget.json", command: "deepsyte.editProjectBudget" },
+        { label: "$(eye) Watch Project URLs", description: "Run `deepsyte watch` in a terminal", command: "deepsyte.watchProjectUrls" },
+        { label: "$(pin) Show Stored Baselines", description: "Pick a baseline to diff or open", command: "deepsyte.showStoredBaselines" },
+        { label: "$(file-code) Open HTML Report", description: "Render a deepsyte-report.html file inline", command: "deepsyte.openHtmlReport" },
+        { label: "$(run-all) Open Workflow", description: "Pick a packaged skill workflow to preview", command: "deepsyte.openWorkflow" },
+        { label: "$(book) Create Skill", description: "Scaffold a new ~/.agents/skills/<name>", command: "deepsyte.createSkill" },
+        { label: "$(globe) Open Dashboard", description: getDashboardUrl(), command: "deepsyte.openDashboard" },
+        { label: "$(output) Show Output", description: "DeepSyte log channel", command: "deepsyte.showOutput" },
+        { label: "$(sign-out) Sign Out", description: "Clear stored API key", command: "deepsyte.signOut" },
       ]
     : [
-        { label: "$(key) Sign In", description: "Authenticate with ScreenshotsMCP", command: "screenshotsmcp.signIn" },
-        { label: "$(globe) Open Dashboard", description: getDashboardUrl(), command: "screenshotsmcp.openDashboard" },
+        { label: "$(key) Sign In", description: "Authenticate with DeepSyte", command: "deepsyte.signIn" },
+        { label: "$(globe) Open Dashboard", description: getDashboardUrl(), command: "deepsyte.openDashboard" },
       ];
 
   // Replace the "Audit URL" placeholder with a real prompt so we don't need a second command.
@@ -611,7 +611,7 @@ async function runQuickActions(deps: CommandDependencies): Promise<void> {
   }
 
   const picked = await vscode.window.showQuickPick(actions, {
-    title: "ScreenshotsMCP",
+    title: "DeepSyte",
     placeHolder: hasApiKey ? "Pick an action" : "Sign in to get started",
   });
   if (!picked) {
@@ -628,7 +628,7 @@ async function runQuickActions(deps: CommandDependencies): Promise<void> {
     if (!url) {
       return;
     }
-    await vscode.commands.executeCommand("screenshotsmcp.auditUrl", url);
+    await vscode.commands.executeCommand("deepsyte.auditUrl", url);
     return;
   }
 
@@ -669,7 +669,7 @@ async function promptForApiKey(
       { label: "Open dashboard keys page", value: "open" },
     ],
     {
-      title: "Connect ScreenshotsMCP",
+      title: "Connect DeepSyte",
       placeHolder: "Choose how to connect and unlock screenshots, browser workflows, and reusable auth testing",
     },
   );
@@ -688,7 +688,7 @@ async function promptForApiKey(
   }
 
   const input = await vscode.window.showInputBox({
-    title: "ScreenshotsMCP API Key",
+    title: "DeepSyte API Key",
     prompt: "Paste your sk_live_ API key",
     password: true,
     ignoreFocusOut: true,
@@ -708,28 +708,28 @@ async function promptForApiKey(
   }
 
   const apiKey = input.trim();
-  logLine("Validating ScreenshotsMCP API key.");
+  logLine("Validating DeepSyte API key.");
   const validation = await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: "Validating ScreenshotsMCP API key",
+      title: "Validating DeepSyte API key",
     },
     () => validateApiKey(apiKey),
   );
 
   if (!validation.ok) {
-    vscode.window.showErrorMessage(`ScreenshotsMCP sign-in failed: ${validation.message}`);
+    vscode.window.showErrorMessage(`DeepSyte sign-in failed: ${validation.message}`);
     return undefined;
   }
 
   await authStore.setApiKey(apiKey);
-  logLine("ScreenshotsMCP API key stored in SecretStorage.");
+  logLine("DeepSyte API key stored in SecretStorage.");
   timelineStore.add({
     title: "Signed in with API key",
     detail: `Connected to ${getApiUrl()} · reusable auth workflow available via auth_test_assist`,
     status: "success",
   });
-  vscode.window.showInformationMessage("ScreenshotsMCP connected. For login or sign-up testing, start with auth_test_assist.");
+  vscode.window.showInformationMessage("DeepSyte connected. For login or sign-up testing, start with auth_test_assist.");
   return apiKey;
 }
 
@@ -916,7 +916,7 @@ async function runCreateSkill(deps: CommandDependencies): Promise<void> {
   });
   logLine(`Scaffolded new skill at ${target.fsPath}`);
   vscode.window.showInformationMessage(
-    `Skill "${displayName}" created at ${target.fsPath}. Fill in the template, then submit a PR to screenshotmcp/apps/web/public/.skills/index.json to publish it.`,
+    `Skill "${displayName}" created at ${target.fsPath}. Fill in the template, then submit a PR to deepsyte/apps/web/public/.skills/index.json to publish it.`,
   );
 }
 
@@ -1103,12 +1103,12 @@ async function runProjectUrlBatch(deps: CommandDependencies, mode: "screenshot" 
   const loaded = await loadProjectUrls();
   if (!loaded) {
     const create = await vscode.window.showInformationMessage(
-      "No .screenshotsmcp/urls.json found. Create one?",
+      "No .deepsyte/urls.json found. Create one?",
       "Create",
       "Cancel",
     );
     if (create !== "Create") return;
-    await vscode.commands.executeCommand("screenshotsmcp.editProjectUrls");
+    await vscode.commands.executeCommand("deepsyte.editProjectUrls");
     return;
   }
   const { entries, errors } = loaded.parsed;

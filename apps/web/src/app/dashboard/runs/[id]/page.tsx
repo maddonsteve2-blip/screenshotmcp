@@ -5,7 +5,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
 import { getInternalApiBase, getInternalApiHeaders } from "@/lib/internal-api";
-import { runOutcomes, runs, screenshots } from "@screenshotsmcp/db";
+import { runOutcomes, runs, screenshots } from "@deepsyte/db";
 import RunDetailTabs from "./run-detail-tabs";
 import RunShareDialog from "./run-share-dialog";
 import { RunCopyMarkdownButton } from "./run-copy-markdown-button";

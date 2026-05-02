@@ -12,7 +12,7 @@ import { eq } from "drizzle-orm";
 
 const DEMO_USER_ID = process.env.PUBLIC_DEMO_USER_ID ?? "demo-public-user";
 const DEMO_CLERK_ID = "demo-public-no-clerk";
-const DEMO_EMAIL = "demo-public@screenshotmcp.com";
+const DEMO_EMAIL = "demo-public@deepsyte.com";
 
 async function main() {
   const connectionString = process.env.DATABASE_URL;

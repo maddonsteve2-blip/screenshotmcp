@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { MarketingNavAuth } from "@/components/marketing-nav-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { PLAN_DESCRIPTORS } from "@screenshotsmcp/types";
+import { PLAN_DESCRIPTORS } from "@deepsyte/types";
 
 export const metadata: Metadata = {
   title: "Pricing & Plans – DeepSyte | AI-Powered Website Auditing",

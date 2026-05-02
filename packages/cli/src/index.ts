@@ -70,8 +70,8 @@ import { runFinishCommand } from "./commands/run-finish.js";
 const program = new Command();
 
 program
-  .name("screenshotsmcp")
-  .description("CLI for ScreenshotsMCP — take screenshots, record sessions, audit sites from the terminal")
+  .name("deepsyte")
+  .description("CLI for DeepSyte — take screenshots, record sessions, audit sites from the terminal")
   .version("1.0.0");
 
 // Auth

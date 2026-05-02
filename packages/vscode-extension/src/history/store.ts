@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-const STORAGE_KEY = "screenshotsmcp.urlHistory.v1";
+const STORAGE_KEY = "deepsyte.urlHistory.v1";
 const MAX_ENTRIES_PER_URL = 20;
 const MAX_URLS = 200;
 

@@ -190,7 +190,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
           event: {
             id: "finding-empty",
             title: "No audit findings",
-            detail: "Run an audit (\u2318\u21E7P \u2192 ScreenshotsMCP: Audit URL) to populate this list.",
+            detail: "Run an audit (\u2318\u21E7P \u2192 DeepSyte: Audit URL) to populate this list.",
             status: "info",
             kind: "info",
             occurredAt: new Date().toISOString(),
@@ -248,7 +248,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
           event: {
             id: "workflow-empty",
             title: "No workflows found",
-            detail: "Install a skill that ships WORKFLOW.md files (e.g. ScreenshotsMCP core).",
+            detail: "Install a skill that ships WORKFLOW.md files (e.g. DeepSyte core).",
             status: "info",
             kind: "info",
             occurredAt: new Date().toISOString(),
@@ -323,7 +323,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
       item.tooltip = `Preview "${element.skillName}" — shows the SKILL.md before installing.`;
       item.iconPath = new vscode.ThemeIcon("eye");
       item.command = {
-        command: "screenshotsmcp.previewSkill",
+        command: "deepsyte.previewSkill",
         title: `Preview ${element.displayName}`,
         arguments: [element.skillName],
       };
@@ -337,7 +337,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
       item.tooltip = `${element.workflow.title}\n${element.workflow.path}`;
       item.iconPath = new vscode.ThemeIcon("run-all");
       item.command = {
-        command: "screenshotsmcp.openWorkflow",
+        command: "deepsyte.openWorkflow",
         title: `Open ${element.workflow.title}`,
         arguments: [element.workflow.path],
       };
@@ -357,7 +357,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
             ? "warning"
             : "info",
       );
-      item.command = element.uri.scheme === "screenshotsmcp-audit"
+      item.command = element.uri.scheme === "deepsyte-audit"
         ? { command: "workbench.actions.view.problems", title: "Open Problems" }
         : { command: "vscode.open", title: "Open file", arguments: [element.uri] };
       return item;
@@ -371,7 +371,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
       item.iconPath = new vscode.ThemeIcon("globe");
       item.contextValue = "recentUrl";
       item.command = {
-        command: "screenshotsmcp.showUrlHistory",
+        command: "deepsyte.showUrlHistory",
         title: "Show URL history",
         arguments: [element.url],
       };
@@ -398,40 +398,40 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
         id: signedIn ? "action-sign-out" : "action-sign-in",
         kind: "action",
         label: signedIn ? "Sign Out" : "Sign In",
-        description: signedIn ? "Clear the stored API key" : "Store your ScreenshotsMCP API key",
-        commandId: signedIn ? "screenshotsmcp.signOut" : "screenshotsmcp.signIn",
+        description: signedIn ? "Clear the stored API key" : "Store your DeepSyte API key",
+        commandId: signedIn ? "deepsyte.signOut" : "deepsyte.signIn",
         icon: signedIn ? "sign-out" : "sign-in",
       },
       {
         id: "action-status",
         kind: "action",
         label: "Check Status",
-        description: "Validate the current ScreenshotsMCP connection",
-        commandId: "screenshotsmcp.checkStatus",
+        description: "Validate the current DeepSyte connection",
+        commandId: "deepsyte.checkStatus",
         icon: "pulse",
       },
       {
         id: "action-screenshot",
         kind: "action",
         label: "Take Screenshot",
-        description: "Capture a page with ScreenshotsMCP",
-        commandId: "screenshotsmcp.takeScreenshot",
+        description: "Capture a page with DeepSyte",
+        commandId: "deepsyte.takeScreenshot",
         icon: "device-camera",
       },
       {
         id: "action-install",
         kind: "action",
         label: "Configure Editor Integration",
-        description: "Install or repair the ScreenshotsMCP MCP connection for this editor",
-        commandId: "screenshotsmcp.installMcpServer",
+        description: "Install or repair the DeepSyte MCP connection for this editor",
+        commandId: "deepsyte.installMcpServer",
         icon: "cloud-upload",
       },
       {
         id: "action-sync-skill",
         kind: "action",
         label: "Sync Core Skill",
-        description: "Install, update, or repair the managed ScreenshotsMCP skill in ~/.agents/skills",
-        commandId: "screenshotsmcp.syncCoreSkill",
+        description: "Install, update, or repair the managed DeepSyte skill in ~/.agents/skills",
+        commandId: "deepsyte.syncCoreSkill",
         icon: "sync",
       },
       {
@@ -467,7 +467,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
         kind: "action",
         label: "Browse Community Skills",
         description: "Discover addon skills from skills.sh",
-        commandId: "screenshotsmcp.browseSkills",
+        commandId: "deepsyte.browseSkills",
         icon: "link-external",
       },
       {
@@ -475,23 +475,23 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
         kind: "action",
         label: "Open Timeline Panel",
         description: "Open the detailed timeline view",
-        commandId: "screenshotsmcp.openTimeline",
+        commandId: "deepsyte.openTimeline",
         icon: "history",
       },
       {
         id: "action-dashboard",
         kind: "action",
         label: "Open Dashboard",
-        description: "Open the ScreenshotsMCP dashboard",
-        commandId: "screenshotsmcp.openDashboard",
+        description: "Open the DeepSyte dashboard",
+        commandId: "deepsyte.openDashboard",
         icon: "link-external",
       },
       {
         id: "action-output",
         kind: "action",
         label: "Show Output",
-        description: "Open the ScreenshotsMCP output channel",
-        commandId: "screenshotsmcp.showOutput",
+        description: "Open the DeepSyte output channel",
+        commandId: "deepsyte.showOutput",
         icon: "output",
       },
       {
@@ -540,7 +540,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
           event: {
             id: "catalog-skill-empty",
             title: "All catalog skills installed",
-            detail: "You have all the curated ScreenshotsMCP skills.",
+            detail: "You have all the curated DeepSyte skills.",
             status: "info",
             kind: "info",
             occurredAt: new Date().toISOString(),
@@ -567,7 +567,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
           event: {
             id: "event-empty",
             title: "No activity yet",
-            detail: "Run a ScreenshotsMCP command to populate the sidebar timeline.",
+            detail: "Run a DeepSyte command to populate the sidebar timeline.",
             status: "info",
             kind: "info",
             occurredAt: new Date().toISOString(),

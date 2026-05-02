@@ -1,9 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { createDb } from "@screenshotsmcp/db";
-import { screenshots, users } from "@screenshotsmcp/db";
+import { createDb } from "@deepsyte/db";
+import { screenshots, users } from "@deepsyte/db";
 import { eq, desc, gte, and, count, sql } from "drizzle-orm";
-import { PLAN_LIMITS } from "@screenshotsmcp/types";
+import { PLAN_LIMITS } from "@deepsyte/types";
 
 export async function GET() {
   const { userId: clerkId } = await auth();

@@ -1,21 +1,21 @@
 {
-  "name": "screenshotsmcp",
-  "display_name": "ScreenshotsMCP",
+  "name": "deepsyte",
+  "display_name": "DeepSyte",
   "description": "Screenshot any URL, automate browsers, solve CAPTCHAs, create disposable email inboxes, audit performance and SEO — all via 46+ tools.",
-  "long_description": "Give your AI assistant eyes and hands for the web. ScreenshotsMCP provides 46+ tools across 8 categories: screenshots (13 tools), browser automation (20+ tools), CAPTCHA solving, disposable email, smart login, performance audits, SEO audits, and UX reviews. Available via MCP server for AI agents (Claude, Cursor, Windsurf) or CLI for terminal workflows.",
+  "long_description": "Give your AI assistant eyes and hands for the web. DeepSyte provides 46+ tools across 8 categories: screenshots (13 tools), browser automation (20+ tools), CAPTCHA solving, disposable email, smart login, performance audits, SEO audits, and UX reviews. Available via MCP server for AI agents (Claude, Cursor, Windsurf) or CLI for terminal workflows.",
   "version": "2.1",
   "license": "MIT",
   "author": {
     "name": "stevejford",
     "github": "stevejford",
-    "website": "https://screenshotsmcp.com"
+    "website": "https://deepsyte.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/stevejford/screenshotmcp-skill.git"
+    "url": "https://github.com/stevejford/deepsyte-skill.git"
   },
-  "homepage": "https://screenshotsmcp.com",
-  "documentation": "https://screenshotsmcp.com/.skills/screenshotsmcp/SKILL.md",
+  "homepage": "https://deepsyte.com",
+  "documentation": "https://deepsyte.com/.skills/deepsyte/SKILL.md",
   "categories": [
     "testing",
     "automation",
@@ -66,11 +66,11 @@
     "any_mcp": true
   },
   "requires_api_key": true,
-  "api_key_url": "https://screenshotsmcp.com/dashboard/keys",
+  "api_key_url": "https://deepsyte.com/dashboard/keys",
   "installation": {
-    "mcp": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY",
-    "cli": "npm install -g screenshotsmcp",
-    "npx": "npx screenshotsmcp setup"
+    "mcp": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY",
+    "cli": "npm install -g deepsyte",
+    "npx": "npx deepsyte setup"
   },
   "pricing": {
     "free_tier": "100 screenshots/month",
@@ -79,9 +79,9 @@
       { "name": "Pro", "price": "$29/month", "limit": "10,000 screenshots/month" }
     ]
   },
-  "icon": "https://screenshotsmcp.com/icon.png",
+  "icon": "https://deepsyte.com/icon.png",
   "screenshots": [
-    "https://screenshotsmcp.com/screenshots/dashboard.png"
+    "https://deepsyte.com/screenshots/dashboard.png"
   ],
   "featured": true,
   "quality_score": 95

@@ -1,22 +1,22 @@
 {
-  "name": "screenshotsmcp-vscode",
-  "displayName": "ScreenshotsMCP",
-  "description": "VS Code extension for ScreenshotsMCP: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
+  "name": "deepsyte-vscode",
+  "displayName": "DeepSyte",
+  "description": "VS Code extension for DeepSyte: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
   "version": "0.25.0",
-  "publisher": "ScreenshotMCP",
+  "publisher": "DeepSyte",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
   "preview": true,
   "pricing": "Free",
   "icon": "images/icon.png",
-  "homepage": "https://www.screenshotmcp.com",
+  "homepage": "https://www.deepsyte.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/stevejford/screenshotmcp.git",
+    "url": "https://github.com/stevejford/deepsyte.git",
     "directory": "packages/vscode-extension"
   },
   "bugs": {
-    "url": "https://github.com/stevejford/screenshotmcp/issues"
+    "url": "https://github.com/stevejford/deepsyte/issues"
   },
   "markdown": "github",
   "files": [
@@ -65,16 +65,16 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "screenshotsmcp",
-          "title": "ScreenshotsMCP",
+          "id": "deepsyte",
+          "title": "deepsyte",
           "icon": "images/camera.svg"
         }
       ]
     },
     "views": {
-      "screenshotsmcp": [
+      "deepsyte": [
         {
-          "id": "screenshotsmcp.sidebar",
+          "id": "deepsyte.sidebar",
           "name": "Home",
           "icon": "images/icon.png"
         }
@@ -82,9 +82,9 @@
     },
     "chatParticipants": [
       {
-        "id": "screenshotsmcp.chat",
-        "fullName": "ScreenshotsMCP",
-        "name": "screenshotsmcp",
+        "id": "deepsyte.chat",
+        "fullName": "deepsyte",
+        "name": "deepsyte",
         "description": "Capture screenshots, run UX audits, and open packaged workflows.",
         "isSticky": true,
         "commands": [
@@ -113,204 +113,204 @@
     ],
     "commands": [
       {
-        "command": "screenshotsmcp.signIn",
-        "title": "ScreenshotsMCP: Sign In"
+        "command": "deepsyte.signIn",
+        "title": "deepsyte: Sign In"
       },
       {
-        "command": "screenshotsmcp.signOut",
-        "title": "ScreenshotsMCP: Sign Out"
+        "command": "deepsyte.signOut",
+        "title": "deepsyte: Sign Out"
       },
       {
-        "command": "screenshotsmcp.checkStatus",
-        "title": "ScreenshotsMCP: Check Status"
+        "command": "deepsyte.checkStatus",
+        "title": "deepsyte: Check Status"
       },
       {
-        "command": "screenshotsmcp.installMcpServer",
-        "title": "ScreenshotsMCP: Configure Editor Integration"
+        "command": "deepsyte.installMcpServer",
+        "title": "deepsyte: Configure Editor Integration"
       },
       {
-        "command": "screenshotsmcp.syncCoreSkill",
-        "title": "ScreenshotsMCP: Sync Core Skill"
+        "command": "deepsyte.syncCoreSkill",
+        "title": "deepsyte: Sync Core Skill"
       },
       {
-        "command": "screenshotsmcp.browseSkills",
-        "title": "ScreenshotsMCP: Browse Community Skills"
+        "command": "deepsyte.browseSkills",
+        "title": "deepsyte: Browse Community Skills"
       },
       {
-        "command": "screenshotsmcp.installSkill",
-        "title": "ScreenshotsMCP: Install Skill"
+        "command": "deepsyte.installSkill",
+        "title": "deepsyte: Install Skill"
       },
       {
-        "command": "screenshotsmcp.previewSkill",
-        "title": "ScreenshotsMCP: Preview Skill"
+        "command": "deepsyte.previewSkill",
+        "title": "deepsyte: Preview Skill"
       },
       {
-        "command": "screenshotsmcp.takeScreenshot",
-        "title": "ScreenshotsMCP: Take Screenshot"
+        "command": "deepsyte.takeScreenshot",
+        "title": "deepsyte: Take Screenshot"
       },
       {
-        "command": "screenshotsmcp.takeScreenshotAtUrl",
-        "title": "ScreenshotsMCP: Take Screenshot of URL"
+        "command": "deepsyte.takeScreenshotAtUrl",
+        "title": "deepsyte: Take Screenshot of URL"
       },
       {
-        "command": "screenshotsmcp.auditUrl",
-        "title": "ScreenshotsMCP: Audit URL"
+        "command": "deepsyte.auditUrl",
+        "title": "deepsyte: Audit URL"
       },
       {
-        "command": "screenshotsmcp.screenshotSelectedUrl",
-        "title": "ScreenshotsMCP: Screenshot Selected URL"
+        "command": "deepsyte.screenshotSelectedUrl",
+        "title": "deepsyte: Screenshot Selected URL"
       },
       {
-        "command": "screenshotsmcp.auditSelectedUrl",
-        "title": "ScreenshotsMCP: Audit Selected URL"
+        "command": "deepsyte.auditSelectedUrl",
+        "title": "deepsyte: Audit Selected URL"
       },
       {
-        "command": "screenshotsmcp.openTimeline",
-        "title": "ScreenshotsMCP: Open Timeline"
+        "command": "deepsyte.openTimeline",
+        "title": "deepsyte: Open Timeline"
       },
       {
-        "command": "screenshotsmcp.openDashboard",
-        "title": "ScreenshotsMCP: Open Dashboard"
+        "command": "deepsyte.openDashboard",
+        "title": "deepsyte: Open Dashboard"
       },
       {
-        "command": "screenshotsmcp.createSkill",
-        "title": "ScreenshotsMCP: Create New Skill"
+        "command": "deepsyte.createSkill",
+        "title": "deepsyte: Create New Skill"
       },
       {
-        "command": "screenshotsmcp.showOutput",
-        "title": "ScreenshotsMCP: Show Output"
+        "command": "deepsyte.showOutput",
+        "title": "deepsyte: Show Output"
       },
       {
-        "command": "screenshotsmcp.showQuickActions",
-        "title": "ScreenshotsMCP: Quick Actions"
+        "command": "deepsyte.showQuickActions",
+        "title": "deepsyte: Quick Actions"
       },
       {
-        "command": "screenshotsmcp.openWorkflow",
-        "title": "ScreenshotsMCP: Open Workflow"
+        "command": "deepsyte.openWorkflow",
+        "title": "deepsyte: Open Workflow"
       },
       {
-        "command": "screenshotsmcp.clearAuditDiagnostics",
-        "title": "ScreenshotsMCP: Clear Audit Diagnostics"
+        "command": "deepsyte.clearAuditDiagnostics",
+        "title": "deepsyte: Clear Audit Diagnostics"
       },
       {
-        "command": "screenshotsmcp.showUrlHistory",
-        "title": "ScreenshotsMCP: Show URL History"
+        "command": "deepsyte.showUrlHistory",
+        "title": "deepsyte: Show URL History"
       },
       {
-        "command": "screenshotsmcp.showHistoryForSelectedUrl",
-        "title": "ScreenshotsMCP: Show History for Selected URL"
+        "command": "deepsyte.showHistoryForSelectedUrl",
+        "title": "deepsyte: Show History for Selected URL"
       },
       {
-        "command": "screenshotsmcp.diffUrls",
-        "title": "ScreenshotsMCP: Visual Diff (compare two URLs)"
+        "command": "deepsyte.diffUrls",
+        "title": "deepsyte: Visual Diff (compare two URLs)"
       },
       {
-        "command": "screenshotsmcp.editProjectUrls",
-        "title": "ScreenshotsMCP: Edit Project URLs (.screenshotsmcp/urls.json)"
+        "command": "deepsyte.editProjectUrls",
+        "title": "deepsyte: Edit Project URLs (.deepsyte/urls.json)"
       },
       {
-        "command": "screenshotsmcp.runProjectUrls",
-        "title": "ScreenshotsMCP: Screenshot Project URLs"
+        "command": "deepsyte.runProjectUrls",
+        "title": "deepsyte: Screenshot Project URLs"
       },
       {
-        "command": "screenshotsmcp.auditProjectUrls",
-        "title": "ScreenshotsMCP: Audit Project URLs"
+        "command": "deepsyte.auditProjectUrls",
+        "title": "deepsyte: Audit Project URLs"
       },
       {
-        "command": "screenshotsmcp.openHtmlReport",
-        "title": "ScreenshotsMCP: Open HTML Report"
+        "command": "deepsyte.openHtmlReport",
+        "title": "deepsyte: Open HTML Report"
       },
       {
-        "command": "screenshotsmcp.captureBaseline",
-        "title": "ScreenshotsMCP: Capture Baseline for URL"
+        "command": "deepsyte.captureBaseline",
+        "title": "deepsyte: Capture Baseline for URL"
       },
       {
-        "command": "screenshotsmcp.diffBaseline",
-        "title": "ScreenshotsMCP: Diff URL vs Stored Baseline"
+        "command": "deepsyte.diffBaseline",
+        "title": "deepsyte: Diff URL vs Stored Baseline"
       },
       {
-        "command": "screenshotsmcp.editProjectBudget",
-        "title": "ScreenshotsMCP: Edit Project Budget (.screenshotsmcp/budget.json)"
+        "command": "deepsyte.editProjectBudget",
+        "title": "deepsyte: Edit Project Budget (.deepsyte/budget.json)"
       },
       {
-        "command": "screenshotsmcp.watchProjectUrls",
-        "title": "ScreenshotsMCP: Watch Project URLs (run `screenshotsmcp watch`)"
+        "command": "deepsyte.watchProjectUrls",
+        "title": "deepsyte: Watch Project URLs (run `deepsyte watch`)"
       },
       {
-        "command": "screenshotsmcp.showStoredBaselines",
-        "title": "ScreenshotsMCP: Show Stored Baselines"
+        "command": "deepsyte.showStoredBaselines",
+        "title": "deepsyte: Show Stored Baselines"
       },
       {
-        "command": "screenshotsmcp.promoteBaseline",
-        "title": "ScreenshotsMCP: Promote Baseline (overwrite stored image)"
+        "command": "deepsyte.promoteBaseline",
+        "title": "deepsyte: Promote Baseline (overwrite stored image)"
       },
       {
-        "command": "screenshotsmcp.captureFromClipboard",
-        "title": "ScreenshotsMCP: Capture from Clipboard URL"
+        "command": "deepsyte.captureFromClipboard",
+        "title": "deepsyte: Capture from Clipboard URL"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "screenshotsmcp.screenshotSelectedUrl",
-          "group": "screenshotsmcp@1",
+          "command": "deepsyte.screenshotSelectedUrl",
+          "group": "deepsyte@1",
           "when": "editorHasSelection || editorTextFocus"
         },
         {
-          "command": "screenshotsmcp.auditSelectedUrl",
-          "group": "screenshotsmcp@2",
+          "command": "deepsyte.auditSelectedUrl",
+          "group": "deepsyte@2",
           "when": "editorHasSelection || editorTextFocus"
         },
         {
-          "command": "screenshotsmcp.showHistoryForSelectedUrl",
-          "group": "screenshotsmcp@3",
+          "command": "deepsyte.showHistoryForSelectedUrl",
+          "group": "deepsyte@3",
           "when": "editorHasSelection || editorTextFocus"
         }
       ]
     },
     "mcpServerDefinitionProviders": [
       {
-        "id": "screenshotsmcp.provider",
-        "label": "ScreenshotsMCP"
+        "id": "deepsyte.provider",
+        "label": "deepsyte"
       }
     ],
     "walkthroughs": [
       {
-        "id": "screenshotsmcp.getStarted",
-        "title": "Get started with ScreenshotsMCP",
+        "id": "deepsyte.getStarted",
+        "title": "Get started with deepsyte",
         "description": "Sign in, take your first screenshot, and run your first audit — all from VS Code.",
         "steps": [
           {
             "id": "signIn",
-            "title": "Sign in to ScreenshotsMCP",
-            "description": "Sign in with your browser (OAuth) or paste an API key.\n[Sign In](command:screenshotsmcp.signIn)",
+            "title": "Sign in to deepsyte",
+            "description": "Sign in with your browser (OAuth) or paste an API key.\n[Sign In](command:deepsyte.signIn)",
             "media": {
               "markdown": "media/walkthrough/sign-in.md"
             },
             "completionEvents": [
-              "onCommand:screenshotsmcp.signIn"
+              "onCommand:deepsyte.signIn"
             ]
           },
           {
             "id": "firstScreenshot",
             "title": "Take your first screenshot",
-            "description": "Capture any URL — the result opens inline with open, copy, rerun, and dashboard actions.\n[Take Screenshot](command:screenshotsmcp.takeScreenshot)",
+            "description": "Capture any URL — the result opens inline with open, copy, rerun, and dashboard actions.\n[Take Screenshot](command:deepsyte.takeScreenshot)",
             "media": {
               "markdown": "media/walkthrough/screenshot.md"
             },
             "completionEvents": [
-              "onCommand:screenshotsmcp.takeScreenshot"
+              "onCommand:deepsyte.takeScreenshot"
             ]
           },
           {
             "id": "firstAudit",
             "title": "Run your first audit",
-            "description": "Run a UX review on any URL. Findings render as a structured report with a hero screenshot and dashboard deep-link.\n[Audit URL](command:screenshotsmcp.showQuickActions)",
+            "description": "Run a UX review on any URL. Findings render as a structured report with a hero screenshot and dashboard deep-link.\n[Audit URL](command:deepsyte.showQuickActions)",
             "media": {
               "markdown": "media/walkthrough/audit.md"
             },
             "completionEvents": [
-              "onCommand:screenshotsmcp.auditUrl"
+              "onCommand:deepsyte.auditUrl"
             ]
           },
           {
@@ -321,23 +321,23 @@
               "markdown": "media/walkthrough/codelens.md"
             },
             "completionEvents": [
-              "onCommand:screenshotsmcp.takeScreenshotAtUrl",
-              "onCommand:screenshotsmcp.auditUrl",
-              "onCommand:screenshotsmcp.screenshotSelectedUrl",
-              "onCommand:screenshotsmcp.auditSelectedUrl"
+              "onCommand:deepsyte.takeScreenshotAtUrl",
+              "onCommand:deepsyte.auditUrl",
+              "onCommand:deepsyte.screenshotSelectedUrl",
+              "onCommand:deepsyte.auditSelectedUrl"
             ]
           },
           {
             "id": "skills",
             "title": "Install agent skills",
-            "description": "ScreenshotsMCP ships skills (SKILL.md + workflows) that teach AI agents how to drive the tools. Install one from the sidebar or scaffold your own.\n[Open Sidebar](command:workbench.view.extension.screenshotsmcp) \u00b7 [Create Skill](command:screenshotsmcp.createSkill)",
+            "description": "deepsyte ships skills (SKILL.md + workflows) that teach AI agents how to drive the tools. Install one from the sidebar or scaffold your own.\n[Open Sidebar](command:workbench.view.extension.deepsyte) \u00b7 [Create Skill](command:deepsyte.createSkill)",
             "media": {
               "markdown": "media/walkthrough/skills.md"
             },
             "completionEvents": [
-              "onCommand:screenshotsmcp.installSkill",
-              "onCommand:screenshotsmcp.previewSkill",
-              "onCommand:screenshotsmcp.createSkill"
+              "onCommand:deepsyte.installSkill",
+              "onCommand:deepsyte.previewSkill",
+              "onCommand:deepsyte.createSkill"
             ]
           }
         ]
@@ -345,11 +345,11 @@
     ],
     "jsonValidation": [
       {
-        "fileMatch": ["**/.screenshotsmcp/urls.json", ".screenshotsmcp.urls.json"],
+        "fileMatch": ["**/.deepsyte/urls.json", ".deepsyte.urls.json"],
         "url": "./schemas/urls.schema.json"
       },
       {
-        "fileMatch": ["**/.screenshotsmcp/budget.json", ".screenshotsmcp.budget.json"],
+        "fileMatch": ["**/.deepsyte/budget.json", ".deepsyte.budget.json"],
         "url": "./schemas/budget.schema.json"
       }
     ],
@@ -371,55 +371,55 @@
       { "language": "shellscript", "path": "./snippets/magicComments.code-snippets" }
     ],
     "configuration": {
-      "title": "ScreenshotsMCP",
+      "title": "deepsyte",
       "properties": {
-        "screenshotsmcp.apiUrl": {
+        "deepsyte.apiUrl": {
           "type": "string",
-          "default": "https://screenshotsmcp-api-production.up.railway.app",
-          "description": "Base API URL for ScreenshotsMCP."
+          "default": "https://deepsyte-api-production.up.railway.app",
+          "description": "Base API URL for deepsyte."
         },
-        "screenshotsmcp.dashboardUrl": {
+        "deepsyte.dashboardUrl": {
           "type": "string",
-          "default": "https://www.screenshotmcp.com/dashboard",
+          "default": "https://www.deepsyte.com/dashboard",
           "description": "Dashboard URL opened by the extension."
         },
-        "screenshotsmcp.keysUrl": {
+        "deepsyte.keysUrl": {
           "type": "string",
-          "default": "https://www.screenshotmcp.com/dashboard/keys",
-          "description": "URL used to retrieve ScreenshotsMCP API keys."
+          "default": "https://www.deepsyte.com/dashboard/keys",
+          "description": "URL used to retrieve deepsyte API keys."
         },
-        "screenshotsmcp.codeLens.urlActions": {
+        "deepsyte.codeLens.urlActions": {
           "type": "boolean",
           "default": true,
           "description": "Show 📸 Screenshot and 🔍 Audit CodeLens actions above URLs in supported files."
         },
-        "screenshotsmcp.screenshot.width": {
+        "deepsyte.screenshot.width": {
           "type": "integer",
           "default": 1280,
           "minimum": 320,
           "maximum": 3840,
           "description": "Default viewport width (px) for screenshots triggered from this editor."
         },
-        "screenshotsmcp.screenshot.height": {
+        "deepsyte.screenshot.height": {
           "type": "integer",
           "default": 800,
           "minimum": 240,
           "maximum": 2160,
           "description": "Default viewport height (px) for screenshots triggered from this editor."
         },
-        "screenshotsmcp.screenshot.fullPage": {
+        "deepsyte.screenshot.fullPage": {
           "type": "boolean",
           "default": true,
           "description": "Capture the entire scrollable page by default."
         },
-        "screenshotsmcp.screenshot.delay": {
+        "deepsyte.screenshot.delay": {
           "type": "integer",
           "default": 0,
           "minimum": 0,
           "maximum": 10000,
           "description": "Delay in ms after page load before capturing (useful for SPAs)."
         },
-        "screenshotsmcp.screenshot.format": {
+        "deepsyte.screenshot.format": {
           "type": "string",
           "enum": ["png", "jpeg", "webp"],
           "default": "png",
@@ -429,7 +429,7 @@
     }
   },
   "devDependencies": {
-    "@screenshotsmcp/types": "*",
+    "@deepsyte/types": "*",
     "@types/node": "^22.10.2",
     "@types/vscode": "^1.105.0",
     "esbuild": "^0.24.0",

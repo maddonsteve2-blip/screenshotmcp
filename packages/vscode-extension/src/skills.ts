@@ -6,8 +6,8 @@ import {
   type CatalogSkill,
   type InstalledSkillSummary,
   type SkillSyncResult,
-} from "@screenshotsmcp/types/skills";
-export type { CatalogSkill } from "@screenshotsmcp/types/skills";
+} from "@deepsyte/types/skills";
+export type { CatalogSkill } from "@deepsyte/types/skills";
 import { logLine } from "./output";
 import { TimelineStore } from "./timeline/store";
 
@@ -48,7 +48,7 @@ export function syncCoreSkillForExtension(timelineStore: TimelineStore): Extensi
     logLine(`Core skill sync failed: ${message}`);
     return {
       errorMessage: message,
-      installPath: "~/.agents/skills/screenshotsmcp",
+      installPath: "~/.agents/skills/deepsyte",
       ok: false,
     };
   }
@@ -56,11 +56,11 @@ export function syncCoreSkillForExtension(timelineStore: TimelineStore): Extensi
 
 export function formatSkillSyncMessage(result: SkillSyncResult): string {
   const verb = getActionLabel(result.status);
-  return `${verb} the core ScreenshotsMCP skill at ${result.installPath}.`;
+  return `${verb} the core DeepSyte skill at ${result.installPath}.`;
 }
 
 export function formatSkillSyncFailureMessage(outcome: ExtensionSkillSyncOutcome): string {
-  return `Failed to sync the core ScreenshotsMCP skill at ${outcome.installPath}: ${outcome.errorMessage ?? "Unknown error"}.`;
+  return `Failed to sync the core DeepSyte skill at ${outcome.installPath}: ${outcome.errorMessage ?? "Unknown error"}.`;
 }
 
 function getTimelineTitle(status: SkillSyncResult["status"]): string {

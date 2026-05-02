@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { randomUUID } from "crypto";
 import { dirname, join } from "path";
-import type { LocalBrowserName } from "@screenshotsmcp/types";
+import type { LocalBrowserName } from "@deepsyte/types";
 import { getLocalBrowserHomeDir } from "./local-browser.js";
 
 export interface LocalBrowserConsoleEntry {
@@ -228,7 +228,7 @@ export async function withLocalBrowserSessionLock<T>(
 export function requireLocalBrowserSession(): StoredLocalBrowserSession {
   const session = getLocalBrowserSession();
   if (!session) {
-    throw new Error("No active managed local browser session was found. Run `screenshotsmcp browser open <url>` first.");
+    throw new Error("No active managed local browser session was found. Run `deepsyte browser open <url>` first.");
   }
 
   return session;

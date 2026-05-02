@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { createHash } from "crypto";
 import { eq, and } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { apiKeys, users } from "@screenshotsmcp/db";
+import { apiKeys, users } from "@deepsyte/db";
 
 export interface AuthRequest extends Request {
   userId?: string;

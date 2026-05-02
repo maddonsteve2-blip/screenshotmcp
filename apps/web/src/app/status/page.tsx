@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://screenshotsmcp-api-production.up.railway.app";
+  "https://deepsyte-api-production.up.railway.app";
 
 type HealthResult =
   | { ok: true; latencyMs: number; payload: Record<string, unknown> }

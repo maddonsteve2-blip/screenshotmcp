@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { and, desc, eq, ilike, lt, or, sql, count } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { screenshots, runs } from "@screenshotsmcp/db";
+import { screenshots, runs } from "@deepsyte/db";
 import { resolveDashboardUser } from "../lib/dashboard-auth.js";
 
 export const screenshotsRouter = Router();

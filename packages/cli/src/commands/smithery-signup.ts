@@ -24,7 +24,7 @@ export const smitherySignupCommand = new Command("smithery-signup")
     "Open your local Chrome, prefill the Smithery signup form, and pause at the Turnstile checkbox.",
   )
   .option("-e, --email <email>", "Email for signup")
-  .option("-f, --first <name>", "First name", "ScreenshotsMCP")
+  .option("-f, --first <name>", "First name", "DeepSyte")
   .option("-l, --last <name>", "Last name", "Publisher")
   .option("--headless", "Run headless (NOT recommended — kills the trust score)")
   .option(
@@ -34,7 +34,7 @@ export const smitherySignupCommand = new Command("smithery-signup")
   )
   .action(async (opts: Record<string, string | boolean>) => {
     const email = typeof opts.email === "string" ? opts.email : undefined;
-    const first = typeof opts.first === "string" ? opts.first : "ScreenshotsMCP";
+    const first = typeof opts.first === "string" ? opts.first : "DeepSyte";
     const last = typeof opts.last === "string" ? opts.last : "Publisher";
     const startUrl =
       typeof opts.startUrl === "string"
@@ -314,7 +314,7 @@ export const smitherySignupCommand = new Command("smithery-signup")
       console.log(chalk.dim("  Browser stays open. Check email for a"));
       console.log(chalk.dim("  verification link/code if prompted:"));
       console.log(
-        chalk.cyan(`    screenshotsmcp inbox:check --inbox-id ${email}`),
+        chalk.cyan(`    deepsyte inbox:check --inbox-id ${email}`),
       );
       await page.waitForEvent("close", { timeout: 0 }).catch(() => {});
     } catch (err) {

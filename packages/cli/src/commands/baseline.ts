@@ -6,7 +6,7 @@ import { dirname, join, resolve, relative } from "node:path";
 import { createHash } from "node:crypto";
 import { callTool, extractImageUrl, extractText } from "../api.js";
 
-const BASELINE_DIR = ".screenshotsmcp/baselines";
+const BASELINE_DIR = ".deepsyte/baselines";
 
 interface Baseline {
   url: string;
@@ -19,7 +19,7 @@ interface Baseline {
 
 /**
  * Local manifest for stored baselines. Lives at
- * `<workspace>/.screenshotsmcp/baselines/<sha1(url)>.json`.
+ * `<workspace>/.deepsyte/baselines/<sha1(url)>.json`.
  *
  * We keep only the public CDN URL of the screenshot, not the bytes; the
  * `screenshot_diff` tool re-fetches both before diffing. This keeps the
@@ -97,7 +97,7 @@ baselineCommand
     const existing = await readBaseline(url);
     if (!existing && !opts.force) {
       console.error(chalk.red(`No baseline exists for ${url}.`));
-      console.error(chalk.dim(`Use \`screenshotsmcp baseline create ${url}\` for the first capture, or pass --force here.`));
+      console.error(chalk.dim(`Use \`deepsyte baseline create ${url}\` for the first capture, or pass --force here.`));
       process.exit(1);
       return;
     }
@@ -179,7 +179,7 @@ baselineCommand
   .action(async (url: string, opts: Record<string, string>) => {
     const baseline = await readBaseline(url);
     if (!baseline) {
-      console.error(chalk.red(`No baseline for ${url}. Run \`screenshotsmcp baseline create ${url}\` first.`));
+      console.error(chalk.red(`No baseline for ${url}. Run \`deepsyte baseline create ${url}\` first.`));
       process.exit(1);
       return;
     }

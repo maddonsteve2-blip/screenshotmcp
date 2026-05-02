@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { parseProjectUrlsJson, type ParsedProjectUrls, type ProjectUrlEntry } from "./urlList";
 
-const CANDIDATE_PATHS = [".screenshotsmcp/urls.json", ".screenshotsmcp.json"];
+const CANDIDATE_PATHS = [".deepsyte/urls.json", ".deepsyte.json"];
 
 export interface ProjectUrlsLocation {
   uri: vscode.Uri;
@@ -32,7 +32,7 @@ export async function ensureProjectUrlsFile(): Promise<vscode.Uri | undefined> {
   }
   const existing = await loadProjectUrls();
   if (existing) return existing.uri;
-  const uri = vscode.Uri.joinPath(folder.uri, ".screenshotsmcp/urls.json");
+  const uri = vscode.Uri.joinPath(folder.uri, ".deepsyte/urls.json");
   const sample = JSON.stringify(
     {
       urls: [

@@ -75,10 +75,10 @@ function applyWindowsFfmpegHideWorkaround(): void {
   }
 
   const childProcess = require("child_process") as typeof import("child_process") & {
-    __screenshotsmcpFfmpegHidePatched?: boolean;
+    __deepsyteFfmpegHidePatched?: boolean;
   };
 
-  if (childProcess.__screenshotsmcpFfmpegHidePatched) {
+  if (childProcess.__deepsyteFfmpegHidePatched) {
     return;
   }
 
@@ -103,7 +103,7 @@ function applyWindowsFfmpegHideWorkaround(): void {
       : originalSpawn(command, maybeOptions ?? {});
   }) as unknown as typeof childProcess.spawn;
   childProcess.spawn = patchedSpawn;
-  childProcess.__screenshotsmcpFfmpegHidePatched = true;
+  childProcess.__deepsyteFfmpegHidePatched = true;
 }
 
 async function wait(ms: number): Promise<void> {

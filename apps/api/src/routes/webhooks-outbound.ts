@@ -3,7 +3,7 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { webhookEndpoints, webhookDeliveries } from "@screenshotsmcp/db";
+import { webhookEndpoints, webhookDeliveries } from "@deepsyte/db";
 import { requireApiKey, type AuthRequest } from "../middleware/auth.js";
 import { idempotency } from "../middleware/idempotency.js";
 import {
@@ -198,7 +198,7 @@ webhooksOutboundRouter.post(
       await emitWebhookEvent({
         userId: req.userId!,
         eventType: "test.ping",
-        payload: { endpointId: row.id, message: "Hello from ScreenshotsMCP" },
+        payload: { endpointId: row.id, message: "Hello from DeepSyte" },
       });
       if (!wasSubscribed) {
         await db

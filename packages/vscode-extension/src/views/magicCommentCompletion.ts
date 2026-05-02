@@ -6,7 +6,7 @@ const OPTION_KEYS = ["width", "height", "fullPage", "delay", "format"];
 const FORMAT_VALUES = ["png", "jpeg", "webp"];
 
 /**
- * Provides IntelliSense inside ScreenshotsMCP magic comments.
+ * Provides IntelliSense inside DeepSyte magic comments.
  * Triggered on whitespace and `=`:
  *   - After `@screenshot`/`@audit`/`@diff`, suggests known URLs from history.
  *   - After a key like `format=`, suggests the enum values.
@@ -53,7 +53,7 @@ export class MagicCommentCompletionProvider implements vscode.CompletionItemProv
     if (formatCtx) {
       return FORMAT_VALUES.map((value) => {
         const item = new vscode.CompletionItem(value, vscode.CompletionItemKind.EnumMember);
-        item.detail = "ScreenshotsMCP format";
+        item.detail = "DeepSyte format";
         return item;
       });
     }
@@ -76,7 +76,7 @@ export class MagicCommentCompletionProvider implements vscode.CompletionItemProv
       for (const key of OPTION_KEYS) {
         if (usedKeys.has(key.toLowerCase())) continue;
         const item = new vscode.CompletionItem(`${key}=`, vscode.CompletionItemKind.Property);
-        item.detail = "ScreenshotsMCP option";
+        item.detail = "DeepSyte option";
         item.sortText = `1_${key}`;
         if (key === "format") {
           item.insertText = new vscode.SnippetString(`format=\${1|${FORMAT_VALUES.join(",")}|}`);

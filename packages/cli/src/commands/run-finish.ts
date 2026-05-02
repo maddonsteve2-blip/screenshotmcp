@@ -7,8 +7,8 @@ import { writeRunOutcome, finishCliRun } from "../api.js";
  * the dashboard Summary tab renders it above the narrated timeline.
  *
  * Usage:
- *   screenshotsmcp run:finish <runId> \
- *     --problem "Publish ScreenshotsMCP to Smithery" \
+ *   deepsyte run:finish <runId> \
+ *     --problem "Publish DeepSyte to Smithery" \
  *     --outcome "Listing is live at <url>" \
  *     --verdict passed \
  *     --next "Monitor install count" --next "Update README"

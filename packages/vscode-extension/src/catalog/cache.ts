@@ -4,7 +4,7 @@ import {
   SKILL_CATALOG,
   type CatalogSkill,
   type CatalogStorage,
-} from "@screenshotsmcp/types/skills";
+} from "@deepsyte/types/skills";
 import { logLine } from "../output";
 
 /**

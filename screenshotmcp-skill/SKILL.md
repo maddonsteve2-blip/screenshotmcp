@@ -1,20 +1,20 @@
 ---
-name: screenshotsmcp
+name: deepsyte
 description: >
   Screenshot any URL, automate browsers, solve CAPTCHAs, create disposable email inboxes, 
-  audit performance and SEO, and log into websites — all via ScreenshotsMCP tools.
+  audit performance and SEO, and log into websites — all via DeepSyte tools.
   Use this skill when the user asks you to take screenshots, test websites, check responsive 
   layouts, audit SEO or performance, solve CAPTCHAs, create test email inboxes, automate 
   sign-ups, or interact with web pages.
 license: MIT
 compatibility: >
-  Requires ScreenshotsMCP MCP server connected, or the CLI installed. 
+  Requires DeepSyte MCP server connected, or the CLI installed. 
   Works with Claude, Cursor, Windsurf, VS Code, and any MCP-compatible agent.
 metadata:
   author: stevejford
   version: "2.1"
   website: https://www.screenshotmcp.com
-  api: https://screenshotsmcp-api-production.up.railway.app
+  api: https://deepsyte-api-production.up.railway.app
   github: https://github.com/stevejford/screenshotmcp
   tools_count: 46
   categories:
@@ -32,9 +32,9 @@ metadata:
     - operations
 ---
 
-# ScreenshotsMCP Agent Skill
+# DeepSyte Agent Skill
 
-Give your AI assistant eyes and hands for the web. This skill covers all 46+ tools in the ScreenshotsMCP suite.
+Give your AI assistant eyes and hands for the web. This skill covers all 46+ tools in the DeepSyte suite.
 
 ## Quick Start (Choose One)
 
@@ -44,14 +44,14 @@ Give your AI assistant eyes and hands for the web. This skill covers all 46+ too
 
 ```bash
 # One-command onboarding for a new agent or fresh IDE setup
-npx screenshotsmcp setup --client cursor    # or: vscode, windsurf, claude, claude-code
+npx deepsyte setup --client cursor    # or: vscode, windsurf, claude, claude-code
 
 # Or do it in two steps
-npx screenshotsmcp login
-npx screenshotsmcp install cursor    # or: vscode, windsurf, claude, claude-code
+npx deepsyte login
+npx deepsyte install cursor    # or: vscode, windsurf, claude, claude-code
 ```
 
-This path authenticates if needed, configures the MCP client, and installs or repairs the managed core ScreenshotsMCP skill in `~/.agents/skills/screenshotsmcp`, including `workflows/sitewide-performance-audit/WORKFLOW.md`.
+This path authenticates if needed, configures the MCP client, and installs or repairs the managed core DeepSyte skill in `~/.agents/skills/deepsyte`, including `workflows/sitewide-performance-audit/WORKFLOW.md`.
 
 For most clients, the two-step `login` + `install` path reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
 
@@ -62,21 +62,21 @@ For most clients, the two-step `login` + `install` path reaches the same result 
 Get an API key first:
 
 ```bash
-npx screenshotsmcp login --key sk_live_...
+npx deepsyte login --key sk_live_...
 ```
 
-Then add ScreenshotsMCP to your MCP config:
+Then add DeepSyte to your MCP config:
 
 **Cursor:** `~/.cursor/mcp.json`
 **Windsurf:** `~/.codeium/windsurf/mcp_config.json`
 **VS Code:** `.vscode/mcp.json`
-**Claude Code:** `claude mcp add screenshotsmcp`
+**Claude Code:** `claude mcp add deepsyte`
 
 ```json
 {
   "mcpServers": {
-    "screenshotsmcp": {
-      "url": "https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY"
+    "deepsyte": {
+      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
     }
   }
 }
@@ -88,10 +88,10 @@ Then add ScreenshotsMCP to your MCP config:
 
 ```bash
 # One-line install
-npx screenshotsmcp setup
+npx deepsyte setup
 
 # Or install globally
-npm install -g screenshotsmcp
+npm install -g deepsyte
 ```
 
 **AI agents:** Use CLI via `run_command` — structured text output, no JSON-RPC overhead.
@@ -106,18 +106,18 @@ Quick captures that return a public CDN URL. No session needed.
 
 | MCP Tool | CLI Command | Purpose |
 |----------|-------------|---------|
-| `take_screenshot` | `screenshotsmcp screenshot <url>` | Capture any URL |
-| `screenshot_mobile` | `screenshotsmcp mobile <url>` | iPhone 14 Pro (393×852) |
-| `screenshot_tablet` | `screenshotsmcp tablet <url>` | iPad (820×1180) |
-| `screenshot_fullpage` | `screenshotsmcp fullpage <url>` | Full scrollable page |
-| `screenshot_responsive` | `screenshotsmcp responsive <url>` | Desktop + tablet + mobile in ONE call |
-| `screenshot_dark` | `screenshotsmcp dark <url>` | Dark mode emulated |
-| `screenshot_element` | `screenshotsmcp element <url> --selector "#hero"` | Specific CSS element |
-| `screenshot_diff` | `screenshotsmcp diff <urlA> <urlB>` | Pixel-diff two URLs |
-| `screenshot_cross_browser` | `screenshotsmcp cross-browser <url>` | Chromium + Firefox + WebKit |
-| `screenshot_batch` | `screenshotsmcp batch <url1> <url2>` | Multiple URLs (max 10) |
-| `screenshot_pdf` | `screenshotsmcp pdf <url>` | Export as PDF (A4) |
-| `find_breakpoints` | `screenshotsmcp breakpoints <url>` | Detect responsive breakpoints |
+| `take_screenshot` | `deepsyte screenshot <url>` | Capture any URL |
+| `screenshot_mobile` | `deepsyte mobile <url>` | iPhone 14 Pro (393×852) |
+| `screenshot_tablet` | `deepsyte tablet <url>` | iPad (820×1180) |
+| `screenshot_fullpage` | `deepsyte fullpage <url>` | Full scrollable page |
+| `screenshot_responsive` | `deepsyte responsive <url>` | Desktop + tablet + mobile in ONE call |
+| `screenshot_dark` | `deepsyte dark <url>` | Dark mode emulated |
+| `screenshot_element` | `deepsyte element <url> --selector "#hero"` | Specific CSS element |
+| `screenshot_diff` | `deepsyte diff <urlA> <urlB>` | Pixel-diff two URLs |
+| `screenshot_cross_browser` | `deepsyte cross-browser <url>` | Chromium + Firefox + WebKit |
+| `screenshot_batch` | `deepsyte batch <url1> <url2>` | Multiple URLs (max 10) |
+| `screenshot_pdf` | `deepsyte pdf <url>` | Export as PDF (A4) |
+| `find_breakpoints` | `deepsyte breakpoints <url>` | Detect responsive breakpoints |
 
 **Tips:**
 - Use `screenshot_responsive` instead of 3 separate calls
@@ -134,24 +134,24 @@ Multi-step workflows: log in, fill forms, navigate, inspect.
 
 | MCP Tool | CLI Command | Purpose |
 |----------|-------------|---------|
-| `browser_navigate` | `screenshotsmcp browse <url>` | Open URL, returns sessionId |
-| `browser_click` | `screenshotsmcp browse:click <sessionId> <selector>` | Click element |
+| `browser_navigate` | `deepsyte browse <url>` | Open URL, returns sessionId |
+| `browser_click` | `deepsyte browse:click <sessionId> <selector>` | Click element |
 | `browser_click_at` | N/A | Click at x,y coordinates (CAPTCHAs, canvas) |
-| `browser_fill` | `screenshotsmcp browse:fill <sessionId> <selector> <value>` | Type into input |
+| `browser_fill` | `deepsyte browse:fill <sessionId> <selector> <value>` | Type into input |
 | `browser_hover` | N/A | Hover for tooltips/dropdowns |
 | `browser_select_option` | N/A | Select from dropdown |
-| `browser_scroll` | `screenshotsmcp browse:scroll <sessionId> --y 500` | Scroll page |
-| `browser_press_key` | `screenshotsmcp browse:key <sessionId> Enter` | Press key |
+| `browser_scroll` | `deepsyte browse:scroll <sessionId> --y 500` | Scroll page |
+| `browser_press_key` | `deepsyte browse:key <sessionId> Enter` | Press key |
 | `browser_wait_for` | N/A | Wait for element |
 | `browser_go_back` | N/A | Browser back |
 | `browser_go_forward` | N/A | Browser forward |
 | `browser_set_viewport` | N/A | Resize viewport mid-session |
-| `browser_close` | `screenshotsmcp browse:close <sessionId>` | End session |
+| `browser_close` | `deepsyte browse:close <sessionId>` | End session |
 
 **Inspection:**
-| `browser_screenshot` | `screenshotsmcp browse:screenshot <sessionId>` | Capture current state |
-| `browser_get_text` | `screenshotsmcp browse:text <sessionId>` | All visible text |
-| `browser_get_html` | `screenshotsmcp browse:html <sessionId>` | DOM source |
+| `browser_screenshot` | `deepsyte browse:screenshot <sessionId>` | Capture current state |
+| `browser_get_text` | `deepsyte browse:text <sessionId>` | All visible text |
+| `browser_get_html` | `deepsyte browse:html <sessionId>` | DOM source |
 | `browser_get_accessibility_tree` | N/A | Full a11y tree |
 | `browser_evaluate` | N/A | Run JavaScript |
 | `accessibility_snapshot` | N/A | A11y tree without session |
@@ -164,8 +164,8 @@ Multi-step workflows: log in, fill forms, navigate, inspect.
 | `browser_storage` | N/A | localStorage/sessionStorage |
 
 **Performance & SEO:**
-| `browser_perf_metrics` | `screenshotsmcp perf <url>` | Core Web Vitals |
-| `browser_seo_audit` | `screenshotsmcp seo <url>` | Meta, OG, headings, JSON-LD |
+| `browser_perf_metrics` | `deepsyte perf <url>` | Core Web Vitals |
+| `browser_seo_audit` | `deepsyte seo <url>` | Meta, OG, headings, JSON-LD |
 
 ---
 
@@ -203,9 +203,9 @@ Create real email inboxes for testing sign-ups.
 
 | MCP Tool | CLI Command | Purpose |
 |----------|-------------|---------|
-| `create_test_inbox` | `screenshotsmcp inbox:create` | Create inbox → email@agentmail.to |
-| `check_inbox` | `screenshotsmcp inbox:check <inboxId>` | Read messages, extract OTP codes |
-| `send_test_email` | `screenshotsmcp inbox:send <inboxId>` | Send email from inbox |
+| `create_test_inbox` | `deepsyte inbox:create` | Create inbox → email@agentmail.to |
+| `check_inbox` | `deepsyte inbox:check <inboxId>` | Read messages, extract OTP codes |
+| `send_test_email` | `deepsyte inbox:send <inboxId>` | Send email from inbox |
 
 **Setup:** Add AgentMail API key in Dashboard → Settings (free at https://console.agentmail.to)
 
@@ -238,7 +238,7 @@ For reading OTPs from user's Gmail:
 ```
 User: "Check how example.com looks"
 → MCP: take_screenshot(url="https://example.com")
-→ CLI: screenshotsmcp screenshot https://example.com
+→ CLI: deepsyte screenshot https://example.com
 ```
 
 ### Full site audit
@@ -248,7 +248,7 @@ User: "Audit this site"
 → State that you read it, the page set, whether authenticated pages are in scope, and whether you will use MCP or CLI first
 → If the user gave the site URL but not the page list, infer the representative public pages and begin
 → MCP: browser_navigate → browser_get_accessibility_tree → browser_perf_metrics → browser_seo_audit → browser_console_logs → browser_network_errors
-→ CLI: screenshotsmcp seo <url> && screenshotsmcp perf <url> && screenshotsmcp a11y <url>
+→ CLI: deepsyte seo <url> && deepsyte perf <url> && deepsyte a11y <url>
 ```
 
 ### Test sign-up flow with disposable email
@@ -276,19 +276,19 @@ User: "Log in and check my dashboard"
 ### Compare before/after
 ```
 → MCP: screenshot_diff(urlA="old.example.com", urlB="new.example.com")
-→ CLI: screenshotsmcp diff old.example.com new.example.com
+→ CLI: deepsyte diff old.example.com new.example.com
 ```
 
 ---
 
 ## Authentication Guide
 
-### For ScreenshotsMCP App Itself
+### For DeepSyte App Itself
 
 **API Key:** Get at https://www.screenshotmcp.com/dashboard/keys
 - Format: `sk_live_...`
 - Pass in MCP URL: `.../mcp/YOUR_API_KEY`
-- Pass in CLI: `screenshotsmcp login --key sk_live_...`
+- Pass in CLI: `deepsyte login --key sk_live_...`
 
 ### For Testing Other Apps (Browser Automation)
 
@@ -364,9 +364,9 @@ Point IDE files to it:
 ## Resources
 
 - **Website:** https://www.screenshotmcp.com
-- **API:** https://screenshotsmcp-api-production.up.railway.app
-- **CLI:** `npm install -g screenshotsmcp`
-- **MCP Server:** `https://screenshotsmcp-api-production.up.railway.app/mcp/YOUR_API_KEY`
+- **API:** https://deepsyte-api-production.up.railway.app
+- **CLI:** `npm install -g deepsyte`
+- **MCP Server:** `https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY`
 - **GitHub:** https://github.com/stevejford/screenshotmcp
 - **Dashboard:** https://www.screenshotmcp.com/dashboard
 

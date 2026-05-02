@@ -183,7 +183,7 @@ export const authSmartLoginCommand = new Command("auth:smart-login")
   });
 
 export const authorizeEmailAccessCommand = new Command("auth:authorize-email")
-  .description("Start Gmail OAuth so ScreenshotsMCP can read verification codes from the user's inbox")
+  .description("Start Gmail OAuth so DeepSyte can read verification codes from the user's inbox")
   .action(async () => {
     const spinner = ora("Requesting Gmail authorization URL...").start();
     try {

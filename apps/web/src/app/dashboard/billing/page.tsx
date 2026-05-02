@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Zap } from "lucide-react";
-import { PLAN_LIMITS } from "@screenshotsmcp/types";
+import { PLAN_LIMITS } from "@deepsyte/types";
 import { PageContainer } from "@/components/page-container";
 
 const plans = [

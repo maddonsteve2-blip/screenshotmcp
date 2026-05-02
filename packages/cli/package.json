@@ -1,10 +1,10 @@
 {
-  "name": "screenshotsmcp",
+  "name": "deepsyte",
   "version": "1.20.1",
-  "description": "CLI for ScreenshotsMCP — take screenshots, record sessions, audit sites from the terminal",
+  "description": "CLI for DeepSyte — take screenshots, record sessions, audit sites from the terminal",
   "type": "module",
   "bin": {
-    "screenshotsmcp": "./dist/index.js"
+    "deepsyte": "./dist/index.js"
   },
   "files": [
     "dist",
@@ -13,10 +13,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/stevejford/screebshotmcp.git",
+    "url": "https://github.com/stevejford/deepsyte.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://www.screenshotmcp.com",
+  "homepage": "https://www.deepsyte.com",
   "scripts": {
     "build": "node build.mjs",
     "lint:auth": "node --max-old-space-size=4096 ../../node_modules/typescript/bin/tsc -p tsconfig.auth.json",
@@ -42,7 +42,7 @@
     "playwright": "^1.59.1"
   },
   "devDependencies": {
-    "@screenshotsmcp/types": "*",
+    "@deepsyte/types": "*",
     "commander": "^12.1.0",
     "chalk": "^5.3.0",
     "ora": "^8.1.0",

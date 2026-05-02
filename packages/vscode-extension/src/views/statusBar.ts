@@ -7,27 +7,27 @@ export class StatusBarController {
 
   constructor() {
     this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    this.item.name = "ScreenshotsMCP";
-    this.item.command = "screenshotsmcp.checkStatus";
+    this.item.name = "DeepSyte";
+    this.item.command = "deepsyte.checkStatus";
 
     // Secondary item showing the total audit-finding count. Hidden when zero.
     this.findingsItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 99);
-    this.findingsItem.name = "ScreenshotsMCP: Audit findings";
+    this.findingsItem.name = "DeepSyte: Audit findings";
     this.findingsItem.command = "workbench.actions.view.problems";
   }
 
   update(isAuthenticated: boolean): void {
     this.isAuthenticated = isAuthenticated;
     if (isAuthenticated) {
-      this.item.text = "$(device-camera) ScreenshotsMCP";
-      this.item.tooltip = "ScreenshotsMCP \u2014 click for quick actions";
+      this.item.text = "$(device-camera) DeepSyte";
+      this.item.tooltip = "DeepSyte \u2014 click for quick actions";
       this.item.backgroundColor = undefined;
-      this.item.command = "screenshotsmcp.showQuickActions";
+      this.item.command = "deepsyte.showQuickActions";
     } else {
-      this.item.text = "$(key) ScreenshotsMCP Sign In";
-      this.item.tooltip = "Sign in to ScreenshotsMCP";
+      this.item.text = "$(key) DeepSyte Sign In";
+      this.item.tooltip = "Sign in to DeepSyte";
       this.item.backgroundColor = new vscode.ThemeColor("statusBarItem.warningBackground");
-      this.item.command = "screenshotsmcp.signIn";
+      this.item.command = "deepsyte.signIn";
     }
     this.item.show();
   }
@@ -56,7 +56,7 @@ export class StatusBarController {
       return;
     }
     this.findingsItem.text = `$(warning) ${total} audit finding${total === 1 ? "" : "s"}`;
-    this.findingsItem.tooltip = `ScreenshotsMCP audit findings in the Problems tab (${total}, budget threshold ${this.warnThreshold}). Click to open.`;
+    this.findingsItem.tooltip = `DeepSyte audit findings in the Problems tab (${total}, budget threshold ${this.warnThreshold}). Click to open.`;
     this.refreshBackground();
     this.findingsItem.show();
   }

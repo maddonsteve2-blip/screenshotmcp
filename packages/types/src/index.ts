@@ -6,7 +6,7 @@ export type OnboardingClient = (typeof ONBOARDING_CLIENTS)[number];
 
 export const DEFAULT_ONBOARDING_CLIENT: OnboardingClient = "cursor";
 
-export const CORE_SKILL_INSTALL_PATH = "~/.agents/skills/screenshotsmcp";
+export const CORE_SKILL_INSTALL_PATH = "~/.agents/skills/deepsyte";
 
 export const CORE_SITEWIDE_PERFORMANCE_WORKFLOW_PATH = "workflows/sitewide-performance-audit/WORKFLOW.md";
 
@@ -21,7 +21,7 @@ export const CORE_RESPONSIVE_AUDIT_WORKFLOW_PATH = "workflows/responsive-audit/W
 export const TWO_STEP_ONBOARDING_NUANCE = "For most clients, login + install reaches the same result as setup --client <client>. The main nuances are that install vscode writes a workspace-local .vscode/mcp.json, while install claude-code prints the claude mcp add ... command for you to run manually.";
 
 export function getSetupCommand(client: OnboardingClient = DEFAULT_ONBOARDING_CLIENT): string {
-  return `screenshotsmcp setup --client ${client}`;
+  return `deepsyte setup --client ${client}`;
 }
 
 export function getNpxSetupCommand(client: OnboardingClient = DEFAULT_ONBOARDING_CLIENT): string {
@@ -29,7 +29,7 @@ export function getNpxSetupCommand(client: OnboardingClient = DEFAULT_ONBOARDING
 }
 
 export function getInstallCommand(client: OnboardingClient = DEFAULT_ONBOARDING_CLIENT): string {
-  return `screenshotsmcp install ${client}`;
+  return `deepsyte install ${client}`;
 }
 
 export function getNpxInstallCommand(client: OnboardingClient = DEFAULT_ONBOARDING_CLIENT): string {
@@ -37,7 +37,7 @@ export function getNpxInstallCommand(client: OnboardingClient = DEFAULT_ONBOARDI
 }
 
 export function getTwoStepOnboardingCommand(client: OnboardingClient = DEFAULT_ONBOARDING_CLIENT): string {
-  return `npx screenshotsmcp login\n${getNpxInstallCommand(client)}`;
+  return `npx deepsyte login\n${getNpxInstallCommand(client)}`;
 }
 
 export type ScreenshotStatus = "pending" | "processing" | "done" | "failed";
@@ -187,7 +187,7 @@ export const PLAN_DESCRIPTORS: Record<Plan, PlanDescriptor> = {
     quotaLabel: "2,000 screenshots / mo",
     highlight: true,
     cta: "Join waitlist",
-    ctaHref: "mailto:hello@screenshotmcp.com?subject=ScreenshotsMCP%20Starter%20waitlist",
+    ctaHref: "mailto:hello@deepsyte.com?subject=DeepSyte%20Starter%20waitlist",
     available: false,
     features: [
       "2,000 screenshots / month",
@@ -207,7 +207,7 @@ export const PLAN_DESCRIPTORS: Record<Plan, PlanDescriptor> = {
     quotaLabel: "10,000 screenshots / mo",
     highlight: false,
     cta: "Join waitlist",
-    ctaHref: "mailto:hello@screenshotmcp.com?subject=ScreenshotsMCP%20Pro%20waitlist",
+    ctaHref: "mailto:hello@deepsyte.com?subject=DeepSyte%20Pro%20waitlist",
     available: false,
     features: [
       "10,000 screenshots / month",

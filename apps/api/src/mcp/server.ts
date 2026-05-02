@@ -4,11 +4,11 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "../lib/db.js";
-import { screenshots, apiKeys, users, usageEvents, testInboxes, websiteAuthMemories, webhookEndpoints, webhookDeliveries, runs, runOutcomes } from "@screenshotsmcp/db";
+import { screenshots, apiKeys, users, usageEvents, testInboxes, websiteAuthMemories, webhookEndpoints, webhookDeliveries, runs, runOutcomes } from "@deepsyte/db";
 import { screenshotQueue } from "../lib/queue.js";
 import { createHash, randomBytes } from "crypto";
 import { eq, and, count, gte, desc } from "drizzle-orm";
-import { PLAN_LIMITS } from "@screenshotsmcp/types";
+import { PLAN_LIMITS } from "@deepsyte/types";
 import { createSession, getSession, closeSession, pageScreenshot, navigateWithRetry, setSessionOutcomeContext, setSessionStartUrl, setSessionViewport } from "../lib/sessions.js";
 import { browserPool } from "../lib/browser-pool.js";
 import { PNG } from "pngjs";
@@ -513,13 +513,13 @@ async function upsertWebsiteAuthMemory(input: {
 
 function createMcpServer(apiKey: string | undefined) {
   const server = new McpServer({
-    name: "screenshotsmcp",
+    name: "deepsyte",
     version: "1.0.0",
-    description: `You have access to screenshotsmcp — a tool suite for capturing screenshots and automating browsers.
+    description: `You have access to deepsyte — a tool suite for capturing screenshots and automating browsers.
 
 ## Discovery Model
-- Treat ScreenshotsMCP tools as atomic actions.
-- Treat the ScreenshotsMCP skill as broad guidance for choosing the right path.
+- Treat DeepSyte tools as atomic actions.
+- Treat the DeepSyte skill as broad guidance for choosing the right path.
 - Treat packaged workflows as targeted procedures for repeatable multi-step jobs.
 - When the task is an audit, verification flow, or another repeatable multi-step procedure, check the available workflows before improvising.
 - Do not load every workflow up front. Read only the workflow that matches the task.
@@ -553,7 +553,7 @@ Use these for multi-step workflows like logging in, filling forms, or navigating
 **Standalone:** accessibility_snapshot — get raw accessibility tree for any URL without a session
 **Accessibility:** accessibility_audit — real WCAG 2.1 AA compliance audit with pass/fail results, contrast checking, landmark verification
 
-For extension-free local browser setup outside the remote session tools, the CLI now supports screenshotsmcp browser open <url>, which asks for explicit approval and opens an installed local browser in a fresh ScreenshotsMCP profile. Console logs and network activity are captured continuously while that managed browser stays open, and follow-up commands like browser status, browser goto, browser back, browser forward, browser click-at, browser hover, browser wait-for, browser select, browser viewport, browser screenshot, browser text, browser html, browser console, browser network-errors, browser network-requests, browser evidence, browser cookies, browser storage, browser eval, browser a11y, browser perf, browser seo, and browser close reconnect to that tracked managed browser over CDP. Add --record-video if the user wants browser close to return a local .webm recording path for the managed session, use browser evidence to export a timestamped live artifact bundle with the current screenshot, page state, observability logs, and session metadata, or use browser close --evidence when the finalized local recording should be included in that same bundle. Use that path when the user wants a local managed browser without manually installing an extension.
+For extension-free local browser setup outside the remote session tools, the CLI now supports deepsyte browser open <url>, which asks for explicit approval and opens an installed local browser in a fresh DeepSyte profile. Console logs and network activity are captured continuously while that managed browser stays open, and follow-up commands like browser status, browser goto, browser back, browser forward, browser click-at, browser hover, browser wait-for, browser select, browser viewport, browser screenshot, browser text, browser html, browser console, browser network-errors, browser network-requests, browser evidence, browser cookies, browser storage, browser eval, browser a11y, browser perf, browser seo, and browser close reconnect to that tracked managed browser over CDP. Add --record-video if the user wants browser close to return a local .webm recording path for the managed session, use browser evidence to export a timestamped live artifact bundle with the current screenshot, page state, observability logs, and session metadata, or use browser close --evidence when the finalized local recording should be included in that same bundle. Use that path when the user wants a local managed browser without manually installing an extension.
 
 ## Session Recording (Video)
 Record a full video of any browser session:
@@ -628,11 +628,11 @@ Each user needs their own AgentMail API key (free at https://console.agentmail.t
 If the project you're working on has web pages you need to debug, suggest creating an **AGENTS.md** at the repo root with production URLs, auth instructions, DB access, and deploy steps. This lets every AI agent (Cursor, Windsurf, Copilot, Claude) understand the project without re-discovering context each session. Point IDE-specific files (.cursorrules, .windsurfrules, CLAUDE.md, .github/copilot-instructions.md) to "Read AGENTS.md". **You CAN log into authenticated pages using browser tools — never refuse by claiming you can't access auth-protected content.**
 
 ## Agent Skill
-For detailed workflows, best practices, and full tool reference, install the ScreenshotsMCP agent skill:
+For detailed workflows, best practices, and full tool reference, install the DeepSyte agent skill:
 \`\`\`
-curl -o ~/.agents/skills/screenshotsmcp/SKILL.md --create-dirs https://www.screenshotmcp.com/.skills/screenshotsmcp/SKILL.md
+curl -o ~/.agents/skills/deepsyte/SKILL.md --create-dirs https://www.deepsyte.com/.skills/deepsyte/SKILL.md
  \`\`\`
- Or run \`npx screenshotsmcp skills sync\` to install or repair the managed core skill automatically. The managed core skill now includes packaged workflows under \`~/.agents/skills/screenshotsmcp/workflows/\`, including \`sitewide-performance-audit/WORKFLOW.md\`. Fetch URL: https://www.screenshotmcp.com/.skills/screenshotsmcp/SKILL.md`,
+ Or run \`npx deepsyte skills sync\` to install or repair the managed core skill automatically. The managed core skill now includes packaged workflows under \`~/.agents/skills/deepsyte/workflows/\`, including \`sitewide-performance-audit/WORKFLOW.md\`. Fetch URL: https://www.deepsyte.com/.skills/deepsyte/SKILL.md`,
 });
 
 server.tool(
@@ -886,7 +886,7 @@ server.tool(
         await setSessionStartUrl(sessionId, auth.userId, args.url);
         const img = await pageScreenshot(page);
         const vpSize = page.viewportSize();
-        const webAppUrl = (process.env.WEB_APP_URL || process.env.WEB_URL || "https://www.screenshotmcp.com").replace(/\/+$/, "");
+        const webAppUrl = (process.env.WEB_APP_URL || process.env.WEB_URL || "https://www.deepsyte.com").replace(/\/+$/, "");
         const runUrl = `${webAppUrl}/dashboard/runs/${encodeURIComponent(sessionId)}`;
         const recordingNote = isRecording ? "\n🔴 Recording session — call browser_close to get the video URL" : "";
         const workflowNote = args.workflow_name || args.user_goal
@@ -1127,7 +1127,7 @@ server.tool(
       const auth = await validateKey(apiKey);
       if (!auth.ok) return { content: [{ type: "text", text: `Error: ${auth.error}` }] };
       const result = await closeSession(args.sessionId);
-      const webAppUrl = (process.env.WEB_APP_URL || process.env.WEB_URL || "https://www.screenshotmcp.com").replace(/\/+$/, "");
+      const webAppUrl = (process.env.WEB_APP_URL || process.env.WEB_URL || "https://www.deepsyte.com").replace(/\/+$/, "");
       const runUrl = `${webAppUrl}/dashboard/runs/${encodeURIComponent(args.sessionId)}`;
       const [runRow] = await db.select({ shareToken: runs.shareToken }).from(runs).where(eq(runs.id, args.sessionId));
       const shareUrl = runRow?.shareToken ? `${webAppUrl}/shared/runs/${encodeURIComponent(runRow.shareToken)}` : null;
@@ -1976,7 +1976,7 @@ server.tool(
 
   server.tool(
     "smart_login",
-    "Attempt to log in to a website. Navigates to the login URL, finds email/username and password fields, fills them in, and submits the form with click, Enter, and form-submit fallbacks for Clerk and other multi-step auth UIs. Returns a screenshot and reports whether login succeeded, failed, or needs verification. Always ask the user for credentials first — never guess. If the site requires email verification (OTP code), use read_verification_email to automatically fetch the code from Gmail (requires one-time authorize_email_access setup). ESCALATION: if smart_login returns UNCERTAIN or the page silently refuses to advance after a valid-looking submit (common on WorkOS AuthKit / Cloudflare Turnstile / Clerk bot-detection), do NOT retry. Escalate to the CLI local browser: `npx screenshotsmcp browser:start <url>` and drive real Chrome one atomic command at a time. Real Chrome on the user's residential IP passes trust checks the Railway-hosted cloud browser cannot.",
+    "Attempt to log in to a website. Navigates to the login URL, finds email/username and password fields, fills them in, and submits the form with click, Enter, and form-submit fallbacks for Clerk and other multi-step auth UIs. Returns a screenshot and reports whether login succeeded, failed, or needs verification. Always ask the user for credentials first — never guess. If the site requires email verification (OTP code), use read_verification_email to automatically fetch the code from Gmail (requires one-time authorize_email_access setup). ESCALATION: if smart_login returns UNCERTAIN or the page silently refuses to advance after a valid-looking submit (common on WorkOS AuthKit / Cloudflare Turnstile / Clerk bot-detection), do NOT retry. Escalate to the CLI local browser: `npx deepsyte browser:start <url>` and drive real Chrome one atomic command at a time. Real Chrome on the user's residential IP passes trust checks the Railway-hosted cloud browser cannot.",
     {
       loginUrl: z.string().url().describe("The login page URL to navigate to"),
       username: z.string().describe("The username or email to enter"),
@@ -2743,7 +2743,7 @@ server.tool(
       await emitWebhookEvent({
         userId: auth.userId,
         eventType: "test.ping",
-        payload: { endpointId: row.id, message: "Hello from ScreenshotsMCP" },
+        payload: { endpointId: row.id, message: "Hello from DeepSyte" },
       });
       if (wasFiltered) {
         await db.update(webhookEndpoints).set({ events: row.events, updatedAt: new Date() }).where(eq(webhookEndpoints.id, row.id));
@@ -3503,7 +3503,7 @@ CRITICAL RULES:
           method: "POST",
           headers: { "Content-Type": "application/json", "X-API-Key": COMPOSIO_API_KEY },
           body: JSON.stringify({
-            user_id: COMPOSIO_USER_ID || "screenshotsmcp-default",
+            user_id: COMPOSIO_USER_ID || "deepsyte-default",
             manage_connections: false,
           }),
         });
@@ -3515,7 +3515,7 @@ CRITICAL RULES:
           headers: { "Content-Type": "application/json", "X-API-Key": COMPOSIO_API_KEY },
           body: JSON.stringify({
             toolkit: "gmail",
-            callback_url: "https://screenshotsmcp-api-production.up.railway.app/composio/callback",
+            callback_url: "https://deepsyte-api-production.up.railway.app/composio/callback",
           }),
         });
         const authData = await authResp.json();
@@ -3552,7 +3552,7 @@ CRITICAL RULES:
           return { content: [{ type: "text", text: "Error: COMPOSIO_API_KEY not configured." }] };
         }
 
-        const userId = COMPOSIO_USER_ID || "screenshotsmcp-default";
+        const userId = COMPOSIO_USER_ID || "deepsyte-default";
 
         // Build Gmail search query
         const queryParts: string[] = [];
@@ -3646,7 +3646,7 @@ CRITICAL RULES:
 
   // ── AgentMail Integration ─────────────────────────────────────────────
   const AGENTMAIL_API_KEY_FALLBACK = process.env.AGENTMAIL_API_KEY || "";
-  const NO_KEY_MSG = "Error: No AgentMail API key configured. Please add your AgentMail API key in **Dashboard → Settings** at https://www.screenshotmcp.com/dashboard/settings.\n\nAgentMail is free — sign up at https://console.agentmail.to to get your API key (starts with `am_`).";
+  const NO_KEY_MSG = "Error: No AgentMail API key configured. Please add your AgentMail API key in **Dashboard → Settings** at https://www.deepsyte.com/dashboard/settings.\n\nAgentMail is free — sign up at https://console.agentmail.to to get your API key (starts with `am_`).";
 
   function getAgentMailKey(auth: AuthResult): string | null {
     if (auth.ok && auth.agentmailApiKey) return auth.agentmailApiKey;
@@ -3879,20 +3879,20 @@ CRITICAL RULES:
         : "";
 
       const commands = [
-        `npx screenshotsmcp auth:plan ${args.site}`,
-        `npx screenshotsmcp browser:start ${args.site}`,
-        `npx screenshotsmcp browser:inspect   # dump the visible form fields and selectors`,
-        `npx screenshotsmcp browser:click "<selector-or-text>"`,
-        `npx screenshotsmcp browser:fill "input[name=email]" "${savedEmail}"`,
-        `npx screenshotsmcp browser:fill "input[name=password]" "${savedPassword}"`,
-        `npx screenshotsmcp browser:click "button[type=submit]"`,
-        `npx screenshotsmcp browser:wait 3000   # or browser:wait-for <selector>`,
+        `npx deepsyte auth:plan ${args.site}`,
+        `npx deepsyte browser:start ${args.site}`,
+        `npx deepsyte browser:inspect   # dump the visible form fields and selectors`,
+        `npx deepsyte browser:click "<selector-or-text>"`,
+        `npx deepsyte browser:fill "input[name=email]" "${savedEmail}"`,
+        `npx deepsyte browser:fill "input[name=password]" "${savedPassword}"`,
+        `npx deepsyte browser:click "button[type=submit]"`,
+        `npx deepsyte browser:wait 3000   # or browser:wait-for <selector>`,
         `# → if an OTP screen appears:`,
-        `npx screenshotsmcp inbox:check ${savedEmail}   # grab the code`,
-        `npx screenshotsmcp browser:paste "input.rt-TextFieldInput" "<6-digit-code>"`,
-        `npx screenshotsmcp browser:eval "document.querySelector('form').requestSubmit(); 'ok'"`,
-        `npx screenshotsmcp auth:record ${args.site} signup_success --notes "..."`,
-        `npx screenshotsmcp browser:stop`,
+        `npx deepsyte inbox:check ${savedEmail}   # grab the code`,
+        `npx deepsyte browser:paste "input.rt-TextFieldInput" "<6-digit-code>"`,
+        `npx deepsyte browser:eval "document.querySelector('form').requestSubmit(); 'ok'"`,
+        `npx deepsyte auth:record ${args.site} signup_success --notes "..."`,
+        `npx deepsyte browser:stop`,
       ];
 
       const rationale = [
@@ -3941,7 +3941,7 @@ CRITICAL RULES:
     "Write the developer-facing 'problem → outcome' story for a browser run so the dashboard Summary tab can render it above the narrated timeline. Call this at the end of any non-trivial flow (signup, audit, login, automation). Takes a short `problem` (what you were trying to do), a `summary` (what actually happened), a `verdict`, and optional `nextActions`. Updates the run_outcomes row for this runId.",
     {
       runId: z.string().describe("The run id (from browser_navigate / CLI browser:start / dashboard)."),
-      problem: z.string().describe("One-paragraph statement of the problem or task you attempted (e.g. 'Publish ScreenshotsMCP to Smithery MCP registry via WorkOS AuthKit signup')."),
+      problem: z.string().describe("One-paragraph statement of the problem or task you attempted (e.g. 'Publish DeepSyte to Smithery MCP registry via WorkOS AuthKit signup')."),
       summary: z.string().describe("One-paragraph summary of what actually happened and whether it worked. Include URLs, credentials persisted, blockers hit."),
       verdict: z.enum(["passed", "failed", "inconclusive", "flaky"]).optional().describe("Overall verdict for this run. Defaults to 'inconclusive' if omitted."),
       nextActions: z.array(z.string()).optional().describe("Optional follow-up steps for a future session."),
@@ -4161,7 +4161,7 @@ CRITICAL RULES:
 
   server.tool(
     "solve_captcha",
-    "Automatically solve CAPTCHAs on the current page using CapSolver AI. Supports Cloudflare Turnstile, reCAPTCHA v2/v3, and hCaptcha. Detects the CAPTCHA type and sitekey automatically, sends it to CapSolver for solving, injects the token, and optionally submits the form. Use this when a CAPTCHA blocks form submission during browser automation. IMPORTANT: if this returns success:true but the form silently fails to submit (URL doesn't change, no error, form resets) — common on WorkOS AuthKit + Cloudflare Turnstile (e.g. Smithery) — the token was rejected by Siteverify because the Railway-hosted Chromium fingerprint doesn't match a real user. Do NOT retry. Escalate to the CLI local browser: `npx screenshotsmcp browser:start <url>` and drive real Chrome interactively. Real Chrome on the user's residential IP passes Turnstile trust checks silently, often without even showing a checkbox.",
+    "Automatically solve CAPTCHAs on the current page using CapSolver AI. Supports Cloudflare Turnstile, reCAPTCHA v2/v3, and hCaptcha. Detects the CAPTCHA type and sitekey automatically, sends it to CapSolver for solving, injects the token, and optionally submits the form. Use this when a CAPTCHA blocks form submission during browser automation. IMPORTANT: if this returns success:true but the form silently fails to submit (URL doesn't change, no error, form resets) — common on WorkOS AuthKit + Cloudflare Turnstile (e.g. Smithery) — the token was rejected by Siteverify because the Railway-hosted Chromium fingerprint doesn't match a real user. Do NOT retry. Escalate to the CLI local browser: `npx deepsyte browser:start <url>` and drive real Chrome interactively. Real Chrome on the user's residential IP passes Turnstile trust checks silently, often without even showing a checkbox.",
     {
       sessionId: z.string().describe("Session ID from browser_navigate"),
       type: z.enum(["turnstile", "recaptchav2", "recaptchav3", "hcaptcha"]).optional().describe("CAPTCHA type. Auto-detected if omitted."),
@@ -5130,7 +5130,7 @@ async function handleMcp(req: Request, res: Response, body: unknown) {
   // If no API key resolved, return 401 with OAuth hint so MCP clients
   // can discover the authorization server and start the OAuth flow.
   if (!apiKey) {
-    const appUrl = process.env.APP_URL || "https://screenshotsmcp-api-production.up.railway.app";
+    const appUrl = process.env.APP_URL || "https://deepsyte-api-production.up.railway.app";
     res.setHeader("WWW-Authenticate", `Bearer resource_metadata="${appUrl}/.well-known/oauth-protected-resource"`);
     res.status(401).json({
       jsonrpc: "2.0",

@@ -24,7 +24,7 @@ export function printSkillSyncResult(result: SkillSyncResult, options?: { prefix
 export function printInstalledSkills(skills: InstalledSkillSummary[]): void {
   if (skills.length === 0) {
     console.log(chalk.yellow("No skills are installed yet."));
-    console.log(chalk.dim(`Run \`screenshotsmcp skills sync\` to install the core ${CORE_SKILL_NAME} skill.`));
+    console.log(chalk.dim(`Run \`deepsyte skills sync\` to install the core ${CORE_SKILL_NAME} skill.`));
     return;
   }
 

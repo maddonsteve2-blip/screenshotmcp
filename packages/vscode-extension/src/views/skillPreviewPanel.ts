@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import type { CatalogSkill } from "@screenshotsmcp/types/skills";
+import type { CatalogSkill } from "@deepsyte/types/skills";
 import { EXTENSION_DISPLAY_NAME } from "../constants";
 import { logLine } from "../output";
 
@@ -31,7 +31,7 @@ export class SkillPreviewPanel {
     this.skill = skill;
     this.onInstall = onInstall;
     this.panel = vscode.window.createWebviewPanel(
-      "screenshotsmcp.skillPreview",
+      "deepsyte.skillPreview",
       `${EXTENSION_DISPLAY_NAME} · ${skill.displayName}`,
       vscode.ViewColumn.Active,
       {

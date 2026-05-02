@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as crypto from "node:crypto";
 
-const BASELINE_DIR = ".screenshotsmcp/baselines";
+const BASELINE_DIR = ".deepsyte/baselines";
 
 export interface StoredBaseline {
   url: string;
@@ -13,8 +13,8 @@ export interface StoredBaseline {
 
 /**
  * Workspace-local baseline store. Mirrors the on-disk format used by
- * `screenshotsmcp baseline create` so the CLI and extension share the same
- * `.screenshotsmcp/baselines/<sha1>.json` files.
+ * `deepsyte baseline create` so the CLI and extension share the same
+ * `.deepsyte/baselines/<sha1>.json` files.
  */
 export class WorkspaceBaselineStore {
   private folder(): vscode.Uri | undefined {
@@ -45,7 +45,7 @@ export class WorkspaceBaselineStore {
   }
 
   /**
-   * Enumerate every stored baseline by scanning `.screenshotsmcp/baselines/`.
+   * Enumerate every stored baseline by scanning `.deepsyte/baselines/`.
    * Invalid files are silently skipped so a partial write doesn't break the
    * sidebar.
    */

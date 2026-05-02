@@ -19,7 +19,7 @@ export async function callTool(apiKey: string, toolName: string, args: Record<st
         protocolVersion: "2024-11-05",
         capabilities: {},
         clientInfo: {
-          name: "screenshotsmcp-vscode-extension",
+          name: "deepsyte-vscode-extension",
           version: "0.0.1",
         },
       },
