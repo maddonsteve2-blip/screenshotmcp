@@ -13,9 +13,9 @@ compatibility: >
 metadata:
   author: stevejford
   version: "2.1"
-  website: https://www.screenshotmcp.com
+  website: https://www.deepsyte.com
   api: https://deepsyte-api-production.up.railway.app
-  github: https://github.com/stevejford/screenshotmcp
+  github: https://github.com/stevejford/deepsyte
   tools_count: 46
   categories:
     - testing
@@ -285,7 +285,7 @@ User: "Log in and check my dashboard"
 
 ### For DeepSyte App Itself
 
-**API Key:** Get at https://www.screenshotmcp.com/dashboard/keys
+**API Key:** Get at https://www.deepsyte.com/dashboard/keys
 - Format: `sk_live_...`
 - Pass in MCP URL: `.../mcp/YOUR_API_KEY`
 - Pass in CLI: `deepsyte login --key sk_live_...`
@@ -363,12 +363,12 @@ Point IDE files to it:
 
 ## Resources
 
-- **Website:** https://www.screenshotmcp.com
+- **Website:** https://www.deepsyte.com
 - **API:** https://deepsyte-api-production.up.railway.app
 - **CLI:** `npm install -g deepsyte`
 - **MCP Server:** `https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY`
-- **GitHub:** https://github.com/stevejford/screenshotmcp
-- **Dashboard:** https://www.screenshotmcp.com/dashboard
+- **GitHub:** https://github.com/stevejford/deepsyte
+- **Dashboard:** https://www.deepsyte.com/dashboard
 
 ---
 

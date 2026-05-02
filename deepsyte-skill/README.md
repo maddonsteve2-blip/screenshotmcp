@@ -14,7 +14,7 @@
 
 **Claude, Cursor, Windsurf, VS Code, Claude Code:**
 
-1. Get API key: https://www.screenshotmcp.com/dashboard/keys
+1. Get API key: https://www.deepsyte.com/dashboard/keys
 2. Add to MCP config:
 
 ```json
@@ -126,7 +126,7 @@ Agent: deepsyte perf https://mysite.com
 
 ## Authentication
 
-**API Key:** Get at https://www.screenshotmcp.com/dashboard/keys
+**API Key:** Get at https://www.deepsyte.com/dashboard/keys
 - Format: `sk_live_...`
 - MCP: Embedded in server URL
 - CLI: `deepsyte login --key sk_live_...`
@@ -134,10 +134,10 @@ Agent: deepsyte perf https://mysite.com
 ## Resources
 
 - **Full Skill Docs:** [SKILL.md](SKILL.md)
-- **Website:** https://www.screenshotmcp.com
+- **Website:** https://www.deepsyte.com
 - **API:** https://deepsyte-api-production.up.railway.app
 - **CLI Package:** `npm install -g deepsyte`
-- **GitHub:** https://github.com/stevejford/screenshotmcp
+- **GitHub:** https://github.com/stevejford/deepsyte
 
 ## Why Use DeepSyte?
 
