@@ -13,11 +13,15 @@ async function callMcpTool(
   toolName: string,
   args: Record<string, unknown>
 ): Promise<unknown> {
-  const response = await fetch(`${API_URL}/mcp/${API_KEY}`, {
+  const mcpUrl = `${API_URL}/mcp`;
+  console.log("[tools] calling MCP:", mcpUrl, "tool:", toolName);
+
+  const response = await fetch(mcpUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json, text/event-stream",
+      "x-api-key": API_KEY,
     },
     body: JSON.stringify({
       jsonrpc: "2.0",
@@ -29,7 +33,7 @@ async function callMcpTool(
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    throw new Error(`MCP call failed: ${response.status} ${text}`);
+    throw new Error(`MCP call failed: ${response.status} ${text} (url: ${mcpUrl})`);
   }
 
   const contentType = response.headers.get("content-type") || "";
