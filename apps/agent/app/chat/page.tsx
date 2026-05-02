@@ -34,13 +34,15 @@ When asked to audit a site, follow this pattern:
 7. browser_close → clean up session
 8. Synthesise: present findings with specific, actionable recommendations
 
-CRITICAL OUTPUT RULES:
-- After any tool call, DO NOT describe what you just did or repeat the result in text. The result is automatically rendered in the evidence panel on the left side of the UI — the user can already see it.
-- Only speak when you have a NEW insight, recommendation, or question. Never say things like "I've taken a screenshot" or "Here are the results" or "The screenshot has been captured".
-- For quick single-tool actions (screenshot, perf, seo, accessibility), respond with NO text at all after the tool — the evidence panel speaks for itself.
-- Only write a text response when you've completed a multi-step audit and need to synthesise findings into actionable recommendations.
-- Keep all text responses under 5 bullet points. No prose paragraphs.
-- Be specific: "LCP is 4.2s — compress hero image and defer render-blocking JS" not "improve loading speed"."`;
+CRITICAL OUTPUT RULES — FOLLOW EXACTLY:
+1. After calling ANY tool, output ZERO text. Nothing. No confirmation, no description, no "I've done X". Complete silence.
+2. The evidence panel on the left ALREADY shows the result to the user. You narrating it is noise.
+3. NEVER say: "I'll use...", "I'm going to...", "Let me...", "The screenshot shows...", "I've captured...", "Here are the results..."
+4. Only produce text output when a user explicitly asks for analysis/recommendations AFTER results are shown.
+5. For analysis responses: max 5 bullet points, specific metrics only ("LCP 4.2s" not "slow loading").
+6. When a message says 'call take_screenshot', use ONLY take_screenshot — do NOT use browser_navigate."
+When a message says 'call accessibility_audit', use ONLY accessibility_audit.
+When a message says 'call browser_perf_metrics', navigate first then call browser_perf_metrics then browser_close.`;
 
 function ToolStatus({ status, label }: { status: string; label: string }) {
   if (status === "complete") return null;
@@ -550,26 +552,26 @@ export default function ChatPage() {
               {
                 title: "Full site audit",
                 message: lockedUrl
-                  ? `Run a full audit on ${lockedUrl}`
-                  : "Run a full audit on https://example.com",
+                  ? `Full audit: call take_screenshot, then browser_navigate, then browser_perf_metrics, then browser_seo_audit, then accessibility_audit on ${lockedUrl}. Output no text between tools.`
+                  : `Full audit: call take_screenshot, then browser_navigate, then browser_perf_metrics, then browser_seo_audit, then accessibility_audit on https://example.com. Output no text between tools.`,
               },
               {
                 title: "Screenshot",
                 message: lockedUrl
-                  ? `Take a screenshot of ${lockedUrl}`
-                  : "Take a screenshot of https://stripe.com",
+                  ? `Call take_screenshot with url="${lockedUrl}". Output no text after.`
+                  : `Call take_screenshot with url="https://stripe.com". Output no text after.`,
               },
               {
                 title: "Performance",
                 message: lockedUrl
-                  ? `Check Core Web Vitals for ${lockedUrl}`
-                  : "Check Core Web Vitals for https://vercel.com",
+                  ? `Call browser_navigate on ${lockedUrl}, then call browser_perf_metrics, then browser_close. Output no text between tools.`
+                  : `Call browser_navigate on https://vercel.com, then call browser_perf_metrics, then browser_close. Output no text between tools.`,
               },
               {
                 title: "Accessibility",
                 message: lockedUrl
-                  ? `Run an accessibility audit on ${lockedUrl}`
-                  : "Run an accessibility audit on https://github.com",
+                  ? `Call accessibility_audit with url="${lockedUrl}". Output no text after.`
+                  : `Call accessibility_audit with url="https://github.com". Output no text after.`,
               },
             ]}
             labels={{
