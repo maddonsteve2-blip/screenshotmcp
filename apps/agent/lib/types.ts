@@ -12,4 +12,12 @@ export type FindingEvidence = {
   timestamp: Date;
 };
 
+export type ActivityItem = {
+  id: string;
+  tool: string;
+  label: string;
+  status: "running" | "done" | "error";
+  timestamp: Date;
+};
+
 export type EvidenceItem = ScreenshotEvidence | FindingEvidence;

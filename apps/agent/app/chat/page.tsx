@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useCopilotAction, useCopilotReadable, useCopilotChat } from "@copilotkit/react-core";
+import { useCopilotAction, useCopilotReadable } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
 import { EvidencePanel } from "@/components/evidence-panel";
-import type { EvidenceItem } from "@/lib/types";
+import type { EvidenceItem, ActivityItem } from "@/lib/types";
 
 const SYSTEM_PROMPT = `You are DeepSyte Agent, an expert web auditing and browser automation assistant powered by DeepSyte's visual intelligence platform.
 
@@ -37,22 +37,46 @@ When asked to audit a site, follow this pattern:
 Always cite evidence (screenshot URLs, metric values, WCAG criteria) in your summaries.
 Be concise and specific — no vague advice like "improve loading speed". Say "LCP is 4.2s; compress hero image and defer render-blocking JS."`;
 
+function ToolStatus({ status, label }: { status: string; label: string }) {
+  return (
+    <div className={`flex items-center gap-1.5 text-xs py-0.5 ${status === "complete" ? "text-gray-500" : "text-gray-300"}`}>
+      {status === "complete" ? (
+        <span className="text-green-400 font-medium">✓</span>
+      ) : (
+        <span className="inline-flex w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin" />
+      )}
+      {label}
+    </div>
+  );
+}
+
 export default function ChatPage() {
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [auditUrl, setAuditUrl] = useState("");
-  const { appendMessage } = useCopilotChat();
+  const [lockedUrl, setLockedUrl] = useState("");
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+
+  const startActivity = (id: string, tool: string, label: string) =>
+    setActivity((prev) => [...prev, { id, tool, label, status: "running", timestamp: new Date() }]);
+  const endActivity = (id: string, s: "done" | "error") =>
+    setActivity((prev) => prev.map((a) => (a.id === id ? { ...a, status: s } : a)));
 
   const handleQuickAudit = (e: React.FormEvent) => {
     e.preventDefault();
     const url = auditUrl.trim();
     if (!url) return;
-    void appendMessage({ id: Date.now().toString(), role: "user", content: `Run a full audit on ${url}` } as any);
+    setLockedUrl(url);
     setAuditUrl("");
   };
 
   useCopilotReadable({
     description: "Evidence collected so far in this audit session",
     value: evidence,
+  });
+
+  useCopilotReadable({
+    description: "URL locked in for auditing — use this URL for all tools unless the user specifies otherwise",
+    value: lockedUrl || "none",
   });
 
   // --- Tool: take_screenshot ---
@@ -75,23 +99,34 @@ export default function ChatPage() {
         required: false,
       },
     ],
+    render: (props: any) => (
+      <ToolStatus status={props.status} label={`Screenshot: ${props.args?.url ?? "..."}`} />
+    ),
     handler: async ({ url, fullPage, width }) => {
-      const res = await fetch("/api/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tool: "take_screenshot",
-          args: { url, fullPage: fullPage ?? false, width: width ?? 1280 },
-        }),
-      });
-      const result = await res.json();
-      if (result?.url) {
-        setEvidence((prev) => [
-          ...prev,
-          { type: "screenshot", url: result.url, caption: url, timestamp: new Date() },
-        ]);
+      const id = `ss-${Date.now()}`;
+      startActivity(id, "take_screenshot", `Screenshot: ${url}`);
+      try {
+        const res = await fetch("/api/tools", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tool: "take_screenshot",
+            args: { url, fullPage: fullPage ?? false, width: width ?? 1280 },
+          }),
+        });
+        const result = await res.json();
+        if (result?.url) {
+          setEvidence((prev) => [
+            ...prev,
+            { type: "screenshot", url: result.url, caption: url, timestamp: new Date() },
+          ]);
+        }
+        endActivity(id, "done");
+        return result;
+      } catch (e) {
+        endActivity(id, "error");
+        throw e;
       }
-      return result;
     },
   });
 
@@ -109,29 +144,40 @@ export default function ChatPage() {
         required: false,
       },
     ],
+    render: (props: any) => (
+      <ToolStatus status={props.status} label={`Browser: ${props.args?.url ?? "..."}`} />
+    ),
     handler: async ({ url, caption }) => {
-      const res = await fetch("/api/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tool: "browser_navigate",
-          args: { url, caption },
-        }),
-      });
-      const result = await res.json();
-      const shotUrl = result?.screenshot?.url ?? result?.screenshotUrl ?? result?.url;
-      if (shotUrl) {
-        setEvidence((prev) => [
-          ...prev,
-          {
-            type: "screenshot",
-            url: shotUrl,
-            caption: caption ?? url,
-            timestamp: new Date(),
-          },
-        ]);
+      const id = `nav-${Date.now()}`;
+      startActivity(id, "browser_navigate", `Opening: ${url}`);
+      try {
+        const res = await fetch("/api/tools", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tool: "browser_navigate",
+            args: { url, caption },
+          }),
+        });
+        const result = await res.json();
+        const shotUrl = result?.screenshot?.url ?? result?.screenshotUrl ?? result?.url;
+        if (shotUrl) {
+          setEvidence((prev) => [
+            ...prev,
+            {
+              type: "screenshot",
+              url: shotUrl,
+              caption: caption ?? url,
+              timestamp: new Date(),
+            },
+          ]);
+        }
+        endActivity(id, "done");
+        return result;
+      } catch (e) {
+        endActivity(id, "error");
+        throw e;
       }
-      return result;
     },
   });
 
@@ -153,24 +199,35 @@ export default function ChatPage() {
         required: false,
       },
     ],
+    render: (props: any) => (
+      <ToolStatus status={props.status} label={props.status === "complete" ? "Screenshot captured" : "Capturing screenshot..."} />
+    ),
     handler: async ({ sessionId, caption }) => {
-      const res = await fetch("/api/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tool: "browser_screenshot",
-          args: { sessionId, caption },
-        }),
-      });
-      const result = await res.json();
-      const shotUrl = result?.url ?? result?.screenshotUrl;
-      if (shotUrl) {
-        setEvidence((prev) => [
-          ...prev,
-          { type: "screenshot", url: shotUrl, caption, timestamp: new Date() },
-        ]);
+      const id = `bss-${Date.now()}`;
+      startActivity(id, "browser_screenshot", "Capturing screenshot");
+      try {
+        const res = await fetch("/api/tools", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tool: "browser_screenshot",
+            args: { sessionId, caption },
+          }),
+        });
+        const result = await res.json();
+        const shotUrl = result?.url ?? result?.screenshotUrl;
+        if (shotUrl) {
+          setEvidence((prev) => [
+            ...prev,
+            { type: "screenshot", url: shotUrl, caption, timestamp: new Date() },
+          ]);
+        }
+        endActivity(id, "done");
+        return result;
+      } catch (e) {
+        endActivity(id, "error");
+        throw e;
       }
-      return result;
     },
   });
 
@@ -187,18 +244,29 @@ export default function ChatPage() {
         required: true,
       },
     ],
+    render: (props: any) => (
+      <ToolStatus status={props.status} label={props.status === "complete" ? "Performance metrics captured" : "Measuring Core Web Vitals..."} />
+    ),
     handler: async ({ sessionId }) => {
-      const res = await fetch("/api/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tool: "browser_perf_metrics", args: { sessionId } }),
-      });
-      const result = await res.json();
-      setEvidence((prev) => [
-        ...prev,
-        { type: "finding", category: "performance", data: result, timestamp: new Date() },
-      ]);
-      return result;
+      const id = `perf-${Date.now()}`;
+      startActivity(id, "browser_perf_metrics", "Measuring Core Web Vitals");
+      try {
+        const res = await fetch("/api/tools", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tool: "browser_perf_metrics", args: { sessionId } }),
+        });
+        const result = await res.json();
+        setEvidence((prev) => [
+          ...prev,
+          { type: "finding", category: "performance", data: result, timestamp: new Date() },
+        ]);
+        endActivity(id, "done");
+        return result;
+      } catch (e) {
+        endActivity(id, "error");
+        throw e;
+      }
     },
   });
 
@@ -215,18 +283,29 @@ export default function ChatPage() {
         required: true,
       },
     ],
+    render: (props: any) => (
+      <ToolStatus status={props.status} label={props.status === "complete" ? "SEO audit complete" : "Running SEO audit..."} />
+    ),
     handler: async ({ sessionId }) => {
-      const res = await fetch("/api/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tool: "browser_seo_audit", args: { sessionId } }),
-      });
-      const result = await res.json();
-      setEvidence((prev) => [
-        ...prev,
-        { type: "finding", category: "seo", data: result, timestamp: new Date() },
-      ]);
-      return result;
+      const id = `seo-${Date.now()}`;
+      startActivity(id, "browser_seo_audit", "Running SEO audit");
+      try {
+        const res = await fetch("/api/tools", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tool: "browser_seo_audit", args: { sessionId } }),
+        });
+        const result = await res.json();
+        setEvidence((prev) => [
+          ...prev,
+          { type: "finding", category: "seo", data: result, timestamp: new Date() },
+        ]);
+        endActivity(id, "done");
+        return result;
+      } catch (e) {
+        endActivity(id, "error");
+        throw e;
+      }
     },
   });
 
@@ -242,13 +321,25 @@ export default function ChatPage() {
         required: true,
       },
     ],
+    render: (props: any) => (
+      <ToolStatus status={props.status} label={props.status === "complete" ? "Page text extracted" : "Reading page text..."} />
+    ),
     handler: async ({ sessionId }) => {
-      const res = await fetch("/api/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tool: "browser_get_text", args: { sessionId } }),
-      });
-      return res.json();
+      const id = `text-${Date.now()}`;
+      startActivity(id, "browser_get_text", "Reading page text");
+      try {
+        const res = await fetch("/api/tools", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tool: "browser_get_text", args: { sessionId } }),
+        });
+        const result = await res.json();
+        endActivity(id, "done");
+        return result;
+      } catch (e) {
+        endActivity(id, "error");
+        throw e;
+      }
     },
   });
 
@@ -260,18 +351,29 @@ export default function ChatPage() {
     parameters: [
       { name: "url", type: "string", description: "URL to review", required: true },
     ],
+    render: (props: any) => (
+      <ToolStatus status={props.status} label={`UX review: ${props.args?.url ?? "..."}`} />
+    ),
     handler: async ({ url }) => {
-      const res = await fetch("/api/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tool: "ux_review", args: { url } }),
-      });
-      const result = await res.json();
-      setEvidence((prev) => [
-        ...prev,
-        { type: "finding", category: "ux", data: result, timestamp: new Date() },
-      ]);
-      return result;
+      const id = `ux-${Date.now()}`;
+      startActivity(id, "ux_review", `UX review: ${url}`);
+      try {
+        const res = await fetch("/api/tools", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tool: "ux_review", args: { url } }),
+        });
+        const result = await res.json();
+        setEvidence((prev) => [
+          ...prev,
+          { type: "finding", category: "ux", data: result, timestamp: new Date() },
+        ]);
+        endActivity(id, "done");
+        return result;
+      } catch (e) {
+        endActivity(id, "error");
+        throw e;
+      }
     },
   });
 
@@ -295,26 +397,37 @@ export default function ChatPage() {
         required: false,
       },
     ],
+    render: (props: any) => (
+      <ToolStatus status={props.status} label={`Accessibility audit: ${props.args?.url ?? "..."}`} />
+    ),
     handler: async ({ url, width, height }) => {
-      const res = await fetch("/api/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tool: "accessibility_audit",
-          args: { url, width: width ?? 1280, height: height ?? 800 },
-        }),
-      });
-      const result = await res.json();
-      setEvidence((prev) => [
-        ...prev,
-        {
-          type: "finding",
-          category: "accessibility",
-          data: result,
-          timestamp: new Date(),
-        },
-      ]);
-      return result;
+      const id = `a11y-${Date.now()}`;
+      startActivity(id, "accessibility_audit", `Accessibility audit: ${url}`);
+      try {
+        const res = await fetch("/api/tools", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tool: "accessibility_audit",
+            args: { url, width: width ?? 1280, height: height ?? 800 },
+          }),
+        });
+        const result = await res.json();
+        setEvidence((prev) => [
+          ...prev,
+          {
+            type: "finding",
+            category: "accessibility",
+            data: result,
+            timestamp: new Date(),
+          },
+        ]);
+        endActivity(id, "done");
+        return result;
+      } catch (e) {
+        endActivity(id, "error");
+        throw e;
+      }
     },
   });
 
@@ -330,13 +443,25 @@ export default function ChatPage() {
         required: true,
       },
     ],
+    render: (props: any) => (
+      <ToolStatus status={props.status} label={props.status === "complete" ? "Browser session closed" : "Closing browser..."} />
+    ),
     handler: async ({ sessionId }) => {
-      const res = await fetch("/api/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tool: "browser_close", args: { sessionId } }),
-      });
-      return res.json();
+      const id = `close-${Date.now()}`;
+      startActivity(id, "browser_close", "Closing browser session");
+      try {
+        const res = await fetch("/api/tools", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tool: "browser_close", args: { sessionId } }),
+        });
+        const result = await res.json();
+        endActivity(id, "done");
+        return result;
+      } catch (e) {
+        endActivity(id, "error");
+        throw e;
+      }
     },
   });
 
@@ -344,7 +469,7 @@ export default function ChatPage() {
     <main id="main-content" className="flex h-screen bg-gray-950 overflow-hidden">
       {/* Left: Evidence Panel — 60% */}
       <div className="flex-[3] min-w-0 overflow-hidden">
-        <EvidencePanel items={evidence} />
+        <EvidencePanel items={evidence} activity={activity} lockedUrl={lockedUrl} />
       </div>
 
       {/* Right: Agent Chat — 40% */}
@@ -380,38 +505,79 @@ export default function ChatPage() {
           </div>
         </header>
 
-        {/* Quick Audit bar */}
-        <form onSubmit={handleQuickAudit} className="px-4 py-2.5 border-b border-gray-800 bg-gray-950 flex gap-2 flex-shrink-0">
-          <input
-            type="text"
-            value={auditUrl}
-            onChange={(e) => setAuditUrl(e.target.value)}
-            placeholder="https://example.com"
-            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
-          />
-          <button
-            type="submit"
-            disabled={!auditUrl.trim()}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-medium text-white transition-colors"
-          >
-            Audit
-          </button>
-        </form>
+        {/* URL bar — lock a target URL for the agent */}
+        <div className="px-4 py-2.5 border-b border-gray-800 bg-gray-950 flex gap-2 flex-shrink-0">
+          {lockedUrl ? (
+            <>
+              <div className="flex-1 flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-1.5 min-w-0">
+                <span className="text-xs text-blue-400">&#x1F512;</span>
+                <span className="text-sm text-blue-300 truncate">{lockedUrl}</span>
+              </div>
+              <button
+                onClick={() => setLockedUrl("")}
+                className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Clear
+              </button>
+            </>
+          ) : (
+            <form onSubmit={handleQuickAudit} className="flex gap-2 flex-1">
+              <input
+                type="text"
+                value={auditUrl}
+                onChange={(e) => setAuditUrl(e.target.value)}
+                placeholder="https://example.com"
+                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={!auditUrl.trim()}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-medium text-white transition-colors"
+              >
+                Audit
+              </button>
+            </form>
+          )}
+        </div>
 
         {/* Chat */}
         <div className="flex-1 overflow-hidden">
           <CopilotChat
             instructions={SYSTEM_PROMPT}
             suggestions={[
-              { title: "Full site audit", message: "Run a full audit on https://example.com" },
-              { title: "Screenshot", message: "Take a screenshot of https://stripe.com" },
-              { title: "Performance", message: "Check Core Web Vitals for https://vercel.com" },
-              { title: "Accessibility", message: "Run an accessibility audit on https://github.com" },
+              {
+                title: "Full site audit",
+                message: lockedUrl
+                  ? `Run a full audit on ${lockedUrl}`
+                  : "Run a full audit on https://example.com",
+              },
+              {
+                title: "Screenshot",
+                message: lockedUrl
+                  ? `Take a screenshot of ${lockedUrl}`
+                  : "Take a screenshot of https://stripe.com",
+              },
+              {
+                title: "Performance",
+                message: lockedUrl
+                  ? `Check Core Web Vitals for ${lockedUrl}`
+                  : "Check Core Web Vitals for https://vercel.com",
+              },
+              {
+                title: "Accessibility",
+                message: lockedUrl
+                  ? `Run an accessibility audit on ${lockedUrl}`
+                  : "Run an accessibility audit on https://github.com",
+              },
             ]}
             labels={{
               title: "DeepSyte Agent",
-              initial: "Hi! I'm **DeepSyte Agent** — your AI-powered web auditing assistant.\n\nEnter a URL above for a full audit, or use a suggestion below.",
-              placeholder: "Ask me to audit a site, take a screenshot, or check performance…",
+              initial: lockedUrl
+                ? `Hi! I'm **DeepSyte Agent**. I'm ready to audit **${lockedUrl}** — use a quick action below or ask me anything.`
+                : "Hi! I'm **DeepSyte Agent** — your AI-powered web auditing assistant.\n\nEnter a URL above to lock it in, then use the quick actions below.",
+              placeholder: lockedUrl
+                ? `Ask about ${lockedUrl}…`
+                : "Enter a URL above, then ask me to audit it…",
             }}
             className="h-full"
           />
