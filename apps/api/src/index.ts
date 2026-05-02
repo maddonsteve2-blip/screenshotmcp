@@ -30,7 +30,12 @@ app.use(requestId);
 app.use("/webhooks", express.raw({ type: "application/json" }));
 app.use(express.json({ limit: "50mb" }));
 app.use(cors({
-  origin: [process.env.WEB_URL || "https://www.deepsyte.com", "http://localhost:3000"],
+  origin: [
+    process.env.WEB_URL || "https://www.deepsyte.com",
+    "https://agent.deepsyte.com",
+    "http://localhost:3000",
+    "http://localhost:3002",
+  ],
   credentials: true,
   exposedHeaders: [
     "X-Request-ID",

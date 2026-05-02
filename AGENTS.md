@@ -6,6 +6,7 @@ DeepSyte is a screenshot-as-a-service platform with an MCP server, REST API, CLI
 ## Architecture
 - **apps/api** — Express API + MCP server + Playwright workers (deployed to Railway)
 - **apps/web** — Next.js dashboard + docs site (deployed to Vercel)
+- **apps/agent** — CopilotKit agent UI (separate Vercel project, `agent.deepsyte.com`)
 - **packages/db** — Drizzle ORM schema + Neon Postgres (neon-http driver)
 - **packages/types** — Shared TypeScript types
 - **packages/cli** — npm CLI (`@anthropic/deepsyte`)
@@ -62,6 +63,11 @@ GROUP BY day ORDER BY day;
   - Railway environment: `production`
   - If `railway up` says "Unauthorized", run `railway login --browserless` with the **maddonsteve2** account, then `railway link` and select `deepsyte-api`.
 - **Web**: Auto-deploys via Vercel on `git push`, or manually with `npx vercel --prod`
+- **Agent**: Separate Vercel project — `git push` triggers build if `apps/agent` changed.
+  - First-time setup: create a new Vercel project, set root directory to `apps/agent`.
+  - Add env vars: `MINIMAX_API_KEY`, `MINIMAX_BASE_URL`, `DEEPSYTE_API_URL`, `DEEPSYTE_AGENT_API_KEY`.
+  - Point custom domain `agent.deepsyte.com` at the Vercel project.
+  - Local dev: `npm run dev --workspace @deepsyte/agent` (runs on port 3002).
 - **CLI**: `cd packages/cli && npm version patch && npm publish --access public`
 
 ## Environment Variables
@@ -78,6 +84,12 @@ GROUP BY day ORDER BY day;
 - `INTERNAL_API_SECRET` — Must match Railway's value
 - `CLERK_*` — Clerk auth keys
 - `STRIPE_*` — Stripe billing keys
+
+### Vercel (Agent — apps/agent)
+- `MINIMAX_API_KEY` — MiniMax Token Plan key (regenerate if ever exposed)
+- `MINIMAX_BASE_URL` — `https://api.minimax.io/v1`
+- `DEEPSYTE_API_URL` — Railway API URL
+- `DEEPSYTE_AGENT_API_KEY` — A valid DeepSyte API key for tool execution
 
 ## Key Patterns
 - Playground proxies requests through `/api/playground/screenshot` (Next.js API routes) to avoid exposing API keys client-side
