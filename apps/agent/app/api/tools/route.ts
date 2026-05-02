@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const API_URL =
   process.env.DEEPSYTE_API_URL ||
-  "https://deepsyte-api-production.up.railway.app";
+  "https://api.deepsyte.com";
 const API_KEY = process.env.DEEPSYTE_AGENT_API_KEY!;
 
 /**

@@ -13,7 +13,7 @@ DeepSyte is a screenshot-as-a-service platform with an MCP server, REST API, CLI
 
 ## Production URLs
 - **Web**: https://web-phi-eight-56.vercel.app
-- **API**: https://deepsyte-api-production.up.railway.app
+- **API**: https://api.deepsyte.com (Railway: https://screenshotsmcp-api-production.up.railway.app)
 - **Sign-in**: https://web-phi-eight-56.vercel.app/sign-in
 - **Dashboard**: https://web-phi-eight-56.vercel.app/dashboard
 
@@ -53,13 +53,13 @@ GROUP BY day ORDER BY day;
 ### Check deployments
 - **Vercel**: `npx vercel ls` or check Vercel dashboard
 - **Railway**: `railway logs --tail` or `railway up` to deploy
-- **API health**: GET `https://deepsyte-api-production.up.railway.app/health`
+- **API health**: GET `https://api.deepsyte.com/health`
 
 ## Deploying
 - **API**: Run `railway up` from repo root (NOT git push)
   - Railway account: `maddonsteve2@gmail.com` (GitHub: `maddonsteeve2-blip`)
   - Railway project: `deepsyte-api`
-  - Railway service: `deepsyte-api`
+  - Railway service: `screenshotsmcp-api`
   - Railway environment: `production`
   - If `railway up` says "Unauthorized", run `railway login --browserless` with the **maddonsteve2** account, then `railway link` and select `deepsyte-api`.
 - **Web**: Auto-deploys via Vercel on `git push`, or manually with `npx vercel --prod`
