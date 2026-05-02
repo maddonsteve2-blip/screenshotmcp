@@ -117,7 +117,7 @@ export function EvidencePanel({ items }: Props) {
   );
 
   return (
-    <div className="w-72 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden flex-shrink-0">
+    <div className="w-full bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3.5 border-b border-gray-800 flex items-center gap-2">
         <Camera className="w-4 h-4 text-blue-400 flex-shrink-0" />

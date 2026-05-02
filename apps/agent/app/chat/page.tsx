@@ -332,11 +332,13 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-gray-950 overflow-hidden">
-      {/* Left: Evidence Panel */}
-      <EvidencePanel items={evidence} />
+      {/* Left: Evidence Panel — 60% */}
+      <div className="flex-[3] min-w-0 overflow-hidden">
+        <EvidencePanel items={evidence} />
+      </div>
 
-      {/* Right: Agent Chat */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Right: Agent Chat — 40% */}
+      <div className="flex-[2] flex flex-col min-w-0 border-l border-gray-800">
         {/* Header */}
         <header className="flex items-center gap-3 px-5 py-3 border-b border-gray-800 bg-gray-900 flex-shrink-0">
           <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
