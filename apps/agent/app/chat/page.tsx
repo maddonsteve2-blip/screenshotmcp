@@ -110,8 +110,10 @@ export default function ChatPage() {
     ),
     handler: async ({ url, fullPage, width }) => {
       const id = `ss-${Date.now()}`;
+      console.log('[DEBUG] take_screenshot handler START', { url, id });
       startActivity(id, "take_screenshot", `Screenshot: ${url}`);
       try {
+        console.log('[DEBUG] Fetching /api/tools...');
         const res = await fetch("/api/tools", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -120,16 +122,26 @@ export default function ChatPage() {
             args: { url, fullPage: fullPage ?? false, width: width ?? 1280 },
           }),
         });
+        console.log('[DEBUG] Fetch status:', res.status);
         const result = await res.json();
+        console.log('[DEBUG] Result:', result);
+        console.log('[DEBUG] result?.url:', result?.url);
         if (result?.url) {
-          setEvidence((prev) => [
-            ...prev,
-            { type: "screenshot", url: result.url, caption: url, timestamp: new Date() },
-          ]);
+          console.log('[DEBUG] Calling setEvidence with URL:', result.url);
+          setEvidence((prev) => {
+            console.log('[DEBUG] setEvidence callback, prev length:', prev.length);
+            const next = [...prev, { type: "screenshot" as const, url: result.url, caption: url, timestamp: new Date() }];
+            console.log('[DEBUG] setEvidence callback, next length:', next.length);
+            return next;
+          });
+        } else {
+          console.log('[DEBUG] No URL in result, skipping setEvidence');
         }
         endActivity(id, "done");
+        console.log('[DEBUG] take_screenshot handler END');
         return result;
       } catch (e) {
+        console.error('[DEBUG] take_screenshot handler ERROR:', e);
         endActivity(id, "error");
         throw e;
       }
