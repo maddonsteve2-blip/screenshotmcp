@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^1.0.39",
     "@copilotkit/react-core": "^1.56.5",
     "@copilotkit/react-ui": "^1.56.5",
     "@copilotkit/runtime": "^1.56.5",
