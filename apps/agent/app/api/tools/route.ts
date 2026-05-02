@@ -74,7 +74,9 @@ function parseMcpResult(result: unknown): unknown {
       try {
         return JSON.parse(textItem.text);
       } catch {
-        return textItem.text;
+        const urlMatch = textItem.text.match(/\nURL:\s*(https?:\/\/\S+)/);
+        if (urlMatch) return { url: urlMatch[1], raw: textItem.text };
+        return { raw: textItem.text };
       }
     }
     const imageItem = r.content.find((c) => c.type === "image");
