@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useCopilotAction, useCopilotReadable, useCopilotChatHeadless_c } from "@copilotkit/react-core";
+import { useCopilotAction, useCopilotReadable, useCopilotChat } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
 import { EvidencePanel } from "@/components/evidence-panel";
 import type { EvidenceItem } from "@/lib/types";
@@ -40,13 +40,13 @@ Be concise and specific — no vague advice like "improve loading speed". Say "L
 export default function ChatPage() {
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [auditUrl, setAuditUrl] = useState("");
-  const { sendMessage } = useCopilotChatHeadless_c();
+  const { appendMessage } = useCopilotChat();
 
   const handleQuickAudit = (e: React.FormEvent) => {
     e.preventDefault();
     const url = auditUrl.trim();
     if (!url) return;
-    void sendMessage({ id: Date.now().toString(), role: "user", content: `Run a full audit on ${url}` } as any);
+    void appendMessage({ id: Date.now().toString(), role: "user", content: `Run a full audit on ${url}` } as any);
     setAuditUrl("");
   };
 
