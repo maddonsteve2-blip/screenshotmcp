@@ -1,3 +1,4 @@
 {
+  "installCommand": "cd ../.. && npm install",
   "ignoreCommand": "git diff HEAD^ HEAD --quiet -- apps/agent"
 }
