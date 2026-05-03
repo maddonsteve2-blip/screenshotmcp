@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { eq, and, desc, or, ilike, lt, count } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { recordings, apiKeys, runs, users } from "@deepsyte/db";
+import { recordings, runs, users } from "@deepsyte/db";
 import { getPresignedUrl } from "../lib/r2.js";
-import { createHash } from "crypto";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { emitDashboardEvent } from "../lib/dashboard-events.js";
+import { validateApiOrOAuthToken } from "../lib/auth-tokens.js";
 
 export const recordingsRouter = Router();
 const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET || "").trim();
@@ -36,17 +36,16 @@ async function resolveUser(req: any): Promise<{ userId: string } | null> {
         .where(eq(users.clerkId, token));
       if (user) return { userId: user.id };
     }
+
+    const auth = await validateApiOrOAuthToken(token);
+    if (auth) return { userId: auth.userId };
   }
 
-  // Option 2: API key (sk_live_...)
+  // Option 2: API key or website-issued MCP OAuth token
   const apiKey = req.headers["x-api-key"] as string | undefined;
   if (apiKey) {
-    const keyHash = createHash("sha256").update(apiKey).digest("hex");
-    const [row] = await db
-      .select({ userId: apiKeys.userId })
-      .from(apiKeys)
-      .where(and(eq(apiKeys.keyHash, keyHash), eq(apiKeys.revoked, false)));
-    if (row) return { userId: row.userId };
+    const auth = await validateApiOrOAuthToken(apiKey);
+    if (auth) return { userId: auth.userId };
   }
 
   return null;

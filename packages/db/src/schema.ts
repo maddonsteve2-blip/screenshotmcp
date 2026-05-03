@@ -51,6 +51,27 @@ export const apiKeys = pgTable("api_keys", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const mcpOauthTokens = pgTable(
+  "mcp_oauth_tokens",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    clientId: text("client_id").notNull().default("mcp-client"),
+    scope: text("scope").notNull().default("mcp:tools"),
+    expiresAt: timestamp("expires_at").notNull(),
+    lastUsed: timestamp("last_used"),
+    revokedAt: timestamp("revoked_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("mcp_oauth_tokens_user_idx").on(table.userId),
+    tokenHashIdx: uniqueIndex("mcp_oauth_tokens_token_hash_idx").on(table.tokenHash),
+  }),
+);
+
 export const runs = pgTable("runs", {
   id: text("id").primaryKey(),
   userId: text("user_id")

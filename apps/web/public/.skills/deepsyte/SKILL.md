@@ -3,12 +3,12 @@ name: deepsyte
 description: >
   This skill should be used when the user asks to inspect, test, or verify a website, take screenshots, debug browser behavior, audit SEO or performance, test sign-in or sign-up flows, solve CAPTCHAs, create test inboxes, or otherwise needs browser truth from DeepSyte.
 license: MIT
-compatibility: Requires the DeepSyte MCP server connected and authenticated, or the DeepSyte CLI when terminal access is available.
+compatibility: Requires the DeepSyte MCP server connected and authenticated, or the DeepSyte CLI authenticated with a website-issued session.
 metadata:
   author: deepsyte
   version: "2.5.0"
   website: https://www.deepsyte.com
-  api: https://deepsyte-api-production.up.railway.app
+  api: https://api.deepsyte.com
 ---
 
 # DeepSyte
@@ -28,8 +28,9 @@ Use this skill to give the assistant eyes and hands for the web. Use it to choos
   - Responsive / mobile / breakpoints / layout → `workflows/responsive-audit/WORKFLOW.md`
   - General "full audit" → start with performance, then SEO, then UX, then responsive.
 - Do not read every workflow up front. Read only the workflow that matches the task.
-- If terminal access exists and repeated tool calls are likely, prefer the CLI when it is clearly faster than repeated MCP round-trips. If terminal access is not available, stay in MCP.
+- If terminal access exists and repeated tool calls are likely, use the CLI only after `deepsyte whoami` confirms a website-issued session. If the MCP tools are missing and the CLI is not authenticated, stop and report that DeepSyte is not connected.
 - For multi-page performance audits in MCP, avoid opening many new browser sessions in parallel. Measure sequentially unless there is a proven reason to increase concurrency.
+- Never bypass DeepSyte auth with raw Playwright, browser automation, local screenshots, or `browser:start --no-upload`. DeepSyte evidence must come from authenticated MCP or authenticated CLI commands.
 
 ## Available workflows
 
@@ -42,16 +43,30 @@ Use this skill to give the assistant eyes and hands for the web. Use it to choos
 
 Some sites reject traffic from the Railway-hosted cloud browser at the fingerprint level: Cloudflare Turnstile, WorkOS AuthKit (`authk.*.ai`, e.g. Smithery), Clerk bot-detection, and Akamai/PerimeterX-protected signups. `solve_captcha` returns a valid token but Siteverify rejects it. Retrying is futile.
 
-When a valid-looking submit silently does nothing (URL does not change, no error, form resets), escalate instead of retrying:
+When a valid-looking submit silently does nothing (URL does not change, no error, form resets), escalate instead of retrying, but only after website-authenticated DeepSyte CLI access is available:
 
 1. Start with MCP tools: `browser_navigate`, `smart_login`, `solve_captcha`.
-2. If MCP stalls, switch to the CLI local browser: `npx deepsyte browser:start <url>`, then drive real Chrome one atomic command at a time with `browser:click`, `browser:fill`, `browser:paste` (React-compatible), `browser:wait-for`, `browser:inspect`, and `browser:eval`. Real Chrome on the user's residential IP passes trust checks the cloud browser cannot, often without even showing a CAPTCHA checkbox.
+2. If MCP stalls and `deepsyte whoami` confirms an authenticated website session, switch to the CLI local browser: `npx deepsyte browser:start <url>`, then drive real Chrome one atomic command at a time with `browser:click`, `browser:fill`, `browser:paste` (React-compatible), `browser:wait-for`, `browser:inspect`, and `browser:eval`. Real Chrome on the user's residential IP passes trust checks the cloud browser cannot, often without even showing a CAPTCHA checkbox.
 3. Always call `deepsyte auth:plan <url>` before a fresh auth attempt and `deepsyte auth:record <url> <outcome>` after. Inbox, password, and per-site auth state persist so the next run resumes correctly.
 4. Use `+alias` emails (e.g. `you+smithery@agentmail.to`) to reuse a single inbox for multiple signups.
 
 The interactive rule: after every `browser:*` command, read the returned PNG, confirm the state, then issue the next command. No preset scripts.
 
 ## Choose the right tool path
+
+### 0. Codex connection
+Use native Codex HTTP MCP OAuth as the default connection path:
+
+```toml
+[mcp_servers.deepsyte]
+url = "https://api.deepsyte.com/mcp"
+scopes = ["mcp:tools"]
+oauth_resource = "https://api.deepsyte.com/mcp"
+```
+
+Then run `codex mcp login deepsyte` so Codex opens the DeepSyte website authorization flow. Raw API keys cannot authorize MCP access. If a current Codex Desktop build completes OAuth but still fails to mount `mcp__deepsyte` tools in a fresh thread, use `mcp-remote@0.1.38` as a temporary bridge while keeping website OAuth mandatory.
+
+If a user asks for a DeepSyte action and no `mcp__deepsyte` tools are visible, do not silently switch to local screenshots. First check `deepsyte whoami`; if it is not authenticated, tell the user to connect DeepSyte with `codex mcp login deepsyte` or `deepsyte login`.
 
 ### 1. One-shot capture
 Use screenshot tools when the user only needs an image, diff, PDF, or responsive set.

@@ -41,12 +41,17 @@ export function getWindsurfApiKey(): string {
     const parsed = JSON.parse(readFileSync(WINDSURF_MCP_CONFIG_PATH, "utf8")) as WindsurfMcpConfig;
     const server = parsed.mcpServers?.deepsyte;
     const headerKey = server?.headers?.["x-api-key"];
-    if (headerKey?.startsWith("sk_live_")) {
+    if (headerKey?.startsWith("dso_")) {
       return headerKey;
+    }
+    const authHeader = server?.headers?.Authorization ?? server?.headers?.authorization;
+    const bearerMatch = authHeader?.match(/^Bearer\s+(dso_[A-Za-z0-9_-]+)$/);
+    if (bearerMatch) {
+      return bearerMatch[1];
     }
 
     const urlValue = server?.serverUrl ?? server?.url ?? "";
-    const match = urlValue.match(/\/mcp\/(sk_live_[A-Za-z0-9]+)/);
+    const match = urlValue.match(/\/mcp\/(dso_[A-Za-z0-9_-]+)/);
     return match?.[1] ?? "";
   } catch {
     return "";

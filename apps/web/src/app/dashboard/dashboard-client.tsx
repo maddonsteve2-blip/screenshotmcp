@@ -230,7 +230,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                   </div>
                   <div>
                     <p className="font-semibold">Connect DeepSyte to your workflow</p>
-                    <p className="text-sm text-muted-foreground">Create an API key, connect MCP, and start collecting screenshots, recordings, and proof from real browser runs.</p>
+                    <p className="text-sm text-muted-foreground">Authorize MCP with website sign-in, manage REST API keys, and start collecting screenshots, recordings, and proof from real browser runs.</p>
                   </div>
                 </div>
                 <Button 
@@ -535,7 +535,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
           <CardHeader>
             <CardTitle>How to get better proof</CardTitle>
             <CardDescription>
-              Use your API key through REST or MCP, then escalate from captures to richer evidence when needed.{" "}
+              Use REST API keys or OAuth-backed MCP, then escalate from captures to richer evidence when needed.{" "}
               <Button type="button" variant="link" size="sm" className="h-auto px-0 py-0 align-baseline" onClick={() => setShowInstallDialog(true)}>
                 Need help installing? →
               </Button>
@@ -557,8 +557,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 <code>{`{
   "mcpServers": {
     "deepsyte": {
-      "url": "${apiUrl}/mcp",
-      "headers": { "x-api-key": "YOUR_API_KEY" }
+      "url": "${apiUrl}/mcp"
     }
   }
 }`}</code>

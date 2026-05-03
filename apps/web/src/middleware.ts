@@ -16,6 +16,7 @@ const isPublicRoute = createRouteMatcher([
   "/changelog(.*)",
   "/docs(.*)",
   "/compare(.*)",
+  "/oauth/authorize",
   "/shared/(.*)",
   "/llms.txt",
   "/robots.txt",

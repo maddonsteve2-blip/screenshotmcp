@@ -15,6 +15,7 @@ import {
   createCliRun,
   postRunStep,
   finishCliRun,
+  ensureWebsiteAuthenticated,
 } from "../api.js";
 
 /**
@@ -220,6 +221,14 @@ export const browserStartCommand = new Command("browser:start")
   .option("--goal <text>", "Optional user goal, saved to run_outcomes.userGoal")
   .option("--workflow <name>", "Optional workflow name, saved to run_outcomes.workflowUsed")
   .action(async (url: string, opts: Record<string, string | boolean>) => {
+    try {
+      await ensureWebsiteAuthenticated();
+    } catch (err) {
+      console.error(chalk.red(err instanceof Error ? err.message : String(err)));
+      process.exitCode = 1;
+      return;
+    }
+
     // Clean up any stale session.
     if (existsSync(SESSION_FILE)) {
       try {
@@ -347,6 +356,14 @@ function makeActionCommand(
   // uploaded step (surfaces in the dashboard run timeline).
   cmd.option("-n, --note <text>", "Agent narration for this step (surfaces in the dashboard timeline)");
   cmd.action(async (...cliArgs: unknown[]) => {
+    try {
+      await ensureWebsiteAuthenticated();
+    } catch (err) {
+      console.error(chalk.red(err instanceof Error ? err.message : String(err)));
+      process.exitCode = 1;
+      return;
+    }
+
     // commander passes positional args, then options object, then the Command
     const positional = cliArgs.slice(0, args.length) as string[];
     const optsObj = cliArgs[args.length] as { note?: string } | undefined;

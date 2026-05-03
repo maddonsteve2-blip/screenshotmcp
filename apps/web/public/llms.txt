@@ -2,7 +2,7 @@
 
 > Give your AI coding assistant browser truth. Inspect, test, and verify websites with screenshots, browser workflows, audits, and evidence-rich results via MCP tools.
 
-DeepSyte is a Model Context Protocol (MCP) server with 47+ tools that gives AI coding assistants the ability to see, interact with, and verify websites. It supports remote browser workflows for public pages, managed local browser workflows for private or local environments, and evidence capture for proof-heavy debugging and QA. It works with Claude, Cursor, Windsurf, VS Code, and any MCP-compatible client.
+DeepSyte is a Model Context Protocol (MCP) server with 47+ tools that gives AI coding assistants the ability to see, interact with, and verify websites. It supports remote browser workflows for public pages, managed local browser workflows for private or local environments, and evidence capture for proof-heavy debugging and QA. It works with Codex, Claude, Cursor, Windsurf, VS Code, and any MCP-compatible client.
 
 ## Agent Skill
 
@@ -29,21 +29,21 @@ Available workflow:
 ### Option A: CLI (fastest)
 
 ```bash
-npx deepsyte setup --client cursor    # or: vscode, windsurf, claude, claude-code
+npx deepsyte setup --client codex     # or: cursor, vscode, windsurf, claude, claude-code
 ```
 
 The CLI now also installs or repairs the managed core DeepSyte skill in `~/.agents/skills/deepsyte`, including `workflows/sitewide-performance-audit/WORKFLOW.md`, during successful `login`, `install`, and `setup` flows.
 
 If you prefer to do onboarding in two steps, run `npx deepsyte login` followed by `npx deepsyte install <client>`. For most clients that reaches the same result as `setup --client <client>`. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
 
-Use remote workflows first for public sites. Escalate to the managed local browser when you need localhost access, intranet or VPN reachability, authenticated realism, or explicit user-approved local execution.
+Use remote workflows first for public sites. Escalate to the managed local browser when you need localhost access, intranet or VPN reachability, authenticated realism, or explicit user-approved local execution. Managed local browser commands require a valid DeepSyte website OAuth session.
 
 ## Escalation Ladder for website auth
 
 Some sites (Cloudflare Turnstile, WorkOS AuthKit, Clerk bot-detection, Akamai/PerimeterX-protected signups) silently reject requests from the Railway-hosted cloud browser. `solve_captcha` returns a valid token, but the fingerprint gets filtered by Siteverify — no amount of token injection fixes it. When a valid-looking submit silently does nothing (URL doesn't change, no error, form resets), escalate instead of retrying:
 
 1. Start with MCP tools (`browser_navigate`, `smart_login`, `solve_captcha`).
-2. If MCP stalls silently, switch to the CLI local browser: `npx deepsyte browser:start <url>`, then drive real Chrome one atomic command at a time with `browser:click`, `browser:fill`, `browser:paste` (React-compatible), `browser:wait-for`, `browser:inspect`, `browser:eval`. Real Chrome on the user's residential IP passes WorkOS/Turnstile trust checks silently, often without even showing a CAPTCHA checkbox.
+2. If MCP stalls silently and `deepsyte whoami` confirms an authenticated website session, switch to the CLI local browser: `npx deepsyte browser:start <url>`, then drive real Chrome one atomic command at a time with `browser:click`, `browser:fill`, `browser:paste` (React-compatible), `browser:wait-for`, `browser:inspect`, `browser:eval`. Real Chrome on the user's residential IP passes WorkOS/Turnstile trust checks silently, often without even showing a CAPTCHA checkbox.
 3. Always call `deepsyte auth:plan <url>` before a fresh auth attempt and `deepsyte auth:record <url> <outcome>` after. Inbox, password, and per-site auth state persist in the DB so the next run resumes at the right stage.
 4. Use `+alias` emails (e.g. `you+smithery@agentmail.to`) to reuse a single inbox for multiple signups — most providers treat each alias as a distinct identity.
 
@@ -53,26 +53,46 @@ For repeatable public-page performance audits, use the CLI only when the command
 
 Important: `deepsyte skills ...` only manages the local core DeepSyte skill. For community skill discovery or installation, use the `find-skills` workflow or `npx skills find ...` / `npx skills add ...` instead.
 
-### Option B: Manual
+### Option B: Manual MCP OAuth
 
-1. Get an API key at https://deepsyte.com/dashboard/keys
-2. Add to your MCP config:
+For Codex, add native HTTP MCP config to `~/.codex/config.toml`, then trigger Codex OAuth explicitly:
+
+```toml
+[mcp_servers.deepsyte]
+url = "https://api.deepsyte.com/mcp"
+scopes = ["mcp:tools"]
+oauth_resource = "https://api.deepsyte.com/mcp"
+```
+
+```bash
+codex mcp login deepsyte
+```
+
+If your Codex Desktop build signs in but does not mount `mcp__deepsyte` tools into a fresh thread, use `mcp-remote` as a temporary fallback:
+
+```toml
+[mcp_servers.deepsyte]
+command = "npx"
+args = ["-y", "mcp-remote@0.1.38", "https://api.deepsyte.com/mcp"]
+```
+
+Add the base MCP URL to an OAuth-capable MCP client:
 
 ```json
 {
   "mcpServers": {
     "deepsyte": {
-      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
+      "url": "https://api.deepsyte.com/mcp"
     }
   }
 }
 ```
 
-3. Ask your AI: "Take a screenshot of https://example.com"
+The client should open the DeepSyte website for sign-in before MCP tools work.
 
 ## VS Code Extension Preview
 
-A native DeepSyte VS Code extension is now being developed in the monorepo for a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, API key fallback, native MCP registration, command palette actions, a live activity timeline panel, and browser workflow UX inside the editor.
+A native DeepSyte VS Code extension is now being developed in the monorepo for a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, native MCP registration, command palette actions, a live activity timeline panel, and browser workflow UX inside the editor.
 
 Current preview commands include `DeepSyte: Sign In`, `DeepSyte: Check Status`, `DeepSyte: Take Screenshot`, `DeepSyte: Open Timeline`, `DeepSyte: Configure Editor Integration`, and `DeepSyte: Sync Core Skill`. The sidebar also exposes quick actions and recent activity directly in VS Code, and the extension opens browser OAuth, configures the editor automatically, and repairs the managed core skill when no credentials are stored.
 
@@ -82,7 +102,7 @@ Until the Marketplace release is ready, the recommended VS Code setup is to inst
 
 The monorepo also includes a Chrome extension preview under `packages/chrome-extension`.
 
-- **Public pages** use the same DeepSyte Playwright-backed MCP path as the CLI for screenshot capture and page inspection when an API key is configured.
+- **Public pages** use DeepSyte cloud capture after website authorization.
 - **Localhost and private pages** stay local-first, so the extension can still capture and inspect pages that the cloud browser cannot reach.
 - **Page tools** in the popup can read visible text and DOM HTML for the active tab.
 - **Saved key validation** happens before the extension accepts a pasted API key, so revoked keys are rejected instead of being silently stored.
@@ -100,8 +120,7 @@ Or use without installing: `npx deepsyte <command>`
 
 ### Auth
 ```
-deepsyte login                    # OAuth (opens browser, saves key)
-deepsyte login --key sk_live_...  # Direct API key
+deepsyte login                    # OAuth (opens browser, saves website-issued session)
 deepsyte whoami                   # Check auth status
 deepsyte logout                   # Clear credentials
 ```
@@ -282,15 +301,15 @@ Full reference: https://www.deepsyte.com/docs/api/webhooks
 
 ## Server URL
 
-MCP endpoint: `https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY`
-REST API base: `https://deepsyte-api-production.up.railway.app`
+MCP endpoint: `https://api.deepsyte.com/mcp`
+REST API base: `https://api.deepsyte.com`
 Transport: Streamable HTTP
 
 ## Authentication
 
-Every request requires an API key. Keys start with `sk_live_`.
+REST API requests use API keys. MCP and CLI access use website OAuth sessions.
 
-- MCP: API key is embedded in the server URL path
+- MCP: Use the base URL and complete the browser sign-in prompt
 - REST API: Pass as `Authorization: Bearer sk_live_...` header
 
 Rate limits by plan:
@@ -603,7 +622,7 @@ Requires either image_url or sessionId. Use when page text is embedded in images
 
 ## REST API
 
-Base URL: https://deepsyte-api-production.up.railway.app
+Base URL: https://api.deepsyte.com
 
 ### POST /v1/screenshot
 Enqueue a screenshot job.
@@ -622,28 +641,28 @@ Response: { id, status, url, error, createdAt }
 ### Cursor
 ~/.cursor/mcp.json:
 ```json
-{ "mcpServers": { "deepsyte": { "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
+{ "mcpServers": { "deepsyte": { "url": "https://api.deepsyte.com/mcp" } } }
 ```
 
 ### Windsurf
 ```json
-{ "mcpServers": { "deepsyte": { "serverUrl": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
+{ "mcpServers": { "deepsyte": { "serverUrl": "https://api.deepsyte.com/mcp" } } }
 ```
 
 ### Claude Desktop / Claude Code
 ```json
-{ "mcpServers": { "deepsyte": { "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
+{ "mcpServers": { "deepsyte": { "url": "https://api.deepsyte.com/mcp" } } }
 ```
 
 ### VS Code (Copilot)
 .vscode/mcp.json:
 ```json
-{ "mcpServers": { "deepsyte": { "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
+{ "mcpServers": { "deepsyte": { "url": "https://api.deepsyte.com/mcp" } } }
 ```
 
 ### Gemini CLI / OpenCode / Roo Code / Other MCP clients
 ```json
-{ "mcpServers": { "deepsyte": { "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY" } } }
+{ "mcpServers": { "deepsyte": { "url": "https://api.deepsyte.com/mcp" } } }
 ```
 
 ---

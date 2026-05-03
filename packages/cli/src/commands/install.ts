@@ -4,17 +4,13 @@ import { writeFileSync, readFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import { DEFAULT_ONBOARDING_CLIENT, ONBOARDING_CLIENTS, getSetupCommand } from "@deepsyte/types";
-import { getApiKey, getApiUrl } from "../config.js";
+import { getApiUrl } from "../config.js";
 import { printSkillSyncResult, syncCoreSkillForCli } from "../skills.js";
 
-const API_URL_DEFAULT = "https://api.deepsyte.com";
 const SUPPORTED_CLIENTS = ONBOARDING_CLIENTS.join(", ");
 
 function getMcpUrl(): string {
-  const apiUrl = getApiUrl();
-  const key = getApiKey();
-  if (key) return `${apiUrl}/mcp/${key}`;
-  return `${apiUrl}/mcp`;
+  return `${getApiUrl()}/mcp`;
 }
 
 function mergeJsonConfig(filePath: string, newConfig: Record<string, unknown>): void {
@@ -52,20 +48,50 @@ function mergeJsonConfig(filePath: string, newConfig: Record<string, unknown>): 
   writeFileSync(filePath, JSON.stringify(merged, null, 2) + "\n");
 }
 
+function upsertCodexMcpConfig(filePath: string, mcpUrl: string): void {
+  const lastSeparator = Math.max(filePath.lastIndexOf("/"), filePath.lastIndexOf("\\"));
+  const dir = lastSeparator >= 0 ? filePath.substring(0, lastSeparator) : "";
+  if (dir && !existsSync(dir)) mkdirSync(dir, { recursive: true });
+
+  const section = `[mcp_servers.deepsyte]\nurl = "${mcpUrl}"\nscopes = ["mcp:tools"]\noauth_resource = "${mcpUrl}"\n`;
+  const existing = existsSync(filePath) ? readFileSync(filePath, "utf8") : "";
+  const sectionPattern = /(^|\r?\n)\[mcp_servers\.deepsyte\]\r?\n[\s\S]*?(?=\r?\n\[|$)/m;
+
+  if (sectionPattern.test(existing)) {
+    writeFileSync(filePath, existing.replace(sectionPattern, (prefix) => {
+      const leadingNewline = prefix.startsWith("\n") || prefix.startsWith("\r\n")
+        ? prefix.match(/^\r?\n/)?.[0] ?? ""
+        : "";
+      return `${leadingNewline}${section.trimEnd()}`;
+    }));
+    return;
+  }
+
+  const separator = existing.trim().length > 0 ? "\n\n" : "";
+  writeFileSync(filePath, `${existing.trimEnd()}${separator}${section}`);
+}
+
 export const installCommand = new Command("install")
   .description(`Configure one MCP client. For first-time onboarding, prefer \`${getSetupCommand()}\`.`)
   .argument("<client>", `Client to configure: ${SUPPORTED_CLIENTS}`)
   .action(async (client: string) => {
-    const key = getApiKey();
-    if (!key) {
-      console.log(chalk.yellow(`Not logged in. For the smoothest first-time setup, run \`${getSetupCommand(DEFAULT_ONBOARDING_CLIENT)}\` instead.`));
-      console.log(chalk.dim("Or use `deepsyte login --key sk_live_...` to set a key manually before running install.\n"));
-    }
+    console.log(chalk.dim(`For the smoothest first-time setup, run \`${getSetupCommand(DEFAULT_ONBOARDING_CLIENT)}\`.\n`));
 
     const mcpUrl = getMcpUrl();
     const isWindows = process.platform === "win32";
 
     switch (client.toLowerCase()) {
+      case "codex": {
+        const configPath = join(homedir(), ".codex", "config.toml");
+        upsertCodexMcpConfig(configPath, mcpUrl);
+        console.log(chalk.green(`Configured Codex`));
+        console.log(chalk.dim(`  ${configPath}`));
+        console.log(chalk.dim("  Restart Codex Desktop or reload MCP servers."));
+        console.log(chalk.dim("  Then run: codex mcp login deepsyte"));
+        printSkillSyncResult(syncCoreSkillForCli());
+        break;
+      }
+
       case "cursor": {
         const configPath = join(homedir(), ".cursor", "mcp.json");
         mergeJsonConfig(configPath, {
@@ -99,22 +125,11 @@ export const installCommand = new Command("install")
 
       case "windsurf": {
         const configPath = join(homedir(), ".codeium", "windsurf", "mcp_config.json");
-        if (key) {
-          mergeJsonConfig(configPath, {
-            mcpServers: {
-              deepsyte: {
-                headers: { "x-api-key": key },
-                serverUrl: `${getApiUrl()}/mcp`,
-              },
-            },
-          });
-        } else {
-          mergeJsonConfig(configPath, {
-            mcpServers: {
-              deepsyte: { serverUrl: mcpUrl },
-            },
-          });
-        }
+        mergeJsonConfig(configPath, {
+          mcpServers: {
+            deepsyte: { serverUrl: mcpUrl },
+          },
+        });
         console.log(chalk.green(`✓ Configured Windsurf`));
         console.log(chalk.dim(`  ${configPath}`));
         console.log(chalk.dim("  Reload MCP Servers in Windsurf."));

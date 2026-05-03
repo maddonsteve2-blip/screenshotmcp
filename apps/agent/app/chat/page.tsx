@@ -204,7 +204,7 @@ export default function ChatPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-api-key": apiConfig.apiKey,
+            Authorization: `Bearer ${apiConfig.apiKey}`,
           },
           body: JSON.stringify({
             url,
@@ -234,7 +234,7 @@ export default function ChatPage() {
           };
 
           ws.onopen = () => {
-            ws.send(JSON.stringify({ channel: "screenshot-live", jobId }));
+            ws.send(JSON.stringify({ type: "subscribe", channel: "screenshot-live", jobId }));
           };
 
           ws.onmessage = (event) => {

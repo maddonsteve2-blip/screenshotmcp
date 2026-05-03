@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { createHash } from "crypto";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../lib/db.js";
-import { apiKeys, users } from "@deepsyte/db";
+import { users } from "@deepsyte/db";
+import { validateApiOrOAuthToken } from "../lib/auth-tokens.js";
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -57,37 +57,20 @@ export async function requireApiKey(
     return;
   }
 
-  // Standard Bearer API key auth
+  // Standard Bearer auth. Raw API keys remain valid for public REST API use;
+  // website-issued dso_ OAuth tokens are required by MCP/CLI-only paths.
   if (!authHeader.startsWith("Bearer ")) {
     res.status(401).json({ error: "Missing API key" });
     return;
   }
 
-  const rawKey = authHeader.slice(7);
-  const keyHash = createHash("sha256").update(rawKey).digest("hex");
-
-  const [keyRow] = await db
-    .select({
-      id: apiKeys.id,
-      userId: apiKeys.userId,
-      revoked: apiKeys.revoked,
-      plan: users.plan,
-    })
-    .from(apiKeys)
-    .innerJoin(users, eq(apiKeys.userId, users.id))
-    .where(and(eq(apiKeys.keyHash, keyHash), eq(apiKeys.revoked, false)));
-
-  if (!keyRow) {
-    res.status(401).json({ error: "Invalid or revoked API key" });
+  const auth = await validateApiOrOAuthToken(authHeader.slice(7));
+  if (!auth) {
+    res.status(401).json({ error: "Invalid, revoked, or expired credential" });
     return;
   }
 
-  await db
-    .update(apiKeys)
-    .set({ lastUsed: new Date() })
-    .where(eq(apiKeys.id, keyRow.id));
-
-  req.userId = keyRow.userId;
-  req.userPlan = keyRow.plan;
+  req.userId = auth.userId;
+  req.userPlan = auth.plan;
   next();
 }

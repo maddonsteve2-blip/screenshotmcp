@@ -91,7 +91,7 @@ export default function KeysPage() {
       <div>
         <h1 className="text-2xl font-bold">API Key</h1>
         <p className="text-muted-foreground mt-1">
-          Your single API key for REST API, MCP server, CLI, and Playground access.
+          Your REST API key. MCP and CLI access must be authorized with website sign-in.
         </p>
       </div>
 
@@ -130,7 +130,7 @@ export default function KeysPage() {
                 <Key className="h-5 w-5 text-primary" />
                 <div>
                   <CardTitle className="text-base">Active Key</CardTitle>
-                  <CardDescription>Used for all API, MCP, and CLI access</CardDescription>
+                  <CardDescription>Used for REST API access</CardDescription>
                 </div>
               </div>
               <Badge variant="secondary">Active</Badge>
@@ -184,7 +184,7 @@ export default function KeysPage() {
             <Key className="h-10 w-10 text-muted-foreground/40" />
             <div className="text-center">
               <p className="font-medium">No API key yet</p>
-              <p className="text-sm text-muted-foreground mt-1">Create one to use the REST API, MCP server, CLI, and Playground.</p>
+              <p className="text-sm text-muted-foreground mt-1">Create one to use the REST API. MCP and CLI use website OAuth.</p>
             </div>
             <Button onClick={createKey} disabled={acting}>
               {acting ? "Creating..." : "Create API Key"}
@@ -200,10 +200,10 @@ export default function KeysPage() {
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p><strong>MCP Server URL:</strong></p>
           <code className="block rounded bg-muted px-3 py-2 text-xs font-mono break-all">
-            https://deepsyte-api-production.up.railway.app/mcp/{activeKey ? activeKey.keyPreview.split("...")[0] + "..." : "YOUR_KEY"}
+            https://deepsyte-api-production.up.railway.app/mcp
           </code>
+          <p><strong>MCP/CLI:</strong> Use website OAuth from the Install page or run <code className="bg-muted px-1 rounded">deepsyte login</code>.</p>
           <p><strong>REST API:</strong> Pass as <code className="bg-muted px-1 rounded">Authorization: Bearer sk_live_...</code> header</p>
-          <p><strong>CLI:</strong> <code className="bg-muted px-1 rounded">deepsyte login --key sk_live_...</code></p>
           <p><strong>Playground:</strong> Your key is automatically loaded — just go to Playground and start capturing.</p>
         </CardContent>
       </Card>

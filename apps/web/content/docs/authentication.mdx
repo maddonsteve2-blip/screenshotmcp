@@ -5,7 +5,7 @@ description: Create and manage API keys for DeepSyte.
 
 ## API Keys
 
-Every request to DeepSyte requires an API key. Keys are scoped to your account and track usage automatically.
+REST API requests use API keys. MCP and CLI access use a short-lived OAuth session issued after you sign in to the DeepSyte website.
 
 ## Creating a Key
 
@@ -22,10 +22,10 @@ Every request to DeepSyte requires an API key. Keys are scoped to your account a
 
 ### MCP Server
 
-Your API key is embedded in the server URL:
+Use the base MCP URL. Your MCP client should open the DeepSyte website to authorize:
 
 ```
-https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY
+https://api.deepsyte.com/mcp
 ```
 
 ### REST API
@@ -33,7 +33,7 @@ https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY
 Pass your key in the `Authorization` header:
 
 ```bash
-curl -X POST https://deepsyte-api-production.up.railway.app/v1/screenshot \
+curl -X POST https://api.deepsyte.com/v1/screenshot \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com"}'

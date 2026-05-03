@@ -68,7 +68,7 @@ export const setupCommand = new Command("setup")
       } catch (err) {
         spinner.fail(chalk.red("Login failed"));
         console.error(chalk.red(err instanceof Error ? err.message : String(err)));
-        console.log(chalk.dim("\nYou can also run: deepsyte login --key sk_live_..."));
+        console.log(chalk.dim("\nYou can also run: deepsyte login"));
         process.exit(1);
       }
     }

@@ -193,7 +193,10 @@ function buildConfigForEditor(
           ...existingServers,
           deepsyte: {
             type: "http",
-            url: `${apiUrl}/mcp/${apiKey}`,
+            url: `${apiUrl}/mcp`,
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+            },
           },
         },
       },
@@ -208,7 +211,10 @@ function buildConfigForEditor(
       mcpServers: {
         ...existingServers,
         deepsyte: {
-          url: `${apiUrl}/mcp/${apiKey}`,
+          url: `${apiUrl}/mcp`,
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
         },
       },
     };
@@ -218,12 +224,12 @@ function buildConfigForEditor(
     ...existing,
     mcpServers: {
       ...existingServers,
-      deepsyte: {
-        headers: {
-          "x-api-key": apiKey,
+        deepsyte: {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+          serverUrl: `${apiUrl}/mcp`,
         },
-        serverUrl: `${apiUrl}/mcp`,
-      },
     },
   };
 }

@@ -1,10 +1,10 @@
 export type Plan = "free" | "starter" | "pro";
 
-export const ONBOARDING_CLIENTS = ["cursor", "vscode", "windsurf", "claude", "claude-code"] as const;
+export const ONBOARDING_CLIENTS = ["codex", "cursor", "vscode", "windsurf", "claude", "claude-code"] as const;
 
 export type OnboardingClient = (typeof ONBOARDING_CLIENTS)[number];
 
-export const DEFAULT_ONBOARDING_CLIENT: OnboardingClient = "cursor";
+export const DEFAULT_ONBOARDING_CLIENT: OnboardingClient = "codex";
 
 export const CORE_SKILL_INSTALL_PATH = "~/.agents/skills/deepsyte";
 
@@ -18,7 +18,7 @@ export const CORE_UX_ACCESSIBILITY_AUDIT_WORKFLOW_PATH = "workflows/ux-accessibi
 
 export const CORE_RESPONSIVE_AUDIT_WORKFLOW_PATH = "workflows/responsive-audit/WORKFLOW.md";
 
-export const TWO_STEP_ONBOARDING_NUANCE = "For most clients, login + install reaches the same result as setup --client <client>. The main nuances are that install vscode writes a workspace-local .vscode/mcp.json, while install claude-code prints the claude mcp add ... command for you to run manually.";
+export const TWO_STEP_ONBOARDING_NUANCE = "For most clients, login + install reaches the same result as setup --client <client>. The main nuances are that install codex writes ~/.codex/config.toml and asks you to run codex mcp login deepsyte, install vscode writes a workspace-local .vscode/mcp.json, while install claude-code prints the claude mcp add ... command for you to run manually.";
 
 export function getSetupCommand(client: OnboardingClient = DEFAULT_ONBOARDING_CLIENT): string {
   return `deepsyte setup --client ${client}`;

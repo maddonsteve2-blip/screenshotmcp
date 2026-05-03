@@ -27,3 +27,42 @@ body {
   --copilot-kit-separator-color: #30363d;
   --copilot-kit-muted-color: #484f58;
 }
+
+.copilotKitChat,
+.copilotKitChatBody,
+.copilotKitMessages {
+  min-height: 0;
+}
+
+.copilotKitMessages {
+  overflow: hidden;
+}
+
+.copilotKitMessagesContainer {
+  scroll-behavior: smooth;
+}
+
+.copilotKitAssistantMessage .copilotKitMarkdown {
+  max-height: 9.5rem;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+}
+
+.copilotKitAssistantMessage .copilotKitMarkdown::-webkit-scrollbar,
+.copilotKitMessagesContainer::-webkit-scrollbar,
+.copilotKitChat textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.copilotKitAssistantMessage .copilotKitMarkdown::-webkit-scrollbar-thumb,
+.copilotKitMessagesContainer::-webkit-scrollbar-thumb,
+.copilotKitChat textarea::-webkit-scrollbar-thumb {
+  background: #303b4f;
+  border-radius: 999px;
+}
+
+.copilotKitAssistantMessage .copilotKitMarkdown::-webkit-scrollbar-track,
+.copilotKitMessagesContainer::-webkit-scrollbar-track,
+.copilotKitChat textarea::-webkit-scrollbar-track {
+  background: transparent;
+}

@@ -158,6 +158,7 @@ function buildSuccessPage(ide: DetectedIDE): string {
 
 export async function oauthLogin(): Promise<OAuthResult> {
   const apiUrl = getApiUrl();
+  const resource = `${apiUrl}/mcp`;
   const ide = detectIDE();
 
   // Generate PKCE pair
@@ -192,6 +193,7 @@ export async function oauthLogin(): Promise<OAuthResult> {
               code,
               code_verifier: codeVerifier,
               redirect_uri: redirectUri,
+              resource,
             }),
           });
 
@@ -238,6 +240,7 @@ export async function oauthLogin(): Promise<OAuthResult> {
       authorizeUrl.searchParams.set("response_type", "code");
       authorizeUrl.searchParams.set("code_challenge", codeChallenge);
       authorizeUrl.searchParams.set("code_challenge_method", "S256");
+      authorizeUrl.searchParams.set("resource", resource);
       authorizeUrl.searchParams.set("state", randomBytes(16).toString("hex"));
 
       open(authorizeUrl.toString());

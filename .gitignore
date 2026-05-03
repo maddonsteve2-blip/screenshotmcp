@@ -44,3 +44,4 @@ load-test.ps1
 .claude/
 
 .vercel
+.env*.local

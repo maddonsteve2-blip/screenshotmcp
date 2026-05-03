@@ -1,0 +1,46 @@
+{
+  "name": "deepsyte",
+  "version": "0.1.1",
+  "description": "DeepSyte browser automation, screenshots, audits, and visual testing through the OAuth-protected MCP server.",
+  "author": {
+    "name": "DeepSyte",
+    "url": "https://deepsyte.com"
+  },
+  "homepage": "https://deepsyte.com",
+  "repository": "https://github.com/stevejford/screenshotmcp",
+  "license": "MIT",
+  "keywords": [
+    "deepsyte",
+    "screenshots",
+    "browser-automation",
+    "mcp",
+    "visual-testing",
+    "seo",
+    "accessibility",
+    "performance"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "DeepSyte",
+    "shortDescription": "Website-authenticated screenshots and browser tools for Codex.",
+    "longDescription": "Use DeepSyte to capture screenshots, automate browser sessions, verify visual changes, and run website audits from Codex. Setup opens DeepSyte website OAuth before MCP tools can run; raw API keys are not accepted for MCP access.",
+    "developerName": "DeepSyte",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://deepsyte.com",
+    "privacyPolicyURL": "https://deepsyte.com/privacy-policy",
+    "termsOfServiceURL": "https://deepsyte.com/terms-of-service",
+    "defaultPrompt": [
+      "Use DeepSyte to take a screenshot of https://deepsyte.com and summarize what renders.",
+      "Use DeepSyte to verify a website change with browser automation.",
+      "Use DeepSyte to run a quick SEO and accessibility check for this page."
+    ],
+    "brandColor": "#111827",
+    "screenshots": []
+  }
+}

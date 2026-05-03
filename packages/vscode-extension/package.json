@@ -1,7 +1,7 @@
 {
   "name": "deepsyte-vscode",
   "displayName": "DeepSyte",
-  "description": "VS Code extension for DeepSyte: automatic browser OAuth, API key fallback, MCP registration, screenshot commands, and browser tooling.",
+  "description": "VS Code extension for DeepSyte: automatic browser OAuth, MCP registration, screenshot commands, and browser tooling.",
   "version": "0.25.0",
   "publisher": "DeepSyte",
   "license": "SEE LICENSE IN LICENSE",

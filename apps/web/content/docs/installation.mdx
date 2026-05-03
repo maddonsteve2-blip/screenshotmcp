@@ -8,7 +8,7 @@ description: Configure DeepSyte so your AI can inspect, test, and verify website
 The quickest way to set up DeepSyte for a new agent is with the CLI. Use the one-command onboarding flow:
 
 ```bash
-npx deepsyte setup --client cursor    # or: vscode, windsurf, claude, claude-code
+npx deepsyte setup --client codex     # or: cursor, vscode, windsurf, claude, claude-code
 ```
 
 This will:
@@ -22,10 +22,10 @@ If you prefer to do onboarding in two steps, you can still run:
 
 ```bash
 npx deepsyte login
-npx deepsyte install cursor    # or: vscode, windsurf, claude, claude-code
+npx deepsyte install codex     # or: cursor, vscode, windsurf, claude, claude-code
 ```
 
-That two-step path reaches the same result as `setup --client <client>` for most clients. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
+That two-step path reaches the same result as `setup --client <client>` for most clients. The main nuances are that `install codex` writes `~/.codex/config.toml` and asks you to run `codex mcp login deepsyte`, `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
 
 The first packaged workflow is `~/.agents/skills/deepsyte/workflows/sitewide-performance-audit/WORKFLOW.md` for repeatable multi-page performance audits.
 
@@ -54,9 +54,11 @@ deepsyte auth:find-login https://example.com
 deepsyte auth:smart-login https://example.com/sign-in --username user@example.com --password secret
 ```
 
-For extension-free local browser workflows, you can also launch an installed browser in a dedicated DeepSyte profile:
+For extension-free local browser workflows, authenticate first, then launch an installed browser in a dedicated DeepSyte profile:
 
 ```bash
+deepsyte login
+deepsyte whoami
 deepsyte browser open https://example.com
 deepsyte browser open https://example.com --record-video
 deepsyte browser status
@@ -85,13 +87,13 @@ deepsyte browser close
 
 The CLI explains why local access is needed, asks for explicit approval before it opens the browser, continuously captures console logs and network activity while that managed browser stays open, and then reconnects to that tracked session for follow-up local actions including history navigation, coordinate clicks, hover states, wait conditions, dropdown selection, viewport changes, cookies/storage inspection, script evaluation, accessibility inspection, performance metrics, SEO auditing, and timestamped evidence bundle export. Use `browser evidence` for a live proof snapshot, or `browser close --evidence` when you want the finalized local `.webm` included in the same bundle after recording finishes.
 
-Use remote browser workflows for public sites. Escalate to the managed local browser when the work requires `localhost`, intranet access, VPN-only apps, stronger realism, or explicit human approval.
+Use remote browser workflows for public sites. Escalate to the managed local browser when the work requires `localhost`, intranet access, VPN-only apps, stronger realism, or explicit human approval. Managed local browser commands still require a valid DeepSyte website OAuth session.
 
 ---
 
 ## VS Code Extension Preview
 
-A native DeepSyte VS Code extension is now being developed in the monorepo for a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, API key fallback, command palette actions, output logs, a live activity timeline panel, and native MCP registration.
+A native DeepSyte VS Code extension is now being developed in the monorepo for a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, command palette actions, output logs, a live activity timeline panel, and native MCP registration.
 
 Current preview commands include:
 
@@ -114,6 +116,37 @@ DeepSyte works with any client that supports the **Model Context Protocol (MCP)*
 
 If you are setting up a new agent and want the managed core skill plus packaged workflows installed automatically, prefer `npx deepsyte setup --client <client>` before falling back to the manual snippets below.
 
+## Codex
+
+Add native HTTP MCP config to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.deepsyte]
+url = "https://api.deepsyte.com/mcp"
+scopes = ["mcp:tools"]
+oauth_resource = "https://api.deepsyte.com/mcp"
+```
+
+Then trigger the website OAuth flow:
+
+```bash
+codex mcp login deepsyte
+```
+
+Restart Codex Desktop or reload MCP servers, then ask:
+
+```text
+Use DeepSyte to take a full-page screenshot of https://clerk.com
+```
+
+If OAuth completes but `mcp__deepsyte` tools do not mount in a fresh Codex thread, use this temporary bridge while keeping website OAuth mandatory:
+
+```toml
+[mcp_servers.deepsyte]
+command = "npx"
+args = ["-y", "mcp-remote@0.1.38", "https://api.deepsyte.com/mcp"]
+```
+
 ## Cursor
 
 Open Cursor Settings → MCP Servers, or edit `~/.cursor/mcp.json` directly:
@@ -122,7 +155,7 @@ Open Cursor Settings → MCP Servers, or edit `~/.cursor/mcp.json` directly:
 {
   "mcpServers": {
     "deepsyte": {
-      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
+      "url": "https://api.deepsyte.com/mcp"
     }
   }
 }
@@ -136,7 +169,7 @@ Open Windsurf Settings → MCP, or edit the config file:
 {
   "mcpServers": {
     "deepsyte": {
-      "serverUrl": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
+      "serverUrl": "https://api.deepsyte.com/mcp"
     }
   }
 }
@@ -150,7 +183,7 @@ Edit `claude_desktop_config.json` (found in `~/Library/Application Support/Claud
 {
   "mcpServers": {
     "deepsyte": {
-      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
+      "url": "https://api.deepsyte.com/mcp"
     }
   }
 }
@@ -164,7 +197,7 @@ Add to your VS Code settings (`.vscode/mcp.json`):
 {
   "mcpServers": {
     "deepsyte": {
-      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
+      "url": "https://api.deepsyte.com/mcp"
     }
   }
 }
@@ -177,7 +210,7 @@ This file is workspace-local, so repeat this step for each workspace that should
 The server endpoint is:
 
 ```
-https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY
+https://api.deepsyte.com/mcp
 ```
 
 It supports **Streamable HTTP transport** — compatible with all MCP clients that support HTTP-based servers.

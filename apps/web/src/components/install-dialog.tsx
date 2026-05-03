@@ -75,7 +75,7 @@ const tools: Tool[] = [
     config: `{
   "mcpServers": {
     "deepsyte": {
-      "url": "${API_BASE}/mcp/YOUR_API_KEY"
+      "url": "${API_BASE}/mcp"
     }
   }
 }`,
@@ -84,7 +84,7 @@ const tools: Tool[] = [
         <ol className="list-decimal list-inside space-y-2 text-gray-700">
           <li>Open Claude Desktop → Settings (⚙️) → Developer</li>
           <li>Click &quot;Edit Config&quot;</li>
-          <li>Add the config below and replace YOUR_API_KEY</li>
+          <li>Add the config below and sign in when prompted</li>
           <li>Save and restart Claude Desktop</li>
         </ol>
       </div>
@@ -96,7 +96,7 @@ const tools: Tool[] = [
     subtitle: "CLI",
     icon: "🎯",
     category: "Claude",
-    config: `claude mcp add deepsyte ${API_BASE}/mcp/YOUR_API_KEY -s user`,
+    config: `claude mcp add --transport http deepsyte -s user ${API_BASE}/mcp`,
     instructions: (
       <div className="space-y-4">
         <p className="text-gray-700">Run this command in your terminal:</p>
@@ -109,7 +109,7 @@ const tools: Tool[] = [
     subtitle: "For Custom Clients",
     icon: "🔗",
     category: "MCP",
-    config: `${API_BASE}/mcp/YOUR_API_KEY`,
+    config: `${API_BASE}/mcp`,
     instructions: (
       <div className="space-y-4">
         <p className="text-gray-700">Use this URL with any MCP-compatible client:</p>
@@ -119,17 +119,16 @@ const tools: Tool[] = [
   {
     id: "n8n",
     name: "N8N & Others",
-    subtitle: "Auth Header",
+    subtitle: "OAuth",
     icon: "⚡",
     category: "MCP",
-    config: `URL: ${API_BASE}/mcp
-Header: x-api-key: YOUR_API_KEY`,
+    config: `URL: ${API_BASE}/mcp`,
     instructions: (
       <div className="space-y-4">
-        <p className="text-gray-700">For clients that support auth headers instead of URL-based keys:</p>
+        <p className="text-gray-700">Use an OAuth-capable MCP client:</p>
         <ol className="list-decimal list-inside space-y-2 text-gray-700">
           <li>Set the MCP server URL</li>
-          <li>Add the x-api-key header with your API key</li>
+          <li>Complete the browser sign-in prompt</li>
         </ol>
       </div>
     ),

@@ -1,0 +1,20 @@
+{
+  "name": "deepsyte-local",
+  "interface": {
+    "displayName": "DeepSyte Local"
+  },
+  "plugins": [
+    {
+      "name": "deepsyte",
+      "source": {
+        "source": "local",
+        "path": "./plugins/deepsyte"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

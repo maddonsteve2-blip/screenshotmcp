@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "deepsyte": {
+      "type": "http",
+      "url": "https://api.deepsyte.com/mcp",
+      "scopes": ["mcp:tools"],
+      "oauth_resource": "https://api.deepsyte.com/mcp",
+      "note": "DeepSyte MCP server. Uses website OAuth during setup; raw API keys are not accepted for MCP access."
+    }
+  }
+}

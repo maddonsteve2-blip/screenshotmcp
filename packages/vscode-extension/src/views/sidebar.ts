@@ -398,7 +398,7 @@ export class SidebarProvider implements vscode.TreeDataProvider<SidebarNode>, vs
         id: signedIn ? "action-sign-out" : "action-sign-in",
         kind: "action",
         label: signedIn ? "Sign Out" : "Sign In",
-        description: signedIn ? "Clear the stored API key" : "Store your DeepSyte API key",
+        description: signedIn ? "Clear the stored session" : "Authorize with the DeepSyte website",
         commandId: signedIn ? "deepsyte.signOut" : "deepsyte.signIn",
         icon: signedIn ? "sign-out" : "sign-in",
       },

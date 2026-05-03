@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { createHash } from "crypto";
 import { apiKeys, users } from "@deepsyte/db";
 import { db } from "./db.js";
+import { validateApiOrOAuthToken } from "./auth-tokens.js";
 
 const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET || "").trim();
 
@@ -39,6 +40,9 @@ export async function resolveDashboardUser(req: {
       const [user] = await db.select({ id: users.id }).from(users).where(eq(users.clerkId, token));
       if (user) return { userId: user.id };
     }
+
+    const auth = await validateApiOrOAuthToken(token);
+    if (auth) return { userId: auth.userId };
   }
 
   const rawKey = req.headers["x-api-key"];

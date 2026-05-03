@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { and, asc, desc, eq, ilike, inArray, lt, or, sql, count } from "drizzle-orm";
-import { createHash } from "crypto";
 import { nanoid } from "nanoid";
-import { apiKeys, recordings, runOutcomes, runs, screenshots, users } from "@deepsyte/db";
+import { recordings, runOutcomes, runs, screenshots, users } from "@deepsyte/db";
 import { db } from "../lib/db.js";
 import { getSession } from "../lib/sessions.js";
 import { getPresignedUrl, uploadScreenshot } from "../lib/r2.js";
 import { deriveCaption } from "../lib/captions.js";
 import { emitDashboardEvent } from "../lib/dashboard-events.js";
+import { validateApiOrOAuthToken } from "../lib/auth-tokens.js";
 
 export const runsRouter = Router();
 const INTERNAL_SECRET = (process.env.INTERNAL_API_SECRET || "").trim();
@@ -44,16 +44,15 @@ async function resolveUser(req: any): Promise<{ userId: string } | null> {
         .where(eq(users.clerkId, token));
       if (user) return { userId: user.id };
     }
+
+    const auth = await validateApiOrOAuthToken(token);
+    if (auth) return { userId: auth.userId };
   }
 
   const apiKey = req.headers["x-api-key"] as string | undefined;
   if (apiKey) {
-    const keyHash = createHash("sha256").update(apiKey).digest("hex");
-    const [row] = await db
-      .select({ userId: apiKeys.userId })
-      .from(apiKeys)
-      .where(and(eq(apiKeys.keyHash, keyHash), eq(apiKeys.revoked, false)));
-    if (row) return { userId: row.userId };
+    const auth = await validateApiOrOAuthToken(apiKey);
+    if (auth) return { userId: auth.userId };
   }
 
   return null;
@@ -640,4 +639,3 @@ runsRouter.post("/:id/outcome", async (req, res) => {
 
   res.json({ ok: true });
 });
-

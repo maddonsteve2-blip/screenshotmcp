@@ -1,3 +1,6 @@
+# Keep Railway API uploads small. The API Dockerfile only needs the root npm
+# metadata, turbo config, apps/api, packages/db, and packages/types.
+
 # VCS / editor
 .git
 .github
@@ -5,6 +8,7 @@
 .vscode
 .windsurf
 .vercel
+.claude
 
 # Dependencies / caches / build output
 node_modules
@@ -17,20 +21,29 @@ node_modules
 **/.cache
 **/*.tsbuildinfo
 
-# Exclude non-API apps and packages from Railway upload context
+# Exclude non-API apps, packages, and plugin artifacts from Railway upload context
+apps/agent
 apps/web
-packages/vscode-extension
 packages/cli
+packages/vscode-extension
+packages/chrome-extension
+plugins
+.agents
 deepsyte-skill
 
 # Local assets / scripts not needed for API deploy
 load-test.ps1
 squarelogo.png
 marketplace.json
+deepsytevideo.mp4
+shots
+patch-agent.*
+tmp-*.png
 
 # Logs / misc
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 .DS_Store
 *.pem

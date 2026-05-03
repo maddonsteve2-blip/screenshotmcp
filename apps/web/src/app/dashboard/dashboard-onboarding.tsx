@@ -9,11 +9,11 @@ const steps = [
   {
     number: 1,
     icon: Key,
-    title: "Create your first API key",
+    title: "Authorize your account",
     description:
-      "API keys authenticate every request from the CLI, MCP server, and REST API. You can revoke them anytime.",
-    href: "/dashboard/keys",
-    cta: "Create API key",
+      "CLI and MCP access now starts with website sign-in. REST API keys are still managed from the dashboard.",
+    href: "/dashboard/install",
+    cta: "Connect account",
   },
   {
     number: 2,

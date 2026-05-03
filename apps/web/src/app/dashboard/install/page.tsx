@@ -65,6 +65,7 @@ const CATEGORIES: Category[] = [
   {
     label: "IDEs",
     tools: [
+      { id: "codex", name: "Codex", subtitle: "Website OAuth", icon: <Terminal className="h-5 w-5" />, badge: "BEST" },
       { id: "cursor", name: "Cursor", subtitle: "One-click install", icon: <Code2 className="h-5 w-5" /> },
       { id: "vscode", name: "VS Code", subtitle: "Deep link install", icon: <Monitor className="h-5 w-5" /> },
       { id: "windsurf", name: "Windsurf", subtitle: "MCP config", icon: <Sparkles className="h-5 w-5" /> },
@@ -254,6 +255,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
   copiedId: string | null; onCopy: (text: string, id: string) => void; onBack: () => void;
 }) {
   const titles: Record<string, { name: string; icon: React.ReactNode }> = {
+    codex: { name: "Codex", icon: <Terminal className="h-5 w-5" /> },
     cursor: { name: "Cursor", icon: <Code2 className="h-5 w-5" /> },
     vscode: { name: "VS Code", icon: <Monitor className="h-5 w-5" /> },
     windsurf: { name: "Windsurf", icon: <Sparkles className="h-5 w-5" /> },
@@ -267,10 +269,10 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
 
   const t = titles[toolId] || { name: toolId, icon: <Globe className="h-5 w-5" /> };
 
-  const cursorDeepLinkConfig = JSON.stringify({ url: mcpKeyUrl });
+  const cursorDeepLinkConfig = JSON.stringify({ url: mcpBaseUrl });
   const cursorDeepLink = `cursor://anysphere.cursor-deeplink/mcp/install?name=deepsyte&config=${encodeURIComponent(btoa(cursorDeepLinkConfig))}`;
 
-  const vscodeDeepLinkConfig = JSON.stringify({ name: "deepsyte", type: "http", url: mcpKeyUrl });
+  const vscodeDeepLinkConfig = JSON.stringify({ name: "deepsyte", type: "http", url: mcpBaseUrl });
   const vscodeDeepLink = `vscode:mcp/install?${encodeURIComponent(vscodeDeepLinkConfig)}`;
 
   return (
@@ -289,6 +291,40 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
 
         {/* Steps */}
         <div className="p-6 space-y-6">
+          {toolId === "codex" && (
+            <>
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-base leading-relaxed text-green-800 dark:bg-green-950/20 dark:text-green-200">
+                <strong>OAuth only.</strong> Codex should connect through the DeepSyte website sign-in flow. Raw API keys are not accepted by the MCP endpoint.
+              </div>
+              <Step n={1} title="Add the native HTTP MCP server">
+                <CopyBlock code={`[mcp_servers.deepsyte]
+url = "${mcpBaseUrl}"
+scopes = ["mcp:tools"]
+oauth_resource = "${mcpBaseUrl}"`} id="codex-native-http" copiedId={copiedId} onCopy={onCopy} />
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Add this to <code className="bg-muted px-1 rounded">~/.codex/config.toml</code>, then restart Codex Desktop or reload MCP servers.</p>
+              </Step>
+              <Step n={2} title="Start website sign-in">
+                <CopyBlock code="codex mcp login deepsyte" id="codex-login" copiedId={copiedId} onCopy={onCopy} />
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Codex opens DeepSyte in your browser. Sign in, approve the connection, then return to Codex.</p>
+              </Step>
+              <Step n={3} title="Verify the tool mount">
+                <CopyBlock code="Use DeepSyte to take a full-page screenshot of https://clerk.com" id="codex-test-prompt" copiedId={copiedId} onCopy={onCopy} />
+              </Step>
+              <Separator />
+              <Step n={4} title="Fallback for affected Codex builds">
+                <CopyBlock code={`[mcp_servers.deepsyte]
+command = "npx.cmd"
+args = ["-y", "mcp-remote@0.1.38", "${mcpBaseUrl}"]`} id="codex-mcp-remote-win" label="Windows" copiedId={copiedId} onCopy={onCopy} />
+                <div className="mt-3">
+                  <CopyBlock code={`[mcp_servers.deepsyte]
+command = "npx"
+args = ["-y", "mcp-remote@0.1.38", "${mcpBaseUrl}"]`} id="codex-mcp-remote-mac" label="macOS / Linux" copiedId={copiedId} onCopy={onCopy} />
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Use this only if native Codex HTTP OAuth signs in but the <code className="bg-muted px-1 rounded">mcp__deepsyte</code> tools still do not appear in a fresh thread.</p>
+              </Step>
+            </>
+          )}
+
           {toolId === "cursor" && (
             <>
               <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-base leading-relaxed text-green-800 dark:bg-green-950/20 dark:text-green-200">
@@ -305,14 +341,13 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Add to <code className="bg-muted px-1 rounded">~/.cursor/mcp.json</code>. Cursor will open a browser to authorize on first use.</p>
               </Step>
               <Separator />
-              <Step n={2} title="Option B: API key in URL (no browser popup)">
-                <CopyBlock code={mcpKeyUrl} id="cursor-url" copiedId={copiedId} onCopy={onCopy} />
-                <a href={isKeySet ? cursorDeepLink : undefined}>
-                  <Button disabled={!isKeySet} className="gap-2 w-full mt-3">
+              <Step n={2} title="One-click OAuth install">
+                <CopyBlock code={mcpBaseUrl} id="cursor-url" copiedId={copiedId} onCopy={onCopy} />
+                <a href={cursorDeepLink}>
+                  <Button className="gap-2 w-full mt-3">
                     <Download className="h-4 w-4" /> One-click Install in Cursor
                   </Button>
                 </a>
-                {!isKeySet && <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Enter an API key first (go back and scroll down).</p>}
               </Step>
             </>
           )}
@@ -320,7 +355,7 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
           {toolId === "vscode" && (
             <>
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-base leading-relaxed text-blue-800 dark:bg-blue-950/20 dark:text-blue-200">
-                <strong>Extension preview:</strong> A native DeepSyte VS Code extension is now being developed in the monorepo with a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, API key fallback, native MCP registration, screenshot commands, output logs, and a live timeline panel.
+                <strong>Extension preview:</strong> A native DeepSyte VS Code extension is now being developed in the monorepo with a dedicated Activity Bar sidebar, automatic browser OAuth sign-in, automatic editor MCP setup, automatic managed core skill sync, native MCP registration, screenshot commands, output logs, and a live timeline panel.
               </div>
               <div className="rounded-lg border bg-muted/40 p-4 text-base leading-relaxed text-muted-foreground">
                 Preview commands include <code className="bg-muted px-1 rounded">DeepSyte: Sign In</code>, <code className="bg-muted px-1 rounded">DeepSyte: Check Status</code>, <code className="bg-muted px-1 rounded">DeepSyte: Take Screenshot</code>, <code className="bg-muted px-1 rounded">DeepSyte: Open Timeline</code>, <code className="bg-muted px-1 rounded">DeepSyte: Configure Editor Integration</code>, and <code className="bg-muted px-1 rounded">DeepSyte: Sync Core Skill</code>. The sidebar also exposes quick actions and recent activity directly in VS Code, and the extension configures the editor and repairs the managed core skill automatically after sign-in when needed.
@@ -342,10 +377,10 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Add to <code className="bg-muted px-1 rounded">.vscode/mcp.json</code>. Enable <code className="bg-muted px-1 rounded">chat.mcp.enabled</code> in settings.</p>
               </Step>
               <Separator />
-              <Step n={2} title="Option B: API key in URL">
-                <CopyBlock code={mcpKeyUrl} id="vscode-url" copiedId={copiedId} onCopy={onCopy} />
-                <a href={isKeySet ? vscodeDeepLink : undefined}>
-                  <Button disabled={!isKeySet} className="gap-2 w-full mt-3">
+              <Step n={2} title="One-click OAuth install">
+                <CopyBlock code={mcpBaseUrl} id="vscode-url" copiedId={copiedId} onCopy={onCopy} />
+                <a href={vscodeDeepLink}>
+                  <Button className="gap-2 w-full mt-3">
                     <Download className="h-4 w-4" /> One-click Install in VS Code
                   </Button>
                 </a>
@@ -369,11 +404,11 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
                 <p className="text-xs text-muted-foreground mt-2">Add to <code className="bg-muted px-1 rounded">~/.codeium/windsurf/mcp_config.json</code>. Windsurf will open a browser to authorize on first use.</p>
               </Step>
               <Separator />
-              <Step n={2} title="Option B: API key in URL">
+              <Step n={2} title="Manual OAuth config">
                 <CopyBlock code={`{
   "mcpServers": {
     "deepsyte": {
-      "serverUrl": "${mcpKeyUrl}"
+      "serverUrl": "${mcpBaseUrl}"
     }
   }
 }`} id="windsurf-config" copiedId={copiedId} onCopy={onCopy} />
@@ -415,12 +450,12 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
                 <p className="text-xs text-muted-foreground mt-2">A browser window will open on first launch to sign in. The token is cached automatically.</p>
               </Step>
               <Separator />
-              <Step n={2} title="Option B: API key in URL (no browser popup)">
+              <Step n={2} title="Manual OAuth config">
                 <CopyBlock code={`{
   "mcpServers": {
     "deepsyte": {
       "command": "npx",
-      "args": ["-y", "mcp-remote@latest", "${mcpKeyUrl}"]
+      "args": ["-y", "mcp-remote@latest", "${mcpBaseUrl}"]
     }
   }
 }`} id="claude-key" copiedId={copiedId} onCopy={onCopy} />
@@ -441,8 +476,8 @@ function ToolInstructions({ toolId, mcpKeyUrl, mcpBaseUrl, apiKey, isKeySet, cop
                 <p className="text-xs text-muted-foreground mt-2">Claude Code will open a browser to authorize on first use. No API key needed.</p>
               </Step>
               <Separator />
-              <Step n={2} title="Option B: API key in URL">
-                <CopyBlock code={`claude mcp add --transport http deepsyte -s user ${mcpKeyUrl}`} id="claude-code-cmd" copiedId={copiedId} onCopy={onCopy} />
+              <Step n={2} title="Manual OAuth command">
+                <CopyBlock code={`claude mcp add --transport http deepsyte -s user ${mcpBaseUrl}`} id="claude-code-cmd" copiedId={copiedId} onCopy={onCopy} />
               </Step>
               <Step n={3} title="Verify the connection">
                 <p className="text-sm text-muted-foreground">Type <code className="bg-muted px-1.5 py-0.5 rounded font-mono">/mcp</code> in Claude Code to see connected servers.</p>
@@ -527,7 +562,7 @@ deepsyte --help`} id="cli-commands" copiedId={copiedId} onCopy={onCopy} />
                 <strong>Chrome preview</strong> — The monorepo includes an unpacked Chrome extension under <code className="bg-muted px-1 rounded">packages/chrome-extension</code>.
               </div>
               <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
-                Public pages use the same DeepSyte Playwright-backed MCP path as the CLI when an API key is configured. Localhost and private pages stay local-first so you can still capture and inspect dev servers.
+                Public pages use the DeepSyte API after website authorization. Localhost and private pages stay local-first so you can still capture and inspect dev servers.
               </div>
               <Step n={1} title="Load the extension in Chrome">
                 <CopyBlock code={`chrome://extensions`} id="chrome-extension-url" copiedId={copiedId} onCopy={onCopy} />
@@ -548,8 +583,8 @@ deepsyte --help`} id="cli-commands" copiedId={copiedId} onCopy={onCopy} />
           {toolId === "mcp-url" && (
             <>
               <Step n={1} title="Copy the MCP URL">
-                <CopyBlock code={mcpKeyUrl} id="mcp-url-copy" copiedId={copiedId} onCopy={onCopy} />
-                <p className="text-xs text-muted-foreground mt-2">The API key is embedded in the URL path. No extra headers needed.</p>
+                <CopyBlock code={mcpBaseUrl} id="mcp-url-copy" copiedId={copiedId} onCopy={onCopy} />
+                <p className="text-xs text-muted-foreground mt-2">Your MCP client must support OAuth and will open the DeepSyte website to authorize.</p>
               </Step>
               <Step n={2} title="Use it with your favourite agentic SDK or MCP client">
                 <p className="text-sm text-muted-foreground">Paste this URL into any tool that supports MCP servers via HTTP. The server uses Streamable HTTP transport.</p>
@@ -560,15 +595,10 @@ deepsyte --help`} id="cli-commands" copiedId={copiedId} onCopy={onCopy} />
           {toolId === "n8n" && (
             <>
               <Step n={1} title="Copy the MCP URL">
-                <CopyBlock code={mcpKeyUrl} id="n8n-url" label="MCP URL (key embedded in path)" copiedId={copiedId} onCopy={onCopy} />
-              </Step>
-              <Step n={2} title="Or use base URL with Authorization header">
                 <CopyBlock code={mcpBaseUrl} id="n8n-base" label="Base MCP URL" copiedId={copiedId} onCopy={onCopy} />
-                <div className="mt-3">
-                  <CopyBlock code={`Authorization: Bearer ${apiKey}`} id="n8n-header" label="Authorization header" copiedId={copiedId} onCopy={onCopy} />
-                </div>
+                <p className="text-xs text-muted-foreground mt-2">Use an OAuth-capable MCP client. Raw API keys are no longer accepted by the MCP endpoint.</p>
               </Step>
-              <Step n={3} title="Configure your client">
+              <Step n={2} title="Configure your client">
                 <div className="flex items-center gap-2">
                   <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
                   <a href="https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.toolmcp/" target="_blank" rel="noopener" className="text-sm text-primary hover:underline">n8n MCP Client Tool docs →</a>

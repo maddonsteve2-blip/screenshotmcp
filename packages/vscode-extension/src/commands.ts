@@ -6,7 +6,7 @@ import { WORKSPACE_MCP_PATH } from "./constants";
 import { callTool, extractImageUrl, extractRunUrl, extractText, validateApiKey } from "./mcp/client";
 import { EditorMcpAutoInstaller } from "./mcp/autoInstaller";
 import { logLine, showOutputChannel } from "./output";
-import { getApiUrl, getDashboardUrl, getKeysUrl, getScreenshotDefaults } from "./settings";
+import { getApiUrl, getDashboardUrl, getScreenshotDefaults } from "./settings";
 import { DeepsyteServerProvider } from "./mcp/serverProvider";
 import { formatSkillSyncFailureMessage, formatSkillSyncMessage, installCatalogSkillForExtension, syncCoreSkillForExtension } from "./skills";
 import { buildSkillTemplate } from "./skills/template";
@@ -665,12 +665,11 @@ async function promptForApiKey(
   const choice = await vscode.window.showQuickPick(
     [
       { label: "Sign in with browser (OAuth)", value: "oauth" },
-      { label: "Paste API key", value: "paste" },
-      { label: "Open dashboard keys page", value: "open" },
+      { label: "Open dashboard", value: "open" },
     ],
     {
       title: "Connect DeepSyte",
-      placeHolder: "Choose how to connect and unlock screenshots, browser workflows, and reusable auth testing",
+      placeHolder: "Website sign-in is required for MCP and CLI access",
     },
   );
 
@@ -683,7 +682,7 @@ async function promptForApiKey(
   }
 
   if (choice.value === "open") {
-    await openExternal(getKeysUrl());
+    await openExternal(getDashboardUrl());
     return undefined;
   }
 

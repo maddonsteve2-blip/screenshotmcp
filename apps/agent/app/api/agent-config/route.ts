@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const apiUrl = process.env.DEEPSYTE_API_URL || "https://api.deepsyte.com";
-  const apiKey = process.env.DEEPSYTE_AGENT_API_KEY;
+  const apiKey = process.env.DEEPSYTE_AGENT_API_KEY?.trim();
 
   if (!apiKey) {
     return NextResponse.json(

@@ -4,35 +4,29 @@ import ora from "ora";
 import { oauthLogin } from "../auth.js";
 import { getApiKey, setApiKey, getConfigPath } from "../config.js";
 import { printSkillSyncResult, syncCoreSkillForCli } from "../skills.js";
+import { ensureWebsiteAuthenticated } from "../api.js";
 
 export const loginCommand = new Command("login")
   .description("Authenticate with DeepSyte")
-  .option("--key <apiKey>", "Use an API key directly instead of OAuth")
+  .option("--key <apiKey>", "Deprecated: raw API keys can no longer be used for CLI/MCP sign-in")
   .action(async (opts) => {
     if (opts.key) {
-      if (!opts.key.startsWith("sk_live_")) {
-        console.error(chalk.red("Invalid API key. Must start with sk_live_"));
-        process.exit(1);
-      }
-      setApiKey(opts.key);
-      console.log(chalk.green("✓ API key saved."));
-      console.log(chalk.dim(`  Config: ${getConfigPath()}`));
-      printSkillSyncResult(syncCoreSkillForCli());
-      console.log(chalk.dim("  Tip: use `deepsyte auth:test https://example.com` before login or sign-up testing."));
-      return;
+      console.error(chalk.red("Raw API keys can no longer authenticate CLI/MCP access."));
+      console.error(chalk.dim("Run `deepsyte login` and approve the connection in the DeepSyte website."));
+      process.exit(1);
     }
 
     const existing = getApiKey();
     if (existing) {
-      console.log(chalk.yellow(`Already logged in (key: ${existing.slice(0, 12)}...${existing.slice(-4)})`));
-      console.log(chalk.dim("Use --key to replace, or `deepsyte logout` to clear."));
+      console.log(chalk.yellow(`Already logged in (session: ${existing.slice(0, 12)}...${existing.slice(-4)})`));
+      console.log(chalk.dim("Use `deepsyte logout` to clear it, then run `deepsyte login` to reauthorize."));
     }
 
     const spinner = ora("Opening browser for authentication...").start();
     try {
       const result = await oauthLogin();
       spinner.succeed(chalk.green("Logged in successfully!"));
-      console.log(chalk.dim(`  Key: ${result.apiKey.slice(0, 12)}...${result.apiKey.slice(-4)}`));
+      console.log(chalk.dim(`  Session: ${result.apiKey.slice(0, 12)}...${result.apiKey.slice(-4)}`));
       console.log(chalk.dim(`  Config: ${getConfigPath()}`));
       printSkillSyncResult(syncCoreSkillForCli());
       console.log(chalk.dim("  Tip: use `deepsyte auth:test https://example.com` before login or sign-up testing."));
@@ -47,18 +41,26 @@ export const logoutCommand = new Command("logout")
   .description("Clear stored credentials")
   .action(() => {
     setApiKey("");
-    console.log(chalk.green("✓ Logged out. Credentials cleared."));
+    console.log(chalk.green("Logged out. Credentials cleared."));
   });
 
 export const whoamiCommand = new Command("whoami")
   .description("Show current authentication status")
-  .action(() => {
+  .action(async () => {
     const key = getApiKey();
     if (!key) {
       console.log(chalk.yellow("Not logged in. Run `deepsyte login` to authenticate."));
       return;
     }
-    console.log(chalk.green("✓ Authenticated"));
-    console.log(`  Key: ${key.slice(0, 12)}...${key.slice(-4)}`);
+    try {
+      await ensureWebsiteAuthenticated();
+    } catch (err) {
+      console.log(chalk.red("Not authenticated"));
+      console.log(chalk.dim(err instanceof Error ? err.message : String(err)));
+      process.exitCode = 1;
+      return;
+    }
+    console.log(chalk.green("Authenticated"));
+    console.log(`  Session: ${key.slice(0, 12)}...${key.slice(-4)}`);
     console.log(chalk.dim(`  Config: ${getConfigPath()}`));
   });

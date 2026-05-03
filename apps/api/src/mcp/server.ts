@@ -4,9 +4,9 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "../lib/db.js";
-import { screenshots, apiKeys, users, usageEvents, testInboxes, websiteAuthMemories, webhookEndpoints, webhookDeliveries, runs, runOutcomes } from "@deepsyte/db";
+import { screenshots, usageEvents, testInboxes, websiteAuthMemories, webhookEndpoints, webhookDeliveries, runs, runOutcomes } from "@deepsyte/db";
 import { screenshotQueue } from "../lib/queue.js";
-import { createHash, randomBytes } from "crypto";
+import { randomBytes } from "crypto";
 import { eq, and, count, gte, desc } from "drizzle-orm";
 import { PLAN_LIMITS } from "@deepsyte/types";
 import { createSession, getSession, closeSession, pageScreenshot, navigateWithRetry, setSessionOutcomeContext, setSessionStartUrl, setSessionViewport } from "../lib/sessions.js";
@@ -18,6 +18,7 @@ import { uploadScreenshot } from "../lib/r2.js";
 import { AgentMailClient } from "agentmail";
 import { emitWebhookEvent } from "../lib/webhook-delivery.js";
 import { humanClick, humanMouseMove, idleHover, naturalPause } from "../lib/human.js";
+import { validateMcpOAuthToken } from "../lib/auth-tokens.js";
 
 export const mcpRouter = Router();
 
@@ -29,15 +30,16 @@ type SuccessfulAuth = Extract<AuthResult, { ok: true }>;
 type AuthAssistOutcome = "login_success" | "login_failed" | "signup_success" | "signup_failed" | "verification_required" | "verification_success";
 
 async function validateKey(apiKey: string | undefined): Promise<AuthResult> {
-  if (!apiKey) return { ok: false, error: "API key required. Pass sk_live_... as x-api-key header." };
-  const keyHash = createHash("sha256").update(apiKey).digest("hex");
-  const [row] = await db
-    .select({ userId: apiKeys.userId, plan: users.plan, agentmailApiKey: users.agentmailApiKey })
-    .from(apiKeys)
-    .innerJoin(users, eq(apiKeys.userId, users.id))
-    .where(and(eq(apiKeys.keyHash, keyHash), eq(apiKeys.revoked, false)));
-  if (!row) return { ok: false, error: "Invalid or revoked API key." };
-  return { ok: true, userId: row.userId, plan: (row.plan ?? "free") as "free" | "starter" | "pro", agentmailApiKey: row.agentmailApiKey };
+  if (!apiKey) {
+    return { ok: false, error: "Website sign-in required. Reconnect DeepSyte with OAuth from the dashboard." };
+  }
+
+  const row = await validateMcpOAuthToken(apiKey);
+  if (!row) {
+    return { ok: false, error: "Website sign-in required. Raw API keys are not accepted for MCP. Reconnect DeepSyte with OAuth from the dashboard." };
+  }
+
+  return { ok: true, userId: row.userId, plan: row.plan, agentmailApiKey: row.agentmailApiKey };
 }
 
 async function checkLimit(userId: string, plan: "free" | "starter" | "pro"): Promise<string | null> {
@@ -5108,19 +5110,23 @@ CRITICAL RULES:
 }
 
 function resolveKey(req: Request): string | undefined {
-  // Support OAuth Bearer token (Authorization: Bearer sk_live_...)
+  // MCP only accepts website-issued OAuth session tokens. Raw sk_live_ API
+  // keys remain valid for REST API calls, but they must not bypass the
+  // dashboard sign-in approval flow for editor/agent MCP access.
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
-    if (token.startsWith("sk_live_")) return token;
+    if (token.startsWith("dso_")) return token;
   }
-  return (
-    (req.headers["x-api-key"] as string | undefined) ||
-    (req.params.key as string | undefined) ||
-    (req.query.key as string | undefined) ||
-    // Smithery's default config parameter template publishes us with
-    // `?apiKey={apiKey}` in the gateway URL. Accept it as a synonym for `key`.
-    (req.query.apiKey as string | undefined)
+  return undefined;
+}
+
+function setMcpAuthChallenge(res: Response, errorDescription: string) {
+  const appUrl = process.env.APP_URL || "https://deepsyte-api-production.up.railway.app";
+  const resourceMetadata = `${appUrl}/.well-known/oauth-protected-resource/mcp`;
+  res.setHeader(
+    "WWW-Authenticate",
+    `Bearer realm="DeepSyte MCP", resource_metadata="${resourceMetadata}", scope="mcp:tools", error="invalid_token", error_description="${errorDescription}"`,
   );
 }
 
@@ -5130,11 +5136,21 @@ async function handleMcp(req: Request, res: Response, body: unknown) {
   // If no API key resolved, return 401 with OAuth hint so MCP clients
   // can discover the authorization server and start the OAuth flow.
   if (!apiKey) {
-    const appUrl = process.env.APP_URL || "https://deepsyte-api-production.up.railway.app";
-    res.setHeader("WWW-Authenticate", `Bearer resource_metadata="${appUrl}/.well-known/oauth-protected-resource"`);
+    setMcpAuthChallenge(res, "Missing or invalid access token");
     res.status(401).json({
       jsonrpc: "2.0",
-      error: { code: -32001, message: "Unauthorized — API key or OAuth Bearer token required" },
+      error: { code: -32001, message: "Unauthorized — website OAuth sign-in required" },
+      id: null,
+    });
+    return;
+  }
+
+  const auth = await validateMcpOAuthToken(apiKey);
+  if (!auth) {
+    setMcpAuthChallenge(res, "Website OAuth session is invalid or expired");
+    res.status(401).json({
+      jsonrpc: "2.0",
+      error: { code: -32001, message: "Unauthorized — valid website OAuth session required" },
       id: null,
     });
     return;

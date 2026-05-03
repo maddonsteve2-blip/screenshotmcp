@@ -8,7 +8,7 @@ description: Get DeepSyte running fast so your AI can inspect, test, and verify 
 For a new agent or fresh IDE setup, start with the one-command onboarding flow:
 
 ```bash
-npx deepsyte setup --client cursor    # or: vscode, windsurf, claude, claude-code
+npx deepsyte setup --client codex     # or: cursor, vscode, windsurf, claude, claude-code
 ```
 
 That flow authenticates if needed, configures the MCP client, and installs or repairs the managed core DeepSyte skill into `~/.agents/skills/deepsyte`, including `workflows/sitewide-performance-audit/WORKFLOW.md`.
@@ -17,10 +17,10 @@ If you prefer to do onboarding in two steps, run:
 
 ```bash
 npx deepsyte login
-npx deepsyte install cursor    # or: vscode, windsurf, claude, claude-code
+npx deepsyte install codex     # or: cursor, vscode, windsurf, claude, claude-code
 ```
 
-That reaches the same result as `setup --client <client>` for most clients. The main nuances are that `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
+That reaches the same result as `setup --client <client>` for most clients. The main nuances are that `install codex` writes `~/.codex/config.toml` and asks you to run `codex mcp login deepsyte`, `install vscode` writes a workspace-local `.vscode/mcp.json`, while `install claude-code` prints the `claude mcp add ...` command for you to run manually.
 
 The first packaged workflow is `~/.agents/skills/deepsyte/workflows/sitewide-performance-audit/WORKFLOW.md` for repeatable multi-page performance audits.
 
@@ -47,9 +47,11 @@ npx deepsyte browser open https://example.com
 npx deepsyte skills sync
 ```
 
-Use remote execution first for public websites. The CLI now mirrors the MCP remote workflow directly: start a remote session with `browse`, keep the `sessionId`, and then use `browse:*` commands for interaction, debugging, SEO, performance, accessibility, cookies, storage, and CAPTCHA solving. Add workflow-aware flags like `--task-type`, `--user-goal`, `--workflow-name`, `--page-set`, and `--required-evidence` when you want the run UI to persist a verdict, proof coverage, and next actions. When you need localhost access, private apps, VPN-only environments, or more realistic manual-browser behavior, switch to the managed local browser without installing an extension:
+Use remote execution first for public websites. The CLI now mirrors the MCP remote workflow directly: start a remote session with `browse`, keep the `sessionId`, and then use `browse:*` commands for interaction, debugging, SEO, performance, accessibility, cookies, storage, and CAPTCHA solving. Add workflow-aware flags like `--task-type`, `--user-goal`, `--workflow-name`, `--page-set`, and `--required-evidence` when you want the run UI to persist a verdict, proof coverage, and next actions. When you need localhost access, private apps, VPN-only environments, or more realistic manual-browser behavior, switch to the managed local browser without installing an extension. Managed local browser commands require a valid DeepSyte website OAuth session:
 
 ```bash
+npx deepsyte login
+npx deepsyte whoami
 npx deepsyte browser open https://example.com
 npx deepsyte browser open https://example.com --record-video
 npx deepsyte browser status
@@ -85,11 +87,30 @@ The goal is not just capture. It is verification: run the workflow, inspect what
 
 ## Option B: Manual Setup
 
-### 1. Get Your API Key
+### 1. Choose Your Auth Path
 
-Sign up at [deepsyte.com](https://www.deepsyte.com) and create an API key from your [dashboard](/dashboard/keys).
+For MCP clients, use website OAuth. Raw API keys are for REST API calls and cannot authorize MCP access.
 
 ### 2. Add to Your IDE
+
+#### Codex
+
+Add to `~/.codex/config.toml`, then run `codex mcp login deepsyte`:
+
+```toml
+[mcp_servers.deepsyte]
+url = "https://api.deepsyte.com/mcp"
+scopes = ["mcp:tools"]
+oauth_resource = "https://api.deepsyte.com/mcp"
+```
+
+If a current Codex Desktop build completes OAuth but does not mount `mcp__deepsyte` tools into a fresh thread, use `mcp-remote@0.1.38` as a temporary bridge:
+
+```toml
+[mcp_servers.deepsyte]
+command = "npx"
+args = ["-y", "mcp-remote@0.1.38", "https://api.deepsyte.com/mcp"]
+```
 
 #### Cursor
 
@@ -99,7 +120,7 @@ Add to your Cursor MCP settings (`~/.cursor/mcp.json`):
 {
   "mcpServers": {
     "deepsyte": {
-      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
+      "url": "https://api.deepsyte.com/mcp"
     }
   }
 }
@@ -113,7 +134,7 @@ Add to your Windsurf MCP config:
 {
   "mcpServers": {
     "deepsyte": {
-      "serverUrl": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
+      "serverUrl": "https://api.deepsyte.com/mcp"
     }
   }
 }
@@ -127,7 +148,7 @@ Add to `claude_desktop_config.json`:
 {
   "mcpServers": {
     "deepsyte": {
-      "url": "https://deepsyte-api-production.up.railway.app/mcp/YOUR_API_KEY"
+      "url": "https://api.deepsyte.com/mcp"
     }
   }
 }
@@ -163,7 +184,7 @@ If you want DeepSyte directly in Chrome, the monorepo includes an unpacked exten
 
 ### What it does
 
-- **Public URLs** use the same DeepSyte Playwright-backed MCP path as the CLI when an API key is configured.
+- **Public URLs** use DeepSyte cloud capture after website authorization.
 - **Localhost and private pages** stay local-first so you can still capture dev servers and pages the cloud browser cannot access.
 - **Page tools** in the popup can read visible text and DOM HTML for the active tab.
 - **Cloud save** reuses existing cloud-backed captures when available and can still upload local-only captures from the viewer.
@@ -180,8 +201,8 @@ If you want DeepSyte directly in Chrome, the monorepo includes an unpacked exten
 
 1. Open the extension popup
 2. Open **Settings**
-3. Paste your existing `sk_live_...` key from [Dashboard → Keys](/dashboard/keys)
-4. Save — the extension validates the key before storing it
+3. Sign in with your DeepSyte account when prompted
+4. Save the authorized session
 
 ### Use it
 

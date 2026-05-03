@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const API_URL =
   process.env.DEEPSYTE_API_URL ||
   "https://api.deepsyte.com";
-const API_KEY = process.env.DEEPSYTE_AGENT_API_KEY!;
+const API_KEY = process.env.DEEPSYTE_AGENT_API_KEY?.trim() || "";
 
 /**
  * Calls a DeepSyte tool via the MCP Streamable HTTP endpoint.

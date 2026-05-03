@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, Shield, CheckCircle, Loader2 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://deepsyte-api-production.up.railway.app";
-
 function normalizeRedirectUri(value: string): string {
   if (!value.includes("?") && /%3[fF]/.test(value)) {
     try {
@@ -37,18 +35,47 @@ function redirectToClient(value: string): void {
   }, 250);
 }
 
-function getClientDetails(redirectUri: string, clientId: string): { label: string; actionLabel: string } {
+function getClientDetails(
+  redirectUri: string,
+  clientId: string,
+  clientName: string,
+): { label: string; actionLabel: string; finishText: string; minimizedText: string } {
   const normalizedClientId = clientId.toLowerCase();
+  const normalizedClientName = clientName.toLowerCase();
 
-  if (redirectUri.startsWith("windsurf://") || normalizedClientId.includes("windsurf")) {
-    return { label: "Windsurf", actionLabel: "Open Windsurf" };
+  if (redirectUri.startsWith("windsurf://") || normalizedClientId.includes("windsurf") || normalizedClientName.includes("windsurf")) {
+    return {
+      label: "Windsurf",
+      actionLabel: "Open Windsurf",
+      finishText: "your browser may ask to open Windsurf. Choose Allow or Open Windsurf to complete sign-in.",
+      minimizedText: "If Windsurf stays minimized, bring it to the front manually after approving.",
+    };
   }
 
-  if (redirectUri.startsWith("cursor://") || normalizedClientId.includes("cursor")) {
-    return { label: "Cursor", actionLabel: "Open Cursor" };
+  if (redirectUri.startsWith("cursor://") || normalizedClientId.includes("cursor") || normalizedClientName.includes("cursor")) {
+    return {
+      label: "Cursor",
+      actionLabel: "Open Cursor",
+      finishText: "your browser may ask to open Cursor. Choose Allow or Open Cursor to complete sign-in.",
+      minimizedText: "If Cursor stays minimized, bring it to the front manually after approving.",
+    };
   }
 
-  return { label: "VS Code", actionLabel: "Open VS Code" };
+  if (normalizedClientName.includes("codex") || normalizedClientId.startsWith("deepsyte-mcp-")) {
+    return {
+      label: "Codex",
+      actionLabel: "Return to Codex",
+      finishText: "you should be returned to Codex automatically. If the browser asks permission, allow it to complete sign-in.",
+      minimizedText: "If Codex does not reconnect immediately, return to Codex and retry the DeepSyte tool.",
+    };
+  }
+
+  return {
+    label: clientName || "your MCP client",
+    actionLabel: "Return to app",
+    finishText: "you should be returned to your MCP client automatically. If the browser asks permission, allow it to complete sign-in.",
+    minimizedText: "If your MCP client does not reconnect immediately, return to it and retry the DeepSyte tool.",
+  };
 }
 
 function AuthorizeContent() {
@@ -59,11 +86,13 @@ function AuthorizeContent() {
   const [returnUri, setReturnUri] = useState<string | null>(null);
 
   const clientId = searchParams.get("client_id") || "mcp-client";
+  const clientName = searchParams.get("client_name") || "";
   const redirectUri = normalizeRedirectUri(searchParams.get("redirect_uri") || "");
   const state = searchParams.get("state") || "";
   const codeChallenge = searchParams.get("code_challenge") || "";
   const codeChallengeMethod = searchParams.get("code_challenge_method") || "S256";
-  const client = getClientDetails(redirectUri, clientId);
+  const resource = searchParams.get("resource") || "";
+  const client = getClientDetails(redirectUri, clientId, clientName);
 
   async function handleApprove() {
     if (!redirectUri) {
@@ -76,50 +105,21 @@ function AuthorizeContent() {
     setReturnUri(null);
 
     try {
-      let apiKey: string | undefined;
-      const createRes = await fetch("/api/keys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: `MCP Client (${clientId})`, revealExisting: true }),
-      });
-      const created = await createRes.json();
-      if (!createRes.ok) {
-        throw new Error(created.error || "Failed to create API key");
-      }
-
-      if (created.key) {
-        apiKey = created.key;
-      } else if (created.requiresRotation) {
-        const rotateRes = await fetch("/api/keys", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-        });
-        const rotated = await rotateRes.json();
-        if (!rotateRes.ok || !rotated.key) {
-          throw new Error(rotated.error || "Failed to rotate API key");
-        }
-        apiKey = rotated.key;
-      } else if (created.existing) {
-        throw new Error("Existing API key could not be reused for OAuth");
-      }
-
-      if (!apiKey) {
-        throw new Error("Failed to create API key");
-      }
-
-      // Exchange key for an authorization code via the API
-      const codeRes = await fetch(`${API_URL}/oauth/callback`, {
+      const codeRes = await fetch("/api/oauth/code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          api_key: apiKey,
+          client_id: clientId,
           code_challenge: codeChallenge,
           code_challenge_method: codeChallengeMethod,
           redirect_uri: redirectUri,
+          resource,
         }),
       });
       const codeData = await codeRes.json();
-      if (!codeData.code) throw new Error("Failed to generate authorization code");
+      if (!codeRes.ok || !codeData.code) {
+        throw new Error(codeData.error || "Failed to generate authorization code");
+      }
 
       const url = new URL(redirectUri);
       url.searchParams.set("code", codeData.code);
@@ -186,17 +186,14 @@ function AuthorizeContent() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground text-center">
-              DeepSyte uses one active API key. Approving will reuse your current key when possible, and only refresh older legacy keys that cannot be revealed safely.
+              Approving creates a short-lived MCP session token for this client. Raw API keys cannot authorize MCP access.
             </p>
             <div className="rounded-lg border border-muted bg-muted/30 p-3 text-left text-sm text-muted-foreground space-y-2">
               <p className="font-medium text-foreground">How to finish sign-in</p>
-              <p>
-                After you click <strong>Approve</strong>, your browser may ask to <strong>{client.actionLabel}</strong>. Choose
-                <strong> Allow</strong> or <strong>{client.actionLabel}</strong> to complete sign-in.
+            <p>
+                After you click <strong>Approve</strong>, {client.finishText}
               </p>
-              <p>
-                If {client.label} stays minimized, bring it to the front manually after approving.
-              </p>
+              <p>{client.minimizedText}</p>
             </div>
           </div>
 
@@ -216,14 +213,13 @@ function AuthorizeContent() {
           )}
 
           <details className="rounded-lg border border-muted bg-muted/20 p-4 text-sm">
-            <summary className="cursor-pointer font-medium text-foreground">Having trouble? Use your API key instead</summary>
+            <summary className="cursor-pointer font-medium text-foreground">Having trouble?</summary>
             <div className="mt-3 space-y-3 text-muted-foreground">
               <p>
-                If the browser prompt is blocked or {client.label} does not return reliably, open your API key page and use the
-                extension&apos;s <strong>Paste API key</strong> option to sign in manually.
+                If the browser prompt is blocked or {client.label} does not return reliably, reopen this authorization page from the client.
               </p>
-              <Button variant="outline" className="w-full" render={<a href="/dashboard/keys">Open API key page</a>}>
-                Open API Key Page
+              <Button variant="outline" className="w-full" render={<a href="/dashboard">Open Dashboard</a>}>
+                Open Dashboard
               </Button>
             </div>
           </details>

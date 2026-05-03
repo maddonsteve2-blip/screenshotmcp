@@ -18,7 +18,10 @@ export function buildWorkspaceMcpConfig(
         ...existingServers,
         deepsyte: {
           type: "http",
-          url: `${apiUrl}/mcp/${apiKey}`,
+          url: `${apiUrl}/mcp`,
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
         },
       },
     },

@@ -42,6 +42,7 @@ import {
   waitForLocalBrowser,
 } from "../local-browser-client.js";
 import { cleanupLocalBrowserSession, getLocalBrowserSession, saveLocalBrowserSession } from "../local-browser-session.js";
+import { ensureWebsiteAuthenticated } from "../api.js";
 
 function prompt(question: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -90,6 +91,20 @@ function parseJsonArgument<T>(value: string, label: string): T {
 
 export const browserCommand = new Command("browser")
   .description("Launch and control an extension-free managed local browser for DeepSyte workflows");
+
+browserCommand.hook("preAction", async (_thisCommand, actionCommand) => {
+  const commandName = actionCommand.name();
+  if (commandName === "close") {
+    return;
+  }
+
+  try {
+    await ensureWebsiteAuthenticated();
+  } catch (err) {
+    console.error(chalk.red(err instanceof Error ? err.message : String(err)));
+    process.exit(1);
+  }
+});
 
 browserCommand
   .command("open")

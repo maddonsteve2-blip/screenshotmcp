@@ -15,6 +15,9 @@ export async function callTool(toolName: string, args: Record<string, unknown> =
   if (!apiKey) {
     throw new Error("Not logged in. Run `deepsyte login` first.");
   }
+  if (!apiKey.startsWith("dso_")) {
+    throw new Error("Website sign-in required. Run `deepsyte login` to authorize through the DeepSyte dashboard.");
+  }
 
   return callToolWithKey(toolName, args, apiKey, true);
 }
@@ -106,16 +109,16 @@ async function callToolWithKey(
 }
 
 function isInvalidApiKeyResponse(status: number, body: string): boolean {
-  return status === 401 || /invalid or revoked api key/i.test(body);
+  return status === 401 || /invalid or revoked api key|website sign-in required/i.test(body);
 }
 
 function hasInvalidApiKeyPayload(response: McpResponse): boolean {
-  if (response.error?.message && /invalid or revoked api key/i.test(response.error.message)) {
+  if (response.error?.message && /invalid or revoked api key|website sign-in required/i.test(response.error.message)) {
     return true;
   }
 
   const content = response.result?.content ?? [];
-  return content.some((item) => item.type === "text" && /invalid or revoked api key/i.test(item.text ?? ""));
+  return content.some((item) => item.type === "text" && /invalid or revoked api key|website sign-in required/i.test(item.text ?? ""));
 }
 
 function parseSseResponse(body: string): McpResponse {
@@ -163,7 +166,25 @@ function getAuthedApiKey(): string {
   if (!apiKey) {
     throw new Error("Not logged in. Run `deepsyte login` first.");
   }
+  if (!apiKey.startsWith("dso_")) {
+    throw new Error("Website sign-in required. Run `deepsyte login` to authorize through the DeepSyte dashboard.");
+  }
   return apiKey;
+}
+
+export async function ensureWebsiteAuthenticated(): Promise<void> {
+  const apiKey = getAuthedApiKey();
+  const res = await fetch(`${getApiUrl()}/v1/auth/whoami`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Website sign-in required. Run \`deepsyte login\` to authorize through the DeepSyte dashboard. (${res.status}: ${text.slice(0, 200)})`);
+  }
 }
 
 async function restJson<T>(method: string, path: string, body?: unknown): Promise<T> {

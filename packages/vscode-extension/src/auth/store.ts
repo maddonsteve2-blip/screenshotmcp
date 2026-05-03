@@ -12,17 +12,25 @@ interface CliConfigShape {
   apiUrl?: string;
 }
 
+function isWebsiteSessionToken(value: string): boolean {
+  return value.startsWith("dso_");
+}
+
 export class AuthStore {
   constructor(private readonly context: vscode.ExtensionContext) {}
 
   async getApiKey(): Promise<string> {
     const secret = (await this.context.secrets.get(SECRET_API_KEY)) ?? "";
     if (secret) {
+      if (!isWebsiteSessionToken(secret)) {
+        await this.clearApiKey();
+        return "";
+      }
       return secret;
     }
 
     const cliConfig = readCliConfig();
-    if (cliConfig.apiKey) {
+    if (cliConfig.apiKey && isWebsiteSessionToken(cliConfig.apiKey)) {
       await this.context.secrets.store(SECRET_API_KEY, cliConfig.apiKey);
       return cliConfig.apiKey;
     }

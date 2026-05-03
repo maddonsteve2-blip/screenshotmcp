@@ -5,6 +5,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomBytes } from "node:crypto";
+import { ensureWebsiteAuthenticated } from "../api.js";
 
 /**
  * Local-browser Smithery signup.
@@ -33,6 +34,13 @@ export const smitherySignupCommand = new Command("smithery-signup")
     "https://smithery.ai/servers/new",
   )
   .action(async (opts: Record<string, string | boolean>) => {
+    try {
+      await ensureWebsiteAuthenticated();
+    } catch (err) {
+      console.error(chalk.red(err instanceof Error ? err.message : String(err)));
+      process.exit(1);
+    }
+
     const email = typeof opts.email === "string" ? opts.email : undefined;
     const first = typeof opts.first === "string" ? opts.first : "DeepSyte";
     const last = typeof opts.last === "string" ? opts.last : "Publisher";
