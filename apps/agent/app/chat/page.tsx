@@ -6,6 +6,74 @@ import { CopilotChat } from "@copilotkit/react-ui";
 import { EvidencePanel } from "@/components/evidence-panel";
 import type { EvidenceItem, ActivityItem } from "@/lib/types";
 
+interface ApiConfig {
+  apiUrl: string;
+  apiKey: string;
+}
+
+function parseMcpResult(result: unknown): unknown {
+  if (!result || typeof result !== "object") return result;
+  const r = result as { content?: Array<{ type: string; text?: string }> };
+  if (Array.isArray(r.content)) {
+    const textItem = r.content.find((c) => c.type === "text");
+    if (textItem?.text) {
+      try {
+        return JSON.parse(textItem.text);
+      } catch {
+        const urlMatch = textItem.text.match(/\nURL:\s*(https?:\/\/\S+)/);
+        if (urlMatch) return { url: urlMatch[1], raw: textItem.text };
+        return { raw: textItem.text };
+      }
+    }
+    const imageItem = r.content.find((c) => c.type === "image");
+    if (imageItem) return imageItem;
+  }
+  return result;
+}
+
+async function callMcpDirect(config: ApiConfig, toolName: string, args: Record<string, unknown>): Promise<unknown> {
+  const res = await fetch(`${config.apiUrl}/mcp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+      "x-api-key": config.apiKey,
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: `${Date.now()}`,
+      method: "tools/call",
+      params: { name: toolName, arguments: args },
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`MCP call failed: ${res.status} ${text}`);
+  }
+
+  const contentType = res.headers.get("content-type") || "";
+
+  if (contentType.includes("text/event-stream")) {
+    const text = await res.text();
+    const dataLines = text.split("\n").filter((l) => l.startsWith("data: ") && !l.includes("[DONE]"));
+    for (const line of dataLines) {
+      try {
+        const parsed = JSON.parse(line.slice(6));
+        if (parsed.result !== undefined) return parseMcpResult(parsed.result);
+        if (parsed.error) throw new Error(parsed.error.message);
+      } catch {
+        /* try next line */
+      }
+    }
+    throw new Error("No result found in MCP SSE response");
+  }
+
+  const json = await res.json();
+  if (json.error) throw new Error(json.error.message);
+  return parseMcpResult(json.result);
+}
+
 const SYSTEM_PROMPT = `You are DeepSyte Agent, an expert web auditing and browser automation assistant powered by DeepSyte's visual intelligence platform.
 
 You have access to these tools:
@@ -59,13 +127,22 @@ export default function ChatPage() {
   const [auditUrl, setAuditUrl] = useState("");
   const [lockedUrl, setLockedUrl] = useState("");
   const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [apiConfig, setApiConfig] = useState<ApiConfig | null>(null);
 
   const startActivity = (id: string, tool: string, label: string) =>
     setActivity((prev) => [...prev, { id, tool, label, status: "running", timestamp: new Date() }]);
   const endActivity = (id: string, s: "done" | "error") =>
     setActivity((prev) => prev.map((a) => (a.id === id ? { ...a, status: s } : a)));
 
-  useEffect(() => { fetch("/api/warmup").catch(() => {}); }, []);
+  useEffect(() => {
+    fetch("/api/warmup").catch(() => {});
+    fetch("/api/agent-config")
+      .then((r) => r.json())
+      .then((cfg) => {
+        if (cfg.apiUrl && cfg.apiKey) setApiConfig(cfg);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     console.log('[DEBUG] evidence state changed, length:', evidence.length, 'items:', evidence.map(e => e.type));
@@ -114,38 +191,98 @@ export default function ChatPage() {
     ),
     handler: async ({ url, fullPage, width }) => {
       const id = `ss-${Date.now()}`;
-      console.log('[DEBUG] take_screenshot handler START', { url, id });
       startActivity(id, "take_screenshot", `Screenshot: ${url}`);
+
+      if (!apiConfig) {
+        endActivity(id, "error");
+        throw new Error("API config not loaded yet");
+      }
+
       try {
-        console.log('[DEBUG] Fetching /api/tools...');
-        const res = await fetch("/api/tools", {
+        // 1. Enqueue screenshot via async REST API (returns immediately)
+        const enqueueRes = await fetch(`${apiConfig.apiUrl}/v1/screenshot`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiConfig.apiKey,
+          },
           body: JSON.stringify({
-            tool: "take_screenshot",
-            args: { url, fullPage: fullPage ?? false, width: width ?? 1280 },
+            url,
+            fullPage: fullPage ?? false,
+            width: width ?? 1280,
+            height: 800,
           }),
         });
-        console.log('[DEBUG] Fetch status:', res.status);
-        const result = await res.json();
-        console.log('[DEBUG] Result:', result);
-        console.log('[DEBUG] result?.url:', result?.url);
-        if (result?.url) {
-          console.log('[DEBUG] Calling setEvidence with URL:', result.url);
-          setEvidence((prev) => {
-            console.log('[DEBUG] setEvidence callback, prev length:', prev.length);
-            const next = [...prev, { type: "screenshot" as const, url: result.url, caption: url, timestamp: new Date() }];
-            console.log('[DEBUG] setEvidence callback, next length:', next.length);
-            return next;
-          });
-        } else {
-          console.log('[DEBUG] No URL in result, skipping setEvidence');
+
+        if (!enqueueRes.ok) {
+          const err = await enqueueRes.text().catch(() => "");
+          throw new Error(`Screenshot enqueue failed: ${enqueueRes.status} ${err}`);
         }
-        endActivity(id, "done");
-        console.log('[DEBUG] take_screenshot handler END');
-        return result;
+
+        const { id: jobId } = await enqueueRes.json();
+
+        // 2. Connect to WebSocket for real-time updates
+        const wsUrl = apiConfig.apiUrl.replace(/^https/, "wss") + "/ws/dashboard?token=" + encodeURIComponent(apiConfig.apiKey);
+        const ws = new WebSocket(wsUrl);
+
+        return await new Promise((resolve, reject) => {
+          let resolved = false;
+          const cleanup = () => {
+            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+              ws.close();
+            }
+          };
+
+          ws.onopen = () => {
+            ws.send(JSON.stringify({ channel: "screenshot-live", jobId }));
+          };
+
+          ws.onmessage = (event) => {
+            try {
+              const msg = JSON.parse(event.data);
+              if (msg.type === "screenshot-live" && msg.data?.found && !resolved) {
+                const { status, publicUrl, errorMessage } = msg.data;
+                if (status === "done" && publicUrl) {
+                  resolved = true;
+                  setEvidence((prev) => [
+                    ...prev,
+                    { type: "screenshot" as const, url: publicUrl, caption: url, timestamp: new Date() },
+                  ]);
+                  endActivity(id, "done");
+                  cleanup();
+                  resolve({ url: publicUrl, id: jobId, status: "done" });
+                } else if (status === "failed") {
+                  resolved = true;
+                  endActivity(id, "error");
+                  cleanup();
+                  reject(new Error(errorMessage || "Screenshot failed"));
+                }
+              }
+            } catch {
+              // ignore parse errors
+            }
+          };
+
+          ws.onerror = () => {
+            if (!resolved) {
+              resolved = true;
+              endActivity(id, "error");
+              cleanup();
+              reject(new Error("WebSocket connection failed"));
+            }
+          };
+
+          // Fallback timeout after 120s
+          setTimeout(() => {
+            if (!resolved) {
+              resolved = true;
+              endActivity(id, "error");
+              cleanup();
+              reject(new Error("Screenshot timed out after 120s"));
+            }
+          }, 120000);
+        });
       } catch (e) {
-        console.error('[DEBUG] take_screenshot handler ERROR:', e);
         endActivity(id, "error");
         throw e;
       }
@@ -172,17 +309,11 @@ export default function ChatPage() {
     handler: async ({ url, caption }) => {
       const id = `nav-${Date.now()}`;
       startActivity(id, "browser_navigate", `Opening: ${url}`);
+      if (!apiConfig) { endActivity(id, "error"); throw new Error("API config not loaded"); }
       try {
-        const res = await fetch("/api/tools", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tool: "browser_navigate",
-            args: { url, caption },
-          }),
-        });
-        const result = await res.json();
-        const shotUrl = result?.screenshot?.url ?? result?.screenshotUrl ?? result?.url;
+        const result = await callMcpDirect(apiConfig, "browser_navigate", { url, caption });
+        const parsed = result as any;
+        const shotUrl = parsed?.screenshot?.url ?? parsed?.screenshotUrl ?? parsed?.url;
         if (shotUrl) {
           setEvidence((prev) => [
             ...prev,
@@ -227,17 +358,11 @@ export default function ChatPage() {
     handler: async ({ sessionId, caption }) => {
       const id = `bss-${Date.now()}`;
       startActivity(id, "browser_screenshot", "Capturing screenshot");
+      if (!apiConfig) { endActivity(id, "error"); throw new Error("API config not loaded"); }
       try {
-        const res = await fetch("/api/tools", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tool: "browser_screenshot",
-            args: { sessionId, caption },
-          }),
-        });
-        const result = await res.json();
-        const shotUrl = result?.url ?? result?.screenshotUrl;
+        const result = await callMcpDirect(apiConfig, "browser_screenshot", { sessionId, caption });
+        const parsed = result as any;
+        const shotUrl = parsed?.url ?? parsed?.screenshotUrl;
         if (shotUrl) {
           setEvidence((prev) => [
             ...prev,
@@ -272,16 +397,12 @@ export default function ChatPage() {
     handler: async ({ sessionId }) => {
       const id = `perf-${Date.now()}`;
       startActivity(id, "browser_perf_metrics", "Measuring Core Web Vitals");
+      if (!apiConfig) { endActivity(id, "error"); throw new Error("API config not loaded"); }
       try {
-        const res = await fetch("/api/tools", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tool: "browser_perf_metrics", args: { sessionId } }),
-        });
-        const result = await res.json();
+        const result = await callMcpDirect(apiConfig, "browser_perf_metrics", { sessionId });
         setEvidence((prev) => [
           ...prev,
-          { type: "finding", category: "performance", data: result, timestamp: new Date() },
+          { type: "finding", category: "performance", data: result as Record<string, unknown>, timestamp: new Date() },
         ]);
         endActivity(id, "done");
         return result;
@@ -311,16 +432,12 @@ export default function ChatPage() {
     handler: async ({ sessionId }) => {
       const id = `seo-${Date.now()}`;
       startActivity(id, "browser_seo_audit", "Running SEO audit");
+      if (!apiConfig) { endActivity(id, "error"); throw new Error("API config not loaded"); }
       try {
-        const res = await fetch("/api/tools", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tool: "browser_seo_audit", args: { sessionId } }),
-        });
-        const result = await res.json();
+        const result = await callMcpDirect(apiConfig, "browser_seo_audit", { sessionId });
         setEvidence((prev) => [
           ...prev,
-          { type: "finding", category: "seo", data: result, timestamp: new Date() },
+          { type: "finding", category: "seo", data: result as Record<string, unknown>, timestamp: new Date() },
         ]);
         endActivity(id, "done");
         return result;
@@ -349,13 +466,9 @@ export default function ChatPage() {
     handler: async ({ sessionId }) => {
       const id = `text-${Date.now()}`;
       startActivity(id, "browser_get_text", "Reading page text");
+      if (!apiConfig) { endActivity(id, "error"); throw new Error("API config not loaded"); }
       try {
-        const res = await fetch("/api/tools", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tool: "browser_get_text", args: { sessionId } }),
-        });
-        const result = await res.json();
+        const result = await callMcpDirect(apiConfig, "browser_get_text", { sessionId });
         endActivity(id, "done");
         return result;
       } catch (e) {
@@ -379,16 +492,12 @@ export default function ChatPage() {
     handler: async ({ url }) => {
       const id = `ux-${Date.now()}`;
       startActivity(id, "ux_review", `UX review: ${url}`);
+      if (!apiConfig) { endActivity(id, "error"); throw new Error("API config not loaded"); }
       try {
-        const res = await fetch("/api/tools", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tool: "ux_review", args: { url } }),
-        });
-        const result = await res.json();
+        const result = await callMcpDirect(apiConfig, "ux_review", { url });
         setEvidence((prev) => [
           ...prev,
-          { type: "finding", category: "ux", data: result, timestamp: new Date() },
+          { type: "finding", category: "ux", data: result as Record<string, unknown>, timestamp: new Date() },
         ]);
         endActivity(id, "done");
         return result;
@@ -425,22 +534,15 @@ export default function ChatPage() {
     handler: async ({ url, width, height }) => {
       const id = `a11y-${Date.now()}`;
       startActivity(id, "accessibility_audit", `Accessibility audit: ${url}`);
+      if (!apiConfig) { endActivity(id, "error"); throw new Error("API config not loaded"); }
       try {
-        const res = await fetch("/api/tools", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tool: "accessibility_audit",
-            args: { url, width: width ?? 1280, height: height ?? 800 },
-          }),
-        });
-        const result = await res.json();
+        const result = await callMcpDirect(apiConfig, "accessibility_audit", { url, width: width ?? 1280, height: height ?? 800 });
         setEvidence((prev) => [
           ...prev,
           {
             type: "finding",
             category: "accessibility",
-            data: result,
+            data: result as Record<string, unknown>,
             timestamp: new Date(),
           },
         ]);
@@ -471,13 +573,9 @@ export default function ChatPage() {
     handler: async ({ sessionId }) => {
       const id = `close-${Date.now()}`;
       startActivity(id, "browser_close", "Closing browser session");
+      if (!apiConfig) { endActivity(id, "error"); throw new Error("API config not loaded"); }
       try {
-        const res = await fetch("/api/tools", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tool: "browser_close", args: { sessionId } }),
-        });
-        const result = await res.json();
+        const result = await callMcpDirect(apiConfig, "browser_close", { sessionId });
         endActivity(id, "done");
         return result;
       } catch (e) {

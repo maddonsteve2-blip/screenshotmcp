@@ -29,10 +29,14 @@ app.use(requestId);
 
 app.use("/webhooks", express.raw({ type: "application/json" }));
 app.use(express.json({ limit: "50mb" }));
+const rawAgentUrls = process.env.AGENT_URL ? process.env.AGENT_URL.split(",") : [];
+const agentUrls = rawAgentUrls.map((u) => u.trim()).filter(Boolean);
+
 app.use(cors({
   origin: [
     process.env.WEB_URL || "https://www.deepsyte.com",
     "https://agent.deepsyte.com",
+    ...agentUrls,
     "http://localhost:3000",
     "http://localhost:3002",
   ],
